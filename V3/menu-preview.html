@@ -236,6 +236,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   padding: 12px 20px; font-size: 14px; color: rgba(0,0,0,0.65);
   cursor: pointer; transition: all .15s; position: relative;
   margin: 0 8px; border-radius: 4px;
+  white-space: nowrap;
 }
 .g-left-item:hover {
   color: #1890ff; background: #e6f7ff;
@@ -710,7 +711,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
         <div class="g-content">
           <div class="mock-page">
             <h3 id="gPageTitle">流程订单投料</h3>
-            <p id="gPagePath">生产执行 → 投料 → 流程订单投料</p>
           </div>
         </div>
       </div>
@@ -1029,7 +1029,6 @@ function selectGItem(el, menuKey, group, item) {
   document.querySelectorAll('.g-hover-link').forEach(l => l.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('gPageTitle').textContent = item;
-  document.getElementById('gPagePath').textContent = gMenuData[menuKey].title + ' → ' + group + ' → ' + item;
 }
 
 setTimeout(() => {
