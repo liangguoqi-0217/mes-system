@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>步长智造平台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===================================================================
+     IBM Carbon Design System — 步长智造平台
+     =================================================================== */
+  :root {
+    /* Carbon Colors */
+    --cds-blue-60: #0f62fe;
+    --cds-blue-70: #0043ce;
+    --cds-blue-80: #002d9c;
+    --cds-blue-10: #edf5ff;
+    --cds-gray-100: #161616;
+    --cds-gray-90: #262626;
+    --cds-gray-80: #393939;
+    --cds-gray-70: #525252;
+    --cds-gray-60: #6f6f6f;
+    --cds-gray-50: #8d8d8d;
+    --cds-gray-30: #c6c6c6;
+    --cds-gray-20: #e0e0e0;
+    --cds-gray-10: #f4f4f4;
+    --cds-gray-10-hover: #e8e8e8;
+    --cds-white: #ffffff;
+    --cds-red-60: #da1e28;
+    --cds-green-50: #24a148;
+    --cds-yellow-30: #f1c21b;
+
+    /* Semantic Tokens */
+    --cds-background: var(--cds-white);
+    --cds-layer-01: var(--cds-gray-10);
+    --cds-layer-02: var(--cds-gray-20);
+    --cds-text-primary: var(--cds-gray-100);
+    --cds-text-secondary: var(--cds-gray-70);
+    --cds-text-placeholder: var(--cds-gray-60);
+    --cds-text-disabled: var(--cds-gray-50);
+    --cds-border-subtle: var(--cds-gray-30);
+    --cds-button-primary: var(--cds-blue-60);
+    --cds-button-primary-hover: #0353e9;
+    --cds-button-primary-active: var(--cds-blue-80);
+    --cds-link-primary: var(--cds-blue-60);
+    --cds-link-primary-hover: var(--cds-blue-70);
+    --cds-support-error: var(--cds-red-60);
+    --cds-support-success: var(--cds-green-50);
+    --cds-support-warning: var(--cds-yellow-30);
+    --cds-focus: var(--cds-blue-60);
+
+    /* Spacing — 8px grid */
+    --cds-spacing-02: 2px;
+    --cds-spacing-03: 8px;
+    --cds-spacing-04: 12px;
+    --cds-spacing-05: 16px;
+    --cds-spacing-06: 24px;
+    --cds-spacing-07: 32px;
+    --cds-spacing-08: 40px;
+    --cds-spacing-09: 48px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cds-gray-80);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 20px;
+  }
+
+  .phone-container {
+    width: 402px; height: 874px;
+    background: var(--cds-gray-10);
+    border-radius: 55px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 0 0 4px #b8b0a4, 0 0 0 6px #8c8273, inset 0 0 0 1px rgba(255,255,255,0.06);
+    display: flex; flex-direction: column;
+  }
+  /* Titanium frame sheen */
+  .phone-container::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 55px;
+    pointer-events: none; z-index: 9999;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.2);
+  }
+
+  /* iPhone 17 Pro Status Bar — Under-Display Face ID, pinhole camera only */
+  .status-bar {
+    height: 50px;
+    background: #000000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 36px 9px;
+    font-family: -apple-system, 'SF Pro Text', 'PingFang SC', sans-serif;
+    font-size: 16px;
+    font-weight: 590;
+    letter-spacing: -0.3px;
+    color: #ffffff;
+    flex-shrink: 0;
+    position: relative;
+  }
+  /* Pinhole front camera — no Dynamic Island */
+  .status-bar .camera-pinhole {
+    position: absolute;
+    top: 14px; left: 50%;
+    transform: translateX(-50%);
+    width: 8px; height: 8px;
+    background: #0a0a0a;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px rgba(255,255,255,0.1),
+                inset 0 0 0 1px rgba(20,40,80,0.6);
+    z-index: 2;
+  }
+  .status-bar .time {
+    width: 50px; text-align: center; font-feature-settings: "tnum";
+  }
+  .status-bar .right-icons {
+    display: flex; align-items: center; gap: 7px;
+  }
+  .status-bar .signal-bars {
+    display: flex; align-items: flex-end; gap: 2px; height: 14px;
+  }
+  .status-bar .signal-bars span {
+    width: 3px; background: #ffffff; border-radius: 0.75px;
+  }
+  .status-bar .signal-bars span:nth-child(1) { height: 5px; }
+  .status-bar .signal-bars span:nth-child(2) { height: 7px; }
+  .status-bar .signal-bars span:nth-child(3) { height: 10px; }
+  .status-bar .signal-bars span:nth-child(4) { height: 14px; }
+  .status-bar .battery {
+    display: flex; align-items: center; gap: 2px; height: 13px;
+  }
+  .status-bar .battery-body {
+    width: 27px; height: 13px;
+    border: 1.2px solid #ffffff; border-radius: 3px;
+    display: flex; align-items: center; padding: 1.5px;
+  }
+  .status-bar .battery-fill {
+    width: 19px; height: 100%; background: #34c759; border-radius: 1.5px;
+  }
+  .status-bar .battery-cap {
+    width: 2.5px; height: 5.5px;
+    background: rgba(255,255,255,0.5); border-radius: 0 1.5px 1.5px 0;
+  }
+
+  /* Nav Bar */
+  .nav-bar {
+    height: 44px;
+    background: var(--cds-gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.16px;
+    color: var(--cds-white);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .nav-bar .back-btn {
+    position: absolute; left: 0;
+    width: 44px; height: 44px;
+    display: none;
+    align-items: center; justify-content: center;
+    font-size: 18px; color: var(--cds-blue-60);
+    cursor: pointer; user-select: none;
+    font-weight: 400;
+  }
+  .nav-bar .back-btn:hover { background: var(--cds-gray-90); }
+  .nav-bar .nav-title { font-size: 14px; letter-spacing: 0.16px; }
+
+  /* Main pages wrapper */
+  .pages-wrapper { flex: 1; position: relative; overflow: hidden; background: var(--cds-gray-10); }
+  .page {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column;
+    background: var(--cds-gray-10);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .page::-webkit-scrollbar { width: 0; }
+  .page.active { display: flex; }
+
+  /* ================================================================
+     Carbon Components
+     ================================================================ */
+
+  /* Button — Primary */
+  .cds-btn-primary {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 48px; padding: 0 16px;
+    background: var(--cds-button-primary);
+    color: var(--cds-white);
+    border: 1px solid transparent; border-radius: 0px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; font-weight: 400; letter-spacing: 0.16px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .cds-btn-primary:hover { background: var(--cds-button-primary-hover); }
+  .cds-btn-primary:active { background: var(--cds-button-primary-active); }
+  .cds-btn-primary:focus { outline: 2px solid var(--cds-focus); outline-offset: 1px; }
+
+  .cds-btn-primary--full { width: 100%; }
+
+  /* Button — Secondary / Ghost */
+  .cds-btn-secondary {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 48px; padding: 0 16px;
+    background: var(--cds-white);
+    color: var(--cds-text-primary);
+    border: 1px solid var(--cds-gray-30); border-radius: 0px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; font-weight: 400; letter-spacing: 0.16px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .cds-btn-secondary:hover { background: var(--cds-gray-10-hover); }
+  .cds-btn-secondary--full { width: 100%; }
+
+  /* Tag */
+  .cds-tag {
+    display: inline-flex; align-items: center;
+    padding: 4px 8px; border-radius: 0px;
+    font-size: 12px; font-weight: 400; letter-spacing: 0.32px;
+    line-height: 1.33;
+  }
+  .cds-tag--blue { background: var(--cds-blue-10); color: var(--cds-blue-60); }
+  .cds-tag--red { background: #fff1f0; color: var(--cds-red-60); }
+  .cds-tag--green { background: #eefbf2; color: var(--cds-green-50); }
+  .cds-tag--yellow { background: #fcf4d6; color: #8e6a00; }
+  .cds-tag--gray { background: var(--cds-gray-20); color: var(--cds-gray-70); }
+  .cds-tag--outline {
+    background: transparent;
+    border: 1px solid var(--cds-gray-30);
+    color: var(--cds-gray-70);
+    cursor: pointer; user-select: none;
+    transition: all 0.15s;
+  }
+  .cds-tag--outline:hover { background: var(--cds-gray-10-hover); }
+  .cds-tag--outline.active { background: var(--cds-blue-10); border-color: var(--cds-blue-60); color: var(--cds-blue-60); }
+
+  /* Card / Tile */
+  .cds-tile {
+    background: var(--cds-white);
+    border-radius: 0px;
+    padding: 16px;
+    margin: 0 16px 1px;
+    transition: background 0.15s;
+  }
+  .cds-tile--clickable { cursor: pointer; user-select: none; }
+  .cds-tile--clickable:hover { background: var(--cds-gray-10-hover); }
+  .cds-tile--clickable:active { background: var(--cds-gray-20); }
+
+  .cds-tile--layer {
+    background: var(--cds-layer-01);
+    margin: 0 16px 1px;
+  }
+
+  /* Section Header */
+  .cds-section-header {
+    display: flex; align-items: center;
+    padding: 16px 16px 8px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+    text-transform: uppercase;
+  }
+
+  /* Input — Carbon bottom-border style */
+  .cds-input {
+    width: 100%; height: 40px;
+    padding: 0 0 0 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--cds-gray-30);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; font-weight: 400; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .cds-input:focus { border-bottom-color: var(--cds-focus); }
+  .cds-input::placeholder { color: var(--cds-text-placeholder); }
+  .cds-input--error { border-bottom-color: var(--cds-support-error); }
+
+  .cds-textarea {
+    width: 100%; min-height: 80px;
+    padding: 8px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--cds-gray-30);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; font-weight: 400; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+    outline: none; resize: vertical;
+    transition: border-color 0.15s;
+    line-height: 1.43;
+  }
+  .cds-textarea:focus { border-bottom-color: var(--cds-focus); }
+  .cds-textarea::placeholder { color: var(--cds-text-placeholder); }
+
+  .cds-select {
+    width: 100%; height: 40px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--cds-gray-30);
+    border-radius: 0px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px; font-weight: 400; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23525252' d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .cds-select:focus { border-bottom-color: var(--cds-focus); }
+
+  .cds-label {
+    display: block;
+    font-size: 12px; font-weight: 400; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+    margin-bottom: 8px;
+  }
+  .cds-label .cds-required { color: var(--cds-support-error); }
+
+  .cds-form-group { margin-bottom: 16px; }
+
+  /* Data Row */
+  .cds-data-row {
+    display: flex; padding: 12px 0;
+    border-bottom: 1px solid var(--cds-gray-20);
+    font-size: 14px; letter-spacing: 0.16px; line-height: 1.29;
+  }
+  .cds-data-row:last-child { border-bottom: none; }
+  .cds-data-label {
+    color: var(--cds-text-secondary);
+    min-width: 88px; flex-shrink: 0;
+    font-size: 13px;
+  }
+  .cds-data-value {
+    color: var(--cds-text-primary);
+    flex: 1; word-break: break-all;
+    font-weight: 400;
+  }
+
+  /* Status Badge */
+  .cds-badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 8px; border-radius: 0px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.32px;
+    color: var(--cds-white);
+  }
+  .cds-badge--running { background: var(--cds-green-50); }
+  .cds-badge--standby { background: #8d8d8d; }
+  .cds-badge--fault { background: var(--cds-red-60); }
+  .cds-badge--maintenance { background: #ff832b; }
+  .cds-badge--stopped { background: var(--cds-gray-60); }
+  .cds-badge--closed { background: var(--cds-green-50); }
+  .cds-badge--ordered { background: var(--cds-blue-60); }
+
+  /* Divider */
+  .cds-divider {
+    height: 1px; background: var(--cds-gray-20);
+    margin: 8px 16px;
+  }
+
+  .cds-section-label {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 16px; font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+  }
+  .cds-section-label::after {
+    content: ''; flex: 1; height: 1px; background: var(--cds-gray-20);
+  }
+
+  /* Toast */
+  .cds-toast {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    background: var(--cds-gray-100); color: var(--cds-white);
+    padding: 12px 24px; border-radius: 0px;
+    font-size: 14px; letter-spacing: 0.16px;
+    z-index: 200; pointer-events: none;
+    opacity: 0; transition: opacity 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .cds-toast.show { opacity: 1; }
+
+  /* ================================================================
+     Home Page — 首页
+     ================================================================ */
+  .home-hero {
+    background: var(--cds-gray-100);
+    padding: 32px 24px 24px;
+    color: var(--cds-white);
+  }
+  .home-hero .hero-tagline {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-gray-30); margin-bottom: 8px;
+    font-weight: 400;
+  }
+  .home-hero .hero-title {
+    font-size: 28px; font-weight: 300; letter-spacing: 0;
+    line-height: 1.17; margin-bottom: 8px;
+  }
+  .home-hero .hero-subtitle {
+    font-size: 14px; font-weight: 400; letter-spacing: 0.16px;
+    color: var(--cds-gray-30); line-height: 1.43;
+  }
+
+  .home-stats {
+    display: flex;
+    margin: -1px 16px 0;
+    background: var(--cds-white);
+    padding: 16px 0;
+    border-bottom: 1px solid var(--cds-gray-20);
+  }
+  .home-stat-item {
+    flex: 1; text-align: center;
+  }
+  .home-stat-item + .home-stat-item {
+    border-left: 1px solid var(--cds-gray-20);
+  }
+  .home-stat-value {
+    font-size: 24px; font-weight: 300;
+    color: var(--cds-blue-60); line-height: 1.17;
+  }
+  .home-stat-label {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary); margin-top: 4px;
+  }
+
+  .home-functions {
+    padding: 0;
+    background: var(--cds-white);
+  }
+  .home-func-list {
+    display: flex; flex-direction: column;
+  }
+  .home-func-card {
+    display: flex; align-items: center; gap: 16px;
+    padding: 20px 16px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--cds-gray-20);
+  }
+  .home-func-card:last-child { border-bottom: none; }
+  .home-func-card:active { background: var(--cds-gray-20); }
+  .home-func-icon {
+    width: 40px; height: 40px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--cds-gray-10);
+    border-radius: 0;
+  }
+  .home-func-icon svg {
+    width: 22px; height: 22px;
+    fill: var(--cds-blue-60);
+  }
+  .home-func-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .home-func-name {
+    font-size: 16px; font-weight: 600;
+    color: var(--cds-text-primary);
+    line-height: 1.25;
+  }
+  .home-func-desc {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+    line-height: 1.33;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .home-func-arrow {
+    flex-shrink: 0;
+    width: 20px; height: 20px;
+    color: var(--cds-gray-50);
+  }
+  .home-section-header {
+    padding: 12px 16px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+    text-transform: uppercase;
+    background: var(--cds-gray-10);
+    border-bottom: 1px solid var(--cds-gray-20);
+  }
+
+  .home-recent {
+    padding: 0 16px 24px;
+  }
+  .home-recent-title {
+    font-size: 14px; font-weight: 600; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--cds-gray-20);
+    margin-bottom: 8px;
+  }
+  .home-recent-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; background: var(--cds-white);
+    cursor: pointer; margin-bottom: 4px;
+    transition: background 0.15s;
+  }
+  .home-recent-item:hover { background: var(--cds-gray-10-hover); }
+  .home-recent-item .avatar {
+    width: 40px; height: 40px;
+    background: var(--cds-blue-10);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .home-recent-item .info { flex: 1; min-width: 0; }
+  .home-recent-item .name {
+    font-size: 14px; font-weight: 600; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+  }
+  .home-recent-item .desc {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary); margin-top: 2px;
+  }
+
+  /* ================================================================
+     Sub Pages — 子页面通用
+     ================================================================ */
+  .subpage-header {
+    padding: 16px;
+    font-size: 20px; font-weight: 400;
+    color: var(--cds-text-primary);
+    line-height: 1.4;
+    background: var(--cds-gray-10);
+  }
+  .subpage-header-desc {
+    font-size: 14px; letter-spacing: 0.16px;
+    color: var(--cds-text-secondary);
+    margin-top: 4px; font-weight: 400;
+  }
+
+  /* Scan Card — IBM style */
+  .scan-panel {
+    margin: 0 16px 16px;
+    background: var(--cds-blue-10);
+    padding: 20px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .scan-panel:hover { background: #dbe8fc; }
+  .scan-panel:active { background: #c9dbf9; }
+  .scan-panel .scan-icon-wrap {
+    width: 56px; height: 56px;
+    border: 2px solid var(--cds-blue-60);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+    position: relative;
+  }
+  .scan-panel .scan-info { flex: 1; min-width: 0; }
+  .scan-panel .scan-title {
+    font-size: 16px; font-weight: 600;
+    color: var(--cds-text-primary);
+    line-height: 1.25;
+  }
+  .scan-panel .scan-hint {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+    margin-top: 4px;
+  }
+  .scan-panel .scan-arrow {
+    flex-shrink: 0;
+    width: 24px; height: 24px;
+    color: var(--cds-blue-60);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scan-panel .scan-arrow svg {
+    width: 24px; height: 24px;
+  }
+
+  /* Search bar — IBM style */
+  .search-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 16px 12px;
+  }
+  .search-row .cds-input {
+    flex: 1;
+    background: var(--cds-white);
+    padding: 0 12px;
+    border-bottom: 2px solid var(--cds-gray-30);
+    height: 40px;
+  }
+  .search-row .cds-input:focus { border-bottom-color: var(--cds-blue-60); }
+  .cds-btn-icon {
+    width: 40px; height: 40px;
+    background: var(--cds-gray-10);
+    color: var(--cds-text-secondary);
+    border: 1px solid var(--cds-gray-30);
+    border-radius: 0px;
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .cds-btn-icon:hover { background: var(--cds-gray-20); color: var(--cds-text-primary); }
+
+  /* Device detail header */
+  .device-header {
+    margin: 0 16px;
+    background: var(--cds-white);
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--cds-gray-20);
+  }
+  .device-header .eq-name {
+    font-size: 22px; font-weight: 300; line-height: 1.18;
+    color: var(--cds-text-primary); margin-bottom: 4px;
+  }
+  .device-header .eq-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; letter-spacing: 0.16px;
+    color: var(--cds-text-secondary);
+  }
+
+  /* Card for info sections */
+  .info-section {
+    margin: 0 16px 1px;
+    background: var(--cds-white);
+    padding: 0;
+  }
+  .info-section-title {
+    padding: 14px 16px 0;
+    font-size: 14px; font-weight: 600; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+  }
+  .info-section-body {
+    padding: 0 16px 8px;
+  }
+
+  /* Device list row */
+  .device-row {
+    margin: 0 16px 1px;
+    background: var(--cds-white);
+    display: flex; align-items: stretch;
+  }
+  .device-row-main {
+    flex: 1; min-width: 0;
+    padding: 14px 0 14px 16px;
+    display: flex; flex-direction: column; gap: 2px;
+    cursor: pointer; user-select: none;
+  }
+  .device-row-main:active { background: var(--cds-gray-20); }
+  .device-row-name {
+    font-size: 14px; font-weight: 600; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+  }
+  .device-row-sub {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+  }
+  .device-row-action {
+    display: flex; align-items: center; gap: 6px;
+    padding: 14px 14px;
+    cursor: pointer; user-select: none;
+    flex-shrink: 0;
+    border-left: 1px solid var(--cds-gray-20);
+    font-size: 12px; color: var(--cds-text-secondary); letter-spacing: 0.32px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .device-row-action:active { background: var(--cds-gray-20); color: var(--cds-blue-60); }
+  .device-row-action svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--cds-gray-50); transition: color 0.15s; }
+  .device-row-action:active svg { color: var(--cds-blue-60); }
+
+  /* Measurement Entry Form */
+  .meas-hero {
+    margin: 0 16px;
+    background: var(--cds-gray-100);
+    color: #fff; padding: 20px 24px; position: relative;
+  }
+  .meas-hero .meas-back-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; color: rgba(255,255,255,0.7); cursor: pointer; user-select: none;
+    margin-bottom: 12px; transition: color 0.15s;
+  }
+  .meas-hero .meas-back-btn:active { color: #fff; }
+  .meas-hero .meas-title {
+    font-size: 22px; font-weight: 300; line-height: 1.18;
+    margin-bottom: 4px;
+  }
+  .meas-hero .meas-code {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    color: rgba(255,255,255,0.55);
+  }
+  .meas-hero .meas-last-time {
+    position: absolute; top: 20px; right: 24px;
+    font-size: 11px; color: rgba(255,255,255,0.5); text-align: right;
+  }
+  .meas-field {
+    margin: 0 16px 1px;
+    background: var(--cds-white); padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .meas-field-label {
+    width: 90px; flex-shrink: 0;
+    font-size: 13px; color: var(--cds-text-primary); font-weight: 500;
+  }
+  .meas-field-label small {
+    display: block; font-size: 11px; font-weight: 400; color: var(--cds-text-secondary);
+  }
+  .meas-field-input {
+    flex: 1;
+  }
+  .meas-field-input input {
+    width: 100%; height: 38px; padding: 0 10px;
+    font-size: 15px; font-family: 'IBM Plex Mono', monospace;
+    border: none; border-bottom: 2px solid var(--cds-gray-30);
+    background: transparent; outline: none; text-align: right;
+    transition: border-color 0.15s;
+  }
+  .meas-field-input input:focus { border-bottom-color: var(--cds-blue-60); }
+  .meas-field-hint {
+    width: 100%; font-size: 11px; color: var(--cds-text-secondary);
+    text-align: right; margin-top: 2px;
+  }
+  .meas-field-unit {
+    width: 50px; flex-shrink: 0; text-align: right;
+    font-size: 13px; color: var(--cds-text-secondary);
+  }
+  .meas-submit {
+    margin: 12px 16px 20px; height: 44px;
+    background: var(--cds-blue-60); color: #fff;
+    border: none; border-radius: 0;
+    font-size: 15px; font-weight: 500; cursor: pointer;
+    width: calc(100% - 32px); transition: background 0.15s;
+  }
+  .meas-submit:active { background: #0043ce; }
+
+  /* Notification Card — compact */
+  .nf-list-item {
+    margin: 0 16px 1px;
+    background: var(--cds-white);
+    padding: 10px 12px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .nf-list-item:hover { background: var(--cds-gray-10-hover); }
+  .nf-list-item .nf-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 4px;
+  }
+  .nf-list-item .nf-doc-no {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary);
+  }
+  .nf-list-item .nf-title {
+    font-size: 14px; font-weight: 600;
+    color: var(--cds-text-primary);
+    margin-bottom: 3px;
+  }
+  .nf-list-item .nf-desc {
+    font-size: 12px; color: var(--cds-text-secondary);
+    line-height: 1.4;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .nf-list-item .nf-meta {
+    font-size: 11px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary); margin-top: 3px;
+  }
+
+  /* Badge for notification type — with visible background */
+  .cds-badge--ntype {
+    background: var(--cds-gray-100);
+  }
+
+  /* Search form (2x2 grid — used by device & notification pages) */
+  .inv-search-form {
+    padding: 16px 16px 8px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: var(--cds-gray-10);
+  }
+  .inv-search-form .cds-input,
+  .inv-search-form .cds-select {
+    height: 40px; font-size: 14px;
+    background: var(--cds-white);
+    padding: 0 12px;
+    border-bottom: 2px solid var(--cds-gray-30);
+  }
+  .inv-search-form .cds-select:focus { border-bottom-color: var(--cds-focus); }
+  .inv-search-form .cds-btn-primary,
+  .inv-search-form .cds-btn-secondary {
+    height: 40px; font-size: 13px;
+  }
+
+  .inv-count-bar {
+    padding: 6px 16px 4px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; letter-spacing: 0.32px; color: var(--cds-text-secondary);
+  }
+  /* Inventory compact list item */
+  .inv-list-item {
+    margin: 0 16px 1px;
+    background: var(--cds-white);
+    padding: 12px 14px;
+    cursor: pointer; user-select: none;
+    transition: background 0.12s;
+    display: flex; flex-direction: column; gap: 6px;
+    border-left: 3px solid transparent;
+  }
+  .inv-list-item:active { background: var(--cds-layer-02); }
+  .inv-list-item.inv-low   { border-left-color: var(--cds-yellow-30); }
+  .inv-list-item.inv-empty { border-left-color: var(--cds-red-60); }
+  .inv-list-item .inv-row {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px;
+  }
+  .inv-list-item .inv-name-text {
+    font-size: 15px; font-weight: 500;
+    color: var(--cds-text-primary);
+    flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .inv-list-item .inv-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.16px;
+    color: var(--cds-text-secondary);
+  }
+  .inv-list-item .inv-location {
+    font-size: 13px; color: var(--cds-text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .inv-list-item .inv-qty-info {
+    display: flex; align-items: baseline; gap: 4px;
+    flex-shrink: 0;
+  }
+  .inv-list-item .inv-qty {
+    font-size: 18px; font-weight: 500;
+    line-height: 1; color: var(--cds-text-primary);
+  }
+  .inv-list-item .inv-qty.qty-ok    { color: var(--cds-green-50); }
+  .inv-list-item .inv-qty.qty-warn  { color: #b28600; }
+  .inv-list-item .inv-qty.qty-empty { color: var(--cds-red-60); }
+  .inv-list-item .inv-unit {
+    font-size: 11px; color: var(--cds-text-secondary);
+  }
+  .inv-status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.32px;
+    border: 1px solid var(--cds-gray-30);
+    color: var(--cds-text-secondary);
+  }
+  .inv-status-badge.s-unrestricted { border-color: var(--cds-green-50); color: var(--cds-green-60); }
+  .inv-status-badge.s-inspection { border-color: #ff832b; color: #ff832b; }
+  .inv-status-badge.s-frozen     { border-color: var(--cds-red-60); color: var(--cds-red-60); }
+
+  /* Fault code tree */
+  .fc-tree { padding: 6px 0 20px; user-select: none; }
+  /* Level 1: 目录类型 */
+  .fc-tree-cat {
+    margin: 0; padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; font-size: 16px; font-weight: 600;
+    color: var(--cds-text-primary);
+    border-bottom: 1px solid var(--cds-gray-20);
+    transition: background 0.12s;
+  }
+  .fc-tree-cat:active { background: var(--cds-layer-02); }
+  .fc-tree-cat .tree-arrow {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--cds-text-secondary); transition: transform 0.2s;
+  }
+  .fc-tree-cat.expanded .tree-arrow { transform: rotate(90deg); }
+  .fc-tree-cat .tree-count {
+    font-size: 12px; font-weight: 400; color: var(--cds-text-secondary);
+    margin-left: auto;
+  }
+  /* Level 2: 代码组 */
+  .fc-tree-group {
+    margin: 0 16px 0 32px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 14px; font-weight: 500;
+    color: var(--cds-text-primary);
+    border-bottom: 1px solid var(--cds-gray-10);
+    transition: background 0.12s;
+  }
+  .fc-tree-group:active { background: var(--cds-layer-02); }
+  .fc-tree-group .tree-arrow {
+    width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--cds-text-secondary); transition: transform 0.2s;
+  }
+  .fc-tree-group.expanded .tree-arrow { transform: rotate(90deg); }
+  /* Level 3: 代码 (leaf) */
+  .fc-tree-leaf {
+    margin: 0 16px 0 48px; padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    cursor: pointer; font-size: 14px;
+    border-bottom: 1px solid var(--cds-gray-10);
+    transition: background 0.12s;
+  }
+  .fc-tree-leaf:active { background: var(--cds-layer-02); }
+  .fc-tree-leaf .leaf-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--cds-gray-30); flex-shrink: 0;
+  }
+  .fc-tree-leaf .leaf-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px; font-weight: 600; color: var(--cds-red-60);
+    width: 80px; flex-shrink: 0;
+  }
+  .fc-tree-leaf .leaf-name {
+    flex: 1; color: var(--cds-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fc-tree-leaf .leaf-arrow {
+    color: var(--cds-gray-30); font-size: 14px; flex-shrink: 0;
+  }
+  .fc-children { overflow: hidden; max-height: 0; transition: max-height 0.25s ease; }
+  .fc-children.open { max-height: 800px; }
+
+  /* Experience block */
+  .exp-block {
+    background: #eefbf2; padding: 12px; margin-bottom: 8px;
+    border-left: 3px solid var(--cds-green-50);
+    font-size: 13px; line-height: 1.5; color: var(--cds-text-primary);
+  }
+  .exp-block .exp-meta {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary); margin-bottom: 4px;
+  }
+
+  /* Fault Code detail — wide narrative sections */
+  .fc-section { margin: 0 16px 1px; background: var(--cds-white); }
+  .fc-section-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 16px 16px 0;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.16px;
+    color: var(--cds-text-primary);
+  }
+  .fc-section-icon {
+    width: 28px; height: 28px; border-radius: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .fc-section-icon.icon-phenom { background: #e8f4fd; color: #0f62fe; }
+  .fc-section-icon.icon-cause  { background: #fde8e8; color: #da1e28; }
+  .fc-section-icon.icon-solve  { background: #eefbf2; color: #198038; }
+  .fc-section-body {
+    padding: 4px 16px 12px;
+    font-size: 14px; line-height: 1.7; letter-spacing: 0.08px;
+    color: var(--cds-text-primary);
+  }
+  .fc-solve-step {
+    display: flex; gap: 8px; padding: 4px 0; align-items: flex-start;
+  }
+  .fc-solve-num {
+    flex-shrink: 0; width: 22px; height: 22px;
+    background: var(--cds-gray-100); color: var(--cds-white);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600;
+  }
+
+  .suggestion-block {
+    background: #fcf4d6; padding: 12px; margin: 12px 0;
+    font-size: 13px; line-height: 1.6;
+    border-left: 3px solid #f1c21b;
+    color: var(--cds-text-primary);
+  }
+
+  .empty-msg {
+    text-align: center; padding: 48px 20px;
+    color: var(--cds-text-secondary);
+    font-size: 14px; letter-spacing: 0.16px;
+  }
+  .empty-msg .empty-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+
+  .page-footer {
+    text-align: center; padding: 16px; color: var(--cds-text-secondary);
+    font-size: 12px; letter-spacing: 0.32px;
+  }
+
+  .detail-back-btn {
+    text-align: center; padding: 16px;
+  }
+
+  /* Scan Modal */
+  .scan-overlay {
+    position: absolute; inset: 0;
+    background: rgba(22,22,22,0.92);
+    z-index: 100; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+  }
+  .scan-overlay.show { display: flex; }
+  .scan-frame-box {
+    width: 240px; height: 240px;
+    border: 2px solid rgba(255,255,255,0.25);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .scan-frame-box .frame-corner {
+    position: absolute; width: 20px; height: 20px;
+    border-color: var(--cds-blue-60); border-style: solid;
+  }
+  .scan-frame-box .fc-tl { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .scan-frame-box .fc-tr { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+  .scan-frame-box .fc-bl { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+  .scan-frame-box .fc-br { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  .scan-line-moving {
+    position: absolute; left: 10%; width: 80%; height: 1.5px;
+    background: var(--cds-blue-60);
+    animation: scanMove 2s ease-in-out infinite;
+  }
+  @keyframes scanMove { 0%,100%{top:15%} 50%{top:75%} }
+  .scan-status-text {
+    color: rgba(255,255,255,0.7); font-size: 14px; letter-spacing: 0.16px;
+    margin-top: 20px;
+  }
+  .scan-close-btn {
+    margin-top: 32px; width: 48px; height: 48px;
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 0px;
+    color: var(--cds-white); font-size: 20px;
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .scan-close-btn:hover { background: rgba(255,255,255,0.1); }
+
+  /* Monospace helper */
+  .mono {
+    font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    font-size: 14px; letter-spacing: 0.16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-container" id="phoneContainer">
+  <div class="status-bar">
+    <span class="camera-pinhole"></span>
+    <span class="time">9:41</span>
+    <span class="right-icons">
+      <span class="signal-bars"><span></span><span></span><span></span><span></span></span>
+      <span class="battery"><span class="battery-body"><span class="battery-fill"></span></span><span class="battery-cap"></span></span>
+    </span>
+  </div>
+  <div class="nav-bar">
+    <span class="back-btn" id="backBtn" onclick="goBack()">←</span>
+    <span class="nav-title" id="navTitle">步长智造平台</span>
+  </div>
+
+  <div class="pages-wrapper">
+    <!-- ================================================================
+         PAGE 0: Home — 步长智造平台首页
+         ================================================================ -->
+    <div class="page active" id="page-home">
+      <div class="home-hero">
+        <div class="hero-tagline">BUCHANG INTELLIGENT MANUFACTURING</div>
+        <div class="hero-title">步长智造平台</div>
+      </div>
+
+      <div class="home-functions">
+        <div class="home-section-header">设备管理</div>
+        <div class="home-func-list">
+          <div class="home-func-card" onclick="navigateTo('device')">
+            <div class="home-func-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 21h8M12 17v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div class="home-func-body">
+              <div class="home-func-name">设备信息</div>
+              <div class="home-func-desc">扫码或搜索查看设备详情、状态与维保记录</div>
+            </div>
+            <div class="home-func-arrow"><svg viewBox="0 0 20 20"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          </div>
+          <div class="home-func-card" onclick="navigateTo('notification')">
+            <div class="home-func-icon"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="7" x2="16" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="11" x2="16" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="15" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div class="home-func-body">
+              <div class="home-func-name">通知单</div>
+              <div class="home-func-desc">扫码快速创建维修通知单，自动关联设备</div>
+            </div>
+            <div class="home-func-arrow"><svg viewBox="0 0 20 20"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          </div>
+          <div class="home-func-card" onclick="navigateTo('inventory')">
+            <div class="home-func-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5-9 5-9-5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 9v6l9 5 9-5V9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><line x1="12" y1="14" x2="12" y2="19" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <div class="home-func-body">
+              <div class="home-func-name">库存查询</div>
+              <div class="home-func-desc">实时查看备件库存、安全库存预警与存放位置</div>
+            </div>
+            <div class="home-func-arrow"><svg viewBox="0 0 20 20"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          </div>
+          <div class="home-func-card" onclick="navigateTo('faultcode')">
+            <div class="home-func-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="8" x2="12" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></div>
+            <div class="home-func-body">
+              <div class="home-func-name">故障代码</div>
+              <div class="home-func-desc">查询故障代码、处理建议与关联经验库</div>
+            </div>
+            <div class="home-func-arrow"><svg viewBox="0 0 20 20"><path d="M7 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================================
+         PAGE 1: 设备信息
+         ================================================================ -->
+    <div class="page" id="page-device">
+      <div id="deviceMainView">
+        <div class="inv-search-form">
+          <select class="cds-select" id="deviceFactory" onchange="onFactoryChange()">
+            <option value="1000">1000 - 步长制药</option>
+            <option value="2000">2000 - 步长制药二分厂</option>
+            <option value="3000">3000 - 步长制药三分厂</option>
+          </select>
+          <select class="cds-select" id="deviceFuncLocation" onchange="onFuncLocationChange()">
+            <option value="">功能位置</option>
+          </select>
+          <div style="display:flex;gap:4px;">
+            <select class="cds-select" id="deviceCodeSelect" onchange="onDeviceCodeChange()" style="flex:1;">
+              <option value="">设备编号</option>
+            </select>
+            <button class="cds-btn-icon" onclick="simulateScan('device')" title="扫码识别设备">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          </div>
+          <input type="text" class="cds-input" id="deviceDescInput" placeholder="设备名称" onkeydown="if(event.key==='Enter')searchDevices()">
+          <button class="cds-btn-primary cds-btn-primary--full" onclick="searchDevices()" style="grid-column:1/-1;">搜索设备</button>
+        </div>
+
+        <div id="deviceDetailArea"></div>
+
+        <div class="cds-section-header">设备列表</div>
+        <div id="recentDeviceList"></div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         PAGE 2: 通知单
+         ================================================================ -->
+    <div class="page" id="page-notification">
+      <div id="nfListView">
+        <div class="inv-search-form">
+          <input type="text" class="cds-input" id="nfSearchInput" placeholder="设备编码" onkeydown="if(event.key==='Enter')startCreateNF()">
+          <button class="cds-btn-primary cds-btn-primary--full" onclick="simulateScan('notification')">扫码设备-创建通知单</button>
+          <button class="cds-btn-secondary cds-btn-secondary--full" onclick="startDirectCreateNF()" style="grid-column:1/-1;">手工创建通知单</button>
+        </div>
+
+        <div class="cds-section-header">全部通知单</div>
+        <div id="recentNFList"></div>
+      </div>
+      <div id="nfFormView" style="display:none;"></div>
+    </div>
+
+    <!-- ================================================================
+         PAGE 3: 库存查询
+         ================================================================ -->
+    <div class="page" id="page-inventory">
+      <div class="inv-search-form" id="invSearchBar">
+        <select class="cds-select" id="invSearchPlant">
+          <option value="">工厂（必填）</option>
+          <option value="1000">1000 - 步长制药</option>
+          <option value="2000">2000 - 步长制药二分厂</option>
+          <option value="3000">3000 - 步长制药三分厂</option>
+        </select>
+        <select class="cds-select" id="invSearchBin">
+          <option value="">库位</option>
+          <option value="A区-机械备件库">A区-机械备件库</option>
+          <option value="A区-密封件库">A区-密封件库</option>
+          <option value="B区-电气备件库">B区-电气备件库</option>
+          <option value="B区-传感器库">B区-传感器库</option>
+          <option value="C区-耗材库">C区-耗材库</option>
+          <option value="D区-油品库">D区-油品库</option>
+        </select>
+        <select class="cds-select" id="invSearchMRP">
+          <option value="">MRP控制者</option>
+          <option value="A01-张工">A01-张工</option>
+          <option value="A02-李工">A02-李工</option>
+          <option value="A06-其他" selected>A06-其他</option>
+        </select>
+        <input type="text" class="cds-input" id="invSearchCode" placeholder="物料号 / 物料描述">
+        <button class="cds-btn-primary cds-btn-primary--full" onclick="searchInventory()" style="grid-column:1/-1;">搜索库存</button>
+      </div>
+      <div class="inv-count-bar" id="invCountBar"></div>
+      <div id="invResultList"></div>
+      <div id="invDetailView" style="display:none;"></div>
+    </div>
+
+    <!-- ================================================================
+         PAGE 4: 故障代码
+         ================================================================ -->
+    <div class="page" id="page-faultcode">
+      <div style="padding:12px 16px;font-size:13px;color:var(--cds-text-secondary);border-bottom:1px solid var(--cds-gray-20);">点击展开目录浏览故障代码</div>
+      <div class="fc-tree" id="fcTree"></div>
+      <div id="fcDetailView" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Scan Overlay -->
+  <div class="scan-overlay" id="scanOverlay">
+    <div class="scan-frame-box">
+      <span class="frame-corner fc-tl"></span>
+      <span class="frame-corner fc-tr"></span>
+      <span class="frame-corner fc-bl"></span>
+      <span class="frame-corner fc-br"></span>
+      <svg viewBox="0 0 24 24" width="48" height="48" style="fill:rgba(255,255,255,0.4)"><rect x="2" y="4" width="4" height="16" rx="0.5"/><rect x="7" y="4" width="2" height="16" rx="0.3"/><rect x="10" y="4" width="3" height="16" rx="0.3"/><rect x="14" y="4" width="1" height="16" rx="0.3"/><rect x="16" y="4" width="4" height="16" rx="0.3"/><rect x="21" y="4" width="2" height="16" rx="0.3"/></svg>
+      <div class="scan-line-moving"></div>
+    </div>
+    <div class="scan-status-text" id="scanStatusText">正在识别...</div>
+    <button class="scan-close-btn" id="scanCloseBtn" onclick="closeScan()">✕</button>
+  </div>
+
+  <div class="cds-toast" id="cdsToast"></div>
+</div>
+
+<script>
+// ========================================================================
+//  Data Layer — 与 PC 端 data.js 保持一致
+// ========================================================================
+/* 测量参数定义（按设备类型）— 模拟 PC 端测量数据录入 */
+const MEASURE_PARAMS = {
+  cnc: [
+    { id:'spindleVib', label:'主轴振动', unit:'mm/s', hint:'标准≤2.8', min:0, max:10, step:0.1 },
+    { id:'spindleTemp', label:'主轴温度', unit:'°C', hint:'标准≤65', min:0, max:100, step:0.5 },
+    { id:'toolWear', label:'刀具磨损', unit:'μm', hint:'标准≤50', min:0, max:200, step:1 },
+    { id:'coolantConc', label:'冷却液浓度', unit:'%', hint:'标准5-8', min:0, max:15, step:0.1 }
+  ],
+  injection: [
+    { id:'injPressure', label:'注射压力', unit:'MPa', hint:'标准80-120', min:0, max:200, step:0.5 },
+    { id:'barrelTemp', label:'料筒温度', unit:'°C', hint:'标准180-240', min:0, max:350, step:1 },
+    { id:'moldTemp', label:'模具温度', unit:'°C', hint:'标准40-80', min:0, max:150, step:0.5 },
+    { id:'cycleTime', label:'成型周期', unit:'s', hint:'标准≤45', min:0, max:120, step:0.1 }
+  ],
+  compressor: [
+    { id:'outPressure', label:'输出压力', unit:'MPa', hint:'标准0.6-0.8', min:0, max:1.5, step:0.01 },
+    { id:'oilTemp', label:'润滑油温', unit:'°C', hint:'标准≤85', min:0, max:120, step:0.5 },
+    { id:'runCurrent', label:'运行电流', unit:'A', hint:'标准≤65', min:0, max:100, step:0.1 },
+    { id:'airFlow', label:'排气量', unit:'m³/min', hint:'标准≥5.8', min:0, max:10, step:0.1 }
+  ],
+  siemens: [
+    { id:'cpuTemp', label:'CPU温度', unit:'°C', hint:'标准≤60', min:0, max:100, step:0.5 },
+    { id:'memUsage', label:'内存使用率', unit:'%', hint:'标准≤70', min:0, max:100, step:1 },
+    { id:'netLatency', label:'网络延迟', unit:'ms', hint:'标准≤5', min:0, max:50, step:0.1 },
+    { id:'dcVoltage', label:'DC供电电压', unit:'V', hint:'标准24±0.5', min:0, max:30, step:0.1 }
+  ],
+  juki: [
+    { id:'placeAcc', label:'贴装精度', unit:'μm', hint:'标准≤50', min:0, max:100, step:1 },
+    { id:'feederAdv', label:'飞达进给', unit:'mm', hint:'标准4±0.5', min:0, max:10, step:0.1 },
+    { id:'nozzleVac', label:'吸嘴真空度', unit:'kPa', hint:'标准≤-80', min:-100, max:0, step:1 },
+    { id:'convSpeed', label:'传送速度', unit:'m/min', hint:'标准0.5-1.5', min:0, max:3, step:0.1 }
+  ],
+  reactor: [
+    { id:'innerTemp', label:'釜内温度', unit:'°C', hint:'标准≤150', min:-20, max:200, step:0.5 },
+    { id:'jacketTemp', label:'夹套温度', unit:'°C', hint:'标准-10~180', min:-20, max:200, step:0.5 },
+    { id:'stirSpeed', label:'搅拌转速', unit:'rpm', hint:'标准60-300', min:0, max:500, step:1 },
+    { id:'innerPress', label:'釜内压力', unit:'MPa', hint:'标准≤0.5', min:0, max:2, step:0.01 }
+  ],
+  pump: [
+    { id:'pumpPressure', label:'出口压力', unit:'MPa', hint:'标准0.3-0.5', min:0, max:1, step:0.01 },
+    { id:'flowRate', label:'流量', unit:'m³/h', hint:'标准4.5-5.5', min:0, max:10, step:0.1 },
+    { id:'motorTemp', label:'电机温度', unit:'°C', hint:'标准≤70', min:0, max:100, step:0.5 },
+    { id:'pumpVib', label:'泵体振动', unit:'mm/s', hint:'标准≤2.8', min:0, max:10, step:0.1 }
+  ],
+  forklift: [
+    { id:'battVolt', label:'电池电压', unit:'V', hint:'标准≥46', min:0, max:60, step:0.1 },
+    { id:'forkMotorA', label:'驱动电流', unit:'A', hint:'标准≤120', min:0, max:200, step:0.5 },
+    { id:'hydPressure', label:'液压压力', unit:'MPa', hint:'标准16-18', min:0, max:25, step:0.5 },
+    { id:'brakeGap', label:'制动间隙', unit:'mm', hint:'标准0.3-0.5', min:0, max:2, step:0.01 }
+  ],
+  packaging: [
+    { id:'pkgConvSpeed', label:'输送速度', unit:'m/min', hint:'标准8-12', min:0, max:20, step:0.1 },
+    { id:'sealTemp', label:'封口温度', unit:'°C', hint:'标准140-160', min:0, max:250, step:1 },
+    { id:'compAir', label:'压缩空气', unit:'MPa', hint:'标准0.5-0.6', min:0, max:1, step:0.01 },
+    { id:'feedRate', label:'进料速率', unit:'件/min', hint:'标准≥280', min:0, max:400, step:1 }
+  ],
+  tablet: [
+    { id:'compForce', label:'压力', unit:'kN', hint:'标准20-60', min:0, max:100, step:0.5 },
+    { id:'fillDepth', label:'填充深度', unit:'mm', hint:'标准8-15', min:0, max:25, step:0.1 },
+    { id:'tabletHard', label:'片剂硬度', unit:'N', hint:'标准50-120', min:0, max:200, step:1 },
+    { id:'turretSpeed', label:'转台转速', unit:'rpm', hint:'标准15-60', min:0, max:80, step:1 }
+  ]
+};
+
+/* Mock measurement records (模拟 PC 端录入的历史数据) */
+const MEASURE_RECORDS = {};
+
+// ========================================================================
+const equipmentData = [
+  { id:'EQ001',code:'EQ-F001-001',name:'CNC加工中心',model:'DMG-MORI-NVX5000',manufacturer:'DMG MORI',serialNo:'SN-2024-001',type:'cnc',typeName:'CNC加工中心',location:'F001-L01-W01',locationName:'片剂生产线A-压片工位',workCenter:'WC001',workCenterName:'机械加工中心',status:'running',statusName:'运行中',power:'37 kW',cleanLevel:'C级',gmpClass:'关键设备',category:'生产设备',group:'机械加工设备',priority:'高',maintenanceStrategy:'月保养',voltage:'380V',capacity:'500kg',material:'铸铁/合金钢',envReq:'温度20-25°C, 湿度40-60%',assetNo:'AS-2024-001',warrantyEnd:'2026-12-20',factoryDate:'2024-01-15',purchaseDate:'2023-12-20',leader:'张工',team:'维修一班',teamName:'维修一班',icon:'⚙️',statusLogs:[{time:'2024-06-20 14:30',status:'运行中',operator:'系统',desc:'设备正常启动'},{time:'2024-06-19 18:00',status:'待机',operator:'张工',desc:'生产任务完成'}] },
+  { id:'EQ002',code:'EQ-F001-002',name:'注塑机',model:'HAITIAN-MA3200',manufacturer:'海天',serialNo:'SN-2024-002',type:'injection',typeName:'注塑机',location:'F001-L02-W01',locationName:'胶囊生产线B-填充工位',workCenter:'WC001',workCenterName:'机械加工中心',status:'running',statusName:'运行中',power:'55 kW',cleanLevel:'C级',gmpClass:'关键设备',category:'生产设备',group:'注塑设备',priority:'高',maintenanceStrategy:'月保养',voltage:'380V',capacity:'320吨',material:'铸铁/铝合金',envReq:'温度18-28°C, 湿度30-70%',assetNo:'AS-2024-002',warrantyEnd:'2027-01-15',factoryDate:'2024-02-20',purchaseDate:'2024-01-15',leader:'李工',team:'维修一班',teamName:'维修一班',icon:'🏭',statusLogs:[] },
+  { id:'EQ003',code:'EQ-F001-003',name:'空压机',model:'ATLAS-Copco-GA37',manufacturer:'阿特拉斯科普柯',serialNo:'SN-2024-003',type:'compressor',typeName:'空压机',location:'F001-L03-W01',locationName:'外包装线C-装箱工位',workCenter:'WC002',workCenterName:'电气维修中心',status:'standby',statusName:'待机',power:'37 kW',cleanLevel:'-',gmpClass:'一般设备',category:'动力设备',group:'压缩设备',priority:'中',maintenanceStrategy:'季度保养',voltage:'380V',capacity:'6.2m³/min',material:'铸铁/钢',envReq:'温度5-40°C',assetNo:'AS-2024-003',warrantyEnd:'2027-02-28',factoryDate:'2024-03-10',purchaseDate:'2024-02-28',leader:'王工',team:'维修二班',teamName:'维修二班',icon:'💨',statusLogs:[] },
+  { id:'EQ004',code:'EQ-F001-004',name:'西门子系统',model:'SIEMENS S7-1500',manufacturer:'西门子',serialNo:'SN-2024-004',type:'siemens',typeName:'西门子系统',location:'F001-L01-W01',locationName:'片剂生产线A-压片工位',workCenter:'WC002',workCenterName:'电气维修中心',status:'running',statusName:'运行中',power:'5 kW',cleanLevel:'C级',gmpClass:'关键设备',category:'控制设备',group:'PLC系统',priority:'高',maintenanceStrategy:'半年保养',voltage:'24V DC',capacity:'-',material:'电子元件',envReq:'温度0-60°C',assetNo:'AS-2024-004',warrantyEnd:'2028-11-30',factoryDate:'2024-01-05',purchaseDate:'2023-11-30',leader:'赵工',team:'维修二班',teamName:'维修二班',icon:'🖥️',statusLogs:[] },
+  { id:'EQ005',code:'EQ-F001-005',name:'贴片机',model:'JUKI-JX-350',manufacturer:'JUKI',serialNo:'SN-2024-005',type:'juki',typeName:'贴片机',location:'F002-L01-W01',locationName:'合成车间-反应区',workCenter:'WC005',workCenterName:'机械加工中心',status:'fault',statusName:'故障',power:'12 kW',cleanLevel:'B级',gmpClass:'关键设备',category:'生产设备',group:'贴片设备',priority:'高',maintenanceStrategy:'月保养',voltage:'220V',capacity:'35000CPH',material:'铝合金/电子元件',envReq:'温度20-25°C，湿度30-60%，洁净度Class 1000',assetNo:'AS-2024-005',warrantyEnd:'2027-03-15',factoryDate:'2024-04-01',purchaseDate:'2024-03-15',leader:'孙工',team:'维修四班',teamName:'维修四班',icon:'🔧',statusLogs:[{time:'2024-06-20 10:15',status:'故障',operator:'孙工',desc:'贴片头卡料'}] },
+  { id:'EQ006',code:'EQ-F002-001',name:'反应釜',model:'ZF-5000L',manufacturer:'江苏正帆',serialNo:'SN-2024-006',type:'reactor',typeName:'反应釜',location:'F002-L01-W01',locationName:'合成车间-反应区',workCenter:'WC005',workCenterName:'机械加工中心',status:'maintenance',statusName:'维修中',power:'75 kW',cleanLevel:'A级',gmpClass:'关键设备',category:'生产设备',group:'反应设备',priority:'高',maintenanceStrategy:'季度保养',voltage:'380V',capacity:'5000L',material:'316L不锈钢',envReq:'温度-10-150°C, 洁净度Class 100',assetNo:'AS-2024-006',warrantyEnd:'2027-04-15',factoryDate:'2024-05-01',purchaseDate:'2024-04-15',leader:'周工',team:'仪表班',teamName:'仪表班',icon:'⚗️',statusLogs:[{time:'2024-06-20 09:00',status:'维修中',operator:'周工',desc:'更换密封件'}] },
+  { id:'EQ007',code:'EQ-F003-001',name:'纯化水泵',model:'CRN-5-6',manufacturer:'格兰富',serialNo:'SN-2024-007',type:'pump',typeName:'水泵',location:'F003-L01',locationName:'原材料仓库',workCenter:'WC007',workCenterName:'仓储维修班',status:'running',statusName:'运行中',power:'4 kW',cleanLevel:'B级',gmpClass:'关键设备',category:'动力设备',group:'输送设备',priority:'中',maintenanceStrategy:'季度保养',voltage:'380V',capacity:'5m³/h',material:'316L不锈钢',envReq:'温度5-40°C',assetNo:'AS-2024-007',warrantyEnd:'2027-05-20',factoryDate:'2024-06-01',purchaseDate:'2024-05-20',leader:'-',team:'仓储维修班',teamName:'仓储维修班',icon:'💧',statusLogs:[] },
+  { id:'EQ008',code:'EQ-F003-002',name:'叉车',model:'LINDE-H30',manufacturer:'林德',serialNo:'SN-2024-008',type:'forklift',typeName:'叉车',location:'F003-L02',locationName:'成品仓库',workCenter:'WC007',workCenterName:'仓储维修班',status:'running',statusName:'运行中',power:'22 kW',cleanLevel:'-',gmpClass:'一般设备',category:'运输设备',group:'叉车',priority:'低',maintenanceStrategy:'半年保养',voltage:'48V',capacity:'3吨',material:'钢',envReq:'温度-10-50°C',assetNo:'AS-2024-008',warrantyEnd:'2027-06-01',factoryDate:'2024-06-15',purchaseDate:'2024-06-01',leader:'-',team:'仓储维修班',teamName:'仓储维修班',icon:'🚛',statusLogs:[] },
+  { id:'EQ009',code:'EQ-F001-006',name:'包装机',model:'KHS-300',manufacturer:'KHS',serialNo:'SN-2024-009',type:'packaging',typeName:'包装机',location:'F001-L03-W01',locationName:'外包装线C-装箱工位',workCenter:'WC001',workCenterName:'机械加工中心',status:'running',statusName:'运行中',power:'15 kW',cleanLevel:'C级',gmpClass:'关键设备',category:'包装设备',group:'包装机',priority:'高',maintenanceStrategy:'月保养',voltage:'380V',capacity:'300件/分钟',material:'不锈钢/铝合金',envReq:'温度15-30°C, 湿度30-70%',assetNo:'AS-2024-009',warrantyEnd:'2027-06-20',factoryDate:'2024-07-01',purchaseDate:'2024-06-20',leader:'张工',team:'维修一班',teamName:'维修一班',icon:'📦',statusLogs:[] },
+  { id:'EQ012',code:'EQ-F001-008',name:'压片机',model:'FETTE-3090',manufacturer:'Fette',serialNo:'SN-2024-012',type:'tablet',typeName:'压片机',location:'F001-L01-W01',locationName:'片剂生产线A-压片工位',workCenter:'WC001',workCenterName:'机械加工中心',status:'running',statusName:'运行中',power:'22 kW',cleanLevel:'B级',gmpClass:'关键设备',category:'成型设备',group:'压片机',priority:'高',maintenanceStrategy:'周保养',voltage:'380V',capacity:'90000片/小时',material:'不锈钢',envReq:'温度18-25°C, 湿度40-60%, 洁净度Class 1000',assetNo:'AS-2024-012',warrantyEnd:'2027-09-15',factoryDate:'2024-10-01',purchaseDate:'2024-09-15',leader:'张工',team:'维修一班',teamName:'维修一班',icon:'💊',statusLogs:[] }
+];
+
+const notificationData = [
+  { id:'NF001',docNo:'TZ-2026-06001',type:'fault',typeName:'故障报告',typeCode:'M1',eqCode:'EQ-F001-006',eqName:'包装机',eqId:'EQ009',priority:'1-高',priorityName:'1-高',status:'NOCO',statusName:'已关闭',reporter:'赵志强',reportTime:'2026-05-22 08:15',faultPhenomenon:'包装机封口工位气缸动作延迟，封口温度波动±8℃，连续检出3件封口不严产品',faultPhenomenonCode:'CNC-E01',faultCauseCode:'',faultSolutionCode:'',relatedOrder:'GD02-2026-06001',expectedDate:'',createdBy:'赵志强',createdAt:'2026-05-22 08:15:00' },
+  { id:'NF002',docNo:'TZ-2026-06002',type:'maintenance',typeName:'维护请求',typeCode:'M2',eqCode:'EQ-F002-001',eqName:'反应釜',eqId:'EQ006',priority:'2-中',priorityName:'2-中',status:'ORDP',statusName:'已转工单',reporter:'巡检员小李',reportTime:'2026-05-25 10:00',faultPhenomenon:'搅拌桨振动值4.6 mm/s（标准≤2.8），超出上限64%',faultPhenomenonCode:'',faultCauseCode:'',faultSolutionCode:'',relatedOrder:'GD02-2026-06003',expectedDate:'2026-06-05',createdBy:'巡检员小李',createdAt:'2026-05-25 10:00:00' },
+  { id:'NF003',docNo:'TZ-2026-06003',type:'fault',typeName:'故障报告',typeCode:'M1',eqCode:'EQ-F001-001',eqName:'CNC加工中心',eqId:'EQ001',priority:'1-高',priorityName:'1-高',status:'ORDP',statusName:'已转工单',reporter:'赵志强',reportTime:'2026-05-26 14:00',faultPhenomenon:'控制柜380V电源线接线端子松动，存在电弧及短路风险',faultPhenomenonCode:'ELEC-E01',faultCauseCode:'',faultSolutionCode:'',relatedOrder:'GD03-2026-06001',expectedDate:'',createdBy:'赵志强',createdAt:'2026-05-26 14:00:00' }
+];
+
+const NF_TYPES = [
+  { code:'M1', value:'fault', name:'故障报告' },
+  { code:'M2', value:'maintenance', name:'维护请求' }
+];
+
+const PRIORITY_OPTIONS = [
+  { value:'1-高', text:'1-高' },
+  { value:'2-中', text:'2-中' },
+  { value:'3-低', text:'3-低' }
+];
+
+let currentUser = '赵志强'; // 默认当前用户；管理员为 '张工'
+let isAdmin = false; // 管理员模式开关
+
+const inventoryData = [
+  { id:'INV001',code:'SP-CYL-006',name:'封口工位气缸',spec:'CDJP2B16-30D',unit:'个',qty:3,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'非限制',safetyStock:5,supplier:'SMC中国',unitPrice:1850,lastIn:'2026-05-10',mrpController:'A01-张工' },
+  { id:'INV002',code:'SP-SEAL-012',name:'316L不锈钢密封圈（DN50）',spec:'DN50-PTFE-316L',unit:'个',qty:25,plant:'1000',storageBin:'A02',storageDesc:'A区-密封件库',invStatus:'非限制',safetyStock:10,supplier:'宁波易天地',unitPrice:85,lastIn:'2026-05-20',mrpController:'A01-张工' },
+  { id:'INV003',code:'SP-BRG-008',name:'深沟球轴承 6205-2RS',spec:'6205-2RS-SKF',unit:'个',qty:2,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'质检',safetyStock:8,supplier:'SKF',unitPrice:320,lastIn:'2026-04-15',mrpController:'A02-李工' },
+  { id:'INV004',code:'SP-MOT-001',name:'伺服电机（DMG专用）',spec:'1FT7084-5AF71-1',unit:'台',qty:1,plant:'1000',storageBin:'B01',storageDesc:'B区-电气备件库',invStatus:'非限制',safetyStock:2,supplier:'西门子',unitPrice:28500,lastIn:'2026-03-01',mrpController:'A01-张工' },
+  { id:'INV005',code:'SP-PLC-003',name:'PLC数字量输入模块',spec:'6ES7521-1BL00-0AB0',unit:'块',qty:4,plant:'2000',storageBin:'B02',storageDesc:'B区-电气备件库',invStatus:'冻结',safetyStock:2,supplier:'西门子',unitPrice:4200,lastIn:'2026-05-08',mrpController:'A06-其他' },
+  { id:'INV006',code:'SP-SEN-015',name:'温度传感器 PT100',spec:'PT100-3W-A级',unit:'个',qty:8,plant:'1000',storageBin:'B03',storageDesc:'B区-传感器库',invStatus:'非限制',safetyStock:5,supplier:'欧姆龙',unitPrice:280,lastIn:'2026-05-15',mrpController:'A02-李工' },
+  { id:'INV007',code:'SP-BELT-009',name:'同步带（HTD-8M）',spec:'HTD-8M-30-1280',unit:'条',qty:6,plant:'2000',storageBin:'C01',storageDesc:'C区-耗材库',invStatus:'非限制',safetyStock:3,supplier:'盖茨',unitPrice:450,lastIn:'2026-05-25',mrpController:'A06-其他' },
+  { id:'INV008',code:'SP-FILT-004',name:'高效过滤器 H13',spec:'H13-610x610x292',unit:'个',qty:0,plant:'1000',storageBin:'C01',storageDesc:'C区-耗材库',invStatus:'非限制',safetyStock:4,supplier:'康菲尔',unitPrice:1200,lastIn:'2026-02-20',mrpController:'A06-其他' },
+  { id:'INV009',code:'SP-OIL-007',name:'合成齿轮油 SHC 629',spec:'20L/桶-Mobil SHC 629',unit:'桶',qty:3,plant:'2000',storageBin:'D01',storageDesc:'D区-油品库',invStatus:'质检',safetyStock:2,supplier:'美孚',unitPrice:3800,lastIn:'2026-04-28',mrpController:'A01-张工' },
+  { id:'INV010',code:'SP-OIL-008',name:'食品级润滑脂 FM 222',spec:'400g/支-Kluber',unit:'支',qty:12,plant:'1000',storageBin:'D01',storageDesc:'D区-油品库',invStatus:'非限制',safetyStock:5,supplier:'克鲁勃',unitPrice:650,lastIn:'2026-05-18',mrpController:'A06-其他' },
+  { id:'INV011',code:'SP-VLV-011',name:'气动球阀 DN25',spec:'DN25-316L-双作用',unit:'个',qty:0,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'非限制',safetyStock:3,supplier:'费斯托',unitPrice:2600,lastIn:'2026-01-10',mrpController:'A02-李工' },
+  { id:'INV012',code:'SP-CON-006',name:'变频器 ATV320',spec:'ATV320U22N4B',unit:'台',qty:2,plant:'1000',storageBin:'B01',storageDesc:'B区-电气备件库',invStatus:'非限制',safetyStock:2,supplier:'施耐德',unitPrice:5600,lastIn:'2026-05-12',mrpController:'A01-张工' }
+];
+
+const faultCodeData = [
+  { id:'FC001',code:'CNC-E01',name:'主轴异常振动',category:'CNC-加工系统',group:'加工系统',categoryType:'CNC',phenomenon:'主轴运转时振动值超过2.8mm/s，伴随明显异响，加工工件表面光洁度下降（Ra>1.6μm），刀纹不规则。严重时主轴前端跳动值可达0.05mm以上，机床本体可感知振动。',cause:'1. 主轴轴承长期运行磨损或润滑脂劣化，滚道产生点蚀剥落；\n2. 刀柄锥面粘附细微切屑或拉钉松动，导致刀柄夹持偏心；\n3. 主轴动平衡块移位或脱落，高速旋转时离心力矩增大；\n4. 主轴冷却系统流量不足，热变形导致轴承预紧力改变。',suggestion:'1. 立即停机检查\n2. 清理主轴锥孔及刀柄锥面\n3. 检查主轴动平衡\n4. 检查轴承润滑状态\n5. 如轴承损坏需更换主轴轴承组',experiences:[{author:'张工',date:'2026-03-15',content:'类似故障曾因刀柄锥面有细微切屑导致，清理后恢复正常。建议每班次清洁刀柄。'},{author:'设备厂家',date:'2025-11-20',content:'主轴使用超过8000小时建议主动更换轴承组，避免突发故障影响生产。'}] },
+  { id:'FC002',code:'CNC-E02',name:'刀库换刀失败',category:'CNC-加工系统',group:'加工系统',categoryType:'CNC',phenomenon:'换刀时刀库旋转不到位，机械手抓刀失败，系统报警AL-1023。刀套不能准确定位至换刀点，偏差超过2mm，机械手伸缩行程传感器超时。',cause:'1. 刀库定位传感器光电头积尘或安装支架轻微变形，信号丢失；\n2. 刀库导轨润滑不足，链条/螺杆驱动阻力增大导致步进失步；\n3. 刀套弹簧长期压缩后弹性衰减，刀具在刀套内晃动；\n4. 机床气源压力低于0.5MPa时，机械手气缸推力不足。',suggestion:'1. 检查刀库定位传感器信号\n2. 清洁刀库导轨并加注润滑脂\n3. 检查刀套弹簧是否失效\n4. 重新校准刀库零点位置\n5. 检查气源压力是否在0.5-0.6MPa',experiences:[{author:'李工',date:'2026-04-02',content:'传感器插头松动导致信号时有时无，紧固后解决。建议定期检查连接器。'}] },
+  { id:'FC003',code:'ELEC-E01',name:'变频器过流报警',category:'电气-驱动系统',group:'驱动系统',categoryType:'电气',phenomenon:'变频器面板显示OC（过流），设备无法启动，电机有焦糊味。用钳形表测量启动瞬间电流超过额定值3倍以上，变频器输出端子U/V/W对地绝缘电阻降至0.5MΩ以下。',cause:'1. 电机接线盒密封不良进水，相间或对地绝缘击穿导致短路；\n2. 变频器IGBT功率模块击穿，驱动电路保护动作；\n3. 加速时间设置过短（<2s），启动冲击电流超出限流阈值；\n4. 散热风扇故障导致变频器过热，半导体元件热击穿。',suggestion:'1. 立即断开主电源\n2. 检查电机绕组对地绝缘\n3. 测量三相绕组阻值是否平衡\n4. 检查变频器IGBT模块\n5. 检查加速时间设置是否过短',experiences:[{author:'赵工',date:'2026-02-18',content:'电机接线盒进水导致相间短路，烘干后恢复。已加装防水罩。'},{author:'王工',date:'2025-12-05',content:'变频器散热风扇故障导致过热保护，更换风扇后正常运行。'}] },
+  { id:'FC004',code:'ELEC-E02',name:'PLC通信中断',category:'电气-控制系统',group:'控制系统',categoryType:'电气',phenomenon:'HMI显示通信错误，设备状态无法监控，部分IO模块BF指示灯常亮或闪烁。Ping PLC地址超时，TIA Portal在线诊断显示设备不可达，拓扑视图中部分设备标记红色叉号。',cause:'1. PROFINET网线RJ45接头氧化或受力脱扣，通信链路物理断开；\n2. 交换机电源模块故障或端口配置异常，部分设备掉线；\n3. IO模块DC24V供电回路保险丝熔断或接线松动；\n4. 网络拓扑中某个设备故障引发环网重构失败，大面积通信中断。',suggestion:'1. 检查PROFINET网线连接及RJ45接头\n2. 检查交换机电源及指示灯\n3. 用TIA Portal诊断网络拓扑\n4. 检查IO模块供电是否正常\n5. 尝试重启PLC及交换机',experiences:[{author:'孙工',date:'2026-05-08',content:'网线被叉车碾压导致断线，更换网线并加装线槽保护后解决。'}] },
+  { id:'FC005',code:'HYD-E01',name:'液压系统压力不足',category:'液压-动力执行',group:'动力执行',categoryType:'液压',phenomenon:'液压站压力表显示低于设定值（<12MPa），油缸动作缓慢无力，无法达到额定出力。液压泵出口有异响，系统运行噪音增大，油箱回油管中气泡明显增多。',cause:'1. 吸油滤网堵塞导致液压泵吸空，泵体内产生气蚀损伤；\n2. 油箱液位低于最低刻度，空气进入吸油管路形成气穴；\n3. 溢流阀阀芯卡滞在常开状态，大量压力油直接回油箱；\n4. 液压泵配流盘磨损严重，容积效率降至60%以下。',suggestion:'1. 检查液压油位是否在刻度范围内\n2. 检查吸油滤网是否堵塞\n3. 检查溢流阀设定是否正确\n4. 检查液压泵是否有异响或内泄\n5. 检查换向阀阀芯是否卡滞',experiences:[{author:'周工',date:'2026-01-22',content:'滤网堵塞导致供油不足，清洗滤网并更换液压油后恢复正常。建议每半年更换一次液压油和滤芯。'}] },
+  { id:'FC006',code:'HYD-E02',name:'油缸爬行抖动',category:'液压-动力执行',group:'动力执行',categoryType:'液压',phenomenon:'油缸伸出时出现间歇性抖动，运动不平稳，速度不均匀。管路可观察到周期性压力波动（振幅>1MPa），油缸表面有局部过热区域，密封处有微量渗油痕迹。',cause:'1. 液压油混入空气未完全排出，油液可压缩性增大导致爬行；\n2. 油缸密封圈磨损形成内泄旁路，两腔压力交替变化；\n3. 导轨润滑不足，静摩擦与动摩擦力差过大引发粘滑现象；\n4. 活塞杆局部弯曲，密封圈与杆面接触压力不均匀。',suggestion:'1. 检查液压油中是否有空气（排气处理）\n2. 检查油缸密封件是否磨损\n3. 检查导轨润滑是否充分\n4. 检查背压阀设定\n5. 检查油缸活塞杆是否弯曲',experiences:[{author:'张工',date:'2026-04-11',content:'密封圈老化磨损导致内泄，更换全套密封后恢复正常。'}] },
+  { id:'FC007',code:'SEN-E01',name:'温度传感器读数异常',category:'传感器-检测元件',group:'检测元件',categoryType:'传感器',phenomenon:'温度显示值跳变或固定不变，与实际温度偏差超±5℃。变送器输出电流用万用表测量与标称4-20mA范围不匹配，在输入恒温条件下输出仍波动超过0.1mA。',cause:'1. 传感器探头表面结垢或反应釜夹套结垢，热传导效率降低导致滞后；\n2. 接线端子氧化增加接触电阻，引入热电势干扰使测量值偏移；\n3. 变送器内部基准源漂移，零点或量程偏离出厂校准；\n4. 接线盒密封失效进水，接线柱间漏电流导致信号畸变。',suggestion:'1. 检查传感器探头是否被污染或结垢\n2. 检查接线端子是否氧化或松动\n3. 用标准温度计校准比对\n4. 检查变送器输出信号（4-20mA）\n5. 更换同型号传感器测试',experiences:[{author:'赵工',date:'2026-05-30',content:'反应釜夹套结垢导致测温滞后，清洗探头后恢复正常。'},{author:'李工',date:'2026-03-08',content:'接线盒进水导致信号干扰，烘干并更换密封垫后解决。'}] },
+  { id:'FC008',code:'SEN-E02',name:'接近开关误触发',category:'传感器-检测元件',group:'检测元件',categoryType:'传感器',phenomenon:'气缸到位信号提前触发或延迟触发，导致工序时序错乱。PLC输入点信号灯不规则闪烁，用示波器在传感器输出端观察到不稳定的脉冲信号，脉冲宽度波动超过50ms。',cause:'1. 传感器安装支架松动或震动偏移，感应距离超出标称范围；\n2. 感应面被金属碎屑或切屑液覆盖，涡流场畸变导致误判；\n3. 线缆屏蔽层接地不良，变频器谐波通过线缆耦合引入干扰；\n4. 传感器内部振荡回路元件老化，振荡幅度衰减导致灵敏度下降。',suggestion:'1. 检查传感器安装位置是否松动偏移\n2. 调整传感器感应距离（建议2-3mm）\n3. 检查金属碎屑是否干扰感应面\n4. 检查传感器线缆屏蔽层\n5. 更换灵敏度衰减的传感器',experiences:[{author:'孙工',date:'2026-02-14',content:'金属切屑堆积在传感器感应面附近导致误触发，清理后恢复正常。'}] }
+];
+
+/* 故障代码分组 — 供通知单表单下拉联动使用 */
+const FAULT_CODE_GROUPS = (() => {
+  const map = {};
+  faultCodeData.forEach(fc => {
+    if (!map[fc.group]) map[fc.group] = [];
+    map[fc.group].push({ code: fc.code, name: fc.name, phenomenon: fc.phenomenon });
+  });
+  return Object.entries(map).map(([group, codes]) => ({ id: group, label: group, codes }));
+})();
+
+/* 3-level tree: 目录类型 → 代码组 → 代码 */
+function buildFaultTree() {
+  const tree = {};
+  faultCodeData.forEach(fc => {
+    if (!tree[fc.categoryType]) tree[fc.categoryType] = {};
+    if (!tree[fc.categoryType][fc.group]) tree[fc.categoryType][fc.group] = [];
+    tree[fc.categoryType][fc.group].push(fc);
+  });
+  const order = ['CNC','电气','液压','传感器'];
+  return order.filter(cat => tree[cat]).map(cat => ({
+    category: cat,
+    groups: Object.keys(tree[cat]).map(gn => ({
+      name: gn,
+      codes: tree[cat][gn]
+    }))
+  }));
+}
+const FAULT_TREE = buildFaultTree();
+
+// ========================================================================
+//  Derived Data — 为设备添加工厂和功能位置字段
+// ========================================================================
+equipmentData.forEach(eq => {
+  eq.factory = eq.location ? eq.location.split('-')[0].replace('F00', '') + '000' : '1000';
+  eq.functionalLocation = eq.location || eq.code;
+});
+
+// ========================================================================
+//  Utility
+// ========================================================================
+function showToast(msg, duration=1500) {
+  const t = document.getElementById('cdsToast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+let scanCallbackType = null;
+function simulateScan(caller) {
+  const overlay = document.getElementById('scanOverlay');
+  const status = document.getElementById('scanStatusText');
+  const closeBtn = document.getElementById('scanCloseBtn');
+  overlay.classList.add('show');
+  status.textContent = '正在识别...';
+  closeBtn.style.display = 'none';
+  scanCallbackType = caller;
+
+  setTimeout(() => {
+    const eq = equipmentData[Math.floor(Math.random() * equipmentData.length)];
+    status.textContent = '✓ 已识别：' + eq.name;
+    closeBtn.style.display = 'flex';
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      if (scanCallbackType === 'device') {
+        document.getElementById('deviceCodeSelect').value = eq.code;
+        showDeviceDetail(eq.id);
+      } else if (scanCallbackType === 'notification') {
+        startCreateNFWithDevice(eq);
+      }
+    }, 800);
+  }, 1800);
+}
+
+function closeScan() {
+  document.getElementById('scanOverlay').classList.remove('show');
+}
+
+// ========================================================================
+//  Navigation
+// ========================================================================
+const pageTitles = {
+  home: '步长智造平台',
+  device: '设备信息',
+  notification: '维修通知单',
+  inventory: '库存查询',
+  faultcode: '故障代码'
+};
+
+let currentPage = 'home';
+
+function navigateTo(pageName) {
+  currentPage = pageName;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageName).classList.add('active');
+  document.getElementById('navTitle').textContent = pageTitles[pageName];
+  document.getElementById('backBtn').style.display = pageName === 'home' ? 'none' : 'flex';
+
+  // Reset sub views
+  resetSubViews();
+
+  // Refresh page data
+  if (pageName === 'home') updateHomeStats();
+  if (pageName === 'device') initDevicePage();
+  if (pageName === 'notification') renderRecentNF();
+  if (pageName === 'inventory') { searchInventory(); }
+  if (pageName === 'faultcode') { renderFCTree(); }
+
+  // Scroll to top
+  document.getElementById('page-' + pageName).scrollTop = 0;
+}
+
+function goBack() { navigateTo('home'); }
+
+function resetSubViews() {
+  ['nfFormView','invDetailView','fcDetailView'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  ['nfListView','invResultList'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'block';
+  });
+  // fcTree is always visible via page reset
+  const fcTree = document.getElementById('fcTree');
+  if (fcTree) fcTree.style.display = 'block';
+  // Reset device page: clear measurement form, restore list & search
+  if (document.getElementById('deviceDetailArea')) {
+    document.getElementById('deviceDetailArea').innerHTML = '';
+  }
+  const devList = document.getElementById('recentDeviceList');
+  if (devList) devList.style.display = 'block';
+  const devSearch = document.querySelector('#page-device .inv-search-form');
+  if (devSearch) devSearch.style.display = 'grid';
+  const devSection = document.querySelector('#page-device .cds-section-header');
+  if (devSection) devSection.style.display = 'block';
+}
+
+// ========================================================================
+//  Home Page
+// ========================================================================
+function updateHomeStats() {
+  const running = equipmentData.filter(e => e.status === 'running').length;
+  const fault = equipmentData.filter(e => e.status === 'fault').length;
+  const maintenance = equipmentData.filter(e => e.status === 'maintenance').length;
+  document.getElementById('statRunning').textContent = running;
+  document.getElementById('statFault').textContent = fault + maintenance;
+  renderHomeRecent();
+}
+
+function renderHomeRecent() {
+  const container = document.getElementById('homeRecentList');
+  const recentIds = recentDeviceIds.slice(0, 4);
+  container.innerHTML = recentIds.map(id => {
+    const eq = equipmentData.find(e => e.id === id);
+    if (!eq) return '';
+    return `<div class="home-recent-item" onclick="navigateTo('device');setTimeout(()=>showDeviceDetail('${eq.id}'),100)">
+      <div class="avatar">${eq.icon||'📋'}</div>
+      <div class="info">
+        <div class="name">${eq.name}</div>
+        <div class="desc">${eq.code} · ${eq.locationName}</div>
+      </div>
+      <span style="color:var(--cds-gray-50);font-family:monospace;">→</span>
+    </div>`;
+  }).filter(Boolean).join('') || '<div style="padding:16px;color:var(--cds-text-secondary);font-size:13px;">暂无查看记录，去「设备信息」看看吧</div>';
+}
+
+// ========================================================================
+//  Device Page
+// ========================================================================
+let recentDeviceIds = ['EQ001','EQ005','EQ006'];
+
+function initDevicePage() {
+  // Set factory default to 1000
+  document.getElementById('deviceFactory').value = '1000';
+  document.getElementById('deviceDescInput').value = '';
+  // Populate functional location and device code dropdowns
+  onFactoryChange();
+}
+
+function getUniqueFuncLocations(factory) {
+  const locations = equipmentData
+    .filter(eq => eq.factory === factory)
+    .map(eq => ({ code: eq.functionalLocation, name: eq.locationName }));
+  // Deduplicate by code
+  return [...new Map(locations.map(l => [l.code, l])).values()]
+    .sort((a, b) => a.code.localeCompare(b.code));
+}
+
+function onFactoryChange() {
+  const factory = document.getElementById('deviceFactory').value;
+  const funcLocSelect = document.getElementById('deviceFuncLocation');
+  const locations = getUniqueFuncLocations(factory);
+  funcLocSelect.innerHTML = '<option value="">功能位置</option>' +
+    locations.map(l => `<option value="${l.code}">${l.code} - ${l.name}</option>`).join('');
+  document.getElementById('deviceCodeSelect').innerHTML = '<option value="">设备编号</option>';
+  // Default load device list for this factory
+  renderDeviceList(factory, '', '');
+}
+
+function onFuncLocationChange() {
+  const factory = document.getElementById('deviceFactory').value;
+  const funcLoc = document.getElementById('deviceFuncLocation').value;
+  const codeSelect = document.getElementById('deviceCodeSelect');
+  let filtered = equipmentData.filter(eq => eq.factory === factory);
+  if (funcLoc) {
+    filtered = filtered.filter(eq => eq.functionalLocation === funcLoc);
+  }
+  codeSelect.innerHTML = '<option value="">设备编号</option>' +
+    filtered.map(eq => `<option value="${eq.code}">${eq.code}</option>`).join('');
+  // Auto-update device list
+  renderDeviceList(factory, funcLoc, document.getElementById('deviceDescInput').value.trim());
+}
+
+function onDeviceCodeChange() {
+  const code = document.getElementById('deviceCodeSelect').value;
+  if (code) {
+    const eq = equipmentData.find(e => e.code === code);
+    if (eq) { showDeviceDetail(eq.id); return; }
+  }
+  searchDevices();
+}
+
+function searchDevices() {
+  const factory = document.getElementById('deviceFactory').value;
+  const funcLoc = document.getElementById('deviceFuncLocation').value;
+  const desc = document.getElementById('deviceDescInput').value.trim();
+  if (!factory) { showToast('请先选择工厂'); return; }
+  renderDeviceList(factory, funcLoc, desc);
+}
+
+function renderDeviceList(factory, funcLocation, deviceDesc) {
+  const container = document.getElementById('recentDeviceList');
+  let filtered = equipmentData.filter(eq => eq.factory === factory);
+  if (funcLocation) {
+    filtered = filtered.filter(eq => eq.functionalLocation === funcLocation);
+  }
+  if (deviceDesc) {
+    const kw = deviceDesc.toLowerCase();
+    filtered = filtered.filter(eq => eq.name.toLowerCase().includes(kw) || eq.code.toLowerCase().includes(kw));
+  }
+  // Sort by device code ascending
+  filtered.sort((a, b) => a.code.localeCompare(b.code));
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-msg"><span class="empty-icon">📋</span>暂未找到匹配的设备</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(eq => {
+    return `<div class="device-row">
+      <div class="device-row-main" onclick="event.stopPropagation();showDeviceDetail('${eq.id}')">
+        <span class="device-row-name">${eq.name}</span>
+        <span class="device-row-sub">${eq.code} · ${eq.locationName}</span>
+      </div>
+      <div class="device-row-action" onclick="event.stopPropagation();showMeasureForm('${eq.id}')">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5z"/><line x1="10" y1="3" x2="13" y2="6"/></svg>
+        录入测量数据
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showDeviceDetail(id) {
+  const eq = equipmentData.find(e => e.id === id);
+  if (!eq) return;
+  // Restore list & search (in case coming from measurement view)
+  document.getElementById('recentDeviceList').style.display = 'block';
+  document.querySelector('#page-device .inv-search-form').style.display = 'grid';
+  document.querySelector('#page-device .cds-section-header').style.display = 'block';
+  document.getElementById('backBtn').setAttribute('onclick', 'goBack()');
+  // Update device code dropdown to reflect the selected device's factory
+  document.getElementById('deviceFactory').value = eq.factory;
+  onFactoryChange();
+  setTimeout(() => { document.getElementById('deviceCodeSelect').value = eq.code; }, 50);
+  recentDeviceIds = recentDeviceIds.filter(rid => rid !== id);
+  recentDeviceIds.unshift(id);
+  if (recentDeviceIds.length > 10) recentDeviceIds = recentDeviceIds.slice(0, 10);
+
+  const statusClass = 'cds-badge--' + eq.status;
+  const priColors = { '高': 'cds-tag--red', '中': 'cds-tag--yellow', '低': 'cds-tag--gray' };
+  const gmpColors = { '关键设备': 'cds-tag--red', '一般设备': 'cds-tag--gray' };
+
+  document.getElementById('deviceDetailArea').innerHTML = `
+    <div class="device-header">
+      <div class="eq-name">${eq.name}</div>
+      <div class="eq-code">${eq.code} · ${eq.typeName} · ${eq.statusName}</div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">基本信息</div>
+      <div class="info-section-body">
+        <div class="cds-data-row"><span class="cds-data-label">规格型号</span><span class="cds-data-value">${eq.model}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">制造商</span><span class="cds-data-value">${eq.manufacturer}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">序列号</span><span class="cds-data-value mono">${eq.serialNo}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">资产编号</span><span class="cds-data-value mono">${eq.assetNo}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">设备分类</span><span class="cds-data-value">${eq.category} / ${eq.group}</span></div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">位置与组织</div>
+      <div class="info-section-body">
+        <div class="cds-data-row"><span class="cds-data-label">功能位置</span><span class="cds-data-value">${eq.locationName}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">工作中心</span><span class="cds-data-value">${eq.workCenterName}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">负责人</span><span class="cds-data-value">${eq.leader!=='-'?eq.leader:'—'}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">维修班组</span><span class="cds-data-value">${eq.teamName}</span></div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">技术参数</div>
+      <div class="info-section-body">
+        <div class="cds-data-row"><span class="cds-data-label">额定功率</span><span class="cds-data-value">${eq.power}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">电压</span><span class="cds-data-value">${eq.voltage}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">容量参数</span><span class="cds-data-value">${eq.capacity||'—'}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">材质</span><span class="cds-data-value">${eq.material}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">洁净等级</span><span class="cds-data-value">${eq.cleanLevel}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">环境要求</span><span class="cds-data-value">${eq.envReq}</span></div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <div class="info-section-title">日期与保修</div>
+      <div class="info-section-body">
+        <div class="cds-data-row"><span class="cds-data-label">出厂日期</span><span class="cds-data-value">${eq.factoryDate}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">采购日期</span><span class="cds-data-value">${eq.purchaseDate}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">保修截止</span><span class="cds-data-value" style="${new Date(eq.warrantyEnd)<new Date()?'color:#da1e28;font-weight:600;':'color:#24a148;'}">${eq.warrantyEnd} ${new Date(eq.warrantyEnd)<new Date()?'⚠ 已过期':'✓ 保修期内'}</span></div>
+      </div>
+    </div>
+
+    ${eq.statusLogs&&eq.statusLogs.length>0?`
+    <div class="info-section">
+      <div class="info-section-title">状态变更记录</div>
+      <div class="info-section-body">
+        ${eq.statusLogs.map(l=>`<div class="cds-data-row"><span class="cds-data-label">${l.time.split(' ')[0]}<br><span style="font-size:11px;color:var(--cds-text-secondary);">${(l.time.split(' ')[1]||'').substring(0,5)}</span></span><span class="cds-data-value"><span style="font-weight:600;">${l.status}</span> · ${l.desc}<br><span style="font-size:12px;color:var(--cds-text-secondary);">操作人：${l.operator}</span></span></div>`).join('')}
+      </div>
+    </div>`:''}
+    <div class="page-footer">数据来自 PC 端设备主数据系统</div>`;
+}
+
+// ========================================================================
+//  Measurement Entry Form — 模拟 PC 端测量数据录入
+// ========================================================================
+function showMeasureForm(id) {
+  const eq = equipmentData.find(e => e.id === id);
+  if (!eq) return;
+  const params = MEASURE_PARAMS[eq.type];
+  if (!params) {
+    showToast('该设备类型暂无测量参数配置');
+    return;
+  } else if (params.length === 0) {
+    // 一个数组，如果有元素则显示；这里其实是确保 params 存在且有内容
+    showToast('该设备类型暂无测量参数配置');
+    return;
+  }
+
+  // Build last record time string
+  const lastRec = MEASURE_RECORDS[id];
+  const lastTimeStr = lastRec ? `上次录入：${lastRec.time}` : '暂无历史录入';
+
+  // Update back button to return to device list (not home)
+  document.getElementById('backBtn').style.display = 'flex';
+  document.getElementById('backBtn').setAttribute('onclick', 'backToDeviceList()');
+
+  // Hide list, show form
+  document.getElementById('recentDeviceList').style.display = 'none';
+  document.querySelector('#page-device .inv-search-form').style.display = 'none';
+  document.querySelector('#page-device .cds-section-header').style.display = 'none';
+
+  document.getElementById('deviceDetailArea').innerHTML = `
+    <div class="meas-hero">
+      <span class="meas-last-time">${lastTimeStr}</span>
+      <div class="meas-back-btn" onclick="backToDeviceList()">← 返回设备列表</div>
+      <div class="meas-title">${eq.name}</div>
+      <div class="meas-code">${eq.code} · ${eq.locationName}</div>
+    </div>
+    <form id="measForm" onsubmit="event.preventDefault();submitMeasurement('${eq.id}','${eq.type}')">
+      ${params.map(p => `
+      <div class="meas-field">
+        <div class="meas-field-label">${p.label}<small>(${p.unit})</small></div>
+        <div class="meas-field-input">
+          <input type="number" id="meas-${p.id}" min="${p.min}" max="${p.max}" step="${p.step}"
+                 placeholder="${lastRec?lastRec.values[p.id]||'':''}"
+                 ${lastRec && lastRec.values[p.id]!==undefined ? `value="${lastRec.values[p.id]}"` : ''}
+                 onfocus="this.select()">
+          <div class="meas-field-hint">${p.hint}${lastRec&&lastRec.values[p.id]!==undefined?' · 上次：'+lastRec.values[p.id]+' '+p.unit:''}</div>
+        </div>
+        <div class="meas-field-unit">${p.unit}</div>
+      </div>
+      `).join('')}
+      <button type="submit" class="meas-submit">提交测量数据</button>
+    </form>
+    <div class="page-footer">数据将同步至 PC 端设备管理系统</div>`;
+}
+
+function submitMeasurement(eqId, eqType) {
+  const params = MEASURE_PARAMS[eqType];
+  if (!params) return;
+  const values = {};
+  let allValid = true;
+  params.forEach(p => {
+    const el = document.getElementById('meas-' + p.id);
+    const val = el ? parseFloat(el.value) : NaN;
+    if (isNaN(val) || val < p.min || val > p.max) {
+      if (el) el.style.borderBottomColor = '#da1e28';
+      allValid = false;
+    } else {
+      values[p.id] = val;
+      if (el) el.style.borderBottomColor = '#24a148';
+      setTimeout(() => { if (el) el.style.borderBottomColor = 'var(--cds-gray-30)'; }, 800);
+    }
+  });
+  if (!allValid) {
+    showToast('请检查输入值是否在有效范围内');
+    return;
+  }
+  // Save record
+  const now = new Date();
+  const timeStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  MEASURE_RECORDS[eqId] = { time: timeStr, values: values };
+  showToast('✓ 测量数据已提交');
+  // Update last-time display
+  const lastTimeEl = document.querySelector('.meas-last-time');
+  if (lastTimeEl) lastTimeEl.textContent = '上次录入：' + timeStr;
+}
+
+function backToDeviceList() {
+  // Restore list and search form
+  document.getElementById('deviceDetailArea').innerHTML = '';
+  document.getElementById('recentDeviceList').style.display = 'block';
+  document.querySelector('#page-device .inv-search-form').style.display = 'grid';
+  document.querySelector('#page-device .cds-section-header').style.display = 'block';
+  document.getElementById('backBtn').setAttribute('onclick', 'goBack()');
+  initDevicePage();
+}
+
+// ========================================================================
+//  Notification Page
+// ========================================================================
+function renderRecentNF() {
+  const container = document.getElementById('recentNFList');
+  document.getElementById('nfListView').style.display = 'block';
+  document.getElementById('nfFormView').style.display = 'none';
+
+  // Filter: admin sees all, current user sees own
+  let data = isAdmin ? [...notificationData] : notificationData.filter(nf => nf.createdBy === currentUser);
+  // Sort by docNo ascending
+  data.sort((a, b) => a.docNo.localeCompare(b.docNo));
+
+  if (data.length === 0) {
+    container.innerHTML = '<div class="empty-msg"><span class="empty-icon"><svg viewBox="0 0 24 24" width="36" height="36"><rect x="4" y="2" width="16" height="20" rx="2" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5"/><line x1="8" y1="7" x2="16" y2="7" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="11" x2="16" y2="11" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linecap="round"/><line x1="8" y1="15" x2="12" y2="15" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linecap="round"/></svg></span>暂无通知单</div>';
+    return;
+  }
+
+  container.innerHTML = data.map(nf => {
+    const statusTag = nf.status === 'NOCO' ? 'cds-badge--closed' : nf.status === 'ORDP' ? 'cds-badge--ordered' : 'cds-badge--fault';
+    return `<div class="nf-list-item" onclick="showToast('通知单详情请查看PC端工单系统')">
+      <div class="nf-top">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="cds-badge cds-badge--ntype" style="font-size:10px;">${nf.typeCode} ${nf.typeName}</span>
+          <span class="cds-badge ${statusTag}" style="font-size:10px;">${nf.statusName}</span>
+        </div>
+        <span class="nf-doc-no">${nf.docNo}</span>
+      </div>
+      <div class="nf-title">${nf.eqName} · ${nf.eqCode}</div>
+      <div class="nf-desc">${nf.faultPhenomenon}</div>
+      <div class="nf-meta">${nf.reporter} · ${nf.reportTime} · ${nf.priorityName}</div>
+    </div>`;
+  }).join('');
+}
+
+function startCreateNF() {
+  const kw = document.getElementById('nfSearchInput').value.trim().toUpperCase();
+  if (!kw) { showToast('请先扫码或输入设备编码'); return; }
+  const eq = equipmentData.find(e => e.code === kw);
+  if (!eq) { showToast('未找到该设备，请检查编码'); return; }
+  startCreateNFWithDevice(eq);
+}
+
+function startCreateNFWithDevice(eq) {
+  showNFForm(eq);
+}
+
+function startDirectCreateNF() {
+  showNFForm(null);
+}
+
+let _nfFormEq = null; // track associated device for form
+
+function showNFForm(eq) {
+  _nfFormEq = eq || null;
+  document.getElementById('backBtn').style.display = 'flex';
+  document.getElementById('backBtn').setAttribute('onclick', 'goBackNF()');
+  document.getElementById('nfListView').style.display = 'none';
+  document.getElementById('nfFormView').style.display = 'block';
+
+  const now = new Date();
+  const docNo = 'TZ-2026-0' + (6004 + Math.floor(Math.random() * 10));
+  const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const datetimeLocal = now.toISOString().substring(0, 16);
+
+  // Device section
+  let deviceSection;
+  if (eq) {
+    deviceSection = `<div style="display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--cds-gray-20);">
+      <div style="width:48px;height:48px;background:var(--cds-blue-10);display:flex;align-items:center;justify-content:center;font-size:22px;">${eq.icon||'📋'}</div>
+      <div>
+        <div style="font-size:16px;font-weight:600;">${eq.name}</div>
+        <div style="font-size:12px;letter-spacing:0.32px;color:var(--cds-text-secondary);">${eq.code} · ${eq.locationName}</div>
+      </div>
+      <span class="cds-badge cds-badge--${eq.status}" style="margin-left:auto;">${eq.statusName}</span>
+    </div>`;
+  } else {
+    const eqOptions = equipmentData.map(e => `<option value="${e.code}" data-id="${e.id}" data-name="${e.name}" data-loc="${e.locationName}">${e.code} — ${e.name}</option>`).join('');
+    deviceSection = `<div style="padding:16px;border-bottom:1px solid var(--cds-gray-20);">
+      <label class="cds-label" style="margin-bottom:8px;display:block;">设备 <span class="cds-required">*</span></label>
+      <select class="cds-select" id="nfFormEqSelect" onchange="onNFDeviceChange()" style="width:100%;"><option value="">请选择设备</option>${eqOptions}</select>
+      <div style="display:flex;gap:16px;font-size:12px;letter-spacing:0.32px;color:var(--cds-text-secondary);margin-top:8px;">
+        <span>功能位置：<span id="nfFormLoc">—</span></span>
+        <span>设备名称：<span id="nfFormEqName">—</span></span>
+      </div>
+    </div>`;
+  }
+
+  // Type options
+  const typeOptions = NF_TYPES.map(t => `<option value="${t.value}">${t.code} - ${t.name}</option>`).join('');
+  const priorityOptions = PRIORITY_OPTIONS.map(p => `<option value="${p.value}" ${p.value==='2-中'?'selected':''}>${p.text}</option>`).join('');
+  const groupOptions = FAULT_CODE_GROUPS.map(g => `<option value="${g.id}">${g.label}</option>`).join('');
+
+  document.getElementById('nfFormView').innerHTML = `
+    <div class="info-section" style="margin-bottom:0;">
+      ${deviceSection}
+      <div style="font-size:12px;letter-spacing:0.32px;color:var(--cds-text-secondary);padding:12px 16px;">
+        单据编号：<span class="mono" style="font-weight:600;">${docNo}</span> &nbsp; | &nbsp; ${timeStr}
+      </div>
+    </div>
+    <div class="info-section" style="padding:16px;">
+      <div class="cds-form-group">
+        <label class="cds-label">通知单类型 <span class="cds-required">*</span></label>
+        <select class="cds-select" id="nfType" onchange="onNFTypeChange()">
+          ${typeOptions}
+        </select>
+      </div>
+      <div id="nfFaultCodeSection">
+        <div class="cds-form-group">
+          <label class="cds-label">故障现象 - 代码组 <span class="cds-required">*</span></label>
+          <select class="cds-select" id="nfFaultGroup" onchange="onNFFaultGroupChange()">
+            <option value="">请选择代码组</option>
+            ${groupOptions}
+          </select>
+        </div>
+        <div class="cds-form-group">
+          <label class="cds-label">故障现象 - 具体代码 <span class="cds-required">*</span></label>
+          <select class="cds-select" id="nfFaultCode" onchange="onNFFaultCodeChange()">
+            <option value="">请先选择代码组</option>
+          </select>
+        </div>
+      </div>
+      <div class="cds-form-group">
+        <label class="cds-label" id="nfDescLabel">故障描述 <span class="cds-required">*</span></label>
+        <textarea class="cds-textarea" id="nfPhenomenon" placeholder="请详细描述故障现象、发生时间、影响范围..."></textarea>
+      </div>
+      <div class="cds-form-group">
+        <label class="cds-label">优先级 <span class="cds-required">*</span></label>
+        <select class="cds-select" id="nfPriority">
+          ${priorityOptions}
+        </select>
+      </div>
+      <div class="cds-form-group">
+        <label class="cds-label">发现时间</label>
+        <input type="datetime-local" class="cds-input" id="nfFindTime" style="height:40px;" value="${datetimeLocal}">
+      </div>
+      <div class="cds-form-group">
+        <label class="cds-label">发现人</label>
+        <input type="text" class="cds-input" id="nfReporter" placeholder="请输入发现人姓名" value="${eq && eq.leader!=='-' ? eq.leader : currentUser}" style="height:40px;">
+      </div>
+      <div class="cds-form-group" id="nfExpectedDateSection" style="display:none;">
+        <label class="cds-label">期望完成日期</label>
+        <input type="date" class="cds-input" id="nfExpectDate" style="height:40px;" value="${new Date(Date.now()+7*86400000).toISOString().substring(0,10)}">
+      </div>
+      <div class="cds-form-group">
+        <label class="cds-label">附件</label>
+        <div style="padding:8px 12px;border:1px dashed var(--cds-gray-30);font-size:12px;color:var(--cds-text-secondary);">附件上传功能将在后续版本实现</div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px;">
+        <button class="cds-btn-secondary cds-btn-secondary--full" onclick="goBackNF()" style="flex:1;">取消</button>
+        <button class="cds-btn-primary cds-btn-primary--full" onclick="submitNF()" style="flex:1;">提交通知单</button>
+      </div>
+    </div>`;
+}
+
+function onNFDeviceChange() {
+  const sel = document.getElementById('nfFormEqSelect');
+  const opt = sel.selectedOptions[0];
+  document.getElementById('nfFormLoc').textContent = opt.dataset.loc || '—';
+  document.getElementById('nfFormEqName').textContent = opt.dataset.name || '—';
+}
+
+function onNFTypeChange() {
+  const type = document.getElementById('nfType').value;
+  const fcSection = document.getElementById('nfFaultCodeSection');
+  const expSection = document.getElementById('nfExpectedDateSection');
+  const descLabel = document.getElementById('nfDescLabel');
+  if (type === 'fault') {
+    fcSection.style.display = '';  // show fault code cascade
+    expSection.style.display = 'none';
+    descLabel.textContent = '故障描述';
+    document.getElementById('nfPhenomenon').placeholder = '请详细描述故障现象、发生时间、影响范围...';
+  } else {
+    fcSection.style.display = 'none';
+    expSection.style.display = '';
+    descLabel.textContent = '维护需求描述';
+    document.getElementById('nfPhenomenon').placeholder = '请详细描述维护需求内容、原因及预期效果...';
+  }
+}
+
+function onNFFaultGroupChange() {
+  const groupId = document.getElementById('nfFaultGroup').value;
+  const codeSel = document.getElementById('nfFaultCode');
+  if (!groupId) { codeSel.innerHTML = '<option value="">请先选择代码组</option>'; return; }
+  const group = FAULT_CODE_GROUPS.find(g => g.id === groupId);
+  codeSel.innerHTML = '<option value="">请选择具体代码</option>' +
+    group.codes.map(fc => `<option value="${fc.code}" data-phenomenon="${fc.phenomenon}">${fc.code} ${fc.name}</option>`).join('');
+}
+
+function onNFFaultCodeChange() {
+  const codeSel = document.getElementById('nfFaultCode');
+  if (!codeSel.value) return;
+  const opt = codeSel.selectedOptions[0];
+  document.getElementById('nfPhenomenon').value = opt.dataset.phenomenon || '';
+}
+
+function goBackNF() {
+  _nfFormEq = null;
+  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('backBtn').setAttribute('onclick', 'goBack()');
+  document.getElementById('nfListView').style.display = 'block';
+  document.getElementById('nfFormView').style.display = 'none';
+}
+
+function submitNF() {
+  const type = document.getElementById('nfType').value;
+  const typeObj = NF_TYPES.find(t => t.value === type) || NF_TYPES[0];
+  const description = document.getElementById('nfPhenomenon').value.trim();
+  if (!description) { showToast('请填写' + document.getElementById('nfDescLabel').textContent); return; }
+
+  // Resolve device
+  let eq = _nfFormEq;
+  if (!eq) {
+    const eqSel = document.getElementById('nfFormEqSelect');
+    if (!eqSel || !eqSel.value) { showToast('请选择设备'); return; }
+    eq = equipmentData.find(e => e.code === eqSel.value);
+    if (!eq) { showToast('无效的设备编码'); return; }
+  }
+
+  // Validate fault code for M1
+  let faultCodeId = '';
+  if (type === 'fault') {
+    const fcVal = document.getElementById('nfFaultCode').value;
+    if (!fcVal) { showToast('请选择故障现象代码'); return; }
+    faultCodeId = fcVal;
+  }
+
+  const priority = document.getElementById('nfPriority').value;
+  const priorityText = document.getElementById('nfPriority').selectedOptions[0].text;
+  const finder = document.getElementById('nfReporter').value.trim();
+  const findTime = document.getElementById('nfFindTime').value;
+  const expectDate = type === 'maintenance' ? document.getElementById('nfExpectDate').value : '';
+
+  const now = new Date();
+  const newId = 'NF' + String(notificationData.length + 1).padStart(3, '0');
+  const seq = String(6004 + notificationData.length);
+
+  showToast('通知单提交成功！');
+  setTimeout(() => {
+    goBackNF();
+    notificationData.push({
+      id: newId, docNo: 'TZ-2026-0' + seq,
+      type: type, typeName: typeObj.name, typeCode: typeObj.code,
+      eqCode: eq.code, eqName: eq.name, eqId: eq.id,
+      priority: priority, priorityName: priorityText,
+      status: 'CRTE', statusName: '待处理',
+      reporter: finder, reportTime: findTime.replace('T',' ') || now.toISOString().replace('T',' ').substring(0,16),
+      faultPhenomenon: description,
+      faultPhenomenonCode: faultCodeId,
+      faultCauseCode: '', faultSolutionCode: '',
+      relatedOrder: '',
+      expectedDate: expectDate,
+      createdBy: currentUser,
+      createdAt: now.toISOString().replace('T',' ').substring(0,19)
+    });
+    renderRecentNF();
+  }, 1200);
+}
+
+// ========================================================================
+//  Inventory Page
+// ========================================================================
+const STATUS_MAP = { '非限制':'s-unrestricted', '质检':'s-inspection', '冻结':'s-frozen' };
+
+function searchInventory() {
+  const plant = document.getElementById('invSearchPlant').value;
+  const bin = document.getElementById('invSearchBin').value;
+  const mrp = document.getElementById('invSearchMRP').value;
+  const codeKw = document.getElementById('invSearchCode').value.trim().toLowerCase();
+
+  if (!plant) {
+    document.getElementById('invResultList').innerHTML = '<div class="empty-msg"><span class="empty-icon"><svg viewBox="0 0 24 24" width="36" height="36"><path d="M3 9l9-5 9 5-9 5-9-5z" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 9v6l9 5 9-5V9" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/></svg></span>请选择工厂</div>';
+    document.getElementById('invCountBar').innerHTML = '';
+    return;
+  }
+
+  let data = inventoryData.filter(d => d.plant === plant);
+  if (bin) data = data.filter(d => d.storageDesc === bin || (d.storageBin||'').includes(bin));
+  if (mrp) data = data.filter(d => (d.mrpController||'A06-其他') === mrp);
+  if (codeKw) {
+    data = data.filter(d =>
+      d.code.toLowerCase().includes(codeKw) ||
+      d.name.toLowerCase().includes(codeKw) ||
+      d.spec.toLowerCase().includes(codeKw)
+    );
+  }
+
+  // Filter out zero-stock items
+  data = data.filter(d => d.qty > 0);
+
+  // Safety stock warning logic for qty color
+  const qtyClass = (d) => {
+    if (d.qty <= 0) return 'qty-empty';
+    if (d.qty < d.safetyStock) return 'qty-warn';
+    return 'qty-ok';
+  };
+
+  // Warning count
+  const lowCount = data.filter(d => d.qty > 0 && d.qty < d.safetyStock).length;
+  let countHtml = `<span>${data.length} 条物料</span>`;
+  if (lowCount) {
+    countHtml += `<span style="color:var(--cds-red-60);">${lowCount} 低库存</span>`;
+  }
+  document.getElementById('invCountBar').innerHTML = countHtml;
+
+  const STATUS_CLS = { '非限制': 's-unrestricted', '质检': 's-inspection', '冻结': 's-frozen' };
+
+  document.getElementById('invResultList').innerHTML = data.length === 0 ?
+    '<div class="empty-msg"><span class="empty-icon"><svg viewBox="0 0 24 24" width="36" height="36"><path d="M3 9l9-5 9 5-9 5-9-5z" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 9v6l9 5 9-5V9" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/></svg></span>未找到匹配的库存物料</div>' :
+    data.map(d => {
+      const qtyCls = qtyClass(d);
+      const itemCls = d.qty < d.safetyStock ? ' inv-low' : '';
+      const loc = d.storageDesc || '';
+      const statusCls = STATUS_CLS[d.invStatus] || '';
+      return `<div class="inv-list-item${itemCls}" onclick="showInvDetail('${d.id}')">
+        <div class="inv-row">
+          <span class="inv-name-text">${d.name}</span>
+          <span class="inv-status-badge ${statusCls}">${d.invStatus}</span>
+        </div>
+        <div class="inv-row">
+          <span class="inv-code">${d.code}</span>
+        </div>
+        <div class="inv-row">
+          <span class="inv-location">${loc}</span>
+          <span class="inv-qty-info"><span class="inv-qty ${qtyCls}">${d.qty}</span><span class="inv-unit">${d.unit}</span></span>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function showInvDetail(id) {
+  const d = inventoryData.find(i => i.id === id);
+  if (!d) return;
+  document.getElementById('invDetailView').style.display = 'block';
+  document.getElementById('backBtn').style.display = 'flex';
+  document.getElementById('invResultList').style.display = 'none';
+  document.getElementById('invCountBar').style.display = 'none';
+  document.getElementById('invSearchBar').style.display = 'none';
+
+  document.getElementById('invDetailView').innerHTML = `
+    <div style="text-align:center;padding:20px 16px 8px;background:var(--cds-white);margin:0 16px 1px;">
+      <div style="font-size:20px;font-weight:400;margin-bottom:4px;">${d.name}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--cds-text-secondary);">${d.code}</div>
+      <div style="display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:12px;">
+        <span style="font-size:36px;font-weight:300;">${d.qty}</span>
+        <span style="font-size:14px;color:var(--cds-text-secondary);">${d.unit}</span>
+        <span class="inv-status-badge ${STATUS_MAP[d.invStatus] || ''}" style="font-size:13px;padding:4px 12px;">${d.invStatus}</span>
+      </div>
+    </div>
+    <div class="info-section" style="margin-top:0;">
+      <div class="info-section-title">基本信息</div>
+      <div class="info-section-body">
+        <div class="cds-data-row"><span class="cds-data-label">物料编码</span><span class="cds-data-value mono">${d.code}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">规格型号</span><span class="cds-data-value">${d.spec}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">工厂</span><span class="cds-data-value mono">${d.plant}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">MRP控制者</span><span class="cds-data-value">${d.mrpController || 'A06-其他'}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">安全库存</span><span class="cds-data-value">${d.safetyStock} ${d.unit}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">单价</span><span class="cds-data-value mono">¥${d.unitPrice.toLocaleString()}</span></div>
+      </div>
+    </div>
+    <div class="info-section">
+      <div class="info-section-title">库存信息</div>
+      <div class="info-section-body">
+        <div class="cds-data-row"><span class="cds-data-label">库存状态</span><span class="cds-data-value"><span class="inv-status-badge ${STATUS_MAP[d.invStatus] || ''}">${d.invStatus}</span></span></div>
+        <div class="cds-data-row"><span class="cds-data-label">库位</span><span class="cds-data-value">${d.storageDesc}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">供应商</span><span class="cds-data-value">${d.supplier}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">最近入库</span><span class="cds-data-value">${d.lastIn}</span></div>
+        <div class="cds-data-row"><span class="cds-data-label">库存金额</span><span class="cds-data-value mono">¥${(d.qty*d.unitPrice).toLocaleString()}</span></div>
+      </div>
+    </div>
+    ${d.qty <= 0 ? '<div style="margin:0 16px;padding:14px;background:#fff1f0;color:#da1e28;font-size:13px;border-left:3px solid #da1e28;">该物料已缺货，请尽快采购补货。安全库存为 ' + d.safetyStock + ' ' + d.unit + '。</div>'
+    : d.qty < d.safetyStock ? '<div style="margin:0 16px;padding:14px;background:#fcf4d6;color:#8e6a00;font-size:13px;border-left:3px solid #f1c21b;">库存数量('+d.qty+')低于安全库存('+d.safetyStock+')，建议及时补货。</div>' : ''}
+    <div class="detail-back-btn">
+      <button class="cds-btn-secondary" onclick="backToInvList()">返回列表</button>
+    </div>`;
+}
+
+function backToInvList() {
+  document.getElementById('invDetailView').style.display = 'none';
+  document.getElementById('backBtn').style.display = 'none';
+  document.getElementById('invResultList').style.display = 'block';
+  document.getElementById('invCountBar').style.display = 'flex';
+  document.getElementById('invSearchBar').style.display = 'grid';
+}
+
+// ========================================================================
+//  Fault Code Page — 3-level Tree: 目录类型 → 代码组 → 代码
+// ========================================================================
+function renderFCTree() {
+  const tree = buildFaultTree();
+  document.getElementById('fcDetailView').style.display = 'none';
+  const fcTree = document.getElementById('fcTree');
+  fcTree.style.display = 'block';
+  fcTree.innerHTML = tree.map((cat, ci) => {
+    const totalCodes = cat.groups.reduce((s,g) => s + g.codes.length, 0);
+    return `<div class="fc-cat-block" id="fc-cat-${ci}">
+      <div class="fc-tree-cat" onclick="toggleFCCat(${ci})">
+        <span class="tree-arrow">▶</span>
+        <span>${cat.category}故障</span>
+        <span class="tree-count">${cat.groups.length}组 ${totalCodes}条</span>
+      </div>
+      <div class="fc-children" id="fc-cat-children-${ci}">
+        ${cat.groups.map((g, gi) => `
+          <div class="fc-group-block" id="fc-group-${ci}-${gi}">
+            <div class="fc-tree-group" onclick="event.stopPropagation(); toggleFCGroup(${ci},${gi})">
+              <span class="tree-arrow">▶</span>
+              <span>${g.name}</span>
+            </div>
+            <div class="fc-children" id="fc-group-children-${ci}-${gi}">
+              ${g.codes.map(fc => `
+                <div class="fc-tree-leaf" onclick="event.stopPropagation(); showFCDetail('${fc.id}')">
+                  <span class="leaf-dot"></span>
+                  <span class="leaf-code">${fc.code}</span>
+                  <span class="leaf-name">${fc.name}</span>
+                  <span class="leaf-arrow">›</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleFCCat(ci) {
+  const catEl = document.querySelector(`#fc-cat-${ci} .fc-tree-cat`);
+  const children = document.getElementById(`fc-cat-children-${ci}`);
+  const isOpen = children.classList.toggle('open');
+  if (isOpen) catEl.classList.add('expanded');
+  else catEl.classList.remove('expanded');
+}
+
+function toggleFCGroup(ci, gi) {
+  const groupEl = document.querySelector(`#fc-group-${ci}-${gi} .fc-tree-group`);
+  const children = document.getElementById(`fc-group-children-${ci}-${gi}`);
+  const isOpen = children.classList.toggle('open');
+  if (isOpen) groupEl.classList.add('expanded');
+  else groupEl.classList.remove('expanded');
+}
+
+function showFCDetail(id) {
+  const d = faultCodeData.find(f => f.id === id);
+  if (!d) return;
+  document.getElementById('fcDetailView').style.display = 'block';
+  document.getElementById('backBtn').style.display = 'flex';
+  document.getElementById('backBtn').setAttribute('onclick', 'goBack()');
+  document.getElementById('fcTree').style.display = 'none';
+  document.getElementById('deviceDetailArea').innerHTML = '';
+
+  const steps = d.suggestion.split('\n').filter(s => s.trim());
+  const solveSteps = steps.map((s,i) =>
+    `<div class="fc-solve-step"><span class="fc-solve-num">${i+1}</span><span>${s.replace(/^\d+\.\s*/, '')}</span></div>`
+  ).join('');
+
+  document.getElementById('fcDetailView').innerHTML = `
+    <div style="padding:20px 16px 0;">
+      <div class="mono" style="font-size:20px;font-weight:600;color:var(--cds-red-60);">${d.code}</div>
+      <div style="font-size:26px;font-weight:300;margin:4px 0 8px;">${d.name}</div>
+      <span class="cds-tag cds-tag--blue" style="margin-bottom:8px;display:inline-block;">${d.categoryType}故障</span><span class="cds-tag cds-tag--outline" style="margin-left:6px;margin-bottom:8px;display:inline-block;">${d.group}</span>
+    </div>
+
+    <div class="fc-section" style="margin-top:8px;">
+      <div class="fc-section-header"><span class="fc-section-icon icon-phenom">⚡</span>故障现象</div>
+      <div class="fc-section-body">${d.phenomenon}</div>
+    </div>
+
+    <div class="fc-section">
+      <div class="fc-section-header"><span class="fc-section-icon icon-cause">⚠</span>故障原因</div>
+      <div class="fc-section-body">${(d.cause||'').replace(/\n/g, '<br>')}</div>
+    </div>
+
+    <div class="fc-section">
+      <div class="fc-section-header"><span class="fc-section-icon icon-solve">✓</span>解决措施</div>
+      <div class="fc-section-body" style="padding-top:8px;">${solveSteps}</div>
+    </div>
+
+    <div class="info-section" style="margin-top:8px;">
+      <div class="info-section-title">📘 关联经验（${d.experiences.length}条）</div>
+      <div class="info-section-body" style="padding-bottom:12px;">
+        ${d.experiences.map(e => `<div class="exp-block">
+          <div class="exp-meta">👤 ${e.author} · 📅 ${e.date}</div>
+          <div>${e.content}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="text-align:center;padding:12px 16px 32px;">
+      <button class="cds-btn-secondary" onclick="backToFCList()" style="width:100%;">← 返回故障代码</button>
+    </div>`;
+}
+
+function backToFCList() {
+  document.getElementById('fcDetailView').style.display = 'none';
+  document.getElementById('backBtn').style.display = 'flex';
+  document.getElementById('backBtn').setAttribute('onclick', 'goBack()');
+  document.getElementById('fcTree').style.display = 'block';
+  document.getElementById('deviceDetailArea').innerHTML = '';
+  renderFCTree();
+}
+
+// ========================================================================
+//  Init
+// ========================================================================
+updateHomeStats();
+initDevicePage();
+renderRecentNF();
+searchInventory();
+renderFCTree();
+</script>
+</body>
+</html>

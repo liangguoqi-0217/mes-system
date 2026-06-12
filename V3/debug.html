@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>调试 - 文件加载检测</title>
+<style>
+  body{font-family:sans-serif;padding:40px;background:#f0f2f5;}
+  .item{padding:12px 16px;margin:6px 0;border-radius:6px;background:white;border-left:4px solid #ccc;}
+  .ok{border-left-color:#10B981;}
+  .err{border-left-color:#DC2626;color:#991b1b;}
+  h2{margin-top:24px;}
+</style>
+</head>
+<body>
+<h1>MES系统 - 调试页面</h1>
+<div id="results"></div>
+
+<script>
+var out = document.getElementById('results');
+var files = [
+  'js/data.js', 'js/app.js',
+  'js/pages/equipment-master.js', 'js/pages/functional-location.js',
+  'js/pages/work-center.js', 'js/pages/equipment-bom.js',
+  'js/pages/spare-parts-stock.js', 'js/pages/sp-purchase.js',
+  'js/pages/sp-pick.js', 'js/main.js'
+];
+
+function log(msg, cls) {
+  var d = document.createElement('div');
+  d.className = 'item ' + (cls||'');
+  d.textContent = msg;
+  out.appendChild(d);
+}
+
+// Test 1: check if we can create script elements programmatically
+log('开始检测...');
+
+// Test 2: try loading each file
+function testFile(file, i) {
+  var s = document.createElement('script');
+  s.src = file;
+  s.onload = function() {
+    log('✓ 加载成功: ' + file, 'ok');
+    if (i < files.length - 1) testFile(files[i+1], i+1);
+    else checkVars();
+  };
+  s.onerror = function() {
+    log('✗ 加载失败: ' + file + ' (文件不存在或无法访问)', 'err');
+    if (i < files.length - 1) testFile(files[i+1], i+1);
+    else checkVars();
+  };
+  document.head.appendChild(s);
+}
+
+function checkVars() {
+  out.appendChild(document.createElement('h2')).textContent = '变量检查:';
+  var vars = ['equipmentData','FL_FACTORIES','flMockData','wcMockData','spPickData','spPick','EquipmentMaster','FunctionalLocation','WorkCenter','SpPurchase','App'];
+  vars.forEach(function(v) {
+    var exists = (typeof window[v] !== 'undefined');
+    log((exists ? '✓' : '✗') + ' ' + v + (exists ? ' = ' + typeof window[v] : ' 未定义'), exists ? 'ok' : 'err');
+  });
+
+  if (typeof App !== 'undefined' && typeof App.init === 'function') {
+    log('尝试运行 App.init()...', 'ok');
+    try { App.init(); log('App.init() 执行成功!', 'ok'); }
+    catch(e) { log('App.init() 执行失败: ' + e.message, 'err'); }
+  }
+}
+
+testFile(files[0], 0);
+</script>
+</body>
+</html>

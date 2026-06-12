@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MES系统 - 制造执行系统</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .login-page {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .login-page::before {
+      content: ''; position: absolute; inset: 0;
+      background: url('images/login-bg.jpg') center/cover no-repeat;
+      z-index: 0;
+    }
+    .login-page::after {
+      content: ''; position: absolute; inset: 0;
+      background: rgba(0,0,0,0.18); z-index: 1;
+    }
+
+    .login-wrapper {
+      position: relative; z-index: 2; display: flex;
+      background: rgba(255,255,255,0.08); backdrop-filter: blur(24px);
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.1);
+      max-width: 700px; width: 90vw;
+      animation: slideUp 0.5s ease;
+    }
+    @keyframes slideUp { from { opacity:0; transform: translateY(30px); } to { opacity:1; transform: translateY(0); } }
+
+    .login-left {
+      width: 240px; background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px 28px; flex-shrink: 0;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .login-left h3 { color: #fff; font-size: 16px; font-weight: 600; letter-spacing: 3px; opacity: 0.9; }
+    .login-left p { color: rgba(255,255,255,0.45); font-size: 11px; margin-top: 6px; letter-spacing: 2px; }
+
+    .login-right { padding: 44px 40px; flex: 1; background: rgba(255,255,255,0.97); }
+    .login-right h4 { font-size: 15px; color: #666; margin-bottom: 28px; font-weight: 500; letter-spacing: 1px; }
+
+    .login-input { margin-bottom: 20px; }
+    .login-input input {
+      width: 100%; padding: 12px 16px; border: 1.5px solid #e8e8e8; border-radius: 8px;
+      font-size: 14px; color: #333; transition: 0.25s;
+    }
+    .login-input input::placeholder { color: #bbb; }
+    .login-input input:focus {
+      outline: none; border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,0.04);
+    }
+
+    .login-btn {
+      width: 100%; padding: 13px; margin-top: 8px;
+      background: #111; color: #fff; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      letter-spacing: 2px; transition: 0.25s;
+    }
+    .login-btn:hover { background: #333; }
+    .login-btn:disabled { opacity: 0.6; cursor: default; }
+
+    @media (max-width: 768px) {
+      .login-wrapper { max-width: 88vw; border-radius: 16px; }
+      .login-left { width: 180px; padding: 32px 20px; }
+      .login-left h3 { font-size: 15px; }
+      .login-right { padding: 32px 28px; }
+    }
+    @media (max-width: 600px) {
+      .login-wrapper { flex-direction: column; border-radius: 16px; max-width: 92vw; }
+      .login-left { width: 100%; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 24px; }
+      .login-right { padding: 28px 24px; }
+      .login-right h4 { font-size: 14px; margin-bottom: 22px; }
+      .login-btn { padding: 14px; font-size: 15px; min-height: 48px; }
+      .login-input input {
+        padding: 14px 16px; font-size: 16px; /* 16px 防 iOS 缩放 */
+        min-height: 48px;
+      }
+      .login-input { margin-bottom: 16px; }
+    }
+    @media (max-width: 360px) {
+      .login-wrapper { max-width: 96vw; border-radius: 14px; }
+      .login-left { padding: 20px 16px; }
+      .login-left h3 { font-size: 14px; }
+      .login-right { padding: 22px 18px; }
+      .login-btn { padding: 14px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-wrapper">
+      <div class="login-left">
+        <div>
+          <h3>MES系统</h3>
+          <p>MANUFACTURING EXECUTION</p>
+        </div>
+      </div>
+      <div class="login-right">
+        <h4>欢迎登录</h4>
+        <div class="login-input">
+          <input type="text" id="user" placeholder="用户名" value="admin">
+        </div>
+        <div class="login-input">
+          <input type="password" id="pass" placeholder="密码" value="123456">
+        </div>
+        <button class="login-btn" id="loginBtn">登 录</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('loginBtn').addEventListener('click', function() {
+      var userId = document.getElementById('user').value.trim();
+      var pass = document.getElementById('pass').value.trim();
+
+      if (!userId) { alert('请输入用户名'); return; }
+      if (!pass) { alert('请输入密码'); return; }
+
+      this.textContent = '正在登录...'; this.disabled = true;
+
+      setTimeout(function() {
+        window.location.href = 'main.html?user=' + encodeURIComponent(userId);
+      }, 600);
+    });
+  </script>
+</body>
+</html>
