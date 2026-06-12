@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>菜单方案预览 - MES系统</title>
+<style>
+:root {
+  --primary: #1e3a5f;
+  --primary-light: #2d5a87;
+  --bg: #f0f2f5;
+  --white: #ffffff;
+  --text: #1a1a2e;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+  --radius: 8px;
+  --radius-sm: 6px;
+  --accent: #3b82f6;
+  --accent-light: #eff6ff;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #e8ecf1; color: var(--text); }
+
+.page { max-width: 1300px; margin: 0 auto; padding: 24px; }
+.page h1 { font-size: 24px; margin-bottom: 8px; }
+.page .subtitle { color: var(--text-secondary); margin-bottom: 32px; font-size: 14px; }
+
+.scheme-section {
+  background: var(--white);
+  border-radius: 12px;
+  margin-bottom: 32px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.scheme-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.scheme-header .badge {
+  background: var(--accent); color: white; padding: 4px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+}
+.scheme-header h2 { font-size: 17px; flex: 1; }
+.scheme-header .desc { font-size: 13px; color: var(--text-secondary); }
+
+.scheme-body { display: flex; min-height: 400px; }
+
+/* ===== 方案A：手风琴树形 ===== */
+.tree-sidebar {
+  width: 260px; flex-shrink: 0;
+  background: linear-gradient(180deg, #0f1b2d 0%, #1e3a5f 30%, #2d5a87 100%);
+  color: white; padding: 8px 12px; overflow-y: auto;
+}
+.tree-sidebar .logo { padding: 16px 8px; font-size: 16px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 8px; }
+.tree-l1 { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.tree-l1:hover { background: rgba(255,255,255,0.06); }
+.tree-l1 .arrow { margin-left: auto; font-size: 10px; transition: transform .2s; }
+.tree-l1 .arrow.open { transform: rotate(90deg); }
+.tree-l2-wrap { overflow: hidden; max-height: 0; transition: max-height .3s; background: rgba(0,0,0,0.15); }
+.tree-l2-wrap.open { max-height: 600px; }
+.tree-l2 { padding: 8px 14px 8px 40px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,0.8); }
+.tree-l2:hover { background: rgba(255,255,255,0.06); color: white; }
+.tree-l2.active { background: rgba(59,130,246,0.2); color: white; }
+.tree-l3-wrap { overflow: hidden; max-height: 0; transition: max-height .3s; background: rgba(0,0,0,0.2); }
+.tree-l3-wrap.open { max-height: 300px; }
+.tree-l3 { padding: 7px 14px 7px 56px; font-size: 12px; cursor: pointer; color: rgba(255,255,255,0.65); }
+.tree-l3:hover { background: rgba(255,255,255,0.06); color: white; }
+.tree-l3.active { background: rgba(96,165,250,0.15); color: white; }
+
+/* ===== 方案B：顶部Tab + 侧边栏联动 ===== */
+.tab-topbar {
+  display: flex; gap: 0; background: var(--white); border-bottom: 2px solid var(--border); padding: 0 24px; overflow-x: auto;
+}
+.tab-btn {
+  padding: 14px 20px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none;
+  color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px;
+  white-space: nowrap; transition: all .2s;
+}
+.tab-btn:hover { color: var(--accent); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content-wrap { display: flex; flex: 1; min-height: 350px; }
+.tab-sidebar {
+  width: 220px; flex-shrink: 0; background: #f8fafc; border-right: 1px solid var(--border);
+  padding: 12px 8px; overflow-y: auto;
+}
+.tab-sidebar .group-title { padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.tab-s2 { padding: 9px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.tab-s2:hover { background: #e2e8f0; }
+.tab-s2.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+.tab-s3 { padding: 7px 12px 7px 32px; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--text-secondary); margin-bottom: 2px; }
+.tab-s3:hover { background: #e2e8f0; color: var(--text); }
+.tab-s3.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+
+/* ===== 方案C：面包屑 ===== */
+.breadcrumb { padding: 12px 24px; background: #f8fafc; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.breadcrumb span { color: var(--text-secondary); cursor: pointer; }
+.breadcrumb span:hover { color: var(--accent); }
+.breadcrumb span.current { color: var(--text); font-weight: 500; cursor: default; }
+.breadcrumb .sep { color: #cbd5e1; cursor: default; }
+.bc-sidebar {
+  width: 220px; flex-shrink: 0; background: #f8fafc; border-right: 1px solid var(--border);
+  padding: 16px 8px; overflow-y: auto;
+}
+.bc-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+.bc-item:hover { background: #e2e8f0; }
+.bc-item.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+.bc-item.has-children::after { content: '›'; margin-left: auto; font-size: 16px; color: #94a3b8; }
+.bc-content { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); }
+
+/* ===== 方案D：卡片网格 ===== */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; padding: 24px; flex: 1; overflow-y: auto; align-content: start; }
+.card-item {
+  background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 20px 16px;
+  cursor: pointer; text-align: center; transition: all .2s;
+}
+.card-item:hover { border-color: var(--accent); box-shadow: 0 4px 12px rgba(59,130,246,0.1); transform: translateY(-2px); }
+.card-item .icon { font-size: 32px; margin-bottom: 10px; }
+.card-item .label { font-size: 13px; font-weight: 500; }
+.card-item .count { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.card-grid.l2 { display: none; padding-top: 0; }
+.card-grid.l2.show { display: grid; }
+.back-btn {
+  display: none; padding: 8px 16px; margin: 16px 24px 0; font-size: 13px; cursor: pointer;
+  background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 6px;
+}
+.back-btn.show { display: inline-block; }
+
+/* ===== 方案E：Mega Menu ===== */
+.mega-nav { display: flex; background: var(--white); border-bottom: 1px solid var(--border); padding: 0 24px; position: relative; }
+.mega-l1 {
+  padding: 14px 18px; font-size: 14px; font-weight: 500; cursor: pointer; position: relative;
+  color: var(--text); white-space: nowrap;
+}
+.mega-l1:hover { color: var(--accent); }
+.mega-l1.active { color: var(--accent); }
+.mega-l1.active::after { content: ''; position: absolute; bottom: 0; left: 18px; right: 18px; height: 2px; background: var(--accent); }
+.mega-dropdown {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white);
+  border-bottom: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0,0,0,0.1); z-index: 10;
+  padding: 24px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;
+}
+.mega-l1:hover .mega-dropdown { display: grid; }
+.mega-col h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.mega-col a { display: block; padding: 6px 0; font-size: 13px; color: var(--text-secondary); cursor: pointer; text-decoration: none; }
+.mega-col a:hover { color: var(--accent); }
+.mega-content { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); min-height: 300px; }
+
+/* 模拟内容区 */
+.preview-content { flex: 1; background: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 40px; }
+.preview-content .mock-page { text-align: center; }
+.preview-content .mock-page h3 { font-size: 18px; margin-bottom: 8px; }
+.preview-content .mock-page p { font-size: 13px; color: var(--text-secondary); }
+
+/* 评价行 */
+.scheme-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+.tag { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.tag.pro { background: #dcfce7; color: #166534; }
+.tag.con { background: #fef2f2; color: #991b1b; }
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .scheme-body { flex-direction: column; }
+  .tree-sidebar, .tab-sidebar, .bc-sidebar { width: 100%; max-height: 200px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>三级菜单导航方案预览</h1>
+  <p class="subtitle">以下是5种不同的菜单导航方案，保持原有数据不变，仅改变展示形式</p>
+
+  <!-- ===== 方案A：手风琴树形 ===== -->
+  <div class="scheme-section">
+    <div class="scheme-header">
+      <span class="badge">方案 A</span>
+      <h2>手风琴树形菜单（当前方案升级版）</h2>
+      <span class="desc">三级全部展开在侧边栏中</span>
+    </div>
+    <div class="scheme-body">
+      <div class="tree-sidebar">
+        <div class="logo">MES 系统</div>
+        <div class="tree-l1" onclick="toggleTreeL1(this)"><span>🏠</span> 首页</div>
+        <div class="tree-l1" onclick="toggleTreeL1(this)"><span>📋</span> 1. 主数据管理 <span class="arrow">▶</span></div>
+        <div class="tree-l2-wrap">
+          <div class="tree-l2">1.1 物料主数据</div>
+          <div class="tree-l2" onclick="toggleTreeL2(this)">1.2 设备主数据 <span class="arrow">▶</span></div>
+          <div class="tree-l3-wrap">
+            <div class="tree-l3">1.2.1 设备台账</div>
+            <div class="tree-l3">1.2.2 设备BOM</div>
+            <div class="tree-l3 active">1.2.3 设备安装</div>
+          </div>
+          <div class="tree-l2">1.3 功能位置</div>
+          <div class="tree-l2">1.4 工作中心</div>
+        </div>
+        <div class="tree-l1" onclick="toggleTreeL1(this)"><span>🔧</span> 2. 维修流程 <span class="arrow">▶</span></div>
+        <div class="tree-l2-wrap">
+          <div class="tree-l2">2.1 预防性维护计划</div>
+          <div class="tree-l2">2.2 通知单管理</div>
+          <div class="tree-l2">2.3 维修工单管理</div>
+          <div class="tree-l2">2.4 设备维修履历</div>
+        </div>
+        <div class="tree-l1" onclick="toggleTreeL1(this)"><span>📦</span> 3. 备品备件管理 <span class="arrow">▶</span></div>
+        <div class="tree-l2-wrap">
+          <div class="tree-l2">3.1 库存查询</div>
+          <div class="tree-l2">3.2 采购申请</div>
+          <div class="tree-l2">3.3 备件领用</div>
+        </div>
+      </div>
+      <div class="preview-content">
+        <div class="mock-page">
+          <h3>设备安装</h3>
+          <p>选中项：主数据管理 > 设备主数据 > 设备安装</p>
+        </div>
+      </div>
+    </div>
+    <div class="scheme-footer">
+      <span class="tag pro">✅ 改动最小</span>
+      <span class="tag pro">✅ 层级关系一目了然</span>
+      <span class="tag pro">✅ 适合5-8个一级分组</span>
+      <span class="tag con">❌ 三级展开后侧边栏很长</span>
+      <span class="tag con">❌ 260px宽度显得拥挤</span>
+    </div>
+  </div>
+
+  <!-- ===== 方案B：顶部Tab + 侧边栏联动 ===== -->
+  <div class="scheme-section">
+    <div class="scheme-header">
+      <span class="badge">方案 B</span>
+      <h2>顶部 Tab + 侧边栏联动</h2>
+      <span class="desc">一级用顶部横排Tab，侧边栏只显示当前分组的二三级菜单</span>
+    </div>
+    <div class="scheme-body" style="flex-direction:column;">
+      <div class="tab-topbar" id="tabBar">
+        <button class="tab-btn active" data-tab="0">📋 主数据管理</button>
+        <button class="tab-btn" data-tab="1">🔧 维修流程</button>
+        <button class="tab-btn" data-tab="2">📦 备品备件管理</button>
+        <button class="tab-btn" data-tab="3">📏 测量数据记录</button>
+        <button class="tab-btn" data-tab="4">🏠 首页</button>
+      </div>
+      <div class="tab-content-wrap">
+        <div class="tab-sidebar" id="tabSidebar">
+          <div class="group-title">主数据管理</div>
+          <div class="tab-s2">物料主数据</div>
+          <div class="tab-s2" onclick="toggleTabS2(this)">设备主数据 ▸</div>
+          <div class="tab-s3">设备台账</div>
+          <div class="tab-s3">设备BOM</div>
+          <div class="tab-s3 active">设备安装</div>
+          <div class="tab-s3">设备改造</div>
+          <div class="tab-s3">设备报废</div>
+          <div class="tab-s2">功能位置</div>
+          <div class="tab-s2">工作中心</div>
+          <div class="tab-s2">任务清单</div>
+        </div>
+        <div class="preview-content">
+          <div class="mock-page">
+            <h3>设备安装</h3>
+            <p>顶部Tab: 主数据管理 → 侧边栏: 设备主数据 > 设备安装</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scheme-footer">
+      <span class="tag pro">✅ 侧边栏简洁清爽</span>
+      <span class="tag pro">✅ 一级分组一目了然</span>
+      <span class="tag pro">✅ 三级菜单有足够空间</span>
+      <span class="tag pro">✅ 适合多分组（8-15个）</span>
+      <span class="tag con">❌ 比现有方案改动大</span>
+      <span class="tag con">❌ 切换一级需要多一步点击</span>
+    </div>
+  </div>
+
+  <!-- ===== 方案C：面包屑导航 ===== -->
+  <div class="scheme-section">
+    <div class="scheme-header">
+      <span class="badge">方案 C</span>
+      <h2>面包屑 + 单层侧边栏</h2>
+      <span class="desc">点击一级进入二级页面，侧边栏只显示当前层级，顶部有面包屑</span>
+    </div>
+    <div class="scheme-body" style="flex-direction:column;">
+      <div class="breadcrumb">
+        <span>🏠 首页</span><span class="sep">›</span>
+        <span>主数据管理</span><span class="sep">›</span>
+        <span class="current">设备主数据</span>
+      </div>
+      <div class="tab-content-wrap">
+        <div class="bc-sidebar">
+          <div class="bc-item has-children">设备台账</div>
+          <div class="bc-item has-children">设备BOM</div>
+          <div class="bc-item active">设备安装</div>
+          <div class="bc-item">设备改造</div>
+          <div class="bc-item">设备报废</div>
+          <div class="bc-item">设备运行仪表盘</div>
+          <div class="bc-item">运行日志</div>
+          <div class="bc-item">状态变更记录</div>
+        </div>
+        <div class="preview-content">
+          <div class="mock-page">
+            <h3>设备安装</h3>
+            <p>面包屑: 首页 > 主数据管理 > 设备主数据</p>
+            <p style="margin-top:4px;">侧边栏仅显示设备主数据下的三级子页面</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scheme-footer">
+      <span class="tag pro">✅ 导航路径非常清晰</span>
+      <span class="tag pro">✅ 侧边栏极简，无层级嵌套</span>
+      <span class="tag pro">✅ 类似文件管理器体验</span>
+      <span class="tag con">❌ 回到上级需要点面包屑</span>
+      <span class="tag con">❌ 无法一眼看到全局菜单</span>
+      <span class="tag con">❌ 改动量较大</span>
+    </div>
+  </div>
+
+  <!-- ===== 方案D：图标卡片网格 ===== -->
+  <div class="scheme-section">
+    <div class="scheme-header">
+      <span class="badge">方案 D</span>
+      <h2>图标卡片网格（仪表盘风格）</h2>
+      <span class="desc">一级菜单用卡片网格展示，点击进入后展开下级</span>
+    </div>
+    <div class="scheme-body" style="flex-direction:column;">
+      <button class="back-btn" id="cardBack">← 返回主菜单</button>
+      <div class="card-grid l1" id="cardGridL1">
+        <div class="card-item" onclick="showCardL2('main-data')">
+          <div class="icon">📋</div><div class="label">主数据管理</div><div class="count">6 项</div>
+        </div>
+        <div class="card-item" onclick="showCardL2('maintenance')">
+          <div class="icon">🔧</div><div class="label">维修流程</div><div class="count">4 项</div>
+        </div>
+        <div class="card-item" onclick="showCardL2('spare')">
+          <div class="icon">📦</div><div class="label">备品备件管理</div><div class="count">3 项</div>
+        </div>
+        <div class="card-item" onclick="showCardL2('measure')">
+          <div class="icon">📏</div><div class="label">测量数据记录</div><div class="count">3 项</div>
+        </div>
+        <div class="card-item">
+          <div class="icon">📊</div><div class="label">报表中心</div><div class="count">5 项</div>
+        </div>
+        <div class="card-item">
+          <div class="icon">⚙️</div><div class="label">系统设置</div><div class="count">3 项</div>
+        </div>
+      </div>
+      <div class="card-grid l2" id="cardGridL2">
+        <div class="card-item"><div class="icon">📦</div><div class="label">物料主数据</div></div>
+        <div class="card-item" onclick="showCardL3()"><div class="icon">🔩</div><div class="label">设备主数据</div><div class="count">6 项</div></div>
+        <div class="card-item"><div class="icon">📍</div><div class="label">功能位置</div></div>
+        <div class="card-item"><div class="icon">🏭</div><div class="label">工作中心</div></div>
+        <div class="card-item"><div class="icon">📝</div><div class="label">任务清单</div></div>
+        <div class="card-item"><div class="icon">🔍</div><div class="label">故障代码库</div></div>
+      </div>
+      <div class="card-grid l3" id="cardGridL3">
+        <div class="card-item"><div class="icon">📋</div><div class="label">设备台账</div></div>
+        <div class="card-item"><div class="icon">🧩</div><div class="label">设备BOM</div></div>
+        <div class="card-item"><div class="icon">🔧</div><div class="label">设备安装</div></div>
+        <div class="card-item"><div class="icon">🔄</div><div class="label">设备改造</div></div>
+        <div class="card-item"><div class="icon">🗑️</div><div class="label">设备报废</div></div>
+        <div class="card-item"><div class="icon">📊</div><div class="label">运行仪表盘</div></div>
+      </div>
+    </div>
+    <div class="scheme-footer">
+      <span class="tag pro">✅ 视觉现代、大气</span>
+      <span class="tag pro">✅ 适合触摸屏/平板</span>
+      <span class="tag pro">✅ 信息密度适中</span>
+      <span class="tag con">❌ 三级时需要返回操作</span>
+      <span class="tag con">❌ 不适合菜单项很多的情况</span>
+      <span class="tag con">❌ 完全重写，改动最大</span>
+    </div>
+  </div>
+
+  <!-- ===== 方案E：Mega Menu ===== -->
+  <div class="scheme-section">
+    <div class="scheme-header">
+      <span class="badge">方案 E</span>
+      <h2>Mega Menu 下拉面板</h2>
+      <span class="desc">鼠标悬停一级菜单，展开全宽下拉面板，内部分组展示二三级</span>
+    </div>
+    <div class="scheme-body" style="flex-direction:column;">
+      <div class="mega-nav">
+        <div class="mega-l1 active">
+          📋 主数据管理
+          <div class="mega-dropdown">
+            <div class="mega-col">
+              <h4>基础数据</h4>
+              <a>物料主数据</a>
+              <a>功能位置</a>
+              <a>工作中心</a>
+              <a>任务清单</a>
+            </div>
+            <div class="mega-col">
+              <h4>设备管理</h4>
+              <a>设备台账</a>
+              <a>设备BOM</a>
+              <a style="color:#3b82f6;font-weight:500;">设备安装</a>
+              <a>设备改造</a>
+              <a>设备报废</a>
+            </div>
+            <div class="mega-col">
+              <h4>设备运行</h4>
+              <a>运行仪表盘</a>
+              <a>运行日志</a>
+              <a>状态变更记录</a>
+            </div>
+            <div class="mega-col">
+              <h4>知识库</h4>
+              <a>故障代码知识库</a>
+              <a>维修知识库</a>
+            </div>
+          </div>
+        </div>
+        <div class="mega-l1">
+          🔧 维修流程
+          <div class="mega-dropdown">
+            <div class="mega-col"><h4>计划与执行</h4><a>预防性维护计划</a><a>通知单管理</a><a>维修工单管理</a></div>
+            <div class="mega-col"><h4>分析与报表</h4><a>设备维修履历</a><a>维修报表</a></div>
+          </div>
+        </div>
+        <div class="mega-l1">
+          📦 备品备件
+          <div class="mega-dropdown">
+            <div class="mega-col"><h4>库存管理</h4><a>库存查询</a><a>采购申请</a><a>备件领用</a></div>
+          </div>
+        </div>
+        <div class="mega-l1">
+          📏 测量数据
+          <div class="mega-dropdown">
+            <div class="mega-col"><h4>数据管理</h4><a>录入测量数据</a><a>历史查询与趋势</a><a>批量导入</a></div>
+          </div>
+        </div>
+      </div>
+      <div class="preview-content">
+        <div class="mock-page">
+          <h3>设备安装</h3>
+          <p>悬停"主数据管理" → 下拉面板 → 设备管理 → 设备安装</p>
+        </div>
+      </div>
+    </div>
+    <div class="scheme-footer">
+      <span class="tag pro">✅ 所有菜单一览无余</span>
+      <span class="tag pro">✅ 不需要侧边栏，内容区更宽</span>
+      <span class="tag pro">✅ 适合PC大屏</span>
+      <span class="tag con">❌ 移动端体验差</span>
+      <span class="tag con">❌ 不适合触屏（依赖hover）</span>
+      <span class="tag con">❌ 改动非常大</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// 方案A：手风琴
+function toggleTreeL1(el) {
+  const wrap = el.nextElementSibling;
+  const arrow = el.querySelector('.arrow');
+  if (wrap && wrap.classList.contains('tree-l2-wrap')) {
+    wrap.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open');
+  }
+}
+function toggleTreeL2(el) {
+  const wrap = el.nextElementSibling;
+  const arrow = el.querySelector('.arrow');
+  if (wrap && wrap.classList.contains('tree-l3-wrap')) {
+    wrap.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open');
+  }
+}
+
+// 方案B：顶部Tab
+document.querySelectorAll('#tabBar .tab-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('#tabBar .tab-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+function toggleTabS2(el) {
+  const next = el.nextElementSibling;
+  if (next && next.classList.contains('tab-s3')) {
+    next.style.display = next.style.display === 'none' ? '' : 'none';
+  }
+}
+
+// 方案D：卡片网格
+function showCardL2(group) {
+  document.getElementById('cardGridL1').classList.remove('show');
+  document.getElementById('cardGridL2').classList.add('show');
+  document.getElementById('cardGridL3').classList.remove('show');
+  document.getElementById('cardBack').classList.add('show');
+}
+function showCardL3() {
+  document.getElementById('cardGridL2').classList.remove('show');
+  document.getElementById('cardGridL3').classList.add('show');
+}
+document.getElementById('cardBack').addEventListener('click', function() {
+  if (document.getElementById('cardGridL3').classList.contains('show')) {
+    document.getElementById('cardGridL3').classList.remove('show');
+    document.getElementById('cardGridL2').classList.add('show');
+  } else {
+    document.getElementById('cardGridL2').classList.remove('show');
+    document.getElementById('cardGridL1').classList.add('show');
+    this.classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
