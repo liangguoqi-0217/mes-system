@@ -148,6 +148,63 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .mega-col a:hover { color: var(--accent); }
 .mega-content { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); min-height: 300px; }
 
+/* ===== 方案F：左侧竖排 Mega Menu ===== */
+.side-mega-bar {
+  width: 72px; flex-shrink: 0;
+  background: linear-gradient(180deg, #0f1b2d 0%, #1e3a5f 40%, #2d5a87 100%);
+  display: flex; flex-direction: column; align-items: center; padding: 12px 0;
+  gap: 4px; color: white; position: relative; z-index: 20;
+}
+.side-mega-logo {
+  font-size: 13px; font-weight: 800; letter-spacing: 1px; margin-bottom: 12px;
+  padding: 8px 0; width: 48px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.9);
+}
+.side-mega-item {
+  width: 56px; padding: 10px 6px; border-radius: 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: all .15s; position: relative;
+}
+.side-mega-item:hover { background: rgba(255,255,255,0.1); }
+.side-mega-item.active { background: rgba(59,130,246,0.35); }
+.side-mega-item.active::before {
+  content: ''; position: absolute; left: -6px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; background: #60A5FA; border-radius: 0 3px 3px 0;
+}
+.side-mega-icon { font-size: 20px; line-height: 1; }
+.side-mega-label { font-size: 10px; color: rgba(255,255,255,0.7); text-align: center; line-height: 1.2; max-width: 56px; overflow: hidden; text-overflow: ellipsis; }
+.side-mega-item.active .side-mega-label { color: white; }
+.side-mega-bottom { margin-top: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
+
+/* 弹出面板 */
+.side-mega-panel {
+  width: 0; overflow: hidden;
+  background: #ffffff; border-right: 1px solid var(--border);
+  transition: width .25s ease; flex-shrink: 0;
+  box-shadow: 4px 0 16px rgba(0,0,0,0.06); z-index: 15;
+}
+.side-mega-panel.open { width: 320px; }
+.side-mega-panel-inner { width: 320px; padding: 20px; height: 100%; overflow-y: auto; }
+.side-mega-panel-inner h3 { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+.side-mega-panel .sm-group { margin-bottom: 20px; }
+.side-mega-panel .sm-group-title {
+  font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 6px; padding: 0 4px;
+}
+.side-mega-panel .sm-link {
+  display: block; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: var(--text);
+  cursor: pointer; transition: all .12s; margin-bottom: 1px;
+}
+.side-mega-panel .sm-link:hover { background: var(--accent-light); color: var(--accent); }
+.side-mega-panel .sm-link.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+
+/* 遮罩层 */
+.side-mega-overlay {
+  display: none; position: absolute; top: 0; left: 72px; right: 0; bottom: 0;
+  z-index: 10; background: rgba(0,0,0,0.15);
+}
+.side-mega-overlay.show { display: block; }
+
 /* 模拟内容区 */
 .preview-content { flex: 1; background: #f8fafc; display: flex; align-items: center; justify-content: center; padding: 40px; }
 .preview-content .mock-page { text-align: center; }
@@ -375,7 +432,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   <div class="scheme-section">
     <div class="scheme-header">
       <span class="badge">方案 E</span>
-      <h2>Mega Menu 下拉面板</h2>
+      <h2>Mega Menu 下拉面板（原版 - 顶部横排）</h2>
       <span class="desc">鼠标悬停一级菜单，展开全宽下拉面板，内部分组展示二三级</span>
     </div>
     <div class="scheme-body" style="flex-direction:column;">
@@ -448,6 +505,70 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
     </div>
   </div>
 
+  <!-- ===== 方案F：左侧竖排 Mega Menu（方案E变体） ===== -->
+  <div class="scheme-section" id="schemeF">
+    <div class="scheme-header">
+      <span class="badge" style="background:#8b5cf6;">方案 F</span>
+      <h2>左侧竖排 Mega Menu（方案E改进版）</h2>
+      <span class="desc">一级菜单在左侧竖排，悬停/点击展开右侧分组面板，类似VS Code活动栏</span>
+    </div>
+    <div class="scheme-body" style="min-height:480px;">
+      <!-- 左侧图标栏 -->
+      <div class="side-mega-bar">
+        <div class="side-mega-logo">MES</div>
+        <div class="side-mega-item" data-menu="main-data" onclick="toggleSideMega(this)">
+          <span class="side-mega-icon">📋</span>
+          <span class="side-mega-label">主数据管理</span>
+        </div>
+        <div class="side-mega-item" data-menu="maintenance" onclick="toggleSideMega(this)">
+          <span class="side-mega-icon">🔧</span>
+          <span class="side-mega-label">维修流程</span>
+        </div>
+        <div class="side-mega-item" data-menu="spare" onclick="toggleSideMega(this)">
+          <span class="side-mega-icon">📦</span>
+          <span class="side-mega-label">备品备件</span>
+        </div>
+        <div class="side-mega-item" data-menu="measure" onclick="toggleSideMega(this)">
+          <span class="side-mega-icon">📏</span>
+          <span class="side-mega-label">测量数据</span>
+        </div>
+        <div class="side-mega-item" data-menu="reports" onclick="toggleSideMega(this)">
+          <span class="side-mega-icon">📊</span>
+          <span class="side-mega-label">报表中心</span>
+        </div>
+        <div class="side-mega-item" data-menu="settings" onclick="toggleSideMega(this)">
+          <span class="side-mega-icon">⚙️</span>
+          <span class="side-mega-label">系统设置</span>
+        </div>
+        <div class="side-mega-bottom">
+          <div class="side-mega-item" style="margin-top:auto;" onclick="toggleSideMega(this)" data-menu="home">
+            <span class="side-mega-icon">🏠</span>
+            <span class="side-mega-label">首页</span>
+          </div>
+        </div>
+      </div>
+      <!-- 弹出面板 -->
+      <div class="side-mega-panel" id="sideMegaPanel">
+        <!-- 面板内容由JS动态填充 -->
+      </div>
+      <!-- 内容预览区 -->
+      <div class="preview-content" style="flex:1; min-width:0;">
+        <div class="mock-page">
+          <h3 id="sideMegaTitle">设备安装</h3>
+          <p id="sideMegaPath">主数据管理 → 设备管理 → 设备安装</p>
+        </div>
+      </div>
+    </div>
+    <div class="scheme-footer">
+      <span class="tag pro">✅ 左侧竖排 + 弹出面板，Mega Menu 的垂直版</span>
+      <span class="tag pro">✅ 面板宽度充裕，分组清晰</span>
+      <span class="tag pro">✅ 点击展开（触屏友好，不依赖hover）</span>
+      <span class="tag pro">✅ 所有菜单层级在面板中一览无余</span>
+      <span class="tag con">❌ 弹出面板会遮挡部分内容区</span>
+      <span class="tag con">❌ 改动较大（但比原版E更适合你的需求）</span>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -503,6 +624,112 @@ document.getElementById('cardBack').addEventListener('click', function() {
     document.getElementById('cardGridL1').classList.add('show');
     this.classList.remove('show');
   }
+});
+
+// 方案F：左侧竖排 Mega Menu
+const sideMegaData = {
+  'main-data': {
+    title: '主数据管理',
+    groups: [
+      { title: '基础数据', items: ['物料主数据', '功能位置', '工作中心', '任务清单'] },
+      { title: '设备管理', items: ['设备台账', '设备BOM', '设备安装', '设备改造', '设备报废'] },
+      { title: '设备运行', items: ['运行仪表盘', '运行日志', '状态变更记录'] },
+      { title: '知识库', items: ['故障代码知识库', '维修知识库'] }
+    ]
+  },
+  'maintenance': {
+    title: '维修流程',
+    groups: [
+      { title: '计划与执行', items: ['预防性维护计划', '通知单管理', '维修工单管理', '维修执行', '维修结算'] },
+      { title: '分析与报表', items: ['设备维修履历', '维修报表', '预防性维护排程'] }
+    ]
+  },
+  'spare': {
+    title: '备品备件管理',
+    groups: [
+      { title: '库存管理', items: ['库存查询', '采购申请', '备件领用'] },
+      { title: '供应商', items: ['供应商管理', '采购订单'] }
+    ]
+  },
+  'measure': {
+    title: '测量数据记录',
+    groups: [
+      { title: '数据采集', items: ['录入测量数据', '批量导入'] },
+      { title: '数据分析', items: ['历史查询与趋势', '测量点管理'] }
+    ]
+  },
+  'reports': {
+    title: '报表中心',
+    groups: [
+      { title: '设备报表', items: ['设备综合效率OEE', 'MTBF/MTTR分析', '设备停机分析'] },
+      { title: '维修报表', items: ['维修成本分析', '工单完成率'] }
+    ]
+  },
+  'settings': {
+    title: '系统设置',
+    groups: [
+      { title: '基础配置', items: ['用户管理', '角色权限', '系统参数'] },
+      { title: '数据管理', items: ['数据字典', '编码规则'] }
+    ]
+  },
+  'home': {
+    title: '首页',
+    groups: [
+      { title: '概览', items: ['工作台', '消息中心', '待办事项'] }
+    ]
+  }
+};
+
+let currentSideMega = null;
+
+function toggleSideMega(el) {
+  const menuKey = el.dataset.menu;
+  const panel = document.getElementById('sideMegaPanel');
+  const data = sideMegaData[menuKey];
+
+  // 如果点击同一个，关闭
+  if (currentSideMega === menuKey) {
+    panel.classList.remove('open');
+    currentSideMega = null;
+    document.querySelectorAll('.side-mega-item').forEach(i => i.classList.remove('active'));
+    return;
+  }
+
+  // 切换激活状态
+  document.querySelectorAll('.side-mega-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  currentSideMega = menuKey;
+
+  // 构建面板内容
+  let html = '<div class="side-mega-panel-inner">';
+  html += '<h3>' + data.title + '</h3>';
+  data.groups.forEach(g => {
+    html += '<div class="sm-group">';
+    html += '<div class="sm-group-title">' + g.title + '</div>';
+    g.items.forEach(item => {
+      html += '<div class="sm-link" onclick="selectSideMegaItem(this, \'' + menuKey + '\', \'' + g.title + '\', \'' + item + '\')">' + item + '</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  panel.innerHTML = html;
+  panel.classList.add('open');
+}
+
+function selectSideMegaItem(el, menuKey, group, item) {
+  document.querySelectorAll('.sm-link').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sideMegaTitle').textContent = item;
+  document.getElementById('sideMegaPath').textContent = sideMegaData[menuKey].title + ' → ' + group + ' → ' + item;
+}
+
+// 默认打开第一个
+document.addEventListener('DOMContentLoaded', function() {
+  // 等页面加载后自动打开主数据管理
+  setTimeout(() => {
+    const firstItem = document.querySelector('.side-mega-item[data-menu="main-data"]');
+    if (firstItem) toggleSideMega(firstItem);
+  }, 100);
 });
 </script>
 </body>
