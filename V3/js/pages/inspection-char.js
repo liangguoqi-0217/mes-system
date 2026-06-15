@@ -20,6 +20,14 @@ const micDefaultCodeOptions = { '':['（无默认）'],
   'CG005-硬度异常':['合格','不合格','过硬','过软'],
   'CG006-崩解异常':['合格','不合格','未崩解','部分崩解']
 };
+// 单位 → 默认单位文本映射
+const micUnitTextMap = {
+  '%': '% (w/w)', 'pH': 'pH', '℃': '℃', 'g': 'g', 'mg': 'mg',
+  'mL': 'mL', 'L': 'L', 'kg': 'kg', 'mm': 'mm', 'cm': 'cm',
+  'μm': 'μm', 'mPa·s': 'mPa·s', 'cfu/g': 'cfu/g', '个/mL': '个/mL',
+  'N': '牛顿', 'min': 'min'
+};
+
 const micDefaultMethodOptions = [
   'MET-01 目视检查法','MET-02 pH计测定法','MET-03 烘箱干燥法',
   'MET-04 HPLC含量测定','MET-05 滴定法','MET-06 熔点测定法'
@@ -277,8 +285,8 @@ const InspectionChar = {
     const quantStyle = (m.micType==='qualitative' || (!isEdit)) ? 'display:none;' : '';
     const qualStyle = (m.micType!=='qualitative') ? 'display:none;' : '';
 
-    // 定量字段值
-    const q = isEdit ? m : { unit:'', decimal:2, targetValue:'', upperSpec:'', lowerSpec:'', upperReal:'', lowerReal:'', unitText:'' };
+    // 定量字段默认值
+    const q = isEdit ? m : { unit:'', decimal:2, unitText:'' };
 
     // 定性代码组选项
     const cgSel = micCodeGroupOptions.map(cg =>
@@ -350,30 +358,16 @@ const InspectionChar = {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
             <label>计量单位<span class="required">*</span></label>
-            <select id="micFormUnit"><option value="">请选择单位</option>${micUnitOptions.map(u=>`<option value="${u}" ${q.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+            <select id="micFormUnit" onchange="InspectionChar.onUnitChange()"><option value="">请选择单位</option>${micUnitOptions.map(u=>`<option value="${u}" ${q.unit===u?'selected':''}>${u}</option>`).join('')}</select>
           </div>
           <div class="form-group">
             <label>小数位数<span class="required">*</span></label>
             <input type="number" id="micFormDecimal" value="${q.decimal}" min="0" max="6" />
           </div>
           <div class="form-group">
-            <label>目标值</label>
-            <input type="text" id="micFormTargetValue" value="${esc(q.targetValue)}" placeholder="期望标准值" />
-          </div>
-          <div class="form-group">
             <label>单位文本</label>
-            <input type="text" id="micFormUnitText" value="${esc(q.unitText)}" placeholder="如：% (w/w)" />
+            <input type="text" id="micFormUnitText" value="${esc(q.unitText)}" readonly style="background:#f1f5f9;color:#94a3b8;" />
           </div>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px;font-weight:600;">规格限（合格判定范围）</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          <div class="form-group"><label>上规格限</label><input type="text" id="micFormUpperSpec" value="${esc(q.upperSpec)}" placeholder="合格上限" /></div>
-          <div class="form-group"><label>下规格限</label><input type="text" id="micFormLowerSpec" value="${esc(q.lowerSpec)}" placeholder="合格下限" /></div>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px;font-weight:600;">实际值限（方法有效范围）</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          <div class="form-group"><label>实际值上限</label><input type="text" id="micFormUpperReal" value="${esc(q.upperReal)}" placeholder="量程上限" /></div>
-          <div class="form-group"><label>实际值下限</label><input type="text" id="micFormLowerReal" value="${esc(q.lowerReal)}" placeholder="量程下限" /></div>
         </div>
       </fieldset>
 
@@ -439,6 +433,13 @@ const InspectionChar = {
     if (qual) qual.style.display = typeVal==='qualitative' ? '' : 'none';
   },
 
+  onUnitChange() {
+    const unitEl = document.getElementById('micFormUnit');
+    const utEl = document.getElementById('micFormUnitText');
+    if (!unitEl || !utEl) return;
+    utEl.value = micUnitTextMap[unitEl.value] || '';
+  },
+
   onCodeGroupChange() {
     const cgEl = document.getElementById('micFormCodeGroup');
     const dcEl = document.getElementById('micFormDefaultCode');
@@ -498,12 +499,7 @@ const InspectionChar = {
         shortText, longText,
         unit: micType==='quantitative' ? (document.getElementById('micFormUnit').value||'') : '',
         decimal: micType==='quantitative' ? parseInt(document.getElementById('micFormDecimal').value)||2 : 0,
-        targetValue: micType==='quantitative' ? document.getElementById('micFormTargetValue').value.trim() : '',
-        upperSpec: micType==='quantitative' ? document.getElementById('micFormUpperSpec').value.trim() : '',
-        lowerSpec: micType==='quantitative' ? document.getElementById('micFormLowerSpec').value.trim() : '',
-        upperReal: micType==='quantitative' ? document.getElementById('micFormUpperReal').value.trim() : '',
-        lowerReal: micType==='quantitative' ? document.getElementById('micFormLowerReal').value.trim() : '',
-        unitText: micType==='quantitative' ? document.getElementById('micFormUnitText').value.trim() : '',
+        unitText: micType==='quantitative' ? (document.getElementById('micFormUnitText').value||'') : '',
         codeGroup: micType==='qualitative' ? (document.getElementById('micFormCodeGroup').value||'') : '',
         defaultCode: micType==='qualitative' ? (document.getElementById('micFormDefaultCode').value||'') : '',
         samplingProc, defaultMethod,
@@ -534,17 +530,10 @@ const InspectionChar = {
       if (micType==='quantitative') {
         m.unit = document.getElementById('micFormUnit').value||'';
         m.decimal = parseInt(document.getElementById('micFormDecimal').value)||2;
-        m.targetValue = document.getElementById('micFormTargetValue').value.trim();
-        m.upperSpec = document.getElementById('micFormUpperSpec').value.trim();
-        m.lowerSpec = document.getElementById('micFormLowerSpec').value.trim();
-        m.upperReal = document.getElementById('micFormUpperReal').value.trim();
-        m.lowerReal = document.getElementById('micFormLowerReal').value.trim();
-        m.unitText = document.getElementById('micFormUnitText').value.trim();
+        m.unitText = document.getElementById('micFormUnitText').value||'';
         m.codeGroup = ''; m.defaultCode = '';
       } else {
-        m.unit = ''; m.decimal = 0;
-        m.targetValue = ''; m.upperSpec = ''; m.lowerSpec = '';
-        m.upperReal = ''; m.lowerReal = ''; m.unitText = '';
+        m.unit = ''; m.decimal = 0; m.unitText = '';
         m.codeGroup = document.getElementById('micFormCodeGroup').value||'';
         m.defaultCode = document.getElementById('micFormDefaultCode').value||'';
       }
@@ -581,15 +570,7 @@ const InspectionChar = {
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定量特性</legend>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           ${roField('计量单位', m.unit)}${roField('小数位数', m.decimal)}
-          ${roField('目标值', m.targetValue)}${roField('单位文本', m.unitText)}
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px;font-weight:600;">规格限（合格判定范围）</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('上规格限', m.upperSpec)}${roField('下规格限', m.lowerSpec)}
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px;font-weight:600;">实际值限（方法有效范围）</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('实际值上限', m.upperReal)}${roField('实际值下限', m.lowerReal)}
+          ${roField('单位文本', m.unitText)}
         </div>
       </fieldset>`;
     }
