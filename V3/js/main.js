@@ -68,46 +68,13 @@ const App = {
       groups: [
         {
           title:'质量主数据', items: [
-            { id:'quality-standard', label:'质量标准（检验计划+物料规格）', route:'quality-standard' },
+            { id:'quality-standard', label:'检验标准', route:'quality-standard' },
             { id:'inspection-char', label:'主检验特性', route:'inspection-char' },
             { id:'inspection-method', label:'检验方法', route:'inspection-method' },
             { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
             { id:'defect-code', label:'缺陷代码目录', route:'defect-code' }
           ]
-        },
-        {
-          title:'样品与检验', items: [
-            { id:'sampling-task', label:'取样任务列表', route:'sampling-task' },
-            { id:'sampling-exec', label:'取样执行（移动端）', route:'sampling-exec' },
-            { id:'inspection-task', label:'检验任务列表', route:'inspection-task' },
-            { id:'inspection-result', label:'检验结果录入（移动端）', route:'inspection-result' },
-            { id:'auto-judge', label:'自动判定', route:'auto-judge' },
-            { id:'oos-auto', label:'OOS 自动触发', route:'oos-auto' },
-            { id:'coa-gen', label:'COA 生成', route:'coa-gen' }
-          ]
-        },
-        {
-          title:'稳定性与环境监测', items: [
-            { id:'stability-study', label:'稳定性考察', route:'stability-study' }
-          ]
-        },
-        {
-          title:'质量事件管理', items: [
-            { id:'deviation', label:'偏差管理', route:'deviation' },
-            { id:'oos-mgmt', label:'OOS 管理', route:'oos-mgmt' },
-            { id:'capa', label:'CAPA 管理', route:'capa' }
-          ]
-        },
-        {
-          title:'质量回顾与报表', items: [
-            { id:'apqr', label:'APQR/APR', route:'apqr' },
-            { id:'cpv', label:'CPV', route:'cpv' },
-            { id:'inspection-rate', label:'检验完成率', route:'inspection-rate' },
-            { id:'deviation-trend', label:'偏差/OOS 趋势', route:'deviation-trend' },
-            { id:'quality-kpi', label:'质量 KPI 看板', route:'quality-kpi' }
-          ]
-        },
-
+        }
       ]
     },
     {
