@@ -560,38 +560,49 @@ const InspectionChar = {
     const m = micData.find(d => d.id===id);
     if (!m) { toast('数据不存在'); return; }
 
-    const labelVal = (label, val) => `<div style="margin-bottom:12px;">
-      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">${label}</div>
-      <div style="font-size:14px;font-weight:500;">${val||'-'}</div>
+    // 只读字段渲染器（与 buildForm 的 2 列网格保持一致）
+    const roField = (label, val) => `<div class="form-group">
+      <label>${label}</label>
+      <div style="padding-top:6px;font-size:14px;font-weight:500;min-height:22px;">${val||'-'}</div>
     </div>`;
 
     const typeName = m.micType==='quantitative' ? '定量' : '定性';
-    const statusName = m.status==='active' ? '启用' : (m.status==='disabled' ? '停用' : '已删除标记');
 
-    let extraHtml = '';
+    const statusBadge = m.status==='active'
+      ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#dcfce7;color:#16a34a;">启用</span>'
+      : m.status==='disabled'
+        ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fef3c7;color:#b45309;">停用</span>'
+        : '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fee2e2;color:#ef4444;">已删除标记</span>';
+
+    // 定量特性 section（结构与 buildForm 一致）
+    let quantSection = '';
     if (m.micType==='quantitative') {
-      extraHtml = `<div style="border-top:1px dashed var(--border);margin:12px 0;padding-top:12px;">
-        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">定量特性</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          ${labelVal('计量单位', m.unit)}${labelVal('小数位数', m.decimal)}
-          ${labelVal('目标值', m.targetValue)}${labelVal('单位文本', m.unitText)}
+      quantSection = `<fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定量特性</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          ${roField('计量单位', m.unit)}${roField('小数位数', m.decimal)}
+          ${roField('目标值', m.targetValue)}${roField('单位文本', m.unitText)}
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">规格限（合格判定）</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          ${labelVal('上规格限', m.upperSpec)}${labelVal('下规格限', m.lowerSpec)}
+        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px;font-weight:600;">规格限（合格判定范围）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          ${roField('上规格限', m.upperSpec)}${roField('下规格限', m.lowerSpec)}
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">实际值限（方法有效范围）</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          ${labelVal('实际值上限', m.upperReal)}${labelVal('实际值下限', m.lowerReal)}
+        <div style="font-size:12px;color:var(--text-secondary);margin:8px 0 4px;font-weight:600;">实际值限（方法有效范围）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          ${roField('实际值上限', m.upperReal)}${roField('实际值下限', m.lowerReal)}
         </div>
-      </div>`;
-    } else {
-      extraHtml = `<div style="border-top:1px dashed var(--border);margin:12px 0;padding-top:12px;">
-        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">定性特性</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          ${labelVal('定性代码组', m.codeGroup)}${labelVal('默认代码', m.defaultCode)}
+      </fieldset>`;
+    }
+
+    // 定性特性 section（结构与 buildForm 一致）
+    let qualSection = '';
+    if (m.micType==='qualitative') {
+      qualSection = `<fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定性特性</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          ${roField('定性代码组', m.codeGroup)}${roField('默认代码', m.defaultCode)}
         </div>
-      </div>`;
+      </fieldset>`;
     }
 
     const isQA = this.isQAManager();
@@ -605,49 +616,61 @@ const InspectionChar = {
       footerLeftBtns.push(`<button class="btn btn-sm" style="color:#ef4444;border:1px solid #fca5a5;margin-right:8px;" onclick="InspectionChar.confirmDelete('${m.id}')">删除标记</button>`);
     }
 
-    const statusBadge = m.status==='active'
-      ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#dcfce7;color:#16a34a;">启用</span>'
-      : m.status==='disabled'
-        ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fef3c7;color:#b45309;">停用</span>'
-        : '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fee2e2;color:#ef4444;">已删除标记</span>';
+    const html = `<div style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto;padding-right:4px;">
 
-    const html = `<div style="display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow-y:auto;padding-right:4px;">
+      <!-- 基本数据（与表单布局一致） -->
       <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          ${labelVal('所属工厂', m.factoryName)}
-          ${labelVal('主检验特性编码', m.code)}
-          ${labelVal('特性类型', typeName)}
-          ${labelVal('短文本', m.shortText)}
-          ${labelVal('采样过程', m.samplingProc)}
-          ${labelVal('状态', statusBadge)}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          ${roField('所属工厂', m.factoryName)}
+          ${roField('主检验特性编码', m.code)}
+          ${roField('特性类型', typeName)}
+          ${roField('短文本', m.shortText)}
+          ${roField('采样过程', m.samplingProc)}
+          <div class="form-group">
+            <label>状态</label>
+            <div style="padding-top:6px;">${statusBadge}</div>
+          </div>
         </div>
-        ${m.longText ? `<div style="margin-top:8px;">${labelVal('长文本', m.longText)}</div>` : ''}
+        <div class="form-group" style="margin-top:8px;">
+          <label>长文本</label>
+          <div style="padding-top:6px;font-size:14px;font-weight:500;min-height:22px;">${m.longText||'-'}</div>
+        </div>
       </fieldset>
-      ${extraHtml}
+
+      ${quantSection}${qualSection}
+
+      <!-- 默认值（与表单布局一致） -->
+      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">默认值</legend>
+        <div class="form-group" style="max-width:400px;">
+          <label>默认检验方法</label>
+          <div style="padding-top:6px;font-size:14px;font-weight:500;">${m.defaultMethod||'-'}</div>
+        </div>
+      </fieldset>
+
+      <!-- 其他信息（额外展示） -->
       <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">其他信息</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
-          ${labelVal('默认检验方法', m.defaultMethod)}
-          ${labelVal('创建人', m.createdBy)}
-          ${labelVal('创建日期', m.createdDate)}
-          ${labelVal('最后修改人', m.changedBy||'-')}
-          ${labelVal('最后修改日期', m.changedDate||'-')}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          ${roField('创建人', m.createdBy)}${roField('创建日期', m.createdDate)}
+          ${roField('最后修改人', m.changedBy||'-')}${roField('最后修改日期', m.changedDate||'-')}
         </div>
       </fieldset>
+
       ${isQA && m.status!=='deleted'
         ? `<div style="display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
             <button class="btn btn-blue" onclick="InspectionChar.openEdit('${m.id}')">编辑</button>
           </div>`
         : ''}
-    </div>`;
 
-    showModal(`主检验特性详情 · ${esc(m.code)}`, html + `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);">
         <div>${footerLeftBtns.join('')}</div>
         <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
-      </div>`, []
-    );
+      </div>
+    </div>`;
+
+    showModal(`主检验特性详情 · ${esc(m.code)}`, html, [], 'modal-xl');
   },
 
   // ============= 状态操作 =============
