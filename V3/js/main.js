@@ -296,7 +296,14 @@ const App = {
     'fault-code-kb': FaultCodeKnowledge,
     'mf-reports': MaintenanceReports,
     'maintenance-tasklist': MaintenanceTasklist,
-    'miniapp': MiniProgram
+    'miniapp': MiniProgram,
+    'shared-insp-mat-use-std': SharedInspMatUseStd,
+    'shared-insp-comp-std': SharedInspCompStd,
+    'shared-insp-result-entry': SharedInspResultEntry,
+    'shared-insp-match-query': SharedInspMatchQuery,
+    'shared-insp-release': SharedInspRelease,
+    'shared-insp-log': SharedInspLog,
+    'shared-insp-config': SharedInspConfig
   },
 
   init() {
