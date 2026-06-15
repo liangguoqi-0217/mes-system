@@ -109,7 +109,6 @@ const InspectionChar = {
         <div class="filter-bar" style="flex-shrink:0;">
           <div class="filter-group"><label>所属工厂</label><select id="micFactory"><option value="">全部</option>${micFactoryOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>特性类型</label><select id="micType"><option value="">全部</option><option value="quantitative">定量</option><option value="qualitative">定性</option></select></div>
-          <div class="filter-group"><label>模式</label><select id="micMode"><option value="">全部</option><option value="copy">完全复制</option><option value="reference">引用模式</option></select></div>
           <div class="filter-group"><label>状态</label><select id="micStatus"><option value="">全部</option><option value="active">启用</option><option value="disabled">停用</option><option value="deleted">已删除标记</option></select></div>
           <div class="filter-group"><label>搜索</label><input type="text" id="micSearch" placeholder="特性编码 / 短文本"></div>
           <div class="filter-actions">
@@ -122,15 +121,14 @@ const InspectionChar = {
           <table class="data-table">
             <thead><tr>
               <th style="width:50px;">序号</th>
-              <th>特性编码</th>
+              <th>主检验特性编码</th>
               <th>短文本</th>
               <th>特性类型</th>
-              <th>模式</th>
               <th>所属工厂</th>
               <th>状态</th>
               <th>创建人</th>
               <th>创建日期</th>
-              <th style="width:180px;">操作</th>
+              <th style="width:80px;">操作</th>
             </tr></thead>
             <tbody id="micTableBody"></tbody>
           </table>
@@ -195,36 +193,21 @@ const InspectionChar = {
       const typeBadge = m.micType==='quantitative'
         ? '<span class="badge badge-blue">定量</span>'
         : '<span class="badge badge-gray">定性</span>';
-      const modeBadge = m.mode==='copy'
-        ? '<span class="badge" style="background:#dbeafe;color:#1d4ed8;">完全复制</span>'
-        : '<span class="badge" style="background:#fef3c7;color:#b45309;">引用</span>';
 
-      let actions = '';
-      if (canEdit) {
-        if (m.status==='deleted') {
-          actions = '';
-        } else {
-          actions = `<button class="btn btn-blue btn-sm" style="margin-right:4px;" onclick="InspectionChar.openEdit('${m.id}')">编辑</button>`;
-          if (m.status==='active') {
-            actions += `<button class="btn btn-warning btn-sm" style="margin-right:4px;background:var(--warning);color:#fff;border:none;" onclick="InspectionChar.toggleDisable('${m.id}')">停用</button>`;
-          } else {
-            actions += `<button class="btn btn-success btn-sm" style="margin-right:4px;" onclick="InspectionChar.toggleEnable('${m.id}')">启用</button>`;
-          }
-          actions += `<button class="btn btn-sm" style="color:#ef4444;border:1px solid #fca5a5;" onclick="InspectionChar.confirmDelete('${m.id}')">删除</button>`;
-        }
-      }
+      const viewBtn = canEdit && m.status!=='deleted'
+        ? `<button class="btn btn-blue btn-sm" onclick="InspectionChar.openView('${m.id}')">查看</button>`
+        : (m.status==='deleted' ? '-' : '');
 
       return `<tr>
         <td>${start+i+1}</td>
         <td><span style="color:#2563eb;font-weight:600;">${esc(m.code)}</span></td>
         <td>${esc(m.shortText)}</td>
         <td>${typeBadge}</td>
-        <td>${modeBadge}</td>
         <td>${esc(m.factoryName)}</td>
         <td>${statusBadge(m.status)}</td>
         <td>${esc(m.createdBy)}</td>
         <td>${m.createdDate}</td>
-        <td>${actions||'-'}</td>
+        <td>${viewBtn||'-'}</td>
       </tr>`;
     }).join('');
   },
@@ -233,13 +216,11 @@ const InspectionChar = {
   search() {
     const factory = document.getElementById('micFactory').value;
     const type = document.getElementById('micType').value;
-    const mode = document.getElementById('micMode').value;
     const status = document.getElementById('micStatus').value;
     const kw = document.getElementById('micSearch').value.trim().toLowerCase();
     this.filtered = micData.filter(m => {
       if (factory && m.factory!==factory) return false;
       if (type && m.micType!==type) return false;
-      if (mode && m.mode!==mode) return false;
       if (status && m.status!==status) return false;
       if (kw && !m.code.toLowerCase().includes(kw) && !m.shortText.toLowerCase().includes(kw)) return false;
       return true;
@@ -249,7 +230,7 @@ const InspectionChar = {
   },
 
   reset() {
-    const els = ['micFactory','micType','micMode','micStatus','micSearch'];
+    const els = ['micFactory','micType','micStatus','micSearch'];
     els.forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     this.initFilters();
     this.renderTable();
@@ -319,7 +300,7 @@ const InspectionChar = {
             <select id="micFormFactory" required onchange="InspectionChar.onFactoryChange()"><option value="">请选择</option>${facSel}</select>
           </div>
           <div class="form-group">
-            <label>特性编码<span class="required">*</span></label>
+            <label>主检验特性编码<span class="required">*</span></label>
             <input type="text" id="micFormCode" readonly style="background:#f1f5f9;color:#94a3b8;" value="${isEdit?esc(m.code):'保存后自动生成'}" />
           </div>
           <div class="form-group">
@@ -336,28 +317,6 @@ const InspectionChar = {
           <div class="form-group">
             <label>短文本<span class="required">*</span></label>
             <input type="text" id="micFormShortText" placeholder="如：pH值、外观" required value="${isEdit?esc(m.shortText):''}" />
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px;">
-          <label>长文本</label>
-          <textarea id="micFormLongText" rows="2" placeholder="详细说明、适用范围等" style="width:100%;">${isEdit?esc(m.longText):''}</textarea>
-        </div>
-      </fieldset>
-
-      <!-- ===== 模式与控制 ===== -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">模式与控制</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 16px;">
-          <div class="form-group">
-            <label>特性模式<span class="required">*</span></label>
-            <div style="display:flex;gap:12px;padding-top:6px;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:13px;">
-                <input type="radio" name="micFormMode" value="copy" ${(!isEdit||m.mode==='copy')?'checked':''}> 完全复制
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:13px;">
-                <input type="radio" name="micFormMode" value="reference" ${(isEdit&&m.mode==='reference')?'checked':''}> 引用模式
-              </label>
-            </div>
           </div>
           <div class="form-group">
             <label>采样过程<span class="required">*</span></label>
@@ -379,10 +338,10 @@ const InspectionChar = {
             </div>
           </div>
         </div>
-        <p style="font-size:11px;color:var(--text-secondary);margin-top:8px;line-height:1.6;">
-          <strong>完全复制：</strong>检验计划引用时复制全部属性，可独立修改，互不影响。<br>
-          <strong>引用模式：</strong>检验计划仅建立引用关系，属性始终与主数据保持一致，不可修改。
-        </p>
+        <div class="form-group" style="margin-top:8px;">
+          <label>长文本</label>
+          <textarea id="micFormLongText" rows="2" placeholder="详细说明、适用范围等" style="width:100%;">${isEdit?esc(m.longText):''}</textarea>
+        </div>
       </fieldset>
 
       <!-- ===== 定量特性（联动展开） ===== -->
@@ -501,9 +460,6 @@ const InspectionChar = {
     const typeRadios = document.getElementsByName('micFormType');
     let micType = ''; for (const r of typeRadios) { if (r.checked) { micType = r.value; break; } }
 
-    const modeRadios = document.getElementsByName('micFormMode');
-    let micMode = ''; for (const r of modeRadios) { if (r.checked) { micMode = r.value; break; } }
-
     const statusRadios = document.getElementsByName('micFormStatus');
     let statusVal = ''; for (const r of statusRadios) { if (r.checked) { statusVal = r.value; break; } }
 
@@ -514,7 +470,6 @@ const InspectionChar = {
     if (!factory) { toast('请选择所属工厂'); return; }
     if (!micType) { toast('请选择特性类型'); return; }
     if (!shortText) { toast('请填写短文本'); return; }
-    if (!micMode) { toast('请选择特性模式'); return; }
     if (!statusVal) { toast('请选择状态'); return; }
 
     if (micType==='quantitative') {
@@ -539,7 +494,7 @@ const InspectionChar = {
         id: 'MIC' + String(micData.length+1).padStart(3,'0'),
         code, factory, factoryName: facObj ? facObj.label : factory,
         micType, micTypeName: micType==='quantitative'?'定量':'定性',
-        mode: micMode, modeName: micMode==='copy'?'完全复制':'引用模式',
+        mode: 'copy', modeName: '完全复制',
         shortText, longText,
         unit: micType==='quantitative' ? (document.getElementById('micFormUnit').value||'') : '',
         decimal: micType==='quantitative' ? parseInt(document.getElementById('micFormDecimal').value)||2 : 0,
@@ -568,8 +523,6 @@ const InspectionChar = {
       if (facObj) m.factoryName = facObj.label;
       m.micType = micType;
       m.micTypeName = micType==='quantitative'?'定量':'定性';
-      m.mode = micMode;
-      m.modeName = micMode==='copy'?'完全复制':'引用模式';
       m.shortText = shortText;
       m.longText = longText;
       m.samplingProc = samplingProc;
@@ -601,12 +554,109 @@ const InspectionChar = {
     this.init();
   },
 
+  // ============= 查看详情 =============
+
+  openView(id) {
+    const m = micData.find(d => d.id===id);
+    if (!m) { toast('数据不存在'); return; }
+
+    const labelVal = (label, val) => `<div style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:2px;">${label}</div>
+      <div style="font-size:14px;font-weight:500;">${val||'-'}</div>
+    </div>`;
+
+    const typeName = m.micType==='quantitative' ? '定量' : '定性';
+    const statusName = m.status==='active' ? '启用' : (m.status==='disabled' ? '停用' : '已删除标记');
+
+    let extraHtml = '';
+    if (m.micType==='quantitative') {
+      extraHtml = `<div style="border-top:1px dashed var(--border);margin:12px 0;padding-top:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">定量特性</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          ${labelVal('计量单位', m.unit)}${labelVal('小数位数', m.decimal)}
+          ${labelVal('目标值', m.targetValue)}${labelVal('单位文本', m.unitText)}
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">规格限（合格判定）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          ${labelVal('上规格限', m.upperSpec)}${labelVal('下规格限', m.lowerSpec)}
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">实际值限（方法有效范围）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          ${labelVal('实际值上限', m.upperReal)}${labelVal('实际值下限', m.lowerReal)}
+        </div>
+      </div>`;
+    } else {
+      extraHtml = `<div style="border-top:1px dashed var(--border);margin:12px 0;padding-top:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">定性特性</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          ${labelVal('定性代码组', m.codeGroup)}${labelVal('默认代码', m.defaultCode)}
+        </div>
+      </div>`;
+    }
+
+    const isQA = this.isQAManager();
+    const footerLeftBtns = [];
+    if (isQA && m.status!=='deleted') {
+      if (m.status==='active') {
+        footerLeftBtns.push(`<button class="btn btn-warning btn-sm" style="margin-right:8px;" onclick="InspectionChar.toggleDisable('${m.id}')">停用</button>`);
+      } else {
+        footerLeftBtns.push(`<button class="btn btn-success btn-sm" style="margin-right:8px;" onclick="InspectionChar.toggleEnable('${m.id}')">启用</button>`);
+      }
+      footerLeftBtns.push(`<button class="btn btn-sm" style="color:#ef4444;border:1px solid #fca5a5;margin-right:8px;" onclick="InspectionChar.confirmDelete('${m.id}')">删除标记</button>`);
+    }
+
+    const statusBadge = m.status==='active'
+      ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#dcfce7;color:#16a34a;">启用</span>'
+      : m.status==='disabled'
+        ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fef3c7;color:#b45309;">停用</span>'
+        : '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fee2e2;color:#ef4444;">已删除标记</span>';
+
+    const html = `<div style="display:flex;flex-direction:column;gap:14px;max-height:70vh;overflow-y:auto;padding-right:4px;">
+      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          ${labelVal('所属工厂', m.factoryName)}
+          ${labelVal('主检验特性编码', m.code)}
+          ${labelVal('特性类型', typeName)}
+          ${labelVal('短文本', m.shortText)}
+          ${labelVal('采样过程', m.samplingProc)}
+          ${labelVal('状态', statusBadge)}
+        </div>
+        ${m.longText ? `<div style="margin-top:8px;">${labelVal('长文本', m.longText)}</div>` : ''}
+      </fieldset>
+      ${extraHtml}
+      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">其他信息</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px;">
+          ${labelVal('默认检验方法', m.defaultMethod)}
+          ${labelVal('创建人', m.createdBy)}
+          ${labelVal('创建日期', m.createdDate)}
+          ${labelVal('最后修改人', m.changedBy||'-')}
+          ${labelVal('最后修改日期', m.changedDate||'-')}
+        </div>
+      </fieldset>
+      ${isQA && m.status!=='deleted'
+        ? `<div style="display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
+            <button class="btn btn-blue" onclick="InspectionChar.openEdit('${m.id}')">编辑</button>
+          </div>`
+        : ''}
+    </div>`;
+
+    showModal(`主检验特性详情 · ${esc(m.code)}`, html + `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+        <div>${footerLeftBtns.join('')}</div>
+        <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+      </div>`, []
+    );
+  },
+
   // ============= 状态操作 =============
 
   // 停用
   toggleDisable(id) {
     const m = micData.find(d => d.id===id);
     if (!m) return;
+    closeModal();
     showModal('确认停用',
       `<p>确定要停用主检验特性 <strong>${esc(m.code)} - ${esc(m.shortText)}</strong> 吗？</p>
        <p style="color:var(--text-secondary);font-size:13px;">停用后，新建检验计划时不可选择此特性，但已引用的历史数据不受影响。</p>`,
@@ -628,6 +678,7 @@ const InspectionChar = {
   toggleEnable(id) {
     const m = micData.find(d => d.id===id);
     if (!m) return;
+    closeModal();
     m.status = 'active';
     m.changedBy = window.currentUserId || '系统';
     m.changedDate = new Date().toISOString().slice(0, 10);
@@ -639,6 +690,7 @@ const InspectionChar = {
   confirmDelete(id) {
     const m = micData.find(d => d.id===id);
     if (!m) return;
+    closeModal();
     showModal('确认删除',
       `<p>确定要删除主检验特性 <strong>${esc(m.code)} - ${esc(m.shortText)}</strong> 吗？</p>
        <p style="color:#ef4444;font-size:13px;">⚠ 删除后状态将变为"已删除标记"，该操作不可恢复，仅保留历史记录以供审计。</p>`,
