@@ -68,10 +68,10 @@ const App = {
       groups: [
         {
           title:'质量主数据', items: [
-            { id:'quality-standard', label:'检验标准', route:'quality-standard' },
             { id:'inspection-char', label:'主检验特性', route:'inspection-char' },
             { id:'inspection-method', label:'检验方法', route:'inspection-method' },
             { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
+            { id:'quality-standard', label:'检验计划', route:'quality-standard' },
             { id:'defect-code', label:'缺陷代码目录', route:'defect-code' }
           ]
         },
