@@ -286,7 +286,8 @@ const App = {
     'fault-code-kb': FaultCodeKnowledge,
     'mf-reports': MaintenanceReports,
     'maintenance-tasklist': MaintenanceTasklist,
-    'miniapp': MiniProgram
+    'miniapp': MiniProgram,
+    'inspection-char': InspectionChar
   },
 
   init() {
