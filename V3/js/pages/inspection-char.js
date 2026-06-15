@@ -606,18 +606,9 @@ const InspectionChar = {
     }
 
     const isQA = this.isQAManager();
-    const footerLeftBtns = [];
-    if (isQA && m.status!=='deleted') {
-      if (m.status==='active') {
-        footerLeftBtns.push(`<button class="btn btn-warning btn-sm" style="margin-right:8px;" onclick="InspectionChar.toggleDisable('${m.id}')">停用</button>`);
-      } else {
-        footerLeftBtns.push(`<button class="btn btn-success btn-sm" style="margin-right:8px;" onclick="InspectionChar.toggleEnable('${m.id}')">启用</button>`);
-      }
-      footerLeftBtns.push(`<button class="btn btn-sm" style="color:#ef4444;border:1px solid #fca5a5;margin-right:8px;" onclick="InspectionChar.confirmDelete('${m.id}')">删除标记</button>`);
-    }
+    const hasEdit = isQA && m.status!=='deleted';
 
-    const html = `<div style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto;padding-right:4px;">
-
+    const scrollBody = `
       <!-- 基本数据（与表单布局一致） -->
       <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
@@ -656,17 +647,16 @@ const InspectionChar = {
           ${roField('创建人', m.createdBy)}${roField('创建日期', m.createdDate)}
           ${roField('最后修改人', m.changedBy||'-')}${roField('最后修改日期', m.changedDate||'-')}
         </div>
-      </fieldset>
+      </fieldset>`;
 
-      ${isQA && m.status!=='deleted'
-        ? `<div style="display:flex;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--border);">
-            <button class="btn btn-blue" onclick="InspectionChar.openEdit('${m.id}')">编辑</button>
-          </div>`
-        : ''}
-
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border);">
-        <div>${footerLeftBtns.join('')}</div>
-        <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+    const html = `<div style="display:flex;flex-direction:column;max-height:70vh;">
+      <div style="flex:1;overflow-y:auto;padding-right:4px;">${scrollBody}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:12px;border-top:1px solid var(--border);flex-shrink:0;">
+        <span></span>
+        <div style="display:flex;gap:8px;">
+          ${hasEdit ? `<button class="btn btn-blue" onclick="InspectionChar.openEdit('${m.id}')">编辑</button>` : ''}
+          <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+        </div>
       </div>
     </div>`;
 
