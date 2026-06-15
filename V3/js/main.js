@@ -5,41 +5,267 @@ const App = {
   currentThird: '',
   menuOpen: {},
 
+  // 新目录结构（方案G）：左侧竖排一级 + hover展开面板（二级分组+三级功能入口）
   menu: [
-    { id:'home', label:'首页', type:'link', route:'home' },
     {
-      id:'main-data', label:'1. 主数据管理', children: [
-        { id:'material', label:'1.1 物料主数据', route:'material-master', pageObj:'MaterialMaster' },
-        { id:'functional-location', label:'1.2 功能位置', route:'functional-location', pageObj:'FunctionalLocation' },
-        { id:'work-center', label:'1.3 工作中心', route:'work-center', pageObj:'WorkCenter' },
-        { id:'maintenance-tasklist', label:'1.4 任务清单', route:'maintenance-tasklist', pageObj:'MaintenanceTasklist' },
-        { id:'equipment', label:'1.5 设备主数据', route:'equipment-master', pageObj:'EquipmentMaster' },
-        { id:'fault-code-kb', label:'1.6 故障代码知识库', route:'fault-code-kb', pageObj:'FaultCodeKnowledge' }
+      id:'main-data', label:'主数据管理', icon:'📋',
+      groups: [
+        {
+          title:'物料', items: [
+            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' }
+          ]
+        }
       ]
     },
     {
-      id:'maintenance-flow', label:'2. 维修流程', children: [
-        { id:'mf-preventive', label:'2.1 预防性维护计划', route:'mf-preventive', pageObj:'MaintPreventive' },
-        { id:'mf-notification-v3', label:'2.2 通知单管理', route:'mf-notification-v3', pageObj:'MaintenanceNotificationV3' },
-        { id:'mf-workorder', label:'2.3 维修工单管理', route:'mf-workorder', pageObj:'MaintenanceWorkOrderV3' },
-        { id:'mf-reports', label:'2.4 设备维修履历与报表', route:'mf-reports', pageObj:'MaintenanceReports' }
+      id:'production-management', label:'生产管理', icon:'⚙️',
+      groups: [
+        {
+          title:'成本对象', items: [
+            { id:'process-order', label:'流程订单', route:'process-order' },
+            { id:'internal-order', label:'内部订单', route:'internal-order' },
+            { id:'cost-center', label:'成本中心', route:'cost-center' },
+            { id:'project-info', label:'项目信息', route:'project-info' }
+          ]
+        },
+        {
+          title:'投料', items: [
+            { id:'issue-order', label:'流程订单投料', route:'issue-order' },
+            { id:'issue-order-batch', label:'流程订单投料-批导', route:'issue-order-batch' },
+            { id:'issue-project', label:'项目投料', route:'issue-project' }
+          ]
+        },
+        {
+          title:'报工', items: [
+            { id:'confirm', label:'报工', route:'confirm' },
+            { id:'confirm-reverse', label:'报工冲销', route:'confirm-reverse' },
+            { id:'confirm-batch', label:'报工-批导', route:'confirm-batch' },
+            { id:'confirm-record', label:'报工记录', route:'confirm-record' }
+          ]
+        },
+        {
+          title:'收货', items: [
+            { id:'goods-receipt', label:'收货', route:'goods-receipt' },
+            { id:'goods-receipt-batch', label:'收货-批导', route:'goods-receipt-batch' }
+          ]
+        },
+        {
+          title:'合箱', items: [
+            { id:'packing', label:'合箱', route:'packing' },
+            { id:'packing-record', label:'合箱记录', route:'packing-record' }
+          ]
+        },
+        {
+          title:'技术性完成', items: [
+            { id:'tech-complete', label:'订单技术性完成', route:'tech-complete' },
+            { id:'tech-complete-record', label:'技术性完成记录', route:'tech-complete-record' }
+          ]
+        }
       ]
     },
     {
-      id:'spare-parts', label:'3. 备品备件管理', children: [
-        { id:'sp-stock', label:'3.1 库存查询', route:'sp-stock' },
-        { id:'sp-purchase', label:'3.2 采购申请', route:'sp-purchase' },
-        { id:'sp-pick', label:'3.3 备件领用', route:'sp-pick' }
+      id:'quality-management', label:'质量管理', icon:'✅',
+      groups: [
+        {
+          title:'质量主数据', items: [
+            { id:'quality-standard', label:'质量标准（检验计划+物料规格）', route:'quality-standard' },
+            { id:'inspection-char', label:'主检验特性', route:'inspection-char' },
+            { id:'inspection-method', label:'检验方法', route:'inspection-method' },
+            { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
+            { id:'defect-code', label:'缺陷代码目录', route:'defect-code' }
+          ]
+        },
+        {
+          title:'样品与检验', items: [
+            { id:'sampling-task', label:'取样任务列表', route:'sampling-task' },
+            { id:'sampling-exec', label:'取样执行（移动端）', route:'sampling-exec' },
+            { id:'inspection-task', label:'检验任务列表', route:'inspection-task' },
+            { id:'inspection-result', label:'检验结果录入（移动端）', route:'inspection-result' },
+            { id:'auto-judge', label:'自动判定', route:'auto-judge' },
+            { id:'oos-auto', label:'OOS 自动触发', route:'oos-auto' },
+            { id:'coa-gen', label:'COA 生成', route:'coa-gen' }
+          ]
+        },
+        {
+          title:'稳定性与环境监测', items: [
+            { id:'stability-study', label:'稳定性考察', route:'stability-study' }
+          ]
+        },
+        {
+          title:'质量事件管理', items: [
+            { id:'deviation', label:'偏差管理', route:'deviation' },
+            { id:'oos-mgmt', label:'OOS 管理', route:'oos-mgmt' },
+            { id:'capa', label:'CAPA 管理', route:'capa' }
+          ]
+        },
+        {
+          title:'质量回顾与报表', items: [
+            { id:'apqr', label:'APQR/APR', route:'apqr' },
+            { id:'cpv', label:'CPV', route:'cpv' },
+            { id:'inspection-rate', label:'检验完成率', route:'inspection-rate' },
+            { id:'deviation-trend', label:'偏差/OOS 趋势', route:'deviation-trend' },
+            { id:'quality-kpi', label:'质量 KPI 看板', route:'quality-kpi' }
+          ]
+        }
       ]
     },
     {
-      id:'measurement', label:'4. 测量数据记录', children: [
-        { id:'mr-entry', label:'4.1 录入测量数据', route:'mr-entry', pageObj:'MeasurementRecord' },
-        { id:'mr-history', label:'4.2 历史查询与趋势', route:'mr-history' },
-        { id:'mr-import', label:'4.3 批量导入', route:'mr-import' }
+      id:'device-management', label:'设备管理', icon:'🔧',
+      groups: [
+        {
+          title:'设备主数据', items: [
+            { id:'functional-location', label:'功能位置', route:'functional-location', pageObj:'FunctionalLocation' },
+            { id:'work-center', label:'工作中心', route:'work-center', pageObj:'WorkCenter' },
+            { id:'maintenance-tasklist', label:'任务清单', route:'maintenance-tasklist', pageObj:'MaintenanceTasklist' },
+            { id:'equipment', label:'设备主数据', route:'equipment-master', pageObj:'EquipmentMaster' },
+            { id:'fault-code-kb', label:'故障代码知识库', route:'fault-code-kb', pageObj:'FaultCodeKnowledge' }
+          ]
+        },
+        {
+          title:'测量数据管理', items: [
+            { id:'mr-entry', label:'录入测量数据', route:'mr-entry', pageObj:'MeasurementRecord' },
+            { id:'mr-history', label:'历史查询与趋势', route:'mr-history' },
+            { id:'mr-import', label:'批量导入', route:'mr-import' }
+          ]
+        },
+        {
+          title:'维修管理', items: [
+            { id:'mf-preventive', label:'预防性维护计划', route:'mf-preventive', pageObj:'MaintPreventive' },
+            { id:'mf-notification-v3', label:'通知单管理', route:'mf-notification-v3', pageObj:'MaintenanceNotificationV3' },
+            { id:'mf-workorder', label:'维修工单管理', route:'mf-workorder', pageObj:'MaintenanceWorkOrderV3' },
+            { id:'mf-reports', label:'设备维修履历与报表', route:'mf-reports', pageObj:'MaintenanceReports' }
+          ]
+        },
+        {
+          title:'设备报表分析', items: [
+            { id:'report-workorder', label:'工单统计报表', route:'report-workorder' },
+            { id:'report-reliability', label:'设备可靠性分析（MTTR/MTBF）', route:'report-reliability' },
+            { id:'report-fault-rank', label:'故障排行榜', route:'report-fault-rank' },
+            { id:'report-pm-rate', label:'预防性维护执行率', route:'report-pm-rate' },
+            { id:'report-workload', label:'人员工作量统计', route:'report-workload' },
+            { id:'report-spare-trend', label:'备件消耗趋势', route:'report-spare-trend' }
+          ]
+        }
       ]
     },
-    { id:'miniapp', label:'9. 小程序', type:'link', route:'miniapp' }
+    {
+      id:'purchase-demand', label:'采购需求管理', icon:'📦',
+      groups: [
+        {
+          title:'备品备件管理', items: [
+            { id:'sp-stock', label:'库存查询', route:'sp-stock' },
+            { id:'sp-purchase', label:'采购申请', route:'sp-purchase' },
+            { id:'sp-pick', label:'备件领用', route:'sp-pick' }
+          ]
+        }
+      ]
+    },
+    {
+      id:'hse-management', label:'HSE 管理', icon:'🛡️',
+      groups: [
+        {
+          title:'HSE 主数据', items: [
+            { id:'hse-hazard-list', label:'危险源清单', route:'hse-hazard-list' },
+            { id:'hse-risk-standard', label:'风险评估标准（LEC/HAZOP等）', route:'hse-risk-standard' },
+            { id:'hse-risk-matrix', label:'风险等级矩阵', route:'hse-risk-matrix' },
+            { id:'hse-law-list', label:'适用法规清单', route:'hse-law-list' },
+            { id:'hse-law-link', label:'法规条款关联至业务', route:'hse-law-link' },
+            { id:'hse-chem-list', label:'危化品清单（CAS号、危险类别）', route:'hse-chem-list' },
+            { id:'hse-sds', label:'SDS（安全数据表）管理', route:'hse-sds' },
+            { id:'hse-ppe-template', label:'岗位劳保配置模板', route:'hse-ppe-template' },
+            { id:'hse-ppe-list', label:'劳保用品清单', route:'hse-ppe-list' },
+            { id:'hse-permit-type', label:'作业票类型定义', route:'hse-permit-type' },
+            { id:'hse-safety-template', label:'安全措施模板', route:'hse-safety-template' },
+            { id:'hse-inspect-item', label:'检查项目库', route:'hse-inspect-item' },
+            { id:'hse-score-standard', label:'评分标准', route:'hse-score-standard' }
+          ]
+        },
+        {
+          title:'安全检查与隐患排查', items: [
+            { id:'hse-inspect-daily', label:'日常巡检计划', route:'hse-inspect-daily' },
+            { id:'hse-inspect-special', label:'专项检查计划（季节性/节假日前）', route:'hse-inspect-special' },
+            { id:'hse-inspect-calendar', label:'计划执行日历', route:'hse-inspect-calendar' },
+            { id:'hse-inspect-task', label:'检查任务列表（PC端/移动端）', route:'hse-inspect-task' },
+            { id:'hse-inspect-result', label:'检查结果录入（合格/隐患/立即整改）', route:'hse-inspect-result' },
+            { id:'hse-inspect-photo', label:'拍照上传', route:'hse-inspect-photo' },
+            { id:'hse-hazard-register', label:'隐患登记（来源：检查/随手拍/员工上报）', route:'hse-hazard-register' },
+            { id:'hse-hazard-evaluate', label:'隐患评估与分级', route:'hse-hazard-evaluate' },
+            { id:'hse-hazard-rectify', label:'整改通知与任务分配', route:'hse-hazard-rectify' },
+            { id:'hse-hazard-verify', label:'整改验收与关闭', route:'hse-hazard-verify' },
+            { id:'hse-bbs-record', label:'观察记录（移动端快速填报）', route:'hse-bbs-record' },
+            { id:'hse-bbs-stat', label:'观察统计', route:'hse-bbs-stat' }
+          ]
+        },
+        {
+          title:'作业票管理（PTW）', items: [
+            { id:'hse-ptw-fire', label:'动火作业', route:'hse-ptw-fire' },
+            { id:'hse-ptw-confined', label:'受限空间作业', route:'hse-ptw-confined' },
+            { id:'hse-ptw-height', label:'高处作业', route:'hse-ptw-height' },
+            { id:'hse-ptw-electric', label:'临时用电', route:'hse-ptw-electric' },
+            { id:'hse-ptw-excavation', label:'动土作业', route:'hse-ptw-excavation' },
+            { id:'hse-ptw-blind', label:'盲板抽堵作业', route:'hse-ptw-blind' },
+            { id:'hse-jsa', label:'作业风险分析（JSA）', route:'hse-jsa' },
+            { id:'hse-ptw-confirm', label:'安全措施逐项确认', route:'hse-ptw-confirm' },
+            { id:'hse-ptw-approval', label:'审批流程（线下审批，系统录入结果）', route:'hse-ptw-approval' },
+            { id:'hse-ptw-close', label:'作业票关闭', route:'hse-ptw-close' },
+            { id:'hse-ptw-ledger', label:'作业票台账', route:'hse-ptw-ledger' }
+          ]
+        },
+        {
+          title:'事故与事件管理', items: [
+            { id:'hse-accident-quick', label:'事故快报（移动端快速上报）', route:'hse-accident-quick' },
+            { id:'hse-nearmiss', label:'未遂事件登记', route:'hse-nearmiss' },
+            { id:'hse-firstaid', label:'急救/医疗处理记录', route:'hse-firstaid' },
+            { id:'hse-investigate-team', label:'调查组成员', route:'hse-investigate-team' },
+            { id:'hse-root-cause', label:'根本原因分析（5Why/鱼骨图）', route:'hse-root-cause' },
+            { id:'hse-invest-conclusion', label:'调查结论与责任认定', route:'hse-invest-conclusion' },
+            { id:'hse-capa-link', label:'CAPA关联', route:'hse-capa-link' },
+            { id:'hse-capa-track', label:'措施跟踪与验证', route:'hse-capa-track' },
+            { id:'hse-accident-stat', label:'事故事件台账与统计', route:'hse-accident-stat' }
+          ]
+        },
+        {
+          title:'职业健康与环境监测', items: [
+            { id:'hse-oh-monitor-point', label:'危害因素监测点定义（噪声/粉尘/毒物等）', route:'hse-oh-monitor-point' },
+            { id:'hse-oh-monitor-task', label:'监测任务与数据录入（移动端）', route:'hse-oh-monitor-task' },
+            { id:'hse-oh-monitor-trend', label:'监测趋势分析', route:'hse-oh-monitor-trend' },
+            { id:'hse-oh-contra', label:'职业禁忌证跟踪', route:'hse-oh-contra' },
+            { id:'hse-health-exam', label:'体检记录（岗前/在岗/离岗）', route:'hse-health-exam' },
+            { id:'hse-occup-disease', label:'职业病档案', route:'hse-occup-disease' },
+            { id:'hse-ppe-record', label:'劳保用品领用记录', route:'hse-ppe-record' },
+            { id:'hse-env-monitor-point', label:'监测点定义（废气/废水/噪声/固废）', route:'hse-env-monitor-point' },
+            { id:'hse-env-monitor-task', label:'监测任务与数据录入', route:'hse-env-monitor-task' },
+            { id:'hse-env-alarm', label:'排放超标自动报警', route:'hse-env-alarm' },
+            { id:'hse-env-trend', label:'监测趋势分析', route:'hse-env-trend' }
+          ]
+        },
+        {
+          title:'培训与报表', items: [
+            { id:'hse-train-plan', label:'培训计划', route:'hse-train-plan' },
+            { id:'hse-train-record', label:'培训记录（参训人员/成绩）', route:'hse-train-record' },
+            { id:'hse-cert-remind', label:'证书/资质到期提醒（特种作业证）', route:'hse-cert-remind' },
+            { id:'hse-report-hazard-rate', label:'隐患排查治理率', route:'hse-report-hazard-rate' },
+            { id:'hse-report-accident-trend', label:'事故事件趋势分析', route:'hse-report-accident-trend' },
+            { id:'hse-report-ltir', label:'LTIR/TRIR（损工/可记录事故率）', route:'hse-report-ltir' },
+            { id:'hse-report-ptw-stat', label:'作业票执行统计', route:'hse-report-ptw-stat' },
+            { id:'hse-report-env-rate', label:'环境排放达标率', route:'hse-report-env-rate' },
+            { id:'hse-report-kpi', label:'HSE KPI 看板', route:'hse-report-kpi' },
+            { id:'hse-emergency-plan', label:'应急预案库', route:'hse-emergency-plan' },
+            { id:'hse-emergency-drill', label:'应急演练记录', route:'hse-emergency-drill' }
+          ]
+        }
+      ]
+    },
+    {
+      id:'miniapp-mgmt', label:'小程序管理', icon:'📱',
+      groups: [
+        {
+          title:'小程序管理', items: [
+            { id:'miniapp', label:'小程序', route:'miniapp' }
+          ]
+        }
+      ]
+    }
   ],
 
   pageMap: {
@@ -449,86 +675,159 @@ const App = {
   renderSidebar() {
     const nav = document.getElementById('sidebarNav');
     let html = '';
+    // 首页（独立项，不参与hover面板）
+    html += '<div class="g-left-item" data-menu="home" onclick="App.navigateTo(\'home\',\'\',\'home\',\'首页\')">首页</div>';
+    // 渲染一级菜单项
     this.menu.forEach(item => {
-      html += this.renderMenuItem(item, 0);
+      html += '<div class="g-left-item" data-menu="' + item.id + '"'
+        + ' onmouseenter="App.openGPanel(this)"'
+        + ' onmouseleave="App.checkGPanelLeave(event)"'
+        + '>' + item.label + '</div>';
     });
     nav.innerHTML = html;
   },
 
-  renderMenuItem(item, depth) {
-    if (item.type === 'link') {
-      const isActive = this.currentMain === item.id;
-      return `<div class="nav-item">
-        <div class="nav-header ${isActive?'active':''}" onclick="App.navigateTo('${item.id}','','${item.route}','${item.label}')">
-          <span>${item.label}</span>
-        </div>
-      </div>`;
-    }
+  // 方案G：打开 hover 面板
+  openGPanel(el) {
+    const menuKey = el.dataset.menu;
+    const item = this.menu.find(m => m.id === menuKey);
+    if (!item || !item.groups) return;
 
-    // Group with children
-    if (item.children) {
-      const isOpen = this.menuOpen[item.id] !== false;
-      const hasActiveChild = this.isActiveParent(item);
-      let html = `<div class="nav-item">
-        <div class="nav-header ${hasActiveChild?'active':''}" onclick="App.toggleMenu(event,'${item.id}')">
-          <span>${item.label}</span>
-          <span class="nav-arrow ${isOpen?'open':''}">&#9654;</span>
-        </div>
-        <div class="nav-submenu ${isOpen?'open':''}">`;
+    // 清除所有激活状态
+    document.querySelectorAll('.g-left-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+    this._gCurrentMenu = menuKey;
 
-      item.children.forEach(child => {
-        if (child.children) {
-          // Third-level group
-          const thirdOpen = this.menuOpen[child.id] !== false;
-          const hasActiveThird = this.isActiveParent(child);
-          html += `<div class="nav-subitem has-children ${this.currentSub === child.id ? 'active' : ''}" onclick="App.toggleThirdMenu(event,'${child.id}')">
-            <span>${child.label}</span>
-            <span class="nav-arrow ${thirdOpen?'open':''}" style="font-size:8px;">&#9654;</span>
-          </div>`;
-          html += `<div class="nav-third ${thirdOpen?'open':''}">`;
-          child.children.forEach(third => {
-            html += `<div class="nav-third-item ${this.currentThird === third.id ? 'active' : ''}" onclick="App.navigateToThird('${item.id}','${child.id}','${third.id}','${third.route}','${third.label}')">${third.label}</div>`;
-          });
-          html += '</div>';
-        } else {
-          html += `<div class="nav-subitem ${this.currentSub === child.id ? 'active' : ''}" onclick="App.navigateTo('${item.id}','${child.id}','${child.route}','${child.label}')">${child.label}</div>`;
-        }
+    // 清除关闭定时器
+    if (this._gPanelTimer) { clearTimeout(this._gPanelTimer); this._gPanelTimer = null; }
+
+    const panel = document.getElementById('gHoverPanel');
+    const inner = document.getElementById('gHoverPanelInner');
+    if (!panel || !inner) return;
+
+    // 面板顶部对齐当前菜单项顶部
+    var itemRect = el.getBoundingClientRect();
+    panel.style.top = itemRect.top + 'px';
+    panel.style.maxHeight = (window.innerHeight - itemRect.top) + 'px';
+
+    // 根据二级目录数量计算自适应宽度
+    var colCount = item.groups.length;
+    var colWidth = 200;
+    var gap = 32;
+    var padding = 56; // 28 * 2
+    var panelWidth = colCount * colWidth + (colCount - 1) * gap + padding;
+    var maxWidth = window.innerWidth - 280;
+    if (panelWidth > maxWidth) panelWidth = maxWidth;
+    panel.style.width = panelWidth + 'px';
+    inner.style.width = panelWidth + 'px';
+
+    let html = '<h3>' + item.label + '</h3>';
+    html += '<div class="g-hover-grid" style="grid-template-columns: repeat(' + colCount + ', minmax(180px, 1fr));">';
+    item.groups.forEach(g => {
+      html += '<div class="g-hover-col">';
+      html += '<div class="g-hover-col-title">' + g.title + '</div>';
+      g.items.forEach(subItem => {
+        html += '<div class="g-hover-link" onclick="App.navigateGItem(\'' + menuKey + '\',\'' + subItem.id + '\',\'' + subItem.route + '\',\'' + subItem.label + '\')">' + subItem.label + '</div>';
       });
-
-      html += '</div></div>';
-      return html;
-    }
-    return '';
-  },
-
-  isActiveParent(item) {
-    if (!item.children) return false;
-    return item.children.some(child => {
-      if (child.children) {
-        return child.children.some(third => third.id === this.currentThird);
-      }
-      return child.id === this.currentSub;
+      html += '</div>';
     });
+    html += '</div>';
+    inner.innerHTML = html;
+    panel.classList.add('open');
   },
 
-  toggleMenu(e, menuId) {
-    e.stopPropagation();
-    if (this.menuOpen[menuId] === undefined) {
-      this.menuOpen[menuId] = false;
-    } else {
-      this.menuOpen[menuId] = !this.menuOpen[menuId];
+  // 方案G：保持面板打开（鼠标进入面板区域）
+  keepGPanelOpen() {
+    if (this._gPanelTimer) {
+      clearTimeout(this._gPanelTimer);
+      this._gPanelTimer = null;
     }
-    this.renderSidebar();
   },
 
-  toggleThirdMenu(e, menuId) {
-    e.stopPropagation();
-    if (this.menuOpen[menuId] === undefined) {
-      this.menuOpen[menuId] = false;
-    } else {
-      this.menuOpen[menuId] = !this.menuOpen[menuId];
+  // 方案G：关闭 hover 面板
+  closeGPanel() {
+    var self = this;
+    this._gPanelTimer = setTimeout(function() {
+      var panel = document.getElementById('gHoverPanel');
+      var inner = document.getElementById('gHoverPanelInner');
+      if (panel) {
+        panel.classList.remove('open');
+        panel.style.width = '';
+        panel.style.top = '';
+        panel.style.maxHeight = '';
+      }
+      if (inner) {
+        inner.style.width = '';
+        var grid = inner.querySelector('.g-hover-grid');
+        if (grid) grid.style.gridTemplateColumns = '';
+      }
+      document.querySelectorAll('.g-left-item').forEach(function(i) { i.classList.remove('active'); });
+      self._gCurrentMenu = null;
+    }, 150);
+  },
+
+  // 方案G：鼠标离开左侧菜单项时检查是否进入面板
+  checkGPanelLeave(e) {
+    var panel = document.getElementById('gHoverPanel');
+    if (!panel) return;
+    var rect = panel.getBoundingClientRect();
+    if (e.clientX >= rect.left && e.clientX <= rect.right &&
+        e.clientY >= rect.top && e.clientY <= rect.bottom) {
+      return;
     }
+    this.closeGPanel();
+  },
+
+  // 方案G：点击面板内的功能项
+  navigateGItem(menuKey, itemId, route, label) {
+    var menuItem = this.menu.find(function(m) { return m.id === menuKey; });
+    this.currentMain = menuKey;
+    this.currentSub = itemId;
+    this.currentThird = '';
+
+    var contentArea = document.getElementById('contentArea');
+    var topbarTitle = document.getElementById('topbarTitle');
+    if (!contentArea || !topbarTitle) return;
+
+    topbarTitle.textContent = label || '';
+    var pageObj = this.pageMap[route];
+    if (pageObj) {
+      try {
+        contentArea.className = 'content-area full-width';
+        contentArea.innerHTML = pageObj.render();
+        // Special handling: measurement record tabs
+        if (route === 'mr-entry' && pageObj === MeasurementRecord) {
+          pageObj.activeTab = 'entry';
+          pageObj.init();
+        } else if (route === 'mr-history') {
+          contentArea.innerHTML = MeasurementRecord.render();
+          MeasurementRecord.activeTab = 'history';
+          MeasurementRecord.init();
+        } else if (route === 'mr-import') {
+          contentArea.innerHTML = MeasurementRecord.render();
+          MeasurementRecord.activeTab = 'import';
+          MeasurementRecord.init();
+        } else {
+          pageObj.init();
+        }
+      } catch (e) {
+        console.error('页面加载失败:', route, e);
+        contentArea.className = 'content-area full-width';
+        contentArea.innerHTML = this.renderError(route, label, e);
+      }
+    } else {
+      contentArea.className = 'content-area full-width';
+      contentArea.innerHTML = this.renderPlaceholder(label || route);
+    }
+
+    // 关闭面板
+    var panel = document.getElementById('gHoverPanel');
+    if (panel) panel.classList.remove('open');
+    document.querySelectorAll('.g-left-item').forEach(function(i) { i.classList.remove('active'); });
+    this._gCurrentMenu = null;
+
     this.renderSidebar();
+    this.closeMobileSidebar();
   },
 
   navigateTo(mainId, subId, route, label) {
@@ -560,7 +859,6 @@ const App = {
           pageObj.activeTab = 'entry';
           pageObj.init();
         } else if (route === 'mr-history') {
-          // For history tab, use MeasurementRecord
           contentArea.innerHTML = MeasurementRecord.render();
           MeasurementRecord.activeTab = 'history';
           MeasurementRecord.init();
@@ -571,36 +869,6 @@ const App = {
         } else {
           pageObj.init();
         }
-      } catch (e) {
-        console.error('页面加载失败:', route, e);
-        contentArea.className = 'content-area full-width';
-        contentArea.innerHTML = this.renderError(route, label, e);
-      }
-    } else {
-      contentArea.className = 'content-area full-width';
-      contentArea.innerHTML = this.renderPlaceholder(label || route);
-    }
-
-    this.renderSidebar();
-    this.closeMobileSidebar();
-  },
-
-  navigateToThird(mainId, subId, thirdId, route, label) {
-    this.currentMain = mainId;
-    this.currentSub = subId;
-    this.currentThird = thirdId;
-
-    const contentArea = document.getElementById('contentArea');
-    const topbarTitle = document.getElementById('topbarTitle');
-    if (!contentArea || !topbarTitle) return;
-
-    topbarTitle.textContent = label || '';
-    const pageObj = this.pageMap[route];
-    if (pageObj) {
-      try {
-        contentArea.className = 'content-area full-width';
-        contentArea.innerHTML = pageObj.render();
-        pageObj.init();
       } catch (e) {
         console.error('页面加载失败:', route, e);
         contentArea.className = 'content-area full-width';
