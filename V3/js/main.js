@@ -106,6 +106,17 @@ const App = {
             { id:'deviation-trend', label:'偏差/OOS 趋势', route:'deviation-trend' },
             { id:'quality-kpi', label:'质量 KPI 看板', route:'quality-kpi' }
           ]
+        },
+        {
+          title:'集团来料检验共享平台', items: [
+            { id:'shared-insp-mat-use-std', label:'物料-用途-检验标准库', route:'shared-insp-mat-use-std' },
+            { id:'shared-insp-comp-std', label:'公司级标准映射', route:'shared-insp-comp-std' },
+            { id:'shared-insp-result-entry', label:'检验结果录入（项目级）', route:'shared-insp-result-entry' },
+            { id:'shared-insp-match-query', label:'共享查询与智能匹配', route:'shared-insp-match-query' },
+            { id:'shared-insp-release', label:'检验执行与SAP放行', route:'shared-insp-release' },
+            { id:'shared-insp-log', label:'共享放行日志', route:'shared-insp-log' },
+            { id:'shared-insp-config', label:'平台配置（有效期/公司范围等）', route:'shared-insp-config' }
+          ]
         }
       ]
     },
