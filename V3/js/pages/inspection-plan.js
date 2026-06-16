@@ -577,193 +577,200 @@ const InspectionPlan = {
     this.formOps = [];
   },
 
-  // ---- 构建表单 ----
+  // ---- 构建表单（清爽表格型）----
   buildForm(data, readonly) {
     const p = data || {};
     const ro = readonly ? 'disabled' : '';
     const fac = p.factory || this.currentFactory;
     const planCode = p.code || ipGenPlanCode(fac);
-    const isEdit = !!data;
 
-    // 获取本工厂启用的 MIC（全局 micData）
+    // 选项数据
     const availMic = (typeof micData !== 'undefined' ? micData : []).filter(m => m.factory === fac && m.status === 'active');
-    // 获取启用的检验方法（全局 imData）
     const availMethod = (typeof imData !== 'undefined' ? imData : []).filter(m => m.status === 'active');
-
-    // 物料搜索+下拉
     const matOpts = ipMaterialOptions.map(m => `<option value="${m.code}">${m.code}（${m.name}）</option>`).join('');
     const purposeOpts = ipPurposeOptions.map(pp => `<option value="${pp.code}">${pp.code}（${pp.name}）</option>`).join('');
     const wcOpts = ipWorkCenterOptions.map(w => `<option value="${w.value}">${w.label}</option>`).join('');
     const spOpts = ipSamplingOptions.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
     const micOpts = availMic.map(m => `<option value="${m.id}" data-mic-type="${m.micType}" data-mic-unit="${m.unit||''}" data-mic-decimal="${m.decimal||0}" data-mic-method="${m.defaultMethod||''}" data-mic-codegroup="${m.codeGroup||''}" data-mic-defaultcode="${m.defaultCode||''}">${m.code}（${m.shortText}）</option>`).join('');
     const methodOpts = availMethod.map(m => `<option value="${m.id}">${m.code}（${m.name}）</option>`).join('');
-
-    // 物料名自动带出
-    const matName = ipMaterialOptions.find(m => m.code === p.materialCode);
-    const purName = ipPurposeOptions.find(pp => pp.code === p.purposeCode);
-
     const roField = (label, val) => `<div class="form-group"><label>${label}</label><div class="ro-value">${esc(val||'—')}</div></div>`;
 
     return `
-      <div class="form-section" style="margin-bottom:16px;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
-        <div style="font-weight:700;font-size:15px;margin-bottom:12px;color:var(--primary);border-bottom:2px solid var(--primary);padding-bottom:8px;">─ 抬头信息 ─</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          ${ro ? roField('检验计划编号', planCode) : `<div class="form-group"><label>检验计划编号<span class="required">*</span></label><input type="text" class="form-input" value="${esc(planCode)}" disabled style="background:#f1f5f9;"></div>`}
+      <!-- 抬头信息 -->
+      <div class="clean-section">
+        <h4>抬头信息</h4>
+        <div class="clean-grid-3">
+          ${ro ? roField('检验计划编号', planCode) : `<div class="form-group"><label>检验计划编号</label><input type="text" class="form-input" value="${esc(planCode)}" disabled></div>`}
           <div class="form-group">
-            <label>工厂<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}</div>` : `<input type="text" class="form-input" value="${esc(ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}" disabled style="background:#f1f5f9;">`}
+            <label>工厂</label>
+            ${ro ? `<div class="ro-value">${esc(p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}</div>` : `<input type="text" class="form-input" value="${esc(ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}" disabled>`}
           </div>
           <div class="form-group">
-            <label>物料编码<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(p.materialCode||'—')}</div>` : `<select class="form-input" id="ipF_materialCode" ${ro} onchange="InspectionPlan.onMaterialChange()"><option value="">— 请选择 —</option>${matOpts}</select>`}
-          </div>
-          ${ro ? roField('物料名称', p.materialName) : `<div class="form-group"><label>物料名称</label><input type="text" class="form-input" id="ipF_materialName" value="${esc(p.materialName||'')}" readonly style="background:#f1f5f9;"></div>`}
-          <div class="form-group">
-            <label>用途代码<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(p.purposeCode||'—')}（${esc(p.purposeName||'')}）</div>` : `<select class="form-input" id="ipF_purposeCode" ${ro} onchange="InspectionPlan.onPurposeChange()"><option value="">— 请选择 —</option>${purposeOpts}</select>`}
-          </div>
-          ${ro ? roField('用途名称', p.purposeName) : `<div class="form-group"><label>用途名称</label><input type="text" class="form-input" id="ipF_purposeName" value="${esc(p.purposeName||'')}" readonly style="background:#f1f5f9;"></div>`}
-          ${ro ? roField('状态', p.status==='active'?'启用':(p.status==='disabled'?'停用':'已删除'))
-            : `<div class="form-group"><label>状态<span class="required">*</span></label><div style="display:flex;gap:16px;padding-top:6px;"><label style="display:flex;align-items:center;gap:4px;"><input type="radio" name="ipF_status" value="active" ${p.status!=='disabled'?'checked':''}> 启用</label><label style="display:flex;align-items:center;gap:4px;"><input type="radio" name="ipF_status" value="disabled" ${p.status==='disabled'?'checked':''}> 停用</label></div></div>`
-          }
-        </div>
-      </div>
-
-      <!-- 工序与检验特性 -->
-      <div class="form-section" style="margin-bottom:16px;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
-        <div style="font-weight:700;font-size:15px;margin-bottom:12px;color:var(--primary);border-bottom:2px solid var(--primary);padding-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-          <span>─ 工序与检验特性 ─</span>
-          ${!ro ? `<button class="btn btn-blue btn-sm" type="button" onclick="InspectionPlan.addOperation()">+ 添加工序</button>` : ''}
-        </div>
-        <div id="ipOpsContainer">
-          ${this.formOps.map((op, oi) => this.buildOpCard(op, oi, ro, wcOpts, spOpts, micOpts, methodOpts, availMic)).join('')}
-        </div>
-      </div>
-
-    `;
-  },
-
-  // ---- 构建工序卡片 ----
-  buildOpCard(op, oi, ro, wcOpts, spOpts, micOpts, methodOpts, availMic) {
-    const isSampling = op.opType === 'sampling';
-    const isInspection = op.opType === 'inspection';
-
-    return `
-    <div class="ip-opcard" style="border:1px solid #cbd5e1;border-radius:8px;margin-bottom:12px;overflow:hidden;" data-op-idx="${oi}">
-      <div style="background:#f8fafc;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;">
-        <span style="font-weight:600;font-size:14px;">🔹 工序 ${esc(op.opNum)}</span>
-        ${!ro ? `<button class="btn btn-red btn-sm" type="button" onclick="InspectionPlan.removeOperation(${oi})">删除此工序</button>` : ''}
-      </div>
-      <div style="padding:12px 16px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-          <div class="form-group">
-            <label>工序号<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(op.opNum)}</div>` : `<input type="text" class="form-input" value="${esc(op.opNum)}" disabled style="background:#f1f5f9;">`}
-          </div>
-          <div class="form-group">
-            <label>工序类型<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(op.opTypeName)}</div>`
-              : `<div style="display:flex;gap:16px;padding-top:6px;">
-                <label style="display:flex;align-items:center;gap:4px;"><input type="radio" class="ip-optype" name="ipOpType_${oi}" value="sampling" ${isSampling?'checked':''} data-op-idx="${oi}"> 取样</label>
-                <label style="display:flex;align-items:center;gap:4px;"><input type="radio" class="ip-optype" name="ipOpType_${oi}" value="inspection" ${isInspection?'checked':''} data-op-idx="${oi}"> 检验</label>
+            <label>状态</label>
+            ${ro ? `<div class="ro-value">${p.status==='active'?'启用':(p.status==='disabled'?'停用':'已删除')}</div>`
+              : `<div style="display:flex;gap:12px;padding-top:4px;">
+                <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="active" ${p.status!=='disabled'?'checked':''}> 启用</label>
+                <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="disabled" ${p.status==='disabled'?'checked':''}> 停用</label>
               </div>`
             }
           </div>
-          <div class="form-group">
-            <label>工作中心<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(op.workCenterName||op.workCenter)}</div>` : `<select class="form-input ip-wc" data-op-idx="${oi}">${wcOpts}</select>`}
-          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr;gap:10px;margin-top:4px;">
+        <div class="clean-grid-2" style="margin-top:12px;">
           <div class="form-group">
-            <label>工序描述</label>
-            ${ro ? `<div class="ro-value">${esc(op.description||'—')}</div>` : `<input type="text" class="form-input ip-opdesc" value="${esc(op.description||'')}" placeholder="如：理化检验" data-op-idx="${oi}">`}
+            <label>物料编码<span class="req">*</span></label>
+            ${ro ? `<div class="ro-value">${esc(p.materialCode||'—')}</div>` : `<select class="form-input" id="ipF_materialCode" onchange="InspectionPlan.onMaterialChange()"><option value="">— 请选择 —</option>${matOpts}</select>`}
           </div>
-        </div>
-
-        <!-- 取样工序：取样方案 -->
-        <div class="ip-sampling-section" data-op-idx="${oi}" style="${isSampling?'':'display:none;'} margin-top:8px;">
+          ${ro ? roField('物料名称', p.materialName) : `<div class="form-group"><label>物料名称</label><input type="text" class="form-input" id="ipF_materialName" value="${esc(p.materialName||'')}" readonly></div>`}
           <div class="form-group">
-            <label>取样方案<span class="required">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(op.samplingPlanName||op.samplingPlan||'—')}</div>` : `<select class="form-input ip-sp" data-op-idx="${oi}"><option value="">— 请选择 —</option>${spOpts}</select>`}
+            <label>用途代码<span class="req">*</span></label>
+            ${ro ? `<div class="ro-value">${esc(p.purposeCode||'—')}（${esc(p.purposeName||'')}）</div>` : `<select class="form-input" id="ipF_purposeCode" onchange="InspectionPlan.onPurposeChange()"><option value="">— 请选择 —</option>${purposeOpts}</select>`}
           </div>
-        </div>
-
-        <!-- 检验工序：检验特性列表 -->
-        <div class="ip-chars-section" data-op-idx="${oi}" style="${isInspection?'':'display:none;'} margin-top:8px;">
-          <div style="font-weight:600;font-size:13px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-            <span>检验特性</span>
-            ${!ro ? `<button class="btn btn-blue btn-sm" type="button" onclick="InspectionPlan.addChar(${oi})">+ 添加检验特性</button>` : ''}
-          </div>
-          <div class="ip-chars-list" data-op-idx="${oi}">
-            ${(op.chars||[]).map((ch, ci) => this.buildCharItem(ch, oi, ci, ro, micOpts, methodOpts, spOpts, availMic)).join('')}
-            ${(op.chars||[]).length === 0 ? `<div class="ip-no-chars" style="color:#94a3b8;font-size:13px;padding:8px;text-align:center;">${ro?'无检验特性':'点击上方按钮添加检验特性'}</div>` : ''}
-          </div>
+          ${ro ? roField('用途名称', p.purposeName) : `<div class="form-group"><label>用途名称</label><input type="text" class="form-input" id="ipF_purposeName" value="${esc(p.purposeName||'')}" readonly></div>`}
         </div>
       </div>
-    </div>`;
+
+      <!-- 工序表格 -->
+      <div class="clean-section">
+        <h4>工序与检验特性${!ro ? `<button class="btn-add btn-xs" type="button" onclick="InspectionPlan.addOperation()" style="margin-left:12px;">+ 添加工序</button>` : ''}</h4>
+        <div style="overflow-x:auto;">
+          <table class="clean-op-table">
+            <thead><tr>
+              <th style="width:60px;">工序号</th>
+              <th style="width:80px;">类型</th>
+              <th>工作中心</th>
+              <th>描述</th>
+              <th style="width:200px;">取样方案</th>
+              <th>检验特性</th>
+              <th style="width:50px;"></th>
+            </tr></thead>
+            <tbody id="ipOpsContainer">
+              ${this.formOps.map((op, oi) => this.buildOpRow(op, oi, ro, wcOpts, spOpts)).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 检验特性详情区 -->
+      ${!ro && this.formOps.some(op => op.opType === 'inspection') ? `<div class="clean-section"><h4>检验特性详情</h4><div id="ipCharsArea">${this.renderAllChars(ro, micOpts, methodOpts, spOpts)}</div></div>` : ''}
+      ${!ro && !this.formOps.some(op => op.opType === 'inspection') ? `<div class="clean-section"><h4>检验特性详情</h4><div id="ipCharsArea" class="clean-empty-chars">暂无检验工序，切换工序类型为"检验"后可配置特性</div></div>` : ''}
+      ${ro ? `<div class="clean-section"><h4>检验特性详情</h4>${this.renderAllChars(ro, micOpts, methodOpts, spOpts)}</div>` : ''}
+    `;
   },
 
-  // ---- 构建检验特性项 ----
-  buildCharItem(ch, oi, ci, ro, micOpts, methodOpts, spOpts, availMic) {
+  // ---- 渲染所有检验工序的特性区 ----
+  renderAllChars(ro, micOpts, methodOpts, spOpts) {
+    return this.formOps.map((op, oi) => {
+      if (op.opType !== 'inspection') return '';
+      const wcName = ipWorkCenterOptions.find(w => w.value === op.workCenter);
+      return `<div data-op-chars="${oi}" style="margin-bottom:6px;">` +
+        `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-size:13px;">` +
+          `<span><span class="badge badge-blue" style="margin-right:6px;">${esc(op.opNum)}</span>${esc(wcName?wcName.label:op.workCenter)}</span>` +
+          `${!ro ? `<button class="btn-add btn-xs" type="button" onclick="InspectionPlan.addChar(${oi})">+ 添加特性</button>` : ''}` +
+        `</div>` +
+        `${(op.chars||[]).map((ch, ci) => this.buildCharCard(ch, oi, ci, ro, micOpts, methodOpts, spOpts)).join('')}` +
+        `${(op.chars||[]).length === 0 ? `<div class="clean-empty-chars">暂无检验特性，点击上方按钮添加</div>` : ''}` +
+        `</div>`;
+    }).join('');
+  },
+
+  // ---- 构建工序表格行 ----
+  buildOpRow(op, oi, ro, wcOpts, spOpts) {
+    const isSampling = op.opType === 'sampling';
+    const isInspection = op.opType === 'inspection';
+    const wcObj = ipWorkCenterOptions.find(w => w.value === op.workCenter);
+
+    let charsCell = '';
+    if (isInspection && op.chars && op.chars.length > 0) {
+      charsCell = `<div class="clean-tag-row">` +
+        op.chars.map((ch, ci) => {
+          const cls = ch.micType === 'qualitative' ? 'clean-tag qual' : 'clean-tag';
+          return `<span class="${cls}" data-op-idx="${oi}" data-char-idx="${ci}" title="${esc(ch.micName||'未命名')}">${esc(ch.micName||'未命名')}</span>`;
+        }).join('') +
+        `${!ro ? `<button class="btn-add btn-xs" onclick="InspectionPlan.addChar(${oi})">+</button>` : ''}` +
+        `</div>`;
+    } else if (isInspection) {
+      charsCell = `<span class="badge badge-gray" style="margin-right:4px;">— 无 —</span>${!ro ? `<button class="btn-add btn-xs" onclick="InspectionPlan.addChar(${oi})">+</button>` : ''}`;
+    } else {
+      charsCell = `<span class="badge badge-gray">— 不适用 —</span>`;
+    }
+
+    return `<tr data-op-idx="${oi}">
+      <td><span class="badge badge-blue">${esc(op.opNum)}</span></td>
+      <td style="white-space:nowrap;">
+        ${ro ? `<span class="badge ${isSampling?'badge-green':'badge-purple'}">${esc(op.opTypeName)}</span>`
+          : `<label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-bottom:0;font-weight:600;margin-right:8px;cursor:pointer;">
+              <input type="radio" class="ip-optype" name="ipOpType_${oi}" value="sampling" ${isSampling?'checked':''} data-op-idx="${oi}"> 取样
+            </label>
+            <label style="display:inline-flex;align-items:center;gap:3px;font-size:11px;margin-bottom:0;font-weight:600;cursor:pointer;">
+              <input type="radio" class="ip-optype" name="ipOpType_${oi}" value="inspection" ${isInspection?'checked':''} data-op-idx="${oi}"> 检验
+            </label>`
+        }
+      </td>
+      <td>${ro ? `<span class="ro-value">${esc(op.workCenterName||op.workCenter)}</span>` : `<select class="ip-wc" data-op-idx="${oi}">${wcOpts}</select>`}</td>
+      <td>${ro ? `<span class="ro-value">${esc(op.description||'—')}</span>` : `<input type="text" class="ip-opdesc" value="${esc(op.description||'')}" placeholder="（可选）" data-op-idx="${oi}">`}</td>
+      <td>
+        ${isSampling
+          ? (ro ? `<span class="ro-value">${esc(op.samplingPlanName||op.samplingPlan||'—')}</span>` : `<select class="ip-sp" data-op-idx="${oi}"><option value="">— 请选择 —</option>${spOpts}</select>`)
+          : `<span class="badge badge-gray">— 不适用 —</span>`}
+      </td>
+      <td>${charsCell}</td>
+      <td>${!ro ? `<button class="btn-danger btn-xs" type="button" onclick="InspectionPlan.removeOperation(${oi})">删除</button>` : ''}</td>
+    </tr>`;
+  },
+
+  // ---- 构建检验特性编辑卡片 ----
+  buildCharCard(ch, oi, ci, ro, micOpts, methodOpts, spOpts) {
     const isQuant = ch.micType === 'quantitative';
     const isQual = ch.micType === 'qualitative';
-    const codeGroups = (typeof micCodeGroupOptions !== 'undefined' ? micCodeGroupOptions : []);
     const codeGroupMap = (typeof micDefaultCodeOptions !== 'undefined' ? micDefaultCodeOptions : {});
     const cgCodes = codeGroupMap[ch.codeGroup] || [];
 
-    return `
-    <div class="ip-char-item" style="border:1px dashed #cbd5e1;border-radius:6px;padding:10px;margin-bottom:8px;background:#fcfcfc;" data-op-idx="${oi}" data-char-idx="${ci}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <span style="font-size:13px;font-weight:600;color:#475569;">检验特性 ${ci+1}</span>
-        ${!ro ? `<button class="btn btn-red btn-sm" type="button" onclick="InspectionPlan.removeChar(${oi},${ci})">删除此特性</button>` : ''}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+    return `<div class="clean-info-card ip-char-item" data-op-idx="${oi}" data-char-idx="${ci}">
+      <h5>
+        <span class="clean-char-meta">
+          ${esc(ch.micName||'新特性')}
+          <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm">${isQuant?'定量':'定性'}</span>
+        </span>
+        ${!ro ? `<button class="btn-danger btn-xs" type="button" onclick="InspectionPlan.removeChar(${oi},${ci})">删除</button>` : ''}
+      </h5>
+      <div class="clean-grid-3">
         <div class="form-group">
-          <label>主检验特性（MIC）<span class="required">*</span></label>
-          ${ro ? `<div class="ro-value">${esc(ch.micCode)}（${esc(ch.micName)}）</div>`
-            : `<select class="form-input ip-mic-select" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 请选择 —</option>${micOpts}</select>`
-          }
+          <label>主检验特性（MIC）<span class="req">*</span></label>
+          ${ro ? `<div class="ro-value">${esc(ch.micCode)}（${esc(ch.micName)}）</div>` : `<select class="form-input ip-mic-select" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 请选择 —</option>${micOpts}</select>`}
         </div>
         <div class="form-group">
           <label>检验方法</label>
-          ${ro ? `<div class="ro-value">${ch.methodCode ? esc(ch.methodCode)+'（'+esc(ch.methodName)+'）' : '—'}</div>`
-            : `<select class="form-input ip-method" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${methodOpts}</select>`
-          }
+          ${ro ? `<div class="ro-value">${ch.methodCode ? esc(ch.methodCode)+'（'+esc(ch.methodName)+'）' : '—'}</div>` : `<select class="form-input ip-method" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${methodOpts}</select>`}
         </div>
         <div class="form-group">
           <label>取样方案</label>
-          ${ro ? `<div class="ro-value">${ch.samplingPlanName||ch.samplingPlan||'—'}</div>`
-            : `<select class="form-input ip-char-sp" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${spOpts}</select>`
-          }
+          ${ro ? `<div class="ro-value">${ch.samplingPlanName||ch.samplingPlan||'—'}</div>` : `<select class="form-input ip-char-sp" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${spOpts}</select>`}
         </div>
       </div>
-
-      <!-- 定量 MIC 字段 -->
-      <div class="ip-quant-fields" data-op-idx="${oi}" data-char-idx="${ci}" style="${isQuant?'':'display:none;'} display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:8px;">
+      <!-- 定量 -->
+      <div class="ip-quant-fields" data-op-idx="${oi}" data-char-idx="${ci}" style="${isQuant?'':'display:none;'} display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:10px;">
         <div class="form-group">
           <label>单位</label>
-          ${ro ? `<div class="ro-value">${ch.unit||'—'}</div>` : `<input type="text" class="form-input ip-char-unit" value="${esc(ch.unit||'')}" placeholder="覆盖MIC默认值">`}
+          ${ro ? `<div class="ro-value">${ch.unit||'—'}</div>` : `<input type="text" class="form-input ip-char-unit" value="${esc(ch.unit||'')}">`}
         </div>
         <div class="form-group">
           <label>小数位数</label>
           ${ro ? `<div class="ro-value">${ch.decimal||0}</div>` : `<input type="number" class="form-input ip-char-decimal" value="${ch.decimal||0}" min="0" max="6">`}
         </div>
         <div class="form-group">
-          <label>上规格限<span class="required">*</span></label>
+          <label>上规格限<span class="req">*</span></label>
           ${ro ? `<div class="ro-value">${ch.upperSpec||'—'}</div>` : `<input type="text" class="form-input ip-char-upper" value="${esc(ch.upperSpec||'')}" placeholder="如 7.0">`}
         </div>
         <div class="form-group">
-          <label>下规格限<span class="required">*</span></label>
+          <label>下规格限<span class="req">*</span></label>
           ${ro ? `<div class="ro-value">${ch.lowerSpec||'—'}</div>` : `<input type="text" class="form-input ip-char-lower" value="${esc(ch.lowerSpec||'')}" placeholder="如 5.0">`}
         </div>
       </div>
-
-      <!-- 定性 MIC 字段 -->
-      <div class="ip-qual-fields" data-op-idx="${oi}" data-char-idx="${ci}" style="${isQual?'':'display:none;'} display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <!-- 定性 -->
+      <div class="ip-qual-fields" data-op-idx="${oi}" data-char-idx="${ci}" style="${isQual?'':'display:none;'} display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
         <div class="form-group">
           <label>代码组</label>
-          ${ro ? `<div class="ro-value">${ch.codeGroup||'—'}</div>` : `<input type="text" class="form-input ip-char-codegroup" value="${esc(ch.codeGroup||'')}" readonly style="background:#f1f5f9;">`}
+          ${ro ? `<div class="ro-value">${ch.codeGroup||'—'}</div>` : `<input type="text" class="form-input ip-char-codegroup" value="${esc(ch.codeGroup||'')}" readonly>`}
         </div>
         <div class="form-group">
           <label>默认代码</label>
@@ -771,7 +778,7 @@ const InspectionPlan = {
         </div>
       </div>
     </div>`;
-  },
+  }
 
   // ---- MIC 选择变更 ----
   onMicChange(sel) {
@@ -832,17 +839,8 @@ const InspectionPlan = {
     const opIdx = parseInt(radio.dataset.opIdx);
     this.formOps[opIdx].opType = radio.value;
     this.formOps[opIdx].opTypeName = radio.value === 'sampling' ? '取样' : '检验';
-    const card = document.querySelector(`.ip-opcard[data-op-idx="${opIdx}"]`);
-    if (!card) return;
-    const sampSec = card.querySelector('.ip-sampling-section');
-    const charsSec = card.querySelector('.ip-chars-section');
-    if (radio.value === 'sampling') {
-      if (sampSec) sampSec.style.display = '';
-      if (charsSec) charsSec.style.display = 'none';
-    } else {
-      if (sampSec) sampSec.style.display = 'none';
-      if (charsSec) charsSec.style.display = '';
-    }
+    // 切换类型后重建表格和特性区
+    this.rebuildOpSection();
   },
 
   // ---- 添加/删除工序 ----
@@ -863,58 +861,76 @@ const InspectionPlan = {
   },
 
   rebuildOpSection() {
-    const container = document.getElementById('ipOpsContainer');
-    if (!container) return;
+    // 1. 重建表格体
+    const tbody = document.getElementById('ipOpsContainer');
+    if (!tbody) return;
     const ro = (this.editId === '' && this.editId !== null) ? '' : '';
     const wcOpts = ipWorkCenterOptions.map(w => `<option value="${w.value}">${w.label}</option>`).join('');
     const spOpts = ipSamplingOptions.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
+    // 选项（用于 chars 区）
     const fac = this.currentFactory;
     const availMic = (typeof micData !== 'undefined' ? micData : []).filter(m => m.factory === fac && m.status === 'active');
     const micOpts = availMic.map(m => `<option value="${m.id}" data-mic-type="${m.micType}" data-mic-unit="${m.unit||''}" data-mic-decimal="${m.decimal||0}" data-mic-method="${m.defaultMethod||''}" data-mic-codegroup="${m.codeGroup||''}" data-mic-defaultcode="${m.defaultCode||''}">${m.code}（${m.shortText}）</option>`).join('');
     const availMethod = (typeof imData !== 'undefined' ? imData : []).filter(m => m.status === 'active');
     const methodOpts = availMethod.map(m => `<option value="${m.id}">${m.code}（${m.name}）</option>`).join('');
-    container.innerHTML = this.formOps.map((op, oi) => this.buildOpCard(op, oi, ro, wcOpts, spOpts, micOpts, methodOpts, availMic)).join('');
-    // 重新绑定事件
-    container.querySelectorAll('.ip-mic-select').forEach(sel => {
+
+    // 重建表格行
+    tbody.innerHTML = this.formOps.map((op, oi) => this.buildOpRow(op, oi, ro, wcOpts, spOpts)).join('');
+
+    // 重建检验特性区
+    const charsArea = document.getElementById('ipCharsArea');
+    if (charsArea) {
+      charsArea.innerHTML = this.renderAllChars(ro, micOpts, methodOpts, spOpts);
+    }
+
+    // 绑定事件
+    const bc = document.getElementById('modalBackdrop');
+    if (!bc) return;
+    bc.querySelectorAll('.ip-mic-select').forEach(sel => {
       sel.addEventListener('change', (e) => this.onMicChange(e.target));
     });
-    container.querySelectorAll('.ip-optype').forEach(radio => {
+    bc.querySelectorAll('.ip-optype').forEach(radio => {
       radio.addEventListener('change', (e) => this.onOpTypeChange(e.target));
     });
-    // 设置选中值
+
+    // 恢复表单选中值
     this.formOps.forEach((op, oi) => {
-      const card = container.querySelector(`.ip-opcard[data-op-idx="${oi}"]`);
-      if (!card) return;
-      const wcEl = card.querySelector('.ip-wc');
+      const tr = tbody.querySelector(`tr[data-op-idx="${oi}"]`);
+      if (!tr) return;
+      const wcEl = tr.querySelector('.ip-wc');
       if (wcEl) wcEl.value = op.workCenter;
-      const spEl = card.querySelector('.ip-sp');
+      const spEl = tr.querySelector('.ip-sp');
       if (spEl) spEl.value = op.samplingPlan || '';
-      const descEl = card.querySelector('.ip-opdesc');
+      const descEl = tr.querySelector('.ip-opdesc');
       if (descEl) descEl.value = op.description || '';
-      // 每个特性
-      (op.chars||[]).forEach((ch, ci) => {
-        const charItem = card.querySelector(`.ip-char-item[data-char-idx="${ci}"]`);
-        if (!charItem) return;
-        const micEl = charItem.querySelector('.ip-mic-select');
-        if (micEl) micEl.value = ch.micId || '';
-        const methodEl = charItem.querySelector('.ip-method');
-        if (methodEl) methodEl.value = ch.methodId || '';
-        const charSpEl = charItem.querySelector('.ip-char-sp');
-        if (charSpEl) charSpEl.value = ch.samplingPlan || '';
-        const unitEl = charItem.querySelector('.ip-char-unit');
-        if (unitEl) unitEl.value = ch.unit || '';
-        const decEl = charItem.querySelector('.ip-char-decimal');
-        if (decEl) decEl.value = ch.decimal || 0;
-        const upperEl = charItem.querySelector('.ip-char-upper');
-        if (upperEl) upperEl.value = ch.upperSpec || '';
-        const lowerEl = charItem.querySelector('.ip-char-lower');
-        if (lowerEl) lowerEl.value = ch.lowerSpec || '';
-        const cgEl = charItem.querySelector('.ip-char-codegroup');
-        if (cgEl) cgEl.value = ch.codeGroup || '';
-        const dcEl = charItem.querySelector('.ip-char-defaultcode');
-        if (dcEl) dcEl.value = ch.defaultCode || '';
-      });
     });
+    // 恢复特性区选中值
+    if (charsArea) {
+      this.formOps.forEach((op, oi) => {
+        (op.chars||[]).forEach((ch, ci) => {
+          const charItem = charsArea.querySelector(`.ip-char-item[data-op-idx="${oi}"][data-char-idx="${ci}"]`);
+          if (!charItem) return;
+          const micEl = charItem.querySelector('.ip-mic-select');
+          if (micEl) micEl.value = ch.micId || '';
+          const methodEl = charItem.querySelector('.ip-method');
+          if (methodEl) methodEl.value = ch.methodId || '';
+          const charSpEl = charItem.querySelector('.ip-char-sp');
+          if (charSpEl) charSpEl.value = ch.samplingPlan || '';
+          const unitEl = charItem.querySelector('.ip-char-unit');
+          if (unitEl) unitEl.value = ch.unit || '';
+          const decEl = charItem.querySelector('.ip-char-decimal');
+          if (decEl) decEl.value = ch.decimal || 0;
+          const upperEl = charItem.querySelector('.ip-char-upper');
+          if (upperEl) upperEl.value = ch.upperSpec || '';
+          const lowerEl = charItem.querySelector('.ip-char-lower');
+          if (lowerEl) lowerEl.value = ch.lowerSpec || '';
+          const cgEl = charItem.querySelector('.ip-char-codegroup');
+          if (cgEl) cgEl.value = ch.codeGroup || '';
+          const dcEl = charItem.querySelector('.ip-char-defaultcode');
+          if (dcEl) dcEl.value = ch.defaultCode || '';
+        });
+      });
+    }
   },
 
   // ---- 添加/删除检验特性 ----
@@ -955,26 +971,28 @@ const InspectionPlan = {
 
   // ---- 收集表单数据 ----
   collectFormData() {
-    // 收集操作工序数据
     const ops = [];
-    const container = document.getElementById('ipOpsContainer');
-    if (!container) return ops;
-    const cards = container.querySelectorAll('.ip-opcard');
-    cards.forEach((card, oi) => {
-      const opTypeRadio = card.querySelector(`input[name="ipOpType_${oi}"]:checked`);
+    const tbody = document.getElementById('ipOpsContainer');
+    const charsArea = document.getElementById('ipCharsArea');
+    if (!tbody) return ops;
+
+    const rows = tbody.querySelectorAll('tr[data-op-idx]');
+    rows.forEach((tr) => {
+      const oi = parseInt(tr.dataset.opIdx);
+      const opTypeRadio = tr.querySelector(`input[name="ipOpType_${oi}"]:checked`);
       const opType = opTypeRadio ? opTypeRadio.value : this.formOps[oi]?.opType || 'inspection';
-      const wcEl = card.querySelector('.ip-wc');
+      const wcEl = tr.querySelector('.ip-wc');
       const wcVal = wcEl ? wcEl.value : '';
       const wcObj = ipWorkCenterOptions.find(w => w.value === wcVal);
-      const descEl = card.querySelector('.ip-opdesc');
-      const spEl = card.querySelector('.ip-sp');
+      const descEl = tr.querySelector('.ip-opdesc');
+      const spEl = tr.querySelector('.ip-sp');
       const spVal = spEl ? spEl.value : '';
       const spObj = ipSamplingOptions.find(s => s.value === spVal);
 
       const chars = [];
-      if (opType === 'inspection') {
-        const charItems = card.querySelectorAll('.ip-char-item');
-        charItems.forEach((charItem, ci) => {
+      if (opType === 'inspection' && charsArea) {
+        const charItems = charsArea.querySelectorAll(`.ip-char-item[data-op-idx="${oi}"]`);
+        charItems.forEach((charItem) => {
           const micEl = charItem.querySelector('.ip-mic-select');
           const micVal = micEl ? micEl.value : '';
           const micObj = (typeof micData !== 'undefined' ? micData : []).find(m => m.id === micVal);
@@ -991,7 +1009,7 @@ const InspectionPlan = {
           const cgEl = charItem.querySelector('.ip-char-codegroup');
           const dcEl = charItem.querySelector('.ip-char-defaultcode');
 
-          if (!micVal) return; // 跳过未选择 MIC 的特性
+          if (!micVal) return;
           chars.push({
             micId: micVal,
             micCode: micObj ? micObj.code : '',
@@ -1013,7 +1031,7 @@ const InspectionPlan = {
       }
 
       ops.push({
-        opNum: String((oi+1)*10).padStart(4,'0'),
+        opNum: String((ops.length + 1) * 10).padStart(4, '0'),
         opType: opType,
         opTypeName: opType === 'sampling' ? '取样' : '检验',
         workCenter: wcVal,
