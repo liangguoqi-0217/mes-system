@@ -218,7 +218,7 @@ const MeasurementRecord = {
     if (points.length === 0) {
       container.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);">
         设备「${esc(eq.name)}」暂无已启用的测量点<br>
-        <a href="javascript:void(0)" onclick="App.navigateTo('main-data','equipment','measurement-point','测量点定义')" style="color:var(--primary-lighter);margin-top:8px;display:inline-block;">→ 前往定义测量点</a>
+        <a href="javascript:void(0)" onclick="App.navigateTo('device-management','measurement-point','measurement-point','测量点定义')" style="color:var(--primary-lighter);margin-top:8px;display:inline-block;">→ 前往定义测量点</a>
       </div>`;
       return;
     }

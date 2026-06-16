@@ -8,16 +8,6 @@ const App = {
   // 新目录结构（方案G）：左侧竖排一级 + hover展开面板（二级分组+三级功能入口）
   menu: [
     {
-      id:'main-data', label:'主数据管理', icon:'📋',
-      groups: [
-        {
-          title:'物料', items: [
-            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' }
-          ]
-        }
-      ]
-    },
-    {
       id:'production-management', label:'生产管理', icon:'⚙️',
       groups: [
         {
@@ -153,106 +143,15 @@ const App = {
       id:'purchase-demand', label:'采购需求管理', icon:'📦',
       groups: [
         {
+          title:'物料主数据', items: [
+            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' }
+          ]
+        },
+        {
           title:'备品备件管理', items: [
             { id:'sp-stock', label:'库存查询', route:'sp-stock' },
             { id:'sp-purchase', label:'采购申请', route:'sp-purchase' },
             { id:'sp-pick', label:'备件领用', route:'sp-pick' }
-          ]
-        }
-      ]
-    },
-    {
-      id:'hse-management', label:'HSE 管理', icon:'🛡️',
-      groups: [
-        {
-          title:'HSE 主数据', items: [
-            { id:'hse-hazard-list', label:'危险源清单', route:'hse-hazard-list' },
-            { id:'hse-risk-standard', label:'风险评估标准（LEC/HAZOP等）', route:'hse-risk-standard' },
-            { id:'hse-risk-matrix', label:'风险等级矩阵', route:'hse-risk-matrix' },
-            { id:'hse-law-list', label:'适用法规清单', route:'hse-law-list' },
-            { id:'hse-law-link', label:'法规条款关联至业务', route:'hse-law-link' },
-            { id:'hse-chem-list', label:'危化品清单（CAS号、危险类别）', route:'hse-chem-list' },
-            { id:'hse-sds', label:'SDS（安全数据表）管理', route:'hse-sds' },
-            { id:'hse-ppe-template', label:'岗位劳保配置模板', route:'hse-ppe-template' },
-            { id:'hse-ppe-list', label:'劳保用品清单', route:'hse-ppe-list' },
-            { id:'hse-permit-type', label:'作业票类型定义', route:'hse-permit-type' },
-            { id:'hse-safety-template', label:'安全措施模板', route:'hse-safety-template' },
-            { id:'hse-inspect-item', label:'检查项目库', route:'hse-inspect-item' },
-            { id:'hse-score-standard', label:'评分标准', route:'hse-score-standard' }
-          ]
-        },
-        {
-          title:'安全检查与隐患排查', items: [
-            { id:'hse-inspect-daily', label:'日常巡检计划', route:'hse-inspect-daily' },
-            { id:'hse-inspect-special', label:'专项检查计划（季节性/节假日前）', route:'hse-inspect-special' },
-            { id:'hse-inspect-calendar', label:'计划执行日历', route:'hse-inspect-calendar' },
-            { id:'hse-inspect-task', label:'检查任务列表（PC端/移动端）', route:'hse-inspect-task' },
-            { id:'hse-inspect-result', label:'检查结果录入（合格/隐患/立即整改）', route:'hse-inspect-result' },
-            { id:'hse-inspect-photo', label:'拍照上传', route:'hse-inspect-photo' },
-            { id:'hse-hazard-register', label:'隐患登记（来源：检查/随手拍/员工上报）', route:'hse-hazard-register' },
-            { id:'hse-hazard-evaluate', label:'隐患评估与分级', route:'hse-hazard-evaluate' },
-            { id:'hse-hazard-rectify', label:'整改通知与任务分配', route:'hse-hazard-rectify' },
-            { id:'hse-hazard-verify', label:'整改验收与关闭', route:'hse-hazard-verify' },
-            { id:'hse-bbs-record', label:'观察记录（移动端快速填报）', route:'hse-bbs-record' },
-            { id:'hse-bbs-stat', label:'观察统计', route:'hse-bbs-stat' }
-          ]
-        },
-        {
-          title:'作业票管理（PTW）', items: [
-            { id:'hse-ptw-fire', label:'动火作业', route:'hse-ptw-fire' },
-            { id:'hse-ptw-confined', label:'受限空间作业', route:'hse-ptw-confined' },
-            { id:'hse-ptw-height', label:'高处作业', route:'hse-ptw-height' },
-            { id:'hse-ptw-electric', label:'临时用电', route:'hse-ptw-electric' },
-            { id:'hse-ptw-excavation', label:'动土作业', route:'hse-ptw-excavation' },
-            { id:'hse-ptw-blind', label:'盲板抽堵作业', route:'hse-ptw-blind' },
-            { id:'hse-jsa', label:'作业风险分析（JSA）', route:'hse-jsa' },
-            { id:'hse-ptw-confirm', label:'安全措施逐项确认', route:'hse-ptw-confirm' },
-            { id:'hse-ptw-approval', label:'审批流程（线下审批，系统录入结果）', route:'hse-ptw-approval' },
-            { id:'hse-ptw-close', label:'作业票关闭', route:'hse-ptw-close' },
-            { id:'hse-ptw-ledger', label:'作业票台账', route:'hse-ptw-ledger' }
-          ]
-        },
-        {
-          title:'事故与事件管理', items: [
-            { id:'hse-accident-quick', label:'事故快报（移动端快速上报）', route:'hse-accident-quick' },
-            { id:'hse-nearmiss', label:'未遂事件登记', route:'hse-nearmiss' },
-            { id:'hse-firstaid', label:'急救/医疗处理记录', route:'hse-firstaid' },
-            { id:'hse-investigate-team', label:'调查组成员', route:'hse-investigate-team' },
-            { id:'hse-root-cause', label:'根本原因分析（5Why/鱼骨图）', route:'hse-root-cause' },
-            { id:'hse-invest-conclusion', label:'调查结论与责任认定', route:'hse-invest-conclusion' },
-            { id:'hse-capa-link', label:'CAPA关联', route:'hse-capa-link' },
-            { id:'hse-capa-track', label:'措施跟踪与验证', route:'hse-capa-track' },
-            { id:'hse-accident-stat', label:'事故事件台账与统计', route:'hse-accident-stat' }
-          ]
-        },
-        {
-          title:'职业健康与环境监测', items: [
-            { id:'hse-oh-monitor-point', label:'危害因素监测点定义（噪声/粉尘/毒物等）', route:'hse-oh-monitor-point' },
-            { id:'hse-oh-monitor-task', label:'监测任务与数据录入（移动端）', route:'hse-oh-monitor-task' },
-            { id:'hse-oh-monitor-trend', label:'监测趋势分析', route:'hse-oh-monitor-trend' },
-            { id:'hse-oh-contra', label:'职业禁忌证跟踪', route:'hse-oh-contra' },
-            { id:'hse-health-exam', label:'体检记录（岗前/在岗/离岗）', route:'hse-health-exam' },
-            { id:'hse-occup-disease', label:'职业病档案', route:'hse-occup-disease' },
-            { id:'hse-ppe-record', label:'劳保用品领用记录', route:'hse-ppe-record' },
-            { id:'hse-env-monitor-point', label:'监测点定义（废气/废水/噪声/固废）', route:'hse-env-monitor-point' },
-            { id:'hse-env-monitor-task', label:'监测任务与数据录入', route:'hse-env-monitor-task' },
-            { id:'hse-env-alarm', label:'排放超标自动报警', route:'hse-env-alarm' },
-            { id:'hse-env-trend', label:'监测趋势分析', route:'hse-env-trend' }
-          ]
-        },
-        {
-          title:'培训与报表', items: [
-            { id:'hse-train-plan', label:'培训计划', route:'hse-train-plan' },
-            { id:'hse-train-record', label:'培训记录（参训人员/成绩）', route:'hse-train-record' },
-            { id:'hse-cert-remind', label:'证书/资质到期提醒（特种作业证）', route:'hse-cert-remind' },
-            { id:'hse-report-hazard-rate', label:'隐患排查治理率', route:'hse-report-hazard-rate' },
-            { id:'hse-report-accident-trend', label:'事故事件趋势分析', route:'hse-report-accident-trend' },
-            { id:'hse-report-ltir', label:'LTIR/TRIR（损工/可记录事故率）', route:'hse-report-ltir' },
-            { id:'hse-report-ptw-stat', label:'作业票执行统计', route:'hse-report-ptw-stat' },
-            { id:'hse-report-env-rate', label:'环境排放达标率', route:'hse-report-env-rate' },
-            { id:'hse-report-kpi', label:'HSE KPI 看板', route:'hse-report-kpi' },
-            { id:'hse-emergency-plan', label:'应急预案库', route:'hse-emergency-plan' },
-            { id:'hse-emergency-drill', label:'应急演练记录', route:'hse-emergency-drill' }
           ]
         }
       ]

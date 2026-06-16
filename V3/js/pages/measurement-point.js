@@ -112,7 +112,7 @@ const MeasurementPoint = {
           <td style="color:var(--text-muted);">${start + idx + 1}</td>
           <td><code style="background:#f1f5f9;padding:2px 6px;border-radius:3px;font-size:12px;">${esc(mp.code)}</code></td>
           <td><b>${esc(mp.name)}</b></td>
-          <td><a href="javascript:void(0)" onclick="App.navigateTo('main-data','equipment','equipment-master','设备主数据')" style="color:var(--primary-lighter);">${esc(mp.equipmentName)}</a><br><span style="font-size:11px;color:var(--text-muted);">${esc(mp.equipmentCode)}</span></td>
+          <td><a href="javascript:void(0)" onclick="App.navigateTo('device-management','equipment-master','equipment-master','设备主数据')" style="color:var(--primary-lighter);">${esc(mp.equipmentName)}</a><br><span style="font-size:11px;color:var(--text-muted);">${esc(mp.equipmentCode)}</span></td>
           <td>${typeBadge}</td>
           <td>${mp.unit || '—'}</td>
           <td style="${mp.upperLimit !== null && mp.alarmEnabled ? 'color:#dc2626;font-weight:600;' : ''}">${upperStr}</td>

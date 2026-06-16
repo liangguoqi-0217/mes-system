@@ -690,9 +690,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
           <div class="g-left-item" data-menu="spare" onmouseenter="openGPanel(this)" onmouseleave="checkGPanelLeave(event)">
             <span class="g-left-icon">🔩</span> 备品备件
           </div>
-          <div class="g-left-item" data-menu="hse-management" onmouseenter="openGPanel(this)" onmouseleave="checkGPanelLeave(event)">
-            <span class="g-left-icon">🛡️</span> HSE 管理
-          </div>
           <div class="g-left-item" data-menu="reports" onmouseenter="openGPanel(this)" onmouseleave="checkGPanelLeave(event)">
             <span class="g-left-icon">📊</span> 报表中心
           </div>
@@ -950,17 +947,6 @@ const gMenuData = {
       { title: '库存管理', items: ['库存查询', '入库管理', '出库管理'] },
       { title: '采购管理', items: ['采购申请', '采购订单', '供应商管理'] },
       { title: '领用管理', items: ['备件领用', '领用审批', '领用记录'] }
-    ]
-  },
-  'hse-management': {
-    title: 'HSE 管理',
-    groups: [
-      { title: 'HSE 主数据', items: ['危险源清单', '风险评估标准（LEC/HAZOP等）', '风险等级矩阵', '适用法规清单', '法规条款关联至业务', '危化品清单（CAS号、危险类别）', 'SDS管理', '岗位劳保配置模板', '劳保用品清单', '作业票类型定义', '安全措施模板', '检查项目库', '评分标准'] },
-      { title: '安全检查与隐患排查', items: ['日常巡检计划', '专项检查计划', '计划执行日历', '检查任务列表（移动端）', '检查结果录入', '拍照上传', '隐患登记', '隐患评估与分级', '整改通知与任务分配', '整改验收与关闭', '观察记录（移动端）', '观察统计'] },
-      { title: '作业票管理（PTW）', items: ['动火作业', '受限空间作业', '高处作业', '临时用电', '动土作业', '盲板抽堵作业', 'JSA分析', '安全措施确认', '审批流程', '作业票关闭', '作业票台账'] },
-      { title: '事故与事件管理', items: ['事故快报', '未遂事件登记', '急救/医疗处理记录', '调查组成员', '根本原因分析', '调查结论与责任认定', 'CAPA关联', '措施跟踪与验证', '事故事件台账与统计'] },
-      { title: '职业健康与环境监测', items: ['危害因素监测点', '监测任务与数据录入', '监测趋势分析', '职业禁忌证跟踪', '体检记录', '职业病档案', '劳保用品领用记录', '环境监测点定义', '环境监测数据录入', '排放超标报警', '监测趋势分析'] },
-      { title: '培训与报表', items: ['培训计划', '培训记录', '证书/资质到期提醒', '隐患排查治理率', '事故事件趋势分析', 'LTIR/TRIR', '作业票执行统计', '环境排放达标率', 'HSE KPI 看板', '应急预案库', '应急演练记录'] }
     ]
   },
   'reports': {
