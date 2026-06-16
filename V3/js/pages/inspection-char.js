@@ -113,8 +113,6 @@ const InspectionChar = {
         <div class="filter-bar" style="flex-shrink:0;">
           <div class="filter-group"><label>工厂</label><select id="micFactory"><option value="">全部</option>${micFactoryOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>特性类型</label><select id="micType"><option value="">全部</option><option value="quantitative">定量</option><option value="qualitative">定性</option></select></div>
-          <div class="filter-group"><label>状态</label><select id="micStatus"><option value="">全部</option><option value="active">启用</option><option value="disabled">停用</option><option value="deleted">已删除标记</option></select></div>
-          <div class="filter-group"><label>搜索</label><input type="text" id="micSearch" placeholder="特性编码 / 短文本"></div>
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="InspectionChar.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="InspectionChar.reset()">重置</button>
@@ -212,13 +210,9 @@ const InspectionChar = {
   search() {
     const factory = document.getElementById('micFactory').value;
     const type = document.getElementById('micType').value;
-    const status = document.getElementById('micStatus').value;
-    const kw = document.getElementById('micSearch').value.trim().toLowerCase();
     this.filtered = micData.filter(m => {
       if (factory && m.factory!==factory) return false;
       if (type && m.micType!==type) return false;
-      if (status && m.status!==status) return false;
-      if (kw && !m.code.toLowerCase().includes(kw) && !m.shortText.toLowerCase().includes(kw)) return false;
       return true;
     });
     this.page = 1;
@@ -226,7 +220,7 @@ const InspectionChar = {
   },
 
   reset() {
-    const els = ['micFactory','micType','micStatus','micSearch'];
+    const els = ['micFactory','micType'];
     els.forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     this.initFilters();
     this.renderTable();
