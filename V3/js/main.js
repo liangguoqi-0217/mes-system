@@ -186,7 +186,8 @@ const App = {
     'mf-reports': MaintenanceReports,
     'maintenance-tasklist': MaintenanceTasklist,
     'miniapp': MiniProgram,
-    'inspection-char': InspectionChar
+    'inspection-char': InspectionChar,
+    'inspection-method': InspectionMethod
   },
 
   init() {
