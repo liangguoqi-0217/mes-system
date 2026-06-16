@@ -28,11 +28,6 @@ const micUnitTextMap = {
   'N': '牛顿', 'min': 'min'
 };
 
-const micDefaultMethodOptions = [
-  'MET-01 目视检查法','MET-02 pH计测定法','MET-03 烘箱干燥法',
-  'MET-04 HPLC含量测定','MET-05 滴定法','MET-06 熔点测定法'
-];
-
 // ---- Mock 数据 ----
 const micData = [
   { id:'MIC001', code:'2001-MIC-001', factory:'2001', factoryName:'2001（山东步长）',
@@ -326,29 +321,6 @@ const InspectionChar = {
             <label>短文本<span class="required">*</span></label>
             <input type="text" id="micFormShortText" placeholder="如：pH值、外观" required value="${isEdit?esc(m.shortText):''}" />
           </div>
-          <div class="form-group">
-            <label>采样过程<span class="required">*</span></label>
-            <select id="micFormSampling">
-              <option value="必须" ${(!isEdit||m.samplingProc==='必须')?'selected':''}>必须</option>
-              <option value="不必" ${(isEdit&&m.samplingProc==='不必')?'selected':''}>不必</option>
-              <option value="可选" ${(isEdit&&m.samplingProc==='可选')?'selected':''}>可选</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>状态<span class="required">*</span></label>
-            <div style="display:flex;gap:12px;padding-top:6px;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:13px;">
-                <input type="radio" name="micFormStatus" value="active" ${(!isEdit||m.status==='active')?'checked':''}> 启用
-              </label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:13px;">
-                <input type="radio" name="micFormStatus" value="disabled" ${(isEdit&&m.status==='disabled')?'checked':''}> 停用
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px;">
-          <label>长文本</label>
-          <textarea id="micFormLongText" rows="2" placeholder="详细说明、适用范围等" style="width:100%;">${isEdit?esc(m.longText):''}</textarea>
         </div>
       </fieldset>
 
@@ -386,17 +358,6 @@ const InspectionChar = {
         </div>
       </fieldset>
 
-      <!-- ===== 默认值 ===== -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">默认值</legend>
-        <div class="form-group" style="max-width:400px;">
-          <label>默认检验方法</label>
-          <select id="micFormDefaultMethod">
-            <option value="">（可留空）</option>
-            ${micDefaultMethodOptions.map(dm=>`<option value="${dm}" ${isEdit&&m.defaultMethod===dm?'selected':''}>${dm}</option>`).join('')}
-          </select>
-        </div>
-      </fieldset>
 
       <input type="hidden" id="micFormId" value="${isEdit?m.id:''}" />
       <input type="hidden" id="micFormEditMode" value="${mode}" />
@@ -456,22 +417,14 @@ const InspectionChar = {
     // 基本数据
     const factory = document.getElementById('micFormFactory').value;
     const shortText = document.getElementById('micFormShortText').value.trim();
-    const longText = document.getElementById('micFormLongText').value.trim();
 
     const typeRadios = document.getElementsByName('micFormType');
     let micType = ''; for (const r of typeRadios) { if (r.checked) { micType = r.value; break; } }
-
-    const statusRadios = document.getElementsByName('micFormStatus');
-    let statusVal = ''; for (const r of statusRadios) { if (r.checked) { statusVal = r.value; break; } }
-
-    const samplingProc = document.getElementById('micFormSampling').value;
-    const defaultMethod = document.getElementById('micFormDefaultMethod').value;
 
     // 验证必填
     if (!factory) { toast('请选择所属工厂'); return; }
     if (!micType) { toast('请选择特性类型'); return; }
     if (!shortText) { toast('请填写短文本'); return; }
-    if (!statusVal) { toast('请选择状态'); return; }
 
     if (micType==='quantitative') {
       const unit = document.getElementById('micFormUnit').value;
@@ -496,14 +449,14 @@ const InspectionChar = {
         code, factory, factoryName: facObj ? facObj.label : factory,
         micType, micTypeName: micType==='quantitative'?'定量':'定性',
         mode: 'copy', modeName: '完全复制',
-        shortText, longText,
+        shortText, longText: '',
         unit: micType==='quantitative' ? (document.getElementById('micFormUnit').value||'') : '',
         decimal: micType==='quantitative' ? parseInt(document.getElementById('micFormDecimal').value)||2 : 0,
         unitText: micType==='quantitative' ? (document.getElementById('micFormUnitText').value||'') : '',
         codeGroup: micType==='qualitative' ? (document.getElementById('micFormCodeGroup').value||'') : '',
         defaultCode: micType==='qualitative' ? (document.getElementById('micFormDefaultCode').value||'') : '',
-        samplingProc, defaultMethod,
-        status: statusVal,
+        samplingProc: '', defaultMethod: '',
+        status: 'active',
         createdBy: user, createdDate: now, changedBy: '', changedDate: ''
       };
       micData.push(newMic);
@@ -520,10 +473,6 @@ const InspectionChar = {
       m.micType = micType;
       m.micTypeName = micType==='quantitative'?'定量':'定性';
       m.shortText = shortText;
-      m.longText = longText;
-      m.samplingProc = samplingProc;
-      m.defaultMethod = defaultMethod;
-      m.status = statusVal;
       m.changedBy = user;
       m.changedDate = now;
 
@@ -556,12 +505,6 @@ const InspectionChar = {
     </div>`;
 
     const typeName = m.micType==='quantitative' ? '定量' : '定性';
-
-    const statusBadge = m.status==='active'
-      ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#dcfce7;color:#16a34a;">启用</span>'
-      : m.status==='disabled'
-        ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fef3c7;color:#b45309;">停用</span>'
-        : '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fee2e2;color:#ef4444;">已删除标记</span>';
 
     // 定量特性 section（结构与 buildForm 一致）
     let quantSection = '';
@@ -598,28 +541,10 @@ const InspectionChar = {
           ${roField('主检验特性编码', m.code)}
           ${roField('特性类型', typeName)}
           ${roField('短文本', m.shortText)}
-          ${roField('采样过程', m.samplingProc)}
-          <div class="form-group">
-            <label>状态</label>
-            <div style="padding-top:6px;">${statusBadge}</div>
-          </div>
-        </div>
-        <div class="form-group" style="margin-top:8px;">
-          <label>长文本</label>
-          <div style="padding-top:6px;font-size:14px;font-weight:500;min-height:22px;">${m.longText||'-'}</div>
         </div>
       </fieldset>
 
       ${quantSection}${qualSection}
-
-      <!-- 默认值（与表单布局一致） -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">默认值</legend>
-        <div class="form-group" style="max-width:400px;">
-          <label>默认检验方法</label>
-          <div style="padding-top:6px;font-size:14px;font-weight:500;">${m.defaultMethod||'-'}</div>
-        </div>
-      </fieldset>
 
       <!-- 其他信息（额外展示） -->
       <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
