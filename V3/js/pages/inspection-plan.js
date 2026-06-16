@@ -598,49 +598,61 @@ const InspectionPlan = {
     const spOpts = ipSamplingOptions.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
     const micOpts = availMic.map(m => `<option value="${m.id}" data-mic-type="${m.micType}" data-mic-unit="${m.unit||''}" data-mic-decimal="${m.decimal||0}" data-mic-method="${m.defaultMethod||''}" data-mic-codegroup="${m.codeGroup||''}" data-mic-defaultcode="${m.defaultCode||''}">${m.code}（${m.shortText}）</option>`).join('');
     const methodOpts = availMethod.map(m => `<option value="${m.id}">${m.code}（${m.name}）</option>`).join('');
-    const roField = (label, val) => `<div class="ro-value">${esc(val||'—')}</div>`;
 
     return `
       <!-- 抬头信息 -->
       <div class="clean-section">
         <h4>抬头信息</h4>
+        ${ro ? `
+        <div class="ro-info-grid">
+          <div class="ro-info-field"><span class="ro-info-label">检验计划编号</span><span class="ro-info-value mono">${esc(planCode)}</span></div>
+          <div class="ro-info-field"><span class="ro-info-label">状态</span><span class="ro-info-status ${p.status==='active'?'active':'disabled'}"><span class="dot"></span>${p.status==='active'?'启用':'停用'}</span></div>
+          <div class="ro-info-field"><span class="ro-info-label">工厂</span><span class="ro-info-value">${esc(p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}</span></div>
+        </div>
+        <hr class="ro-info-divider">
+        <div class="ro-info-grid">
+          <div class="ro-info-field"><span class="ro-info-label">物料编码</span><span class="ro-info-value mono">${esc(p.materialCode||'—')}</span></div>
+          <div class="ro-info-field"><span class="ro-info-label">用途代码</span><span class="ro-info-value mono">${esc(p.purposeCode||'—')}</span></div>
+          <div class="ro-info-field"><span class="ro-info-label">物料名称</span><span class="ro-info-value">${esc(p.materialName||'—')}</span></div>
+          <div class="ro-info-field"><span class="ro-info-label">用途名称</span><span class="ro-info-value">${esc(p.purposeName||'—')}</span></div>
+        </div>
+        ` : `
         <div class="clean-grid-3">
           <div class="form-group">
             <label>检验计划编号</label>
-            ${ro ? roField('', planCode) : `<input type="text" class="form-input" value="${esc(planCode)}" disabled>`}
+            <input type="text" class="form-input" value="${esc(planCode)}" disabled>
           </div>
           <div class="form-group">
             <label>工厂</label>
-            ${ro ? roField('', p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac) : `<input type="text" class="form-input" value="${esc(ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}" disabled>`}
+            <input type="text" class="form-input" value="${esc(ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}" disabled>
           </div>
           <div class="form-group">
             <label>状态</label>
-            ${ro ? roField('', p.status==='active'?'启用':(p.status==='disabled'?'停用':'已删除'))
-              : `<div style="display:flex;gap:12px;padding-top:4px;">
-                <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="active" ${p.status!=='disabled'?'checked':''}> 启用</label>
-                <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="disabled" ${p.status==='disabled'?'checked':''}> 停用</label>
-              </div>`
-            }
+            <div style="display:flex;gap:12px;padding-top:4px;">
+              <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="active" ${p.status!=='disabled'?'checked':''}> 启用</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="disabled" ${p.status==='disabled'?'checked':''}> 停用</label>
+            </div>
           </div>
         </div>
         <div class="clean-grid-2" style="margin-top:12px;">
           <div class="form-group">
             <label>物料编码<span class="req">*</span></label>
-            ${ro ? roField('', p.materialCode||'—') : `<select class="form-input" id="ipF_materialCode" onchange="InspectionPlan.onMaterialChange()"><option value="">— 请选择 —</option>${matOpts}</select>`}
+            <select class="form-input" id="ipF_materialCode" onchange="InspectionPlan.onMaterialChange()"><option value="">— 请选择 —</option>${matOpts}</select>
           </div>
           <div class="form-group">
             <label>物料名称</label>
-            ${ro ? roField('', p.materialName) : `<input type="text" class="form-input" id="ipF_materialName" value="${esc(p.materialName||'')}" readonly>`}
+            <input type="text" class="form-input" id="ipF_materialName" value="${esc(p.materialName||'')}" readonly>
           </div>
           <div class="form-group">
             <label>用途代码<span class="req">*</span></label>
-            ${ro ? roField('', p.purposeCode||'—') : `<select class="form-input" id="ipF_purposeCode" onchange="InspectionPlan.onPurposeChange()"><option value="">— 请选择 —</option>${purposeOpts}</select>`}
+            <select class="form-input" id="ipF_purposeCode" onchange="InspectionPlan.onPurposeChange()"><option value="">— 请选择 —</option>${purposeOpts}</select>
           </div>
           <div class="form-group">
             <label>用途名称</label>
-            ${ro ? roField('', p.purposeName) : `<input type="text" class="form-input" id="ipF_purposeName" value="${esc(p.purposeName||'')}" readonly>`}
+            <input type="text" class="form-input" id="ipF_purposeName" value="${esc(p.purposeName||'')}" readonly>
           </div>
         </div>
+        `}
       </div>
 
       <!-- 工序表格 -->

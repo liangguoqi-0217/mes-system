@@ -556,6 +556,43 @@ body {
   letter-spacing: 0.5px; margin-bottom: 2px; padding-top: 2px;
 }
 
+/* ── 抬头信息只读展示 ── */
+.ro-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+}
+.ro-info-field {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+.ro-info-label {
+  font-size: 12px; color: #64748b; white-space: nowrap; min-width: 78px; flex-shrink: 0;
+}
+.ro-info-value {
+  font-size: 13px; color: #1e293b; font-weight: 500;
+  word-break: break-all;
+}
+.ro-info-value.mono {
+  font-family: 'SF Mono','Cascadia Code','Consolas',monospace;
+  font-size: 12px; color: #475569; letter-spacing: 0.2px;
+}
+.ro-info-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 500;
+}
+.ro-info-status .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.ro-info-status.active  { color: #166534; } .ro-info-status.active  .dot { background: #22c55e; }
+.ro-info-status.disabled{ color: #854d0e; } .ro-info-status.disabled .dot { background: #eab308; }
+.ro-info-divider {
+  grid-column: 1 / -1; border: none;
+  border-top: 1px solid #e2e8f0; margin: 8px 0 4px;
+}
+
+@media (max-width: 768px) {
+  .ro-info-grid { grid-template-columns: 1fr; gap: 0; }
+}
+
 .btn-add {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 12px; font-size: 11px; font-weight: 600;
