@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>检验计划弹窗 - 设计 Demo</title>
+<style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  background: #eef1f5; color: #1e293b; line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ===== Demo Page Layout ===== */
+.demo-header {
+  background: linear-gradient(135deg, #1E3A5F, #2D5A87);
+  color: white; padding: 20px 32px; text-align: center;
+}
+.demo-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.demo-header p { font-size: 13px; opacity: 0.8; }
+.demo-tabs {
+  display: flex; gap: 4px; padding: 8px 16px;
+  background: white; border-bottom: 1px solid #e5e7eb;
+  position: sticky; top: 0; z-index: 100;
+  overflow-x: auto;
+}
+.demo-tab {
+  padding: 8px 20px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid transparent; transition: .2s;
+  color: #64748b; white-space: nowrap;
+}
+.demo-tab:hover { background: #f1f5f9; color: #1e293b; }
+.demo-tab.active { background: #eff6ff; color: #1E3A5F; border-color: #bfdbfe; }
+.demo-content { max-width: 1100px; margin: 24px auto; padding: 0 16px 48px; }
+.demo-panel { display: none; }
+.demo-panel.active { display: block; }
+.demo-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 6px;
+}
+.demo-panel h3 {
+  font-size: 16px; color: #1E3A5F; margin-bottom: 16px; padding-bottom: 8px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* ===== Shared form elements ===== */
+button {
+  display: inline-flex; align-items: center; gap: 5px; font-family: inherit;
+  border: none; border-radius: 6px; cursor: pointer; font-weight: 600;
+  transition: all .15s; font-size: 12px; padding: 6px 14px;
+}
+button:hover { filter: brightness(0.95); }
+.btn-primary { background: #1E3A5F; color: white; }
+.btn-primary:hover { background: #2D5A87; filter: none; }
+.btn-outline { background: white; border: 1px solid #d1d5db; color: #374151; }
+.btn-outline:hover { background: #f9fafb; }
+.btn-danger { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.btn-danger:hover { background: #fee2e2; }
+.btn-add { background: #eff6ff; color: #2563eb; border: 1px dashed #93c5fd; }
+.btn-add:hover { background: #dbeafe; border-color: #60a5fa; }
+.btn-xs { padding: 3px 10px; font-size: 11px; }
+.btn-icon {
+  width: 28px; height: 28px; padding: 0; display: flex; align-items: center;
+  justify-content: center; border-radius: 6px; background: #f1f5f9;
+  color: #64748b; font-size: 14px;
+}
+.btn-icon:hover { background: #e2e8f0; color: #1e293b; }
+
+label { font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px; }
+label .req { color: #ef4444; margin-left: 2px; }
+input, select {
+  width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px;
+  font-size: 13px; font-family: inherit; transition: border-color .15s;
+}
+input:focus, select:focus { outline: none; border-color: #1E3A5F; box-shadow: 0 0 0 3px rgba(30,58,95,0.08); }
+input[readonly], input[disabled] { background: #f8fafc; color: #94a3b8; }
+
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.badge-green { background: #dcfce7; color: #166534; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+.badge-gray { background: #f1f5f9; color: #64748b; }
+.badge-purple { background: #f3e8ff; color: #6b21a8; }
+
+/* ===== DEMO 1: Pill Card ===== */
+.pill-page {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start;
+}
+.pill-card {
+  background: white; border-radius: 12px; padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+}
+.pill-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9;
+}
+.pill-card-title {
+  font-size: 14px; font-weight: 700; color: #1E3A5F;
+  display: flex; align-items: center; gap: 8px;
+}
+.pill-card-title .dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #3B82F6;
+}
+.pill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.pill-row.single { grid-template-columns: 1fr; }
+
+/* ── Operation pills ── */
+.pill-ops { grid-column: 1 / -1; }
+.pill-op-list { display: flex; flex-direction: column; gap: 10px; }
+.pill-op {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;
+}
+.pill-op-num {
+  font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap;
+  width: 40px;
+}
+.pill-op-center { flex: 1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pill-op-center select { width: auto; min-width: 120px; }
+.pill-op-meta { display: flex; gap: 8px; align-items: center; }
+
+/* MIC pills inside inspection ops */
+.pill-mic-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pill-mic-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; background: #eff6ff; border-radius: 16px;
+  font-size: 12px; color: #2563eb; border: 1px solid #bfdbfe;
+}
+.pill-mic-tag .mic-name { font-weight: 600; }
+.pill-mic-tag .mic-spec { color: #64748b; font-size: 11px; }
+
+/* ===== DEMO 2: Step Wizard ===== */
+.wizard-steps { display: flex; gap: 0; margin-bottom: 24px; }
+.wizard-step {
+  flex: 1; text-align: center; padding: 12px 16px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  border-bottom: 3px solid #e5e7eb; color: #94a3b8; transition: .2s;
+}
+.wizard-step.active { color: #1E3A5F; border-color: #1E3A5F; }
+.wizard-step.done { color: #059669; border-color: #10b981; }
+.wizard-step .step-num {
+  display: inline-flex; width: 24px; height: 24px; border-radius: 50%;
+  background: #e5e7eb; align-items: center; justify-content: center;
+  font-size: 12px; margin-bottom: 4px;
+}
+.wizard-step.active .step-num { background: #1E3A5F; color: white; }
+.wizard-step.done .step-num { background: #10b981; color: white; }
+.wizard-body {
+  background: white; border-radius: 12px; padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+  min-height: 300px;
+}
+.wizard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.wizard-op {
+  display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+  background: #f8fafc; border-radius: 8px; margin-bottom: 10px;
+}
+.wizard-op select { flex: 1; min-width: 0; }
+.wizard-chars { margin-left: 44px; margin-top: 8px; }
+.wizard-char {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; margin-bottom: 6px;
+  background: #fafafa; border-radius: 6px; border: 1px solid #f0f0f0;
+}
+.wizard-char select { max-width: 200px; }
+.wizard-footer {
+  display: flex; justify-content: space-between; margin-top: 20px;
+}
+
+/* ===== DEMO 3: Clean Table ===== */
+.clean-section { margin-bottom: 20px; }
+.clean-section h4 {
+  font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.clean-section h4::before {
+  content: ''; width: 3px; height: 14px; background: #3B82F6; border-radius: 2px;
+}
+.clean-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.clean-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.clean-info-card {
+  background: white; border-radius: 10px; padding: 16px 20px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04); border: 1px solid #f1f5f9;
+}
+
+.clean-op-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.clean-op-table th {
+  text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700;
+  color: #64748b; text-transform: uppercase; letter-spacing: 0.3px;
+  background: #f8fafc; border-bottom: 2px solid #e2e8f0;
+}
+.clean-op-table td {
+  padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #f3f4f6;
+}
+.clean-op-table tbody tr:hover { background: #f8fafc; }
+.clean-op-table select { width: 100%; min-width: 120px; padding: 6px 8px; font-size: 12px; }
+
+.clean-tag-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.clean-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 10px;
+  font-size: 11px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe;
+}
+
+/* ===== DEMO 4: Split Panel ===== */
+.split-wrap {
+  display: flex; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+  background: white; min-height: 420px;
+}
+.split-left {
+  width: 240px; background: #f8fafc; padding: 16px;
+  border-right: 1px solid #e2e8f0; flex-shrink: 0;
+}
+.split-right { flex: 1; padding: 20px 24px; overflow-y: auto; max-height: 500px; }
+.split-nav-item {
+  padding: 10px 14px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 600; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px; transition: .15s;
+  color: #64748b;
+}
+.split-nav-item:hover { background: #f1f5f9; color: #1e293b; }
+.split-nav-item.active { background: #dbeafe; color: #1E3A5F; }
+.split-nav-item .idx { font-size: 11px; color: #94a3b8; }
+.split-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.split-field-row.single { grid-template-columns: 1fr; }
+.split-section-title {
+  font-size: 13px; font-weight: 700; color: #475569; margin: 16px 0 10px;
+  padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;
+}
+
+/* ===== Modal backdrop simulation ===== */
+.modal-sim {
+  max-width: 960px; margin: 0 auto;
+  background: #f8fafc; border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+.modal-sim-header {
+  padding: 16px 24px; background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-sim-header h2 { font-size: 17px; font-weight: 700; color: #1E3A5F; }
+.modal-sim-body {
+  padding: 20px 24px; max-height: 520px; overflow-y: auto;
+}
+.modal-sim-footer {
+  padding: 14px 24px; background: #fafbfc; border-top: 1px solid #e5e7eb;
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pill-page { grid-template-columns: 1fr; }
+  .wizard-grid { grid-template-columns: 1fr; }
+  .clean-grid-3 { grid-template-columns: 1fr 1fr; }
+  .clean-grid-2 { grid-template-columns: 1fr; }
+  .split-left { width: 180px; }
+}
+
+/* Animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.demo-panel.active { animation: fadeUp .4s ease; }
+</style>
+</head>
+<body>
+
+<div class="demo-header">
+  <h1>检验计划 · 新建弹窗设计 Demo</h1>
+  <p>4 种设计风格对比 — 字段完整不减少，布局更简洁大方</p>
+</div>
+
+<div class="demo-tabs" id="demoTabs">
+  <div class="demo-tab active" data-tab="demo1">方案一 · 简约卡片式</div>
+  <div class="demo-tab" data-tab="demo2">方案二 · 步骤向导式</div>
+  <div class="demo-tab" data-tab="demo3">方案三 · 清爽表格型</div>
+  <div class="demo-tab" data-tab="demo4">方案四 · 侧栏导航式</div>
+</div>
+
+<div class="demo-content">
+
+<!-- ==================== DEMO 1: 简约卡片式 ==================== -->
+<div class="demo-panel active" id="demo1">
+  <h3>方案一 · 简约卡片式 — 用卡片代替厚重边框，呼吸感十足</h3>
+  <div class="modal-sim">
+    <div class="modal-sim-header">
+      <h2>+ 新建检验计划</h2>
+      <button class="btn-icon">✕</button>
+    </div>
+    <div class="modal-sim-body">
+      <div class="pill-page">
+        <!-- 抬头卡片 -->
+        <div class="pill-card">
+          <div class="pill-card-header">
+            <div class="pill-card-title"><span class="dot"></span>抬头信息</div>
+            <span class="badge badge-blue">1001-IP-00008</span>
+          </div>
+          <div class="pill-row">
+            <div><label>检验计划编号 <span class="req">*</span></label><input value="1001-IP-00008" disabled></div>
+            <div><label>工厂 <span class="req">*</span></label><input value="2001（陕西步长）" disabled></div>
+          </div>
+          <div class="pill-row">
+            <div><label>物料编码 <span class="req">*</span></label>
+              <select><option>— 请选择 —</option><option selected>MAT-10001（阿莫西林胶囊 0.25g）</option></select></div>
+            <div><label>物料名称</label><input value="阿莫西林胶囊（0.25g）" readonly></div>
+          </div>
+          <div class="pill-row">
+            <div><label>用途代码 <span class="req">*</span></label>
+              <select><option selected>ORAL（口服制剂）</option></select></div>
+            <div><label>用途名称</label><input value="口服制剂" readonly></div>
+          </div>
+          <div class="pill-row">
+            <div><label>状态 <span class="req">*</span></label>
+              <div style="display:flex;gap:16px;padding-top:6px;">
+                <label style="display:inline-flex;align-items:center;gap:4px;"><input type="radio" name="d1_status" checked> 启用</label>
+                <label style="display:inline-flex;align-items:center;gap:4px;"><input type="radio" name="d1_status"> 停用</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 工序列表卡片 -->
+        <div class="pill-card pill-ops">
+          <div class="pill-card-header">
+            <div class="pill-card-title"><span class="dot"></span>工序与检验特性</div>
+            <button class="btn-add">+ 添加工序</button>
+          </div>
+          <div class="pill-op-list">
+            <!-- 工序 1: 取样 -->
+            <div class="pill-op">
+              <div class="pill-op-num">🔹 0010</div>
+              <div class="pill-op-center">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d1_t1" checked> 取样</label>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d1_t1"> 检验</label>
+                </div>
+                <select style="max-width:130px;"><option selected>取样组</option></select>
+                <input placeholder="描述（可选）" style="max-width:160px;">
+                <select style="max-width:200px;"><option selected>SP-001 常规取样方案（n=20）</option></select>
+              </div>
+              <button class="btn-danger btn-xs">删除</button>
+            </div>
+
+            <!-- 工序 2: 检验 -->
+            <div class="pill-op" style="flex-direction:column;align-items:stretch;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="pill-op-num">🔹 0020</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d1_t2"> 取样</label>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d1_t2" checked> 检验</label>
+                </div>
+                <select style="max-width:130px;"><option selected>理化实验室</option></select>
+                <input placeholder="描述（可选）" value="理化项目检验" style="max-width:160px;">
+                <button class="btn-danger btn-xs" style="margin-left:auto;">删除</button>
+              </div>
+              <div style="padding-left:52px;margin-top:8px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <span style="font-size:12px;font-weight:600;color:#475569;">检验特性</span>
+                  <button class="btn-add btn-xs">+ 添加</button>
+                </div>
+                <div class="pill-mic-list">
+                  <div class="pill-mic-tag">
+                    <span class="mic-name">pH值</span>
+                    <span class="mic-spec">5.0~7.0 pH</span>
+                    <span style="cursor:pointer;font-size:11px;">✕</span>
+                  </div>
+                  <div class="pill-mic-tag">
+                    <span class="mic-name">水分含量</span>
+                    <span class="mic-spec">0~3.0%</span>
+                    <span style="cursor:pointer;font-size:11px;">✕</span>
+                  </div>
+                  <div class="pill-mic-tag">
+                    <span class="mic-name">外观</span>
+                    <span class="mic-spec" style="color:#8b5cf6;">定性·CG001</span>
+                    <span style="cursor:pointer;font-size:11px;">✕</span>
+                  </div>
+                  <div class="pill-mic-tag" style="border:1px dashed #cbd5e1;background:#fafafa;color:#94a3b8;cursor:pointer;">
+                    + 添加 MIC
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-sim-footer">
+      <button class="btn-outline">取消</button>
+      <button class="btn-primary">保存检验计划</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DEMO 2: 步骤向导式 ==================== -->
+<div class="demo-panel" id="demo2">
+  <h3>方案二 · 步骤向导式 — 像填写问卷一样自然，一次只关注一件事</h3>
+  <div class="modal-sim">
+    <div class="modal-sim-header">
+      <h2>+ 新建检验计划</h2>
+      <button class="btn-icon">✕</button>
+    </div>
+    <div class="modal-sim-body">
+      <div class="wizard-steps">
+        <div class="wizard-step active" onclick="switchWizardStep(this, 1)">
+          <div class="step-num">1</div>抬头信息
+        </div>
+        <div class="wizard-step" onclick="switchWizardStep(this, 2)">
+          <div class="step-num">2</div>工序配置
+        </div>
+        <div class="wizard-step" onclick="switchWizardStep(this, 3)">
+          <div class="step-num">3</div>检验特性
+        </div>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="wizard-body wizard-step-content" data-step="1">
+        <div style="font-size:14px;font-weight:700;color:#1E3A5F;margin-bottom:16px;">📋 检验计划抬头</div>
+        <div class="wizard-grid">
+          <div><label>检验计划编号 <span class="req">*</span></label><input value="1001-IP-00008" disabled></div>
+          <div><label>工厂 <span class="req">*</span></label><input value="2001（陕西步长）" disabled></div>
+          <div><label>物料编码 <span class="req">*</span></label><select><option>— 请选择 —</option><option selected>MAT-10001（阿莫西林胶囊 0.25g）</option></select></div>
+          <div><label>物料名称</label><input value="阿莫西林胶囊（0.25g）" readonly></div>
+          <div><label>用途代码 <span class="req">*</span></label><select><option selected>ORAL（口服制剂）</option></select></div>
+          <div><label>用途名称</label><input value="口服制剂" readonly></div>
+          <div style="grid-column:1/-1;">
+            <label>状态</label>
+            <div style="display:flex;gap:20px;padding-top:6px;">
+              <label style="display:inline-flex;align-items:center;gap:6px;"><input type="radio" name="d2_status" checked>🟢 启用</label>
+              <label style="display:inline-flex;align-items:center;gap:6px;"><input type="radio" name="d2_status">🟡 停用</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="wizard-body wizard-step-content" data-step="2" style="display:none;">
+        <div style="font-size:14px;font-weight:700;color:#1E3A5F;margin-bottom:14px;">🔧 定义工序顺序</div>
+        <div style="margin-bottom:14px;">
+          <button class="btn-add">+ 添加工序</button>
+        </div>
+        <div class="wizard-op">
+          <span class="badge badge-blue">0010</span>
+          <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d2_t1" checked> 取样</label>
+          <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d2_t1"> 检验</label>
+          <select><option selected>取样组</option></select>
+          <input placeholder="工序描述（可选）">
+          <select style="max-width:220px;"><option selected>SP-001 常规取样方案（n=20）</option></select>
+          <button class="btn-danger btn-xs">删除</button>
+        </div>
+        <div class="wizard-op">
+          <span class="badge badge-blue">0020</span>
+          <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d2_t2"> 取样</label>
+          <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d2_t2" checked> 检验</label>
+          <select><option selected>理化实验室</option></select>
+          <input placeholder="工序描述（可选）" value="理化项目检验">
+          <button class="btn-danger btn-xs">删除</button>
+        </div>
+        <div class="wizard-op">
+          <span class="badge badge-blue">0030</span>
+          <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d2_t3"> 取样</label>
+          <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d2_t3" checked> 检验</label>
+          <select><option selected>仪器分析室</option></select>
+          <input placeholder="工序描述（可选）" value="含量测定">
+          <button class="btn-danger btn-xs">删除</button>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="wizard-body wizard-step-content" data-step="3" style="display:none;">
+        <div style="font-size:14px;font-weight:700;color:#1E3A5F;margin-bottom:4px;">🔬 为每道检验工序配置 MIC 特性</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:16px;">取样工序无需配置检验特性</div>
+        <div style="margin-bottom:14px;">
+          <span class="badge badge-purple" style="margin-right:8px;">工序 0020 · 理化实验室</span>
+          <button class="btn-add btn-xs">+ 添加检验特性</button>
+        </div>
+        <div class="wizard-char">
+          <select style="max-width:180px;"><option selected>2001-MIC-001（pH值）</option></select>
+          <select style="max-width:180px;"><option selected>2001-METHOD-0002（pH值测定法）</option></select>
+          <select style="max-width:150px;"><option>— 取样方案（可选）—</option></select>
+          <span style="font-size:11px;color:#64748b;white-space:nowrap;">定量</span>
+          <input placeholder="单位" value="pH" style="width:60px;">
+          <input placeholder="小数" value="2" style="width:50px;">
+          <input placeholder="上限" value="7.0" style="width:70px;">
+          <input placeholder="下限" value="5.0" style="width:70px;">
+          <button class="btn-danger btn-xs">删除</button>
+        </div>
+        <div class="wizard-char">
+          <select style="max-width:180px;"><option selected>2001-MIC-002（水分含量）</option></select>
+          <select style="max-width:180px;"><option selected>2002-METHOD-0001（卡尔费休法）</option></select>
+          <select style="max-width:150px;"><option>— 取样方案（可选）—</option></select>
+          <span style="font-size:11px;color:#64748b;white-space:nowrap;">定量</span>
+          <input placeholder="单位" value="%" style="width:60px;">
+          <input placeholder="小数" value="2" style="width:50px;">
+          <input placeholder="上限" value="3.0" style="width:70px;">
+          <input placeholder="下限" value="0" style="width:70px;">
+          <button class="btn-danger btn-xs">删除</button>
+        </div>
+        <div class="wizard-char">
+          <select style="max-width:180px;"><option selected>2001-MIC-003（外观）</option></select>
+          <select style="max-width:180px;"><option selected>2001-METHOD-0003（目视检查法）</option></select>
+          <select style="max-width:150px;"><option>— 取样方案（可选）—</option></select>
+          <span style="font-size:11px;color:#8b5cf6;white-space:nowrap;">定性</span>
+          <input placeholder="代码组" value="CG001-外观缺陷" style="width:130px;" readonly>
+          <select style="width:90px;"><option selected>合格</option></select>
+          <button class="btn-danger btn-xs">删除</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-sim-footer">
+      <button class="btn-outline" onclick="prevWizardStep()" id="wizPrev" style="display:none;">← 上一步</button>
+      <div style="flex:1;"></div>
+      <button class="btn-outline">取消</button>
+      <button class="btn-primary" onclick="nextWizardStep()" id="wizNext">下一步 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DEMO 3: 清爽表格型 ==================== -->
+<div class="demo-panel" id="demo3">
+  <h3>方案三 · 清爽表格型 — 表格式录入，信息密度高但井然有序</h3>
+  <div class="modal-sim">
+    <div class="modal-sim-header">
+      <h2>+ 新建检验计划</h2>
+      <button class="btn-icon">✕</button>
+    </div>
+    <div class="modal-sim-body">
+      <!-- 抬头 -->
+      <div class="clean-section">
+        <h4>抬头信息</h4>
+        <div class="clean-grid-3">
+          <div><label>检验计划编号</label><input value="1001-IP-00008" disabled></div>
+          <div><label>工厂</label><input value="2001（陕西步长）" disabled></div>
+          <div><label>状态</label>
+            <div style="display:flex;gap:12px;padding-top:6px;">
+              <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d3_status" checked> 启用</label>
+              <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d3_status"> 停用</label>
+            </div>
+          </div>
+        </div>
+        <div class="clean-grid-2" style="margin-top:12px;">
+          <div><label>物料编码 <span class="req">*</span></label><select><option selected>MAT-10001（阿莫西林胶囊 0.25g）</option></select></div>
+          <div><label>物料名称</label><input value="阿莫西林胶囊（0.25g）" readonly></div>
+          <div><label>用途代码 <span class="req">*</span></label><select><option selected>ORAL（口服制剂）</option></select></div>
+          <div><label>用途名称</label><input value="口服制剂" readonly></div>
+        </div>
+      </div>
+
+      <!-- 工序表格 -->
+      <div class="clean-section">
+        <h4>工序与检验特性 <button class="btn-add btn-xs" style="margin-left:12px;">+ 添加工序</button></h4>
+        <div style="overflow-x:auto;">
+          <table class="clean-op-table">
+            <thead>
+              <tr>
+                <th style="width:60px;">工序号</th>
+                <th style="width:80px;">类型</th>
+                <th>工作中心</th>
+                <th>描述</th>
+                <th style="width:200px;">取样方案</th>
+                <th>检验特性</th>
+                <th style="width:50px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-blue">0010</span></td>
+                <td>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-size:11px;"><input type="radio" name="d3_t1" checked> 取样</label>
+                </td>
+                <td><select><option selected>取样组</option></select></td>
+                <td><input placeholder="（可选）" style="min-width:120px;"></td>
+                <td><select><option selected>SP-001 常规取样</option></select></td>
+                <td><span class="badge badge-gray">— 无 —</span></td>
+                <td><button class="btn-danger btn-xs">删除</button></td>
+              </tr>
+              <tr>
+                <td><span class="badge badge-blue">0020</span></td>
+                <td>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-size:11px;"><input type="radio" name="d3_t2" checked> 检验</label>
+                </td>
+                <td><select><option selected>理化实验室</option></select></td>
+                <td><input value="理化项目检验" style="min-width:120px;"></td>
+                <td><span class="badge badge-gray">— 不适用 —</span></td>
+                <td>
+                  <div class="clean-tag-row">
+                    <span class="clean-tag">pH值</span>
+                    <span class="clean-tag">水分含量</span>
+                    <span class="clean-tag" style="background:#f3e8ff;color:#6b21a8;border-color:#d8b4fe;">外观(定性)</span>
+                    <button class="btn-add btn-xs" style="font-size:10px;">+ MIC</button>
+                  </div>
+                </td>
+                <td><button class="btn-danger btn-xs">删除</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MIC 详情（点击 tag 展开编辑） -->
+      <div class="clean-section">
+        <h4>检验特性详情（点击上方标签编辑）</h4>
+        <div class="clean-info-card" style="border-left:3px solid #3B82F6;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span style="font-weight:700;font-size:14px;color:#1E3A5F;">pH值 — 工序 0020</span>
+            <span class="badge badge-blue">定量</span>
+          </div>
+          <div class="clean-grid-3">
+            <div><label>检验方法</label><select><option selected>2001-METHOD-0002（pH值测定法）</option></select></div>
+            <div><label>取样方案</label><select><option>— 可选 —</option></select></div>
+            <div></div>
+            <div><label>单位</label><input value="pH"></div>
+            <div><label>小数位数</label><input value="2" type="number"></div>
+            <div></div>
+            <div><label>上规格限 <span class="req">*</span></label><input value="7.0"></div>
+            <div><label>下规格限 <span class="req">*</span></label><input value="5.0"></div>
+            <div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-sim-footer">
+      <button class="btn-outline">取消</button>
+      <button class="btn-primary">保存检验计划</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DEMO 4: 侧栏导航式 ==================== -->
+<div class="demo-panel" id="demo4">
+  <h3>方案四 · 侧栏导航式 — 左侧目录导航，右侧编辑，层级清晰不易迷失</h3>
+  <div class="modal-sim">
+    <div class="modal-sim-header">
+      <h2>+ 新建检验计划</h2>
+      <button class="btn-icon">✕</button>
+    </div>
+    <div class="modal-sim-body" style="padding:0;">
+      <div class="split-wrap" style="border:none;box-shadow:none;">
+        <!-- 左侧导航 -->
+        <div class="split-left">
+          <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">导航目录</div>
+          <div class="split-nav-item active" data-split="header" onclick="switchSplitNav(this)">
+            📋 抬头信息
+          </div>
+          <div class="split-nav-item" data-split="op-0010" onclick="switchSplitNav(this)">
+            <span class="idx">0010</span> 取样 · 取样组
+          </div>
+          <div class="split-nav-item" data-split="op-0020" onclick="switchSplitNav(this)">
+            <span class="idx">0020</span> 检验 · 理化实验室
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn-add" style="width:100%;justify-content:center;">+ 添加工序</button>
+          </div>
+        </div>
+
+        <!-- 右侧编辑区 -->
+        <div class="split-right">
+          <!-- Header Panel -->
+          <div class="split-panel" data-split="header">
+            <div class="split-section-title" style="margin-top:0;">抬头信息</div>
+            <div class="split-field-row">
+              <div><label>检验计划编号 <span class="req">*</span></label><input value="1001-IP-00008" disabled></div>
+              <div><label>工厂 <span class="req">*</span></label><input value="2001（陕西步长）" disabled></div>
+            </div>
+            <div class="split-field-row">
+              <div><label>物料编码 <span class="req">*</span></label><select><option selected>MAT-10001（阿莫西林胶囊 0.25g）</option></select></div>
+              <div><label>物料名称</label><input value="阿莫西林胶囊（0.25g）" readonly></div>
+            </div>
+            <div class="split-field-row">
+              <div><label>用途代码 <span class="req">*</span></label><select><option selected>ORAL（口服制剂）</option></select></div>
+              <div><label>用途名称</label><input value="口服制剂" readonly></div>
+            </div>
+            <div class="split-field-row">
+              <div><label>状态</label>
+                <div style="display:flex;gap:12px;padding-top:6px;">
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d4_status" checked> 启用</label>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d4_status"> 停用</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Op 0010 Panel -->
+          <div class="split-panel" data-split="op-0010" style="display:none;">
+            <div class="split-section-title" style="margin-top:0;display:flex;align-items:center;justify-content:space-between;">
+              <span>工序 0010</span>
+              <span class="badge badge-blue">取样</span>
+            </div>
+            <div class="split-field-row">
+              <div><label>工序号</label><input value="0010" disabled></div>
+              <div><label>工序类型</label>
+                <div style="display:flex;gap:12px;padding-top:6px;">
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d4_op1" checked> 取样</label>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d4_op1"> 检验</label>
+                </div>
+              </div>
+            </div>
+            <div class="split-field-row">
+              <div><label>工作中心</label><select><option selected>取样组</option></select></div>
+              <div><label>取样方案 <span class="req">*</span></label><select><option selected>SP-001 常规取样方案（n=20）</option></select></div>
+            </div>
+            <div class="split-field-row single">
+              <div><label>工序描述</label><input placeholder="如：按常规取样方案取样"></div>
+            </div>
+            <button class="btn-danger" style="margin-top:8px;">删除此工序</button>
+          </div>
+
+          <!-- Op 0020 Panel -->
+          <div class="split-panel" data-split="op-0020" style="display:none;">
+            <div class="split-section-title" style="margin-top:0;display:flex;align-items:center;justify-content:space-between;">
+              <span>工序 0020</span>
+              <span class="badge badge-purple">检验</span>
+            </div>
+            <div class="split-field-row">
+              <div><label>工序号</label><input value="0020" disabled></div>
+              <div><label>工序类型</label>
+                <div style="display:flex;gap:12px;padding-top:6px;">
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d4_op2"> 取样</label>
+                  <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;"><input type="radio" name="d4_op2" checked> 检验</label>
+                </div>
+              </div>
+            </div>
+            <div class="split-field-row">
+              <div><label>工作中心</label><select><option selected>理化实验室</option></select></div>
+              <div></div>
+            </div>
+            <div class="split-field-row single">
+              <div><label>工序描述</label><input value="理化项目检验"></div>
+            </div>
+
+            <!-- MIC List -->
+            <div class="split-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+              <span>检验特性（3项）</span>
+              <button class="btn-add btn-xs">+ 添加</button>
+            </div>
+
+            <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:8px;">
+              <div style="padding:8px 12px;background:#f8fafc;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+                <span>pH值 <span class="badge badge-blue" style="margin-left:6px;">定量</span></span>
+                <button class="btn-danger btn-xs">删除</button>
+              </div>
+              <div style="padding:8px 12px;">
+                <div class="split-field-row">
+                  <div><label>检验方法</label><select><option selected>pH值测定法</option></select></div>
+                  <div><label>取样方案</label><select><option>— 可选 —</option></select></div>
+                </div>
+                <div class="split-field-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+                  <div><label>单位</label><input value="pH"></div>
+                  <div><label>小数位数</label><input value="2" type="number"></div>
+                  <div><label>上规格限</label><input value="7.0"></div>
+                  <div><label>下规格限</label><input value="5.0"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:8px;">
+              <div style="padding:8px 12px;background:#f8fafc;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+                <span>水分含量 <span class="badge badge-blue" style="margin-left:6px;">定量</span></span>
+                <button class="btn-danger btn-xs">删除</button>
+              </div>
+              <div style="padding:8px 12px;">
+                <div class="split-field-row">
+                  <div><label>检验方法</label><select><option selected>卡尔费休法</option></select></div>
+                  <div><label>取样方案</label><select><option>— 可选 —</option></select></div>
+                </div>
+                <div class="split-field-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+                  <div><label>单位</label><input value="%"></div>
+                  <div><label>小数位数</label><input value="2" type="number"></div>
+                  <div><label>上规格限</label><input value="3.0"></div>
+                  <div><label>下规格限</label><input value="0"></div>
+                </div>
+              </div>
+            </div>
+
+            <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:8px;">
+              <div style="padding:8px 12px;background:#f8fafc;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:space-between;">
+                <span>外观 <span class="badge badge-purple" style="margin-left:6px;background:#f3e8ff;color:#6b21a8;">定性</span></span>
+                <button class="btn-danger btn-xs">删除</button>
+              </div>
+              <div style="padding:8px 12px;">
+                <div class="split-field-row">
+                  <div><label>检验方法</label><select><option selected>目视检查法</option></select></div>
+                  <div><label>取样方案</label><select><option>— 可选 —</option></select></div>
+                </div>
+                <div class="split-field-row">
+                  <div><label>代码组</label><input value="CG001-外观缺陷" readonly></div>
+                  <div><label>默认代码</label><select><option selected>合格</option></select></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-sim-footer">
+      <button class="btn-outline">取消</button>
+      <button class="btn-primary">保存检验计划</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- .demo-content -->
+
+<script>
+// Tab switching
+document.getElementById('demoTabs').addEventListener('click', function(e) {
+  const tab = e.target.closest('.demo-tab');
+  if (!tab) return;
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById(tab.dataset.tab);
+  if (panel) panel.classList.add('active');
+});
+
+// Wizard step switching (Demo 2)
+let currentWizStep = 1;
+const totalWizSteps = 3;
+
+function switchWizardStep(el, step) {
+  if (step < 1 || step > totalWizSteps) return;
+  currentWizStep = step;
+  updateWizard();
+}
+
+function nextWizardStep() {
+  if (currentWizStep < totalWizSteps) {
+    currentWizStep++;
+    updateWizard();
+  }
+}
+
+function prevWizardStep() {
+  if (currentWizStep > 1) {
+    currentWizStep--;
+    updateWizard();
+  }
+}
+
+function updateWizard() {
+  const steps = document.querySelectorAll('#demo2 .wizard-step');
+  steps.forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < currentWizStep) s.classList.add('done');
+    if (i + 1 === currentWizStep) s.classList.add('active');
+  });
+  document.querySelectorAll('#demo2 .wizard-step-content').forEach(p => {
+    p.style.display = parseInt(p.dataset.step) === currentWizStep ? '' : 'none';
+  });
+  const prev = document.getElementById('wizPrev');
+  const next = document.getElementById('wizNext');
+  if (prev) prev.style.display = currentWizStep > 1 ? '' : 'none';
+  if (next) {
+    next.textContent = currentWizStep < totalWizSteps ? '下一步 →' : '✓ 完成配置';
+    if (currentWizStep === totalWizSteps) next.style.background = '#10b981';
+    else next.style.background = '';
+  }
+}
+
+// Split nav switching (Demo 4)
+function switchSplitNav(el) {
+  document.querySelectorAll('#demo4 .split-nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('#demo4 .split-panel').forEach(p => p.style.display = 'none');
+  const panel = document.querySelector(`#demo4 .split-panel[data-split="${el.dataset.split}"]`);
+  if (panel) panel.style.display = '';
+}
+</script>
+
+</body>
+</html>
