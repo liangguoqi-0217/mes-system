@@ -150,9 +150,9 @@ const InspectionChar = {
   // ---- 初始化 ----
   initFilters() {
     if (!this.isQAManager()) {
-      this.filtered = micData.filter(m => m.factory === '2001');
+      this.filtered = micData.filter(m => m.factory === '2001' && m.status !== 'deleted');
     } else {
-      this.filtered = [...micData];
+      this.filtered = micData.filter(m => m.status !== 'deleted');
     }
     this.page = 1;
   },
