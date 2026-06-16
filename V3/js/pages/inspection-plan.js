@@ -732,13 +732,58 @@ const InspectionPlan = {
     </tr>`;
   },
 
-  // ---- 构建检验特性编辑卡片 ----
+  // ---- 构建检验特性卡片（编辑/查看）----
   buildCharCard(ch, oi, ci, ro, micOpts, methodOpts, spOpts) {
     const isQuant = ch.micType === 'quantitative';
     const isQual = ch.micType === 'qualitative';
     const codeGroupMap = (typeof micDefaultCodeOptions !== 'undefined' ? micDefaultCodeOptions : {});
     const cgCodes = codeGroupMap[ch.codeGroup] || [];
 
+    // ── 只读模式：清单式布局 ──
+    if (ro) {
+      const row = (lbl, val, cls) =>
+        `<div class="rc-field"><span class="rc-label">${lbl}</span><span class="rc-val${cls?' '+cls:''}">${val}</span></div>`;
+      const methodVal = ch.methodCode
+        ? `${esc(ch.methodName||'')}<span class="rc-sub">${esc(ch.methodCode)}</span>`
+        : '<span class="rc-val empty">—</span>';
+      const spVal = ch.samplingPlanName || ch.samplingPlan
+        ? `${esc(ch.samplingPlanName||ch.samplingPlan)}`
+        : '<span class="rc-val empty">—</span>';
+
+      let typeBody = '';
+      if (isQuant) {
+        typeBody = row('单位', esc(ch.unit||'—'), ch.unit?'':'empty')
+                 + row('小数位数', ch.decimal||0)
+                 + row('上规格限', esc(ch.upperSpec||'—'), ch.upperSpec?'':'empty')
+                 + row('下规格限', esc(ch.lowerSpec||'—'), ch.lowerSpec?'':'empty');
+      } else {
+        typeBody = row('代码组', esc(ch.codeGroup||'—'), ch.codeGroup?'':'empty')
+                 + row('默认代码', esc(ch.defaultCode||'—'), ch.defaultCode?'':'empty');
+      }
+
+      return `<div class="clean-info-card ro-char-card ip-char-item ${isQuant?'quant':'qual'}" data-op-idx="${oi}" data-char-idx="${ci}">
+        <div class="rc-header">
+          <div class="rc-title">
+            <span class="rc-name">${esc(ch.micName||'新特性')}</span>
+            <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm">${isQuant?'定量':'定性'}</span>
+          </div>
+          <div class="rc-code-block">
+            <span class="rc-code">${esc(ch.micCode||'')}</span>
+          </div>
+        </div>
+        <div class="rc-body">
+          ${row('检验方法', methodVal)}
+          ${row('取样方案', spVal)}
+        </div>
+        <div class="rc-divider"></div>
+        <div class="rc-section-label">${isQuant?'规格限':'缺陷代码'}</div>
+        <div class="rc-body">
+          ${typeBody}
+        </div>
+      </div>`;
+    }
+
+    // ── 编辑模式：表单布局 ──
     return `<div class="clean-info-card ip-char-item" data-op-idx="${oi}" data-char-idx="${ci}">
       <h5>
         <span class="clean-char-meta">
@@ -750,45 +795,45 @@ const InspectionPlan = {
       <div class="clean-grid-3">
         <div class="form-group">
           <label>主检验特性（MIC）<span class="req">*</span></label>
-          ${ro ? `<div class="ro-value">${esc(ch.micCode)}（${esc(ch.micName)}）</div>` : `<select class="form-input ip-mic-select" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 请选择 —</option>${micOpts}</select>`}
+          <select class="form-input ip-mic-select" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 请选择 —</option>${micOpts}</select>
         </div>
         <div class="form-group">
           <label>检验方法</label>
-          ${ro ? `<div class="ro-value">${ch.methodCode ? esc(ch.methodCode)+'（'+esc(ch.methodName)+'）' : '—'}</div>` : `<select class="form-input ip-method" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${methodOpts}</select>`}
+          <select class="form-input ip-method" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${methodOpts}</select>
         </div>
         <div class="form-group">
           <label>取样方案</label>
-          ${ro ? `<div class="ro-value">${ch.samplingPlanName||ch.samplingPlan||'—'}</div>` : `<select class="form-input ip-char-sp" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${spOpts}</select>`}
+          <select class="form-input ip-char-sp" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${spOpts}</select>
         </div>
       </div>
       <!-- 定量 -->
       <div class="ip-quant-fields" data-op-idx="${oi}" data-char-idx="${ci}" style="${isQuant?'':'display:none;'} display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-top:10px;">
         <div class="form-group">
           <label>单位</label>
-          ${ro ? `<div class="ro-value">${ch.unit||'—'}</div>` : `<input type="text" class="form-input ip-char-unit" value="${esc(ch.unit||'')}">`}
+          <input type="text" class="form-input ip-char-unit" value="${esc(ch.unit||'')}">
         </div>
         <div class="form-group">
           <label>小数位数</label>
-          ${ro ? `<div class="ro-value">${ch.decimal||0}</div>` : `<input type="number" class="form-input ip-char-decimal" value="${ch.decimal||0}" min="0" max="6">`}
+          <input type="number" class="form-input ip-char-decimal" value="${ch.decimal||0}" min="0" max="6">
         </div>
         <div class="form-group">
           <label>上规格限<span class="req">*</span></label>
-          ${ro ? `<div class="ro-value">${ch.upperSpec||'—'}</div>` : `<input type="text" class="form-input ip-char-upper" value="${esc(ch.upperSpec||'')}" placeholder="如 7.0">`}
+          <input type="text" class="form-input ip-char-upper" value="${esc(ch.upperSpec||'')}" placeholder="如 7.0">
         </div>
         <div class="form-group">
           <label>下规格限<span class="req">*</span></label>
-          ${ro ? `<div class="ro-value">${ch.lowerSpec||'—'}</div>` : `<input type="text" class="form-input ip-char-lower" value="${esc(ch.lowerSpec||'')}" placeholder="如 5.0">`}
+          <input type="text" class="form-input ip-char-lower" value="${esc(ch.lowerSpec||'')}" placeholder="如 5.0">
         </div>
       </div>
       <!-- 定性 -->
       <div class="ip-qual-fields" data-op-idx="${oi}" data-char-idx="${ci}" style="${isQual?'':'display:none;'} display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
         <div class="form-group">
           <label>代码组</label>
-          ${ro ? `<div class="ro-value">${ch.codeGroup||'—'}</div>` : `<input type="text" class="form-input ip-char-codegroup" value="${esc(ch.codeGroup||'')}" readonly>`}
+          <input type="text" class="form-input ip-char-codegroup" value="${esc(ch.codeGroup||'')}" readonly>
         </div>
         <div class="form-group">
           <label>默认代码</label>
-          ${ro ? `<div class="ro-value">${ch.defaultCode||'—'}</div>` : `<select class="form-input ip-char-defaultcode"><option value="">— 可选 —</option>${cgCodes.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>`}
+          <select class="form-input ip-char-defaultcode"><option value="">— 可选 —</option>${cgCodes.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
         </div>
       </div>
     </div>`;

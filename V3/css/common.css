@@ -509,6 +509,53 @@ body {
 
 .clean-empty-chars { color: #94a3b8; font-size: 13px; padding: 12px; text-align: center; background: #fafbfc; border-radius: 8px; }
 
+/* ── 检验特性只读卡片（查看模式）── */
+.ro-char-card {
+  border-left: 3px solid #e2e8f0;
+  transition: border-color .15s;
+}
+.ro-char-card.quant { border-left-color: #3B82F6; }
+.ro-char-card.qual  { border-left-color: #9333EA; }
+
+.rc-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; padding-bottom: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.rc-title { display: flex; align-items: center; gap: 8px; }
+.rc-name  { font-size: 15px; font-weight: 700; color: #1E3A5F; }
+.rc-code-block {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+}
+.rc-code {
+  font-size: 11px; color: #94a3b8; font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  background: #f8fafc; padding: 2px 8px; border-radius: 4px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.rc-body { padding: 2px 0; }
+.rc-field {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 6px 0;
+}
+.rc-field + .rc-field { border-top: 1px solid #fafbfc; }
+.rc-label {
+  font-size: 12px; color: #64748b; min-width: 88px; flex-shrink: 0;
+  padding-top: 1px;
+}
+.rc-val {
+  font-size: 13px; color: #1e293b; font-weight: 500;
+  line-height: 1.5; word-break: break-all;
+}
+.rc-val .rc-sub { color: #94a3b8; font-weight: 400; margin-left: 6px; font-size: 12px; }
+.rc-val.empty { color: #cbd5e1; font-weight: 400; }
+.rc-divider {
+  height: 1px; background: #e2e8f0; margin: 6px 0;
+}
+.rc-section-label {
+  font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 2px; padding-top: 2px;
+}
+
 .btn-add {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 12px; font-size: 11px; font-weight: 600;
