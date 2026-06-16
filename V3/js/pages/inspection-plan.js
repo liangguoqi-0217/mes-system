@@ -778,7 +778,7 @@ const InspectionPlan = {
         </div>
       </div>
     </div>`;
-  }
+  },
 
   // ---- MIC 选择变更 ----
   onMicChange(sel) {
