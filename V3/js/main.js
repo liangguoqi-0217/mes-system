@@ -61,7 +61,7 @@ const App = {
             { id:'inspection-char', label:'主检验特性', route:'inspection-char' },
             { id:'inspection-method', label:'检验方法', route:'inspection-method' },
             { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
-            { id:'quality-standard', label:'检验计划', route:'quality-standard' },
+            { id:'inspection-plan', label:'检验计划', route:'inspection-plan' },
             { id:'defect-code', label:'缺陷代码目录', route:'defect-code' }
           ]
         },
@@ -187,7 +187,8 @@ const App = {
     'maintenance-tasklist': MaintenanceTasklist,
     'miniapp': MiniProgram,
     'inspection-char': InspectionChar,
-    'inspection-method': InspectionMethod
+    'inspection-method': InspectionMethod,
+    'inspection-plan': InspectionPlan
   },
 
   init() {
