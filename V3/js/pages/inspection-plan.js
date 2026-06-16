@@ -598,21 +598,24 @@ const InspectionPlan = {
     const spOpts = ipSamplingOptions.map(s => `<option value="${s.value}">${s.label}</option>`).join('');
     const micOpts = availMic.map(m => `<option value="${m.id}" data-mic-type="${m.micType}" data-mic-unit="${m.unit||''}" data-mic-decimal="${m.decimal||0}" data-mic-method="${m.defaultMethod||''}" data-mic-codegroup="${m.codeGroup||''}" data-mic-defaultcode="${m.defaultCode||''}">${m.code}（${m.shortText}）</option>`).join('');
     const methodOpts = availMethod.map(m => `<option value="${m.id}">${m.code}（${m.name}）</option>`).join('');
-    const roField = (label, val) => `<div class="form-group"><label>${label}</label><div class="ro-value">${esc(val||'—')}</div></div>`;
+    const roField = (label, val) => `<div class="ro-value">${esc(val||'—')}</div>`;
 
     return `
       <!-- 抬头信息 -->
       <div class="clean-section">
         <h4>抬头信息</h4>
         <div class="clean-grid-3">
-          ${ro ? roField('检验计划编号', planCode) : `<div class="form-group"><label>检验计划编号</label><input type="text" class="form-input" value="${esc(planCode)}" disabled></div>`}
+          <div class="form-group">
+            <label>检验计划编号</label>
+            ${ro ? roField('', planCode) : `<input type="text" class="form-input" value="${esc(planCode)}" disabled>`}
+          </div>
           <div class="form-group">
             <label>工厂</label>
-            ${ro ? `<div class="ro-value">${esc(p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}</div>` : `<input type="text" class="form-input" value="${esc(ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}" disabled>`}
+            ${ro ? roField('', p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac) : `<input type="text" class="form-input" value="${esc(ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}" disabled>`}
           </div>
           <div class="form-group">
             <label>状态</label>
-            ${ro ? `<div class="ro-value">${p.status==='active'?'启用':(p.status==='disabled'?'停用':'已删除')}</div>`
+            ${ro ? roField('', p.status==='active'?'启用':(p.status==='disabled'?'停用':'已删除'))
               : `<div style="display:flex;gap:12px;padding-top:4px;">
                 <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="active" ${p.status!=='disabled'?'checked':''}> 启用</label>
                 <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;"><input type="radio" name="ipF_status" value="disabled" ${p.status==='disabled'?'checked':''}> 停用</label>
@@ -623,14 +626,20 @@ const InspectionPlan = {
         <div class="clean-grid-2" style="margin-top:12px;">
           <div class="form-group">
             <label>物料编码<span class="req">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(p.materialCode||'—')}</div>` : `<select class="form-input" id="ipF_materialCode" onchange="InspectionPlan.onMaterialChange()"><option value="">— 请选择 —</option>${matOpts}</select>`}
+            ${ro ? roField('', p.materialCode||'—') : `<select class="form-input" id="ipF_materialCode" onchange="InspectionPlan.onMaterialChange()"><option value="">— 请选择 —</option>${matOpts}</select>`}
           </div>
-          ${ro ? roField('物料名称', p.materialName) : `<div class="form-group"><label>物料名称</label><input type="text" class="form-input" id="ipF_materialName" value="${esc(p.materialName||'')}" readonly></div>`}
+          <div class="form-group">
+            <label>物料名称</label>
+            ${ro ? roField('', p.materialName) : `<input type="text" class="form-input" id="ipF_materialName" value="${esc(p.materialName||'')}" readonly>`}
+          </div>
           <div class="form-group">
             <label>用途代码<span class="req">*</span></label>
-            ${ro ? `<div class="ro-value">${esc(p.purposeCode||'—')}（${esc(p.purposeName||'')}）</div>` : `<select class="form-input" id="ipF_purposeCode" onchange="InspectionPlan.onPurposeChange()"><option value="">— 请选择 —</option>${purposeOpts}</select>`}
+            ${ro ? roField('', p.purposeCode||'—') : `<select class="form-input" id="ipF_purposeCode" onchange="InspectionPlan.onPurposeChange()"><option value="">— 请选择 —</option>${purposeOpts}</select>`}
           </div>
-          ${ro ? roField('用途名称', p.purposeName) : `<div class="form-group"><label>用途名称</label><input type="text" class="form-input" id="ipF_purposeName" value="${esc(p.purposeName||'')}" readonly></div>`}
+          <div class="form-group">
+            <label>用途名称</label>
+            ${ro ? roField('', p.purposeName) : `<input type="text" class="form-input" id="ipF_purposeName" value="${esc(p.purposeName||'')}" readonly>`}
+          </div>
         </div>
       </div>
 
@@ -656,9 +665,9 @@ const InspectionPlan = {
       </div>
 
       <!-- 检验特性详情区 -->
+      ${ro ? `<div class="clean-section"><h4>检验特性详情</h4>${this.renderAllChars(ro, micOpts, methodOpts, spOpts)}</div>` : ''}
       ${!ro && this.formOps.some(op => op.opType === 'inspection') ? `<div class="clean-section"><h4>检验特性详情</h4><div id="ipCharsArea">${this.renderAllChars(ro, micOpts, methodOpts, spOpts)}</div></div>` : ''}
       ${!ro && !this.formOps.some(op => op.opType === 'inspection') ? `<div class="clean-section"><h4>检验特性详情</h4><div id="ipCharsArea" class="clean-empty-chars">暂无检验工序，切换工序类型为"检验"后可配置特性</div></div>` : ''}
-      ${ro ? `<div class="clean-section"><h4>检验特性详情</h4>${this.renderAllChars(ro, micOpts, methodOpts, spOpts)}</div>` : ''}
     `;
   },
 
