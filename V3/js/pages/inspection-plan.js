@@ -405,7 +405,7 @@ const InspectionPlan = {
     `;
   },
 
-  afterRender() {
+  init() {
     this.renderTable();
     this.renderPagination();
   },
