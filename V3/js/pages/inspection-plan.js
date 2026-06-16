@@ -444,7 +444,6 @@ const InspectionPlan = {
     const tb = document.getElementById('ipTbody');
     const empty = document.getElementById('ipEmpty');
     if (!tb) return;
-    const canEdit = this.isQAManager();
     const start = (this.page - 1) * this.pageSize;
     const page = this.filtered.slice(start, start + this.pageSize);
 
@@ -463,16 +462,9 @@ const InspectionPlan = {
 
     tb.innerHTML = page.map((m, i) => {
       const opCount = (m.operations || []).length;
-      let btns = `<button class="btn btn-blue btn-sm" onclick="InspectionPlan.openView('${m.id}')">查看</button>`;
-      if (canEdit && m.status !== 'deleted') {
-        btns += ` <button class="btn btn-gray btn-sm" onclick="InspectionPlan.openEdit('${m.id}')">编辑</button>`;
-        if (m.status === 'active') {
-          btns += ` <button class="btn btn-yellow btn-sm" onclick="InspectionPlan.toggleStatus('${m.id}')">停用</button>`;
-        } else {
-          btns += ` <button class="btn btn-green btn-sm" onclick="InspectionPlan.toggleStatus('${m.id}')">启用</button>`;
-        }
-        btns += ` <button class="btn btn-red btn-sm" onclick="InspectionPlan.markDelete('${m.id}')">删除</button>`;
-      }
+      const viewBtn = m.status !== 'deleted'
+        ? `<button class="btn btn-blue btn-sm" onclick="InspectionPlan.openView('${m.id}')">查看</button>`
+        : '<span class="badge badge-gray">—</span>';
       return `<tr>
         <td>${start+i+1}</td>
         <td><span style="color:#2563eb;font-weight:600;">${esc(m.code)}</span></td>
@@ -484,7 +476,7 @@ const InspectionPlan = {
         <td>${statusBadge(m.status)}</td>
         <td>${esc(m.createdBy)}</td>
         <td>${m.createdDate}</td>
-        <td>${btns}</td>
+        <td>${viewBtn}</td>
       </tr>`;
     }).join('');
   },
@@ -546,15 +538,28 @@ const InspectionPlan = {
     this.bindModalEvents();
   },
 
-  // ---- 打开查看 ----
+  // ---- 打开查看（弹窗底部含编辑/停用启用操作）----
   openView(id) {
     const p = ipData.find(m => m.id === id);
     if (!p) return;
     this.editId = '';
     this.formOps = JSON.parse(JSON.stringify(p.operations));
-    showModal('查看检验计划', this.buildForm(p, true), [
-      { text:'关闭', cls:'btn-secondary', action: ()=>{ InspectionPlan.closeModal(); } }
-    ], 'modal-xl');
+    const canEdit = this.isQAManager();
+    const isActive = p.status === 'active';
+
+    const content = this.buildForm(p, true) + `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;margin-top:16px;border-top:1px solid var(--border);flex-shrink:0;">
+        <span></span>
+        <div style="display:flex;gap:8px;">
+          ${canEdit ? `<button class="btn btn-blue" onclick="InspectionPlan.openEdit('${id}')">编辑</button>` : ''}
+          ${canEdit && isActive ? `<button class="btn btn-yellow" onclick="InspectionPlan.toggleStatus('${id}');InspectionPlan.openView('${id}');">停用</button>` : ''}
+          ${canEdit && p.status === 'disabled' ? `<button class="btn btn-green" onclick="InspectionPlan.toggleStatus('${id}');InspectionPlan.openView('${id}');">启用</button>` : ''}
+          ${canEdit ? `<button class="btn btn-red" onclick="InspectionPlan.markDelete('${id}');InspectionPlan.closeModal();">删除</button>` : ''}
+          <button class="btn btn-secondary" onclick="InspectionPlan.closeModal()">关闭</button>
+        </div>
+      </div>`;
+
+    showModal('查看检验计划 · ' + esc(p.code), content, [], 'modal-xl');
   },
 
   // ---- 绑定弹窗内事件（DOM 渲染后执行）----
