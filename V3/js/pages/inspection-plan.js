@@ -401,7 +401,6 @@ const InspectionPlan = {
           </div>
         </div>
       </div>
-      <div id="ipModal" class="modal-overlay" style="display:none;"></div>
     `;
   },
 
@@ -527,7 +526,11 @@ const InspectionPlan = {
       { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenter:'WC-SAMP-01', workCenterName:'取样组', description:'', samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）', chars:[] },
       { opNum:'0020', opType:'inspection', opTypeName:'检验', workCenter:'WC-LAB-01', workCenterName:'理化实验室', description:'', samplingPlan:'', chars:[] }
     ];
-    this.showModal('新建检验计划', this.buildForm());
+    showModal('新建检验计划', this.buildForm(), [
+      { text:'取消', cls:'btn-secondary', action: ()=>{ InspectionPlan.closeModal(); } },
+      { text:'保存', cls:'btn-primary', action: ()=>{ InspectionPlan.save(); } }
+    ], 'modal-xl');
+    this.bindModalEvents();
   },
 
   // ---- 打开编辑 ----
@@ -536,7 +539,11 @@ const InspectionPlan = {
     if (!p) return;
     this.editId = id;
     this.formOps = JSON.parse(JSON.stringify(p.operations));
-    this.showModal('编辑检验计划', this.buildForm(p));
+    showModal('编辑检验计划', this.buildForm(p), [
+      { text:'取消', cls:'btn-secondary', action: ()=>{ InspectionPlan.closeModal(); } },
+      { text:'保存修改', cls:'btn-primary', action: ()=>{ InspectionPlan.save(); } }
+    ], 'modal-xl');
+    this.bindModalEvents();
   },
 
   // ---- 打开查看 ----
@@ -545,39 +552,27 @@ const InspectionPlan = {
     if (!p) return;
     this.editId = '';
     this.formOps = JSON.parse(JSON.stringify(p.operations));
-    this.showModal('查看检验计划', this.buildForm(p, true));
+    showModal('查看检验计划', this.buildForm(p, true), [
+      { text:'关闭', cls:'btn-secondary', action: ()=>{ InspectionPlan.closeModal(); } }
+    ], 'modal-xl');
   },
 
-  // ---- 显示弹窗 ----
-  showModal(title, body) {
-    const modal = document.getElementById('ipModal');
-    if (!modal) return;
-    modal.innerHTML = `
-      <div class="modal-mask" onclick="${this.editId===''&&this.editId!==null?'':'InspectionPlan.closeModal()'}"></div>
-      <div class="modal-panel" style="width:960px;max-height:90vh;overflow-y:auto;">
-        <div class="modal-header">
-          <span style="font-size:18px;font-weight:700;">${title}</span>
-          <button class="btn btn-gray btn-sm" onclick="InspectionPlan.closeModal()">✕</button>
-        </div>
-        <div class="modal-body" style="padding:16px 24px;">
-          ${body}
-        </div>
-      </div>
-    `;
-    modal.style.display = 'flex';
-    // 绑定 MIC 变更事件
-    modal.querySelectorAll('.ip-mic-select').forEach(sel => {
-      sel.addEventListener('change', (e) => this.onMicChange(e.target));
-    });
-    // 绑定工序类型变更
-    modal.querySelectorAll('.ip-optype').forEach(radio => {
-      radio.addEventListener('change', (e) => this.onOpTypeChange(e.target));
-    });
+  // ---- 绑定弹窗内事件（DOM 渲染后执行）----
+  bindModalEvents() {
+    setTimeout(() => {
+      const bc = document.getElementById('modalBackdrop');
+      if (!bc) return;
+      bc.querySelectorAll('.ip-mic-select').forEach(sel => {
+        sel.addEventListener('change', (e) => this.onMicChange(e.target));
+      });
+      bc.querySelectorAll('.ip-optype').forEach(radio => {
+        radio.addEventListener('change', (e) => this.onOpTypeChange(e.target));
+      });
+    }, 50);
   },
 
   closeModal() {
-    const modal = document.getElementById('ipModal');
-    if (modal) { modal.style.display = 'none'; modal.innerHTML = ''; }
+    closeModal();
     this.editId = null;
     this.formOps = [];
   },
@@ -645,11 +640,6 @@ const InspectionPlan = {
         </div>
       </div>
 
-      ${!ro ? `
-      <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:8px;">
-        <button class="btn btn-blue" onclick="InspectionPlan.save()">保存</button>
-        <button class="btn btn-gray" onclick="InspectionPlan.closeModal()">取消</button>
-      </div>` : ''}
     `;
   },
 
@@ -1118,11 +1108,12 @@ const InspectionPlan = {
       });
     }
 
+    const wasEdit = !!this.editId;
     this.closeModal();
     this.initFilters();
     this.renderTable();
     this.renderPagination();
-    toast(this.editId ? '检验计划修改成功' : '检验计划创建成功');
+    toast(wasEdit ? '检验计划修改成功' : '检验计划创建成功');
   },
 
   // ---- 停用/启用 ----
