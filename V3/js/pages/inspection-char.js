@@ -3,9 +3,10 @@
 
 // ---- 常量选项 ----
 const micFactoryOptions = [
-  { value:'2001', label:'2001（山东步长）' },
-  { value:'2002', label:'2002（天津基地）' },
-  { value:'2003', label:'2003（菏泽分厂）' }
+  { value:'1000', label:'1000（山东步长）' },
+  { value:'2001', label:'2001（陕西步长）' },
+  { value:'2002', label:'2002（山东丹红）' },
+  { value:'2003', label:'2003（神州步长）' }
 ];
 const micUnitOptions = ['%','pH','℃','g','mg','mL','L','kg','mm','cm','μm','mPa·s','cfu/g','个/mL','N','min'];
 const micCodeGroupOptions = [
@@ -30,61 +31,61 @@ const micUnitTextMap = {
 
 // ---- Mock 数据 ----
 const micData = [
-  { id:'MIC001', code:'2001-MIC-001', factory:'2001', factoryName:'2001（山东步长）',
+  { id:'MIC001', code:'2001-MIC-001', factory:'2001', factoryName:'2001（陕西步长）',
     micType:'quantitative', micTypeName:'定量', mode:'copy', modeName:'完全复制',
     shortText:'pH值', longText:'采用pH计在25±1℃下测定，取三次测定平均值',
     unit:'pH', decimal:2, targetValue:'', upperSpec:'', lowerSpec:'', upperReal:'', lowerReal:'', unitText:'',
     codeGroup:'', defaultCode:'', samplingProc:'必须', defaultMethod:'MET-02 pH计测定法',
     status:'active', createdBy:'张工', createdDate:'2025-01-15', changedBy:'', changedDate:'' },
-  { id:'MIC002', code:'2001-MIC-002', factory:'2001', factoryName:'2001（山东步长）',
+  { id:'MIC002', code:'2001-MIC-002', factory:'2001', factoryName:'2001（陕西步长）',
     micType:'quantitative', micTypeName:'定量', mode:'copy', modeName:'完全复制',
     shortText:'水分含量', longText:'卡尔费休法测定水分，限值≤3.0%',
     unit:'%', decimal:2, targetValue:'0', upperSpec:'3.0', lowerSpec:'0', upperReal:'5.0', lowerReal:'0', unitText:'% (w/w)',
     codeGroup:'', defaultCode:'', samplingProc:'必须', defaultMethod:'MET-03 烘箱干燥法',
     status:'active', createdBy:'张工', createdDate:'2025-01-15', changedBy:'', changedDate:'' },
-  { id:'MIC003', code:'2001-MIC-003', factory:'2001', factoryName:'2001（山东步长）',
+  { id:'MIC003', code:'2001-MIC-003', factory:'2001', factoryName:'2001（陕西步长）',
     micType:'qualitative', micTypeName:'定性', mode:'reference', modeName:'引用模式',
     shortText:'外观', longText:'目视检查片剂外观，不得有裂纹、斑点、变色',
     unit:'', decimal:0, targetValue:'', upperSpec:'', lowerSpec:'', upperReal:'', lowerReal:'', unitText:'',
     codeGroup:'CG001-外观缺陷', defaultCode:'合格', samplingProc:'必须', defaultMethod:'MET-01 目视检查法',
     status:'active', createdBy:'张工', createdDate:'2025-01-15', changedBy:'', changedDate:'' },
-  { id:'MIC004', code:'2001-MIC-004', factory:'2001', factoryName:'2001（山东步长）',
+  { id:'MIC004', code:'2001-MIC-004', factory:'2001', factoryName:'2001（陕西步长）',
     micType:'quantitative', micTypeName:'定量', mode:'copy', modeName:'完全复制',
     shortText:'含量（主成分）', longText:'HPLC法测定主成分含量，应为标示量的90.0%~110.0%',
     unit:'%', decimal:1, targetValue:'100', upperSpec:'110.0', lowerSpec:'90.0', upperReal:'120.0', lowerReal:'80.0', unitText:'% (标示量)',
     codeGroup:'', defaultCode:'', samplingProc:'必须', defaultMethod:'MET-04 HPLC含量测定',
     status:'active', createdBy:'张工', createdDate:'2025-01-20', changedBy:'', changedDate:'' },
-  { id:'MIC005', code:'2001-MIC-005', factory:'2001', factoryName:'2001（山东步长）',
+  { id:'MIC005', code:'2001-MIC-005', factory:'2001', factoryName:'2001（陕西步长）',
     micType:'qualitative', micTypeName:'定性', mode:'copy', modeName:'完全复制',
     shortText:'颜色', longText:'与标准比色液目视比对',
     unit:'', decimal:0, targetValue:'', upperSpec:'', lowerSpec:'', upperReal:'', lowerReal:'', unitText:'',
     codeGroup:'CG002-颜色偏差', defaultCode:'合格', samplingProc:'必须', defaultMethod:'MET-01 目视检查法',
     status:'disabled', createdBy:'张工', createdDate:'2025-01-18', changedBy:'李经理', changedDate:'2025-03-10' },
-  { id:'MIC006', code:'2002-MIC-001', factory:'2002', factoryName:'2002（天津基地）',
+  { id:'MIC006', code:'2002-MIC-001', factory:'2002', factoryName:'2002（山东丹红）',
     micType:'quantitative', micTypeName:'定量', mode:'copy', modeName:'完全复制',
     shortText:'崩解时限', longText:'按药典规定方法测定，应≤15分钟',
     unit:'min', decimal:0, targetValue:'', upperSpec:'15', lowerSpec:'0', upperReal:'30', lowerReal:'0', unitText:'',
     codeGroup:'', defaultCode:'', samplingProc:'必须', defaultMethod:'',
     status:'active', createdBy:'王质检', createdDate:'2025-02-01', changedBy:'', changedDate:'' },
-  { id:'MIC007', code:'2002-MIC-002', factory:'2002', factoryName:'2002（天津基地）',
+  { id:'MIC007', code:'2002-MIC-002', factory:'2002', factoryName:'2002（山东丹红）',
     micType:'quantitative', micTypeName:'定量', mode:'reference', modeName:'引用模式',
     shortText:'硬度', longText:'YPD-300硬度仪测定，范围30~80N',
     unit:'N', decimal:1, targetValue:'55', upperSpec:'80', lowerSpec:'30', upperReal:'100', lowerReal:'10', unitText:'牛顿',
     codeGroup:'', defaultCode:'', samplingProc:'必须', defaultMethod:'',
     status:'active', createdBy:'王质检', createdDate:'2025-02-01', changedBy:'', changedDate:'' },
-  { id:'MIC008', code:'2003-MIC-001', factory:'2003', factoryName:'2003（菏泽分厂）',
+  { id:'MIC008', code:'2003-MIC-001', factory:'2003', factoryName:'2003（神州步长）',
     micType:'quantitative', micTypeName:'定量', mode:'copy', modeName:'完全复制',
     shortText:'微生物限度', longText:'TAMC ≤1000cfu/g，TYMC ≤100cfu/g',
     unit:'cfu/g', decimal:0, targetValue:'', upperSpec:'1000', lowerSpec:'0', upperReal:'', lowerReal:'', unitText:'',
     codeGroup:'', defaultCode:'', samplingProc:'必须', defaultMethod:'',
     status:'active', createdBy:'赵经理', createdDate:'2025-03-05', changedBy:'', changedDate:'' },
-  { id:'MIC009', code:'2003-MIC-002', factory:'2003', factoryName:'2003（菏泽分厂）',
+  { id:'MIC009', code:'2003-MIC-002', factory:'2003', factoryName:'2003（神州步长）',
     micType:'qualitative', micTypeName:'定性', mode:'copy', modeName:'完全复制',
     shortText:'气味', longText:'应具有本品特有气味，无异味',
     unit:'', decimal:0, targetValue:'', upperSpec:'', lowerSpec:'', upperReal:'', lowerReal:'', unitText:'',
     codeGroup:'CG004-气味异常', defaultCode:'合格', samplingProc:'可选', defaultMethod:'MET-01 目视检查法',
     status:'deleted', createdBy:'赵经理', createdDate:'2025-03-05', changedBy:'赵经理', changedDate:'2025-06-01' },
-  { id:'MIC010', code:'2001-MIC-006', factory:'2001', factoryName:'2001（山东步长）',
+  { id:'MIC010', code:'2001-MIC-006', factory:'2001', factoryName:'2001（陕西步长）',
     micType:'quantitative', micTypeName:'定量', mode:'copy', modeName:'完全复制',
     shortText:'粒度分布', longText:'激光粒度仪测定，D90≤100μm',
     unit:'μm', decimal:1, targetValue:'', upperSpec:'100', lowerSpec:'', upperReal:'200', lowerReal:'', unitText:'',
@@ -128,7 +129,6 @@ const InspectionChar = {
               <th>主检验特性编码</th>
               <th>短文本</th>
               <th>特性类型</th>
-              <th>状态</th>
               <th>创建人</th>
               <th>创建日期</th>
               <th style="width:80px;">操作</th>
@@ -186,12 +186,6 @@ const InspectionChar = {
 
     const canEdit = this.isQAManager();
 
-    const statusBadge = (s) => {
-      if (s==='active') return '<span class="badge badge-green">启用</span>';
-      if (s==='disabled') return '<span class="badge badge-yellow">停用</span>';
-      return '<span class="badge badge-red">已删除</span>';
-    };
-
     tbEl.innerHTML = page.map((m, i) => {
       const typeBadge = m.micType==='quantitative'
         ? '<span class="badge badge-blue">定量</span>'
@@ -207,7 +201,6 @@ const InspectionChar = {
         <td><span style="color:#2563eb;font-weight:600;">${esc(m.code)}</span></td>
         <td>${esc(m.shortText)}</td>
         <td>${typeBadge}</td>
-        <td>${statusBadge(m.status)}</td>
         <td>${esc(m.createdBy)}</td>
         <td>${m.createdDate}</td>
         <td>${viewBtn||'-'}</td>
@@ -278,7 +271,7 @@ const InspectionChar = {
     ).join('');
 
     const quantStyle = (isEdit && m.micType==='qualitative') ? 'display:none;' : '';
-    const qualStyle = (isEdit && m.micType!=='qualitative') ? 'display:none;' : '';
+    const qualStyle = (!isEdit || m.micType!=='qualitative') ? 'display:none;' : '';
 
     // 定量字段默认值
     const q = isEdit ? m : { unit:'', decimal:2, unitText:'' };
