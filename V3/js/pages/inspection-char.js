@@ -110,7 +110,7 @@ const InspectionChar = {
         </div>
         <!-- 筛选栏 -->
         <div class="filter-bar" style="flex-shrink:0;">
-          <div class="filter-group"><label>所属工厂</label><select id="micFactory"><option value="">全部</option>${micFactoryOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
+          <div class="filter-group"><label>工厂</label><select id="micFactory"><option value="">全部</option>${micFactoryOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>特性类型</label><select id="micType"><option value="">全部</option><option value="quantitative">定量</option><option value="qualitative">定性</option></select></div>
           <div class="filter-group"><label>状态</label><select id="micStatus"><option value="">全部</option><option value="active">启用</option><option value="disabled">停用</option><option value="deleted">已删除标记</option></select></div>
           <div class="filter-group"><label>搜索</label><input type="text" id="micSearch" placeholder="特性编码 / 短文本"></div>
@@ -124,10 +124,10 @@ const InspectionChar = {
           <table class="data-table">
             <thead><tr>
               <th style="width:50px;">序号</th>
+              <th>工厂</th>
               <th>主检验特性编码</th>
               <th>短文本</th>
               <th>特性类型</th>
-              <th>所属工厂</th>
               <th>状态</th>
               <th>创建人</th>
               <th>创建日期</th>
@@ -203,10 +203,10 @@ const InspectionChar = {
 
       return `<tr>
         <td>${start+i+1}</td>
+        <td>${esc(m.factoryName)}</td>
         <td><span style="color:#2563eb;font-weight:600;">${esc(m.code)}</span></td>
         <td>${esc(m.shortText)}</td>
         <td>${typeBadge}</td>
-        <td>${esc(m.factoryName)}</td>
         <td>${statusBadge(m.status)}</td>
         <td>${esc(m.createdBy)}</td>
         <td>${m.createdDate}</td>
@@ -277,8 +277,8 @@ const InspectionChar = {
       `<option value="${o.value}" ${isEdit && o.value===m.factory?'selected':''}>${o.label}</option>`
     ).join('');
 
-    const quantStyle = (m.micType==='qualitative' || (!isEdit)) ? 'display:none;' : '';
-    const qualStyle = (m.micType!=='qualitative') ? 'display:none;' : '';
+    const quantStyle = (isEdit && m.micType==='qualitative') ? 'display:none;' : '';
+    const qualStyle = (isEdit && m.micType!=='qualitative') ? 'display:none;' : '';
 
     // 定量字段默认值
     const q = isEdit ? m : { unit:'', decimal:2, unitText:'' };
@@ -299,7 +299,7 @@ const InspectionChar = {
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
-            <label>所属工厂<span class="required">*</span></label>
+            <label>工厂<span class="required">*</span></label>
             <select id="micFormFactory" required onchange="InspectionChar.onFactoryChange()"><option value="">请选择</option>${facSel}</select>
           </div>
           <div class="form-group">
@@ -422,7 +422,7 @@ const InspectionChar = {
     let micType = ''; for (const r of typeRadios) { if (r.checked) { micType = r.value; break; } }
 
     // 验证必填
-    if (!factory) { toast('请选择所属工厂'); return; }
+    if (!factory) { toast('请选择工厂'); return; }
     if (!micType) { toast('请选择特性类型'); return; }
     if (!shortText) { toast('请填写短文本'); return; }
 
@@ -537,7 +537,7 @@ const InspectionChar = {
       <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('所属工厂', m.factoryName)}
+          ${roField('工厂', m.factoryName)}
           ${roField('主检验特性编码', m.code)}
           ${roField('特性类型', typeName)}
           ${roField('短文本', m.shortText)}
