@@ -27,13 +27,14 @@ const InspectionBatch = {
     { id:'B007', batchNo:'1000-IL-20260611-001', docNo:'4900000106', materialCode:'MAT-10010', materialName:'微晶纤维素', sapBatch:'SAP-BT-20260520', supplierBatch:'SUP-LOT-20260613-007', quantity:'300.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'CANC', statusName:'已取消', createTime:'2026-06-11 10:00:00', createBy:'李工', updateTime:'2026-06-12 08:00:00', cancelReason:'SAP 凭证冲销，自动取消' }
   ],
 
-  // 检验计划选项（模拟）
-  planOptions: [
-    { no:'IP-1000-001', name:'来料检验-原料药标准方案' },
-    { no:'IP-1000-002', name:'来料检验-辅料标准方案' },
-    { no:'IP-2001-001', name:'中间品检验-中间体标准方案' },
-    { no:'IP-2002-001', name:'成品检验-注射剂标准方案' }
-  ],
+  // 检验计划选项（从 ipData 动态构建）
+  getPlanOptions(materialCode) {
+    // 优先匹配当前物料，其余排在后面
+    const all = (typeof ipData !== 'undefined' ? ipData : []).filter(p => p.status === 'active');
+    const matched = all.filter(p => p.materialCode === materialCode);
+    const others = all.filter(p => p.materialCode !== materialCode);
+    return [...matched, ...others].map(p => ({ no: p.code, name: p.materialName + ' - ' + p.purposeName, plan: p }));
+  },
 
   // 用途代码选项
   purposeOptions: [
@@ -444,6 +445,10 @@ const InspectionBatch = {
     const doc = this.pendingDocs.find(d => d.id === docId);
     if (!doc) return toast('凭证未找到');
 
+    // 获取该物料可用的检验计划
+    const planOptions = this.getPlanOptions(doc.materialCode);
+    const planSelectOpts = planOptions.map(p => `<option value="${p.no}">${p.no} — ${p.name}</option>`).join('');
+
     // 历史检验批检测
     const histBatches = this.batchData.filter(b =>
       b.supplierBatch === doc.supplierBatch && b.status === 'CANC'
@@ -463,26 +468,29 @@ const InspectionBatch = {
         ${histNote}
         <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
           <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">物料凭证信息</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
             <div><span style="color:var(--text-muted);">凭证号：</span><strong>${esc(doc.docNo)}</strong></div>
             <div><span style="color:var(--text-muted);">移动类型：</span>${esc(doc.movementName)}</div>
+            <div><span style="color:var(--text-muted);">数量：</span>${doc.quantity} ${esc(doc.unit)}</div>
             <div><span style="color:var(--text-muted);">物料编码：</span><strong>${esc(doc.materialCode)}</strong></div>
             <div><span style="color:var(--text-muted);">物料名称：</span>${esc(doc.materialName)}</div>
+            <div><span style="color:var(--text-muted);">工厂：</span>${esc(doc.plantName)}</div>
             <div><span style="color:var(--text-muted);">供应商批次号：</span><strong style="color:#2563eb;">${esc(doc.supplierBatch)}</strong></div>
             <div><span style="color:var(--text-muted);">SAP批次号：</span><span style="font-family:monospace;">${esc(doc.sapBatch)}</span></div>
-            <div><span style="color:var(--text-muted);">数量：</span>${doc.quantity} ${esc(doc.unit)}</div>
-            <div><span style="color:var(--text-muted);">工厂：</span>${esc(doc.plantName)}</div>
+            <div></div>
           </div>
         </div>
         <div class="form-grid">
           <div class="form-group"><label>用途代码<span class="req">*</span></label><select id="ibGenPurpose">
             ${this.purposeOptions.map(p => `<option value="${p.code}">${p.code} - ${p.name}</option>`).join('')}
           </select></div>
-          <div class="form-group"><label>检验计划<span class="req">*</span></label><select id="ibGenPlan">
+          <div class="form-group"><label>检验计划<span class="req">*</span></label><select id="ibGenPlan" onchange="InspectionBatch.onPlanChange()">
             <option value="">请选择</option>
-            ${this.planOptions.map(p => `<option value="${p.no}">${p.no} - ${p.name}</option>`).join('')}
+            ${planSelectOpts || '<option value="" disabled>暂无匹配的检验计划</option>'}
           </select></div>
         </div>
+        <!-- 检验计划详情预览 -->
+        <div id="ibPlanPreview" style="margin-top:16px;"></div>
         <div class="form-group full" style="margin-top:12px;">
           <label>备注</label>
           <textarea id="ibGenRemark" placeholder="可选填写备注信息" rows="2" style="width:100%;"></textarea>
@@ -492,8 +500,100 @@ const InspectionBatch = {
         { text:'取消', cls:'btn-secondary', action: closeModal },
         { text:'确认生成', cls:'btn-primary', action: ()=>{ InspectionBatch.doGenerate(docId); } }
       ],
-      'modal-md'
+      'modal-xl'
     );
+
+    // 存储当前 docId 和 planOptions 引用，供 onPlanChange 使用
+    this._genDocId = docId;
+    this._genPlanOptions = planOptions;
+  },
+
+  // 检验计划选择变更 → 展示计划详情
+  onPlanChange() {
+    const selVal = document.getElementById('ibGenPlan')?.value;
+    const previewEl = document.getElementById('ibPlanPreview');
+    if (!previewEl) return;
+
+    if (!selVal) {
+      previewEl.innerHTML = '';
+      return;
+    }
+
+    const plan = (typeof ipData !== 'undefined' ? ipData : []).find(p => p.code === selVal);
+    if (!plan) {
+      previewEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px;background:#f8fafc;border-radius:8px;">未找到该计划的详细数据</div>';
+      return;
+    }
+
+    previewEl.innerHTML = this.renderPlanPreview(plan);
+  },
+
+  // 渲染检验计划详情预览
+  renderPlanPreview(plan) {
+    const opHtml = plan.operations.map((op, i) => {
+      const isSampling = op.opType === 'sampling';
+      const typeBadge = isSampling
+        ? '<span class="badge badge-blue badge-sm">取样</span>'
+        : '<span class="badge badge-green badge-sm">检验</span>';
+
+      let charsHtml = '';
+      if (!isSampling && op.chars && op.chars.length > 0) {
+        charsHtml = `<table class="data-table" style="margin-top:8px;font-size:12px;min-width:100%;">
+          <thead><tr>
+            <th>MIC编码</th><th>MIC名称</th><th>类型</th><th>检验方法</th><th>规格范围</th><th>取样方案</th>
+          </tr></thead>
+          <tbody>${op.chars.map(c => {
+            const specRange = c.micType === 'quantitative'
+              ? `${c.lowerSpec || '—'} ~ ${c.upperSpec || '—'} ${c.unit || ''}`
+              : (c.defaultCode || '—');
+            const typeLabel = c.micType === 'quantitative' ? '定量' : '定性';
+            return `<tr>
+              <td style="font-family:monospace;font-size:11px;">${esc(c.micCode)}</td>
+              <td style="font-weight:500;">${esc(c.micName)}</td>
+              <td>${typeLabel}</td>
+              <td style="font-size:12px;">${esc(c.methodName) || '—'}</td>
+              <td>${specRange}</td>
+              <td style="font-size:12px;">${esc(c.samplingPlanName) || '—'}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>`;
+      }
+
+      return `<tr>
+        <td style="font-family:monospace;font-weight:600;">${esc(op.opNum)}</td>
+        <td>${typeBadge}</td>
+        <td><span class="badge badge-gray badge-sm">${esc(op.workCenterName)}</span></td>
+        <td>${esc(op.description) || '—'}</td>
+        <td style="font-size:12px;">${isSampling ? esc(op.samplingPlanName) : '—'}</td>
+        <td colspan="${!isSampling ? 1 : 6}" style="padding:0;${isSampling ? '' : ''}">${charsHtml}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:14px;font-weight:700;color:var(--text);">📋 ${esc(plan.code)}</div>
+        <span class="badge badge-green">已启用</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;margin-bottom:14px;color:var(--text-secondary);">
+        <div><span style="color:var(--text-muted);">物料：</span><strong>${esc(plan.materialCode)} ${esc(plan.materialName)}</strong></div>
+        <div><span style="color:var(--text-muted);">用途：</span>${esc(plan.purposeName)}</div>
+        <div><span style="color:var(--text-muted);">工厂：</span>${esc(plan.factoryName)}</div>
+        <div><span style="color:var(--text-muted);">创建人：</span>${esc(plan.createdBy)}</div>
+        <div><span style="color:var(--text-muted);">创建日期：</span>${esc(plan.createdDate)}</div>
+        <div><span style="color:var(--text-muted);">工序数：</span>${plan.operations.length} 个</div>
+      </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">🔧 工序 &amp; 检验特性</div>
+      <table class="data-table" style="min-width:100%;font-size:12px;">
+        <thead><tr>
+          <th style="width:60px;">工序号</th>
+          <th style="width:60px;">类型</th>
+          <th style="width:100px;">工作中心</th>
+          <th>工序描述</th>
+          <th style="width:120px;">取样方案</th>
+        </tr></thead>
+        <tbody>${opHtml}</tbody>
+      </table>
+    </div>`;
   },
 
   doGenerate(docId) {
@@ -518,7 +618,7 @@ const InspectionBatch = {
     const count = this.batchData.filter(b => b.plant===doc.plant).length + 1;
     const batchNo = `${doc.plant}-IL-${today}-${String(count).padStart(3,'0')}`;
 
-    const plan = this.planOptions.find(p => p.no === planNo);
+    const plan = (this._genPlanOptions || []).find(p => p.no === planNo);
     const purposeObj = this.purposeOptions.find(p => p.code === purpose);
 
     const refHist = document.getElementById('ibRefHist')?.checked;
