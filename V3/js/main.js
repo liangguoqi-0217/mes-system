@@ -66,14 +66,11 @@ const App = {
           ]
         },
         {
-          title:'样品与检验', items: [
-            { id:'sampling-task', label:'取样任务列表', route:'sampling-task' },
-            { id:'sampling-exec', label:'取样执行（移动端）', route:'sampling-exec' },
-            { id:'inspection-task', label:'检验任务列表', route:'inspection-task' },
-            { id:'inspection-result', label:'检验结果录入（移动端）', route:'inspection-result' },
-            { id:'auto-judge', label:'自动判定', route:'auto-judge' },
-            { id:'oos-auto', label:'OOS 自动触发', route:'oos-auto' },
-            { id:'coa-gen', label:'COA 生成', route:'coa-gen' }
+          title:'质量检验', items: [
+            { id:'inspection-batch', label:'检验批管理', route:'inspection-batch' },
+            { id:'sampling-exec', label:'取样执行', route:'sampling-exec' },
+            { id:'result-record', label:'结果记录', route:'result-record' },
+            { id:'usage-decision', label:'使用决策', route:'usage-decision' }
           ]
         },
         {
