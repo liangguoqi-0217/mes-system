@@ -541,20 +541,25 @@
   <script>
     var _errors = [];
     window.onerror = function(msg, url, line, col, error) {
+      // 过滤掉跨域脚本错误（无法提供有用信息）
+      if (msg === 'Script error.' && !url) return;
       _errors.push({msg:msg,url:url,line:line,col:col,stack:error&&error.stack});
       var el = document.getElementById('contentArea');
-      if (el) {
+      if (el && el.dataset.loaded === '1') {
+        // 仅在页面已加载完成后显示错误（避免初始化时误报）
         el.innerHTML =
-          '<div style="padding:60px 40px;text-align:center;font-family:monospace;color:#dc2626;">' +
-          '<h2 style="margin-bottom:16px;">JavaScript 加载错误</h2>' +
+          '<div style="padding:40px 20px;text-align:center;font-family:monospace;color:#dc2626;">' +
+          '<h2 style="margin-bottom:12px;font-size:18px;">运行错误</h2>' +
           _errors.map(function(e) {
-            return '<div style="background:#fff1f2;border:1px solid #fecaca;border-radius:8px;padding:20px;margin-bottom:12px;text-align:left;max-width:700px;display:inline-block;">' +
+            return '<div style="background:#fff1f2;border:1px solid #fecaca;border-radius:8px;padding:14px;margin-bottom:10px;text-align:left;max-width:700px;display:inline-block;font-size:13px;">' +
               '<p><strong>错误信息：</strong>' + e.msg + '</p>' +
               '<p><strong>文件：</strong>' + e.url + '</p>' +
               '<p><strong>行号：</strong>' + e.line + '，列：' + e.col + '</p>' +
-              (e.stack ? '<pre style="margin-top:12px;font-size:12px;white-space:pre-wrap;word-break:break-all;">' + e.stack + '</pre>' : '') +
+              (e.stack ? '<pre style="margin-top:8px;font-size:11px;white-space:pre-wrap;word-break:break-all;">' + e.stack + '</pre>' : '') +
               '</div>';
-          }).join('') + '</div>';
+          }).join('') +
+          '<button onclick="_errors=[];location.reload()" style="margin-top:16px;padding:10px 24px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">🔄 刷新页面清除错误</button>' +
+          '</div>';
       }
     };
   </script>

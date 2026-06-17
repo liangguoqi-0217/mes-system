@@ -169,6 +169,8 @@ const App = {
   },
 
   init() {
+    // 清除任何历史错误
+    if (window._errors) window._errors = [];
     // 1. 初始化用户界面
     this._initUserUI();
     // 2. 初始化数据持久化服务
@@ -177,6 +179,9 @@ const App = {
     this.setupMenuToggle();
     this.setupTopbarButtons();
     this.navigateTo('home');
+    // 标记页面已加载完成，之后出现的错误才显示
+    var ca = document.getElementById('contentArea');
+    if (ca) ca.dataset.loaded = '1';
   },
 
   /* ===== 用户界面初始化 ===== */

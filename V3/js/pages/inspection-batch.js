@@ -1,6 +1,8 @@
 // ===== 检验批管理页面 =====
 // PRD v1.0 - 质量管理 → 质量检验 → 检验批管理
+// ✨ v2.0 - 2026-06-17: 新增跨工厂检验协同功能
 const InspectionBatch = {
+  _version: '2.0-20260617',
   activeTab: 'pending', // 'pending' | 'list'
   page: 1, pageSize: 10,
   filtered: [],
@@ -958,10 +960,13 @@ const InspectionBatch = {
 
   doGenerate(docId) {
     const doc = this.pendingDocs.find(d => d.id === docId);
-    if (!doc) return;
+    if (!doc) {
+      toast('该凭证已不存在（可能已生成检验批），请刷新页面重试');
+      return;
+    }
 
-    const planNo = document.getElementById('ibGenPlan').value;
-    const purpose = document.getElementById('ibGenPurpose').value;
+    const planNo = document.getElementById('ibGenPlan')?.value;
+    const purpose = document.getElementById('ibGenPurpose')?.value;
     const remark = document.getElementById('ibGenRemark')?.value||'';
 
     // 校验 SAP 凭证冲销（模拟实时校验）
@@ -974,6 +979,7 @@ const InspectionBatch = {
 
     // ===== 跨工厂检验协同校验 =====
     const crossBatches = this._findCrossPlantBatches(doc);
+
     if (crossBatches.length > 0) {
       this._showCrossPlantConfirm(docId, crossBatches);
       return; // 中断，让用户选择
