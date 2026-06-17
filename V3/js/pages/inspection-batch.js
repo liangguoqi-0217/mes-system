@@ -700,9 +700,14 @@ const InspectionBatch = {
     const isActive = ['CRTD','SAMP','INSP','DONE'].includes(b.status);
     const hasSamplingOp = ops.some(o => o.opType === 'sampling');
 
-    // 工序行渲染
+    // 工序行渲染（含可展开的详情面板）
     const opRows = ops.map((op, i) => {
       const isSampling = op.opType === 'sampling';
+      const detailId = 'opDetail_' + i + '_' + b.id.replace(/[^a-zA-Z0-9]/g,'');
+      const iconId = 'opIcon_' + i + '_' + b.id.replace(/[^a-zA-Z0-9]/g,'');
+      const hasChars = !isSampling && op.chars && op.chars.length > 0;
+      const hasDetail = isSampling || hasChars;
+
       const typeBadge = isSampling
         ? '<span class="badge badge-yellow badge-sm">取样</span>'
         : '<span class="badge badge-purple badge-sm">检验</span>';
@@ -735,15 +740,68 @@ const InspectionBatch = {
         opBtn = '<span style="color:var(--text-muted);font-size:12px;">—</span>';
       }
 
-      return `<tr>
-        <td style="font-family:monospace;font-weight:600;">${esc(op.opNum)}</td>
+      // 详情面板内容
+      let detailHtml = '';
+      if (isSampling) {
+        detailHtml = `<div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+          <span style="color:var(--text-muted);">📋 取样方案：</span>
+          <span style="font-weight:600;color:var(--text);">${esc(op.samplingPlanName) || '—'}</span>
+          ${op.description ? `<span style="color:#d1d5db;">|</span><span style="color:var(--text-secondary);">${esc(op.description)}</span>` : ''}
+        </div>`;
+      } else if (hasChars) {
+        const charCards = op.chars.map(c => {
+          const isQuant = c.micType === 'quantitative';
+          const specRange = isQuant ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}` : (c.defaultCode||'—');
+          return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;font-size:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-family:monospace;font-weight:600;color:#2563eb;">${esc(c.micCode)}</span>
+              <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm" style="font-size:10px;">${isQuant?'定量':'定性'}</span>
+              <span style="font-weight:500;color:var(--text);">${esc(c.micName)}</span>
+            </div>
+            <div style="display:flex;gap:16px;color:var(--text-secondary);">
+              <span>方法：${esc(c.methodName)||'—'}</span>
+              <span>规格：${specRange}</span>
+              ${c.samplingPlanName ? `<span>取样：${esc(c.samplingPlanName)}</span>` : ''}
+            </div>
+          </div>`;
+        }).join('');
+        detailHtml = `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">🔍 检测特性 · ${op.chars.length} 项</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;">${charCards}</div>`;
+      }
+
+      const expandIcon = hasDetail
+        ? `<span id="${iconId}" style="display:inline-block;width:16px;text-align:center;color:var(--text-muted);font-size:10px;transition:transform .2s;">▸</span>`
+        : '';
+
+      const mainRow = `<tr class="op-main-row" style="cursor:${hasDetail?'pointer':'default'};" ${hasDetail ? `onclick="InspectionBatch._toggleOpDetail('${detailId}','${iconId}')"` : ''}>
+        <td style="font-family:monospace;font-weight:600;white-space:nowrap;">${expandIcon} ${esc(op.opNum)}</td>
         <td>${typeBadge}</td>
         <td>${esc(op.workCenterName)}</td>
-        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(op.description||'')}">${esc(op.description||'—')}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(op.description||'')}">${esc(op.description||'—')}</td>
         <td>${opStatus}</td>
         <td style="text-align:center;">${opBtn}</td>
       </tr>`;
+
+      const detailRow = hasDetail ? `<tr class="op-detail-row" id="${detailId}" style="display:none;">
+        <td colspan="6" style="background:#f8fafc;border-bottom:2px solid #e5e7eb;padding:12px 16px 12px 36px;">${detailHtml}</td>
+      </tr>` : '';
+
+      return mainRow + detailRow;
     }).join('');
+
+    // 新增展开/收起行详情的静态方法
+    InspectionBatch._toggleOpDetail = function(detailId, iconId) {
+      const detail = document.getElementById(detailId);
+      const icon = document.getElementById(iconId);
+      if (!detail || !icon) return;
+      if (detail.style.display === 'none' || detail.style.display === '') {
+        detail.style.display = 'table-row';
+        icon.textContent = '▾';
+      } else {
+        detail.style.display = 'none';
+        icon.textContent = '▸';
+      }
+    };
 
     // 时间线
     const timelineHtml = `<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
@@ -795,7 +853,7 @@ const InspectionBatch = {
         <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">🔬 检验任务 · ${ops.length} 道工序</div>
         <table class="data-table" style="min-width:100%;">
           <thead><tr>
-            <th style="width:60px;">工序号</th>
+            <th style="width:72px;">工序号</th>
             <th style="width:60px;">类型</th>
             <th>工作中心</th>
             <th>工序描述</th>
