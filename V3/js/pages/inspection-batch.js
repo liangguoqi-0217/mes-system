@@ -528,72 +528,105 @@ const InspectionBatch = {
     previewEl.innerHTML = this.renderPlanPreview(plan);
   },
 
-  // 渲染检验计划详情预览
+  // 渲染检验计划详情预览 — 折叠式卡片布局
   renderPlanPreview(plan) {
-    const opHtml = plan.operations.map((op, i) => {
+    // 工序卡片（折叠式）
+    const opCards = plan.operations.map((op, i) => {
       const isSampling = op.opType === 'sampling';
-      const typeBadge = isSampling
-        ? '<span class="badge badge-blue badge-sm">取样</span>'
-        : '<span class="badge badge-green badge-sm">检验</span>';
+      const uid = 'opp' + i + '_' + Date.now();
+      const hasChars = !isSampling && op.chars && op.chars.length > 0;
 
-      let charsHtml = '';
-      if (!isSampling && op.chars && op.chars.length > 0) {
-        charsHtml = `<table class="data-table" style="margin-top:8px;font-size:12px;min-width:100%;">
-          <thead><tr>
-            <th>MIC编码</th><th>MIC名称</th><th>类型</th><th>检验方法</th><th>规格范围</th><th>取样方案</th>
-          </tr></thead>
-          <tbody>${op.chars.map(c => {
-            const specRange = c.micType === 'quantitative'
-              ? `${c.lowerSpec || '—'} ~ ${c.upperSpec || '—'} ${c.unit || ''}`
-              : (c.defaultCode || '—');
-            const typeLabel = c.micType === 'quantitative' ? '定量' : '定性';
-            return `<tr>
-              <td style="font-family:monospace;font-size:11px;">${esc(c.micCode)}</td>
-              <td style="font-weight:500;">${esc(c.micName)}</td>
-              <td>${typeLabel}</td>
-              <td style="font-size:12px;">${esc(c.methodName) || '—'}</td>
-              <td>${specRange}</td>
-              <td style="font-size:12px;">${esc(c.samplingPlanName) || '—'}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>`;
+      // MIC 详情（默认折叠）
+      let charsPanel = '';
+      if (hasChars) {
+        const maxCols = Math.min(op.chars.length, 2);
+        charsPanel = `<div id="${uid}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #d1d5db;">
+          <div style="display:grid;grid-template-columns:repeat(${maxCols},1fr);gap:8px 16px;">
+            ${op.chars.map(c => {
+              const specRange = c.micType === 'quantitative'
+                ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}`
+                : (c.defaultCode||'—');
+              const isQuant = c.micType === 'quantitative';
+              return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <span style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:600;">${esc(c.micCode)}</span>
+                  <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm" style="font-size:10px;">${isQuant?'定量':'定性'}</span>
+                </div>
+                <div style="font-weight:500;color:var(--text);margin-bottom:4px;">${esc(c.micName)}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-secondary);">
+                  <span>方法：${esc(c.methodName)||'—'}</span>
+                  <span style="font-weight:500;color:var(--text);">规格：${specRange}</span>
+                  ${c.samplingPlanName ? `<span>取样：${esc(c.samplingPlanName)}</span>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
       }
 
-      return `<tr>
-        <td style="font-family:monospace;font-weight:600;">${esc(op.opNum)}</td>
-        <td>${typeBadge}</td>
-        <td><span class="badge badge-gray badge-sm">${esc(op.workCenterName)}</span></td>
-        <td>${esc(op.description) || '—'}</td>
-        <td style="font-size:12px;">${isSampling ? esc(op.samplingPlanName) : '—'}</td>
-        <td colspan="${!isSampling ? 1 : 6}" style="padding:0;${isSampling ? '' : ''}">${charsHtml}</td>
-      </tr>`;
+      const typeCls = isSampling ? 'badge-blue' : 'badge-green';
+      const typeLabel = isSampling ? '取样' : '检验';
+      const icon = isSampling ? '🔬' : '🧪';
+      const stepNum = i + 1;
+
+      return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;background:#fff;${i > 0 ? 'margin-top:8px;' : ''}">
+        <div style="display:flex;align-items:center;gap:10px;min-height:32px;">
+          <div style="background:${isSampling?'#dbeafe':'#dcfce7'};color:${isSampling?'#1d4ed8':'#15803d'};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${stepNum}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:14px;font-weight:600;color:var(--text);">${esc(op.opNum)}</span>
+              <span class="badge ${typeCls} badge-sm">${typeLabel}</span>
+              <span style="color:var(--text-muted);font-size:13px;">· ${esc(op.workCenterName)}</span>
+              ${op.description ? `<span style="color:var(--text-secondary);font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">— ${esc(op.description)}</span>` : ''}
+            </div>
+            ${isSampling ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">取样方案：${esc(op.samplingPlanName) || '—'}</div>` : ''}
+          </div>
+          ${hasChars ? `<button onclick="InspectionBatch._toggleOpChars('${uid}',this)" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
+            <span class="_expandLabel">展开</span> ${op.chars.length} 项特性 ▾
+          </button>` : ''}
+        </div>
+        ${charsPanel}
+      </div>`;
     }).join('');
 
-    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:14px;font-weight:700;color:var(--text);">📋 ${esc(plan.code)}</div>
-        <span class="badge badge-green">已启用</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;margin-bottom:14px;color:var(--text-secondary);">
-        <div><span style="color:var(--text-muted);">物料：</span><strong>${esc(plan.materialCode)} ${esc(plan.materialName)}</strong></div>
-        <div><span style="color:var(--text-muted);">用途：</span>${esc(plan.purposeName)}</div>
-        <div><span style="color:var(--text-muted);">工厂：</span>${esc(plan.factoryName)}</div>
-        <div><span style="color:var(--text-muted);">创建人：</span>${esc(plan.createdBy)}</div>
-        <div><span style="color:var(--text-muted);">创建日期：</span>${esc(plan.createdDate)}</div>
-        <div><span style="color:var(--text-muted);">工序数：</span>${plan.operations.length} 个</div>
-      </div>
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">🔧 工序 &amp; 检验特性</div>
-      <table class="data-table" style="min-width:100%;font-size:12px;">
-        <thead><tr>
-          <th style="width:60px;">工序号</th>
-          <th style="width:60px;">类型</th>
-          <th style="width:100px;">工作中心</th>
-          <th>工序描述</th>
-          <th style="width:120px;">取样方案</th>
-        </tr></thead>
-        <tbody>${opHtml}</tbody>
-      </table>
+    // 工序间箭头连接
+    const flowHtml = `<div style="display:flex;align-items:center;gap:0;font-size:12px;color:#9ca3af;padding:0 14px;margin-bottom:4px;">
+      ${plan.operations.map((_,i) => {
+        if (i === 0) return `<span style="flex-shrink:0;width:48px;text-align:center;">开始</span>`;
+        return `<span style="flex-shrink:0;width:48px;text-align:center;">↓</span>`;
+      }).join('')}
     </div>`;
+
+    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px 18px;">
+      <!-- 计划基本信息（紧凑） -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:15px;font-weight:700;color:var(--text);">📋 ${esc(plan.code)}</span>
+        <span class="badge badge-green">已启用</span>
+        <span style="color:#d1d5db;">|</span>
+        <span style="font-size:13px;color:var(--text-secondary);"><strong>${esc(plan.materialCode)}</strong> ${esc(plan.materialName)}</span>
+        <span style="font-size:13px;color:var(--text-muted);">· ${esc(plan.purposeName)}</span>
+        <span style="font-size:13px;color:var(--text-muted);">· ${esc(plan.factoryName)}</span>
+        <span style="font-size:13px;color:var(--text-muted);">· ${plan.operations.length} 道工序</span>
+      </div>
+      <!-- 工序卡片列表 -->
+      ${opCards}
+    </div>`;
+  },
+
+  // 折叠/展开工序的 MIC 特性
+  _toggleOpChars(uid, btn) {
+    const panel = document.getElementById(uid);
+    const label = btn.querySelector('._expandLabel');
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+      panel.style.display = 'block';
+      if (label) label.textContent = '收起';
+      btn.innerHTML = btn.innerHTML.replace('▾', '▴');
+    } else {
+      panel.style.display = 'none';
+      if (label) label.textContent = '展开';
+      btn.innerHTML = btn.innerHTML.replace('▴', '▾');
+    }
   },
 
   doGenerate(docId) {
