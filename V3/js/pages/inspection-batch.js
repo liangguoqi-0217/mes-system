@@ -733,11 +733,11 @@ const InspectionBatch = {
       // 操作按钮
       let opBtn = '';
       if (isSampling && b.status === 'CRTD') {
-        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openSamplingForm('${b.id}','${op.opNum}');closeModal();">取样</button>`;
+        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openSamplingForm('${b.id}','${op.opNum}');">取样</button>`;
       } else if (!isSampling && ['SAMP','INSP'].includes(b.status)) {
-        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');closeModal();">录入结果</button>`;
+        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');">录入结果</button>`;
       } else if (!isSampling && !['CANC','CLSD'].includes(b.status)) {
-        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');closeModal();">录入结果</button>`;
+        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');">录入结果</button>`;
       } else {
         opBtn = '<span style="color:var(--text-muted);font-size:12px;">—</span>';
       }
@@ -920,7 +920,7 @@ const InspectionBatch = {
         </div>
       </div>`,
       [
-        { text:'取消', cls:'btn-secondary', action: closeModal },
+        { text:'取消', cls:'btn-secondary', action: ()=>{ InspectionBatch.openDetail(batchId); } },
         { text:'确认取样', cls:'btn-primary', action: ()=>{ InspectionBatch.submitSampling(batchId); } }
       ],
       'modal-md'
@@ -952,8 +952,8 @@ const InspectionBatch = {
     b.postDate = postDate;
     b.sampleRemark = remark;
     toast(`取样已确认！取样量 ${qty} ${b.unit}，检验批 ${b.batchNo} 进入"取样中"`);
-    closeModal();
     this.init();
+    InspectionBatch.openDetail(batchId);
   },
 
   // ==================== 检验结果录入弹窗 ====================
@@ -1030,8 +1030,8 @@ const InspectionBatch = {
         </div>
       </div>`,
       [
-        { text:'取消', cls:'btn-secondary', action: closeModal },
-        { text:'保存草稿', cls:'btn-secondary', action: ()=>{ toast('草稿已保存'); closeModal(); } },
+        { text:'取消', cls:'btn-secondary', action: ()=>{ InspectionBatch.openDetail(batchId); } },
+        { text:'保存草稿', cls:'btn-secondary', action: ()=>{ toast('草稿已保存'); InspectionBatch.openDetail(batchId); } },
         { text:'提交结果', cls:'btn-primary', action: ()=>{ InspectionBatch.submitResult(batchId, opNum); } }
       ],
       'modal-lg'
@@ -1083,8 +1083,8 @@ const InspectionBatch = {
 
     const failNote = hasFail ? ' 发现不合格项，请关注决策！' : '';
     toast(`检验结果已提交！判定：${hasFail ? '不合格' : '合格'}${failNote}`);
-    closeModal();
     this.init();
+    InspectionBatch.openDetail(batchId);
   },
 
   // ==================== 使用决策 ====================
