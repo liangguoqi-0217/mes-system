@@ -139,9 +139,13 @@ const InspectionBatch = {
 
     if (this.activeTab === 'list') {
       el.innerHTML = `<div class="filter-bar">
-        <div class="filter-group"><label>检验批号</label><input type="text" id="ibBatchNo" placeholder="模糊查询"></div>
+        <div class="filter-group"><label>工厂</label><select id="ibFactory">
+          <option value="">全部</option>
+          ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
+        </select></div>
+        <div class="filter-group"><label>物料编码</label><input type="text" id="ibMaterial" placeholder="模糊查询"></div>
         <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibSuppBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>物料编码/名称</label><input type="text" id="ibMaterial" placeholder="模糊查询"></div>
+        <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibSapBatch" placeholder="模糊查询"></div>
         <div class="filter-group"><label>状态</label><select id="ibStatus">
           <option value="">全部</option>
           <option value="CRTD">已创建</option>
@@ -152,10 +156,6 @@ const InspectionBatch = {
           <option value="CLSD">已关闭</option>
           <option value="CANC">已取消</option>
         </select></div>
-        <div class="filter-group"><label>工厂</label><select id="ibFactory">
-          <option value="">全部</option>
-          ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
-        </select></div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="InspectionBatch.search()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetFilter()">重置</button>
@@ -163,13 +163,14 @@ const InspectionBatch = {
       </div>`;
     } else {
       el.innerHTML = `<div class="filter-bar">
-        <div class="filter-group"><label>物料凭证号</label><input type="text" id="ibDocNo" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibPendSuppBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>物料编码/名称</label><input type="text" id="ibPendMaterial" placeholder="模糊查询"></div>
         <div class="filter-group"><label>工厂</label><select id="ibPendFactory">
           <option value="">全部</option>
           ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
         </select></div>
+        <div class="filter-group"><label>物料编码</label><input type="text" id="ibPendMaterial" placeholder="模糊查询"></div>
+        <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibPendSuppBatch" placeholder="模糊查询"></div>
+        <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibPendSapBatch" placeholder="模糊查询"></div>
+        <div class="filter-group"><label>过账日期</label><input type="date" id="ibPendReceiptDate"></div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="InspectionBatch.searchPending()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetPendingFilter()">重置</button>
@@ -179,18 +180,18 @@ const InspectionBatch = {
   },
 
   search() {
-    const batchNo = (document.getElementById('ibBatchNo')?.value||'').trim();
-    const suppBatch = (document.getElementById('ibSuppBatch')?.value||'').trim();
-    const material = (document.getElementById('ibMaterial')?.value||'').trim();
-    const status = document.getElementById('ibStatus')?.value||'';
     const factory = document.getElementById('ibFactory')?.value||'';
+    const material = (document.getElementById('ibMaterial')?.value||'').trim();
+    const suppBatch = (document.getElementById('ibSuppBatch')?.value||'').trim();
+    const sapBatch = (document.getElementById('ibSapBatch')?.value||'').trim();
+    const status = document.getElementById('ibStatus')?.value||'';
 
     this.filtered = this.batchData.filter(b => {
-      if (batchNo && !b.batchNo.includes(batchNo)) return false;
-      if (suppBatch && !b.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
-      if (material && !b.materialCode.includes(material) && !b.materialName.includes(material)) return false;
-      if (status && b.status !== status) return false;
       if (factory && b.plant !== factory) return false;
+      if (material && !b.materialCode.includes(material) && !b.materialName.includes(material)) return false;
+      if (suppBatch && !b.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
+      if (sapBatch && !b.sapBatch.toLowerCase().includes(sapBatch.toLowerCase())) return false;
+      if (status && b.status !== status) return false;
       return true;
     });
     this.page = 1;
@@ -199,7 +200,7 @@ const InspectionBatch = {
   },
 
   resetFilter() {
-    ['ibBatchNo','ibSuppBatch','ibMaterial'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['ibMaterial','ibSuppBatch','ibSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const s = document.getElementById('ibStatus'); if (s) s.value = '';
     const f = document.getElementById('ibFactory'); if (f) f.value = '';
     this.filtered = [...this.batchData];
@@ -354,16 +355,18 @@ const InspectionBatch = {
   pendingPage: 1,
 
   searchPending() {
-    const docNo = (document.getElementById('ibDocNo')?.value||'').trim();
-    const suppBatch = (document.getElementById('ibPendSuppBatch')?.value||'').trim();
-    const material = (document.getElementById('ibPendMaterial')?.value||'').trim();
     const factory = document.getElementById('ibPendFactory')?.value||'';
+    const material = (document.getElementById('ibPendMaterial')?.value||'').trim();
+    const suppBatch = (document.getElementById('ibPendSuppBatch')?.value||'').trim();
+    const sapBatch = (document.getElementById('ibPendSapBatch')?.value||'').trim();
+    const receiptDate = document.getElementById('ibPendReceiptDate')?.value||'';
 
     this.pendingFiltered = this.pendingDocs.filter(d => {
-      if (docNo && !d.docNo.includes(docNo)) return false;
-      if (suppBatch && !d.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
-      if (material && !d.materialCode.includes(material) && !d.materialName.includes(material)) return false;
       if (factory && d.plant !== factory) return false;
+      if (material && !d.materialCode.includes(material) && !d.materialName.includes(material)) return false;
+      if (suppBatch && !d.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
+      if (sapBatch && !d.sapBatch.toLowerCase().includes(sapBatch.toLowerCase())) return false;
+      if (receiptDate && d.receiptDate !== receiptDate) return false;
       return true;
     });
     this.pendingPage = 1;
@@ -371,8 +374,9 @@ const InspectionBatch = {
   },
 
   resetPendingFilter() {
-    ['ibDocNo','ibPendSuppBatch','ibPendMaterial'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['ibPendMaterial','ibPendSuppBatch','ibPendSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const f = document.getElementById('ibPendFactory'); if (f) f.value = '';
+    const r = document.getElementById('ibPendReceiptDate'); if (r) r.value = '';
     this.pendingFiltered = [...this.pendingDocs];
     this.pendingPage = 1;
     this.doRenderPendingTable();
