@@ -548,7 +548,7 @@ const InspectionPlan = {
     const isActive = p.status === 'active';
 
     const content = this.buildForm(p, true) + `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;margin-top:16px;border-top:1px solid var(--border);flex-shrink:0;">
+      <div class="split-view-footer" style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
         <span></span>
         <div style="display:flex;gap:8px;">
           ${canEdit ? `<button class="btn btn-blue" onclick="InspectionPlan.openEdit('${id}')">编辑</button>` : ''}
@@ -614,42 +614,9 @@ const InspectionPlan = {
     const micOpts = availMic.map(m => `<option value="${m.id}" data-mic-type="${m.micType}" data-mic-unit="${m.unit||''}" data-mic-decimal="${m.decimal||0}" data-mic-method="${m.defaultMethod||''}" data-mic-codegroup="${m.codeGroup||''}" data-mic-defaultcode="${m.defaultCode||''}">${m.code}（${m.shortText}）</option>`).join('');
     const methodOpts = availMethod.map(m => `<option value="${m.id}">${m.code}（${m.name}）</option>`).join('');
 
-    // ── 查看模式：保持简洁只读布局 ──
+    // ── 查看模式：侧栏导航式（只读）──
     if (ro) {
-      return `
-        <div class="clean-section">
-          <h4>抬头信息</h4>
-          <div class="ro-info-grid">
-            <div class="ro-info-field"><span class="ro-info-label">检验计划编号</span><span class="ro-info-value mono">${esc(planCode)}</span></div>
-            <div class="ro-info-field"><span class="ro-info-label">状态</span><span class="ro-info-status ${p.status==='active'?'active':'disabled'}"><span class="dot"></span>${p.status==='active'?'启用':'停用'}</span></div>
-            <div class="ro-info-field"><span class="ro-info-label">工厂</span><span class="ro-info-value">${esc(p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac)}</span></div>
-          </div>
-          <hr class="ro-info-divider">
-          <div class="ro-info-grid">
-            <div class="ro-info-field"><span class="ro-info-label">物料编码</span><span class="ro-info-value mono">${esc(p.materialCode||'—')}</span></div>
-            <div class="ro-info-field"><span class="ro-info-label">用途代码</span><span class="ro-info-value mono">${esc(p.purposeCode||'—')}</span></div>
-            <div class="ro-info-field"><span class="ro-info-label">物料名称</span><span class="ro-info-value">${esc(p.materialName||'—')}</span></div>
-            <div class="ro-info-field"><span class="ro-info-label">用途名称</span><span class="ro-info-value">${esc(p.purposeName||'—')}</span></div>
-          </div>
-        </div>
-        <div class="clean-section">
-          <h4>工序与检验特性</h4>
-          <div style="overflow-x:auto;">
-            <table class="clean-op-table">
-              <thead><tr>
-                <th style="width:60px;">工序号</th>
-                <th style="width:80px;">类型</th>
-                <th>工作中心</th>
-                <th>描述</th>
-                <th style="width:200px;">取样方案</th>
-                <th>检验特性</th>
-              </tr></thead>
-              <tbody>${this.formOps.map((op, oi) => this.buildOpRow(op, oi, 'disabled', wcOpts, spOpts)).join('')}</tbody>
-            </table>
-          </div>
-        </div>
-        ${this.renderAllChars('disabled', micOpts, methodOpts, spOpts) ? `<div class="clean-section"><h4>检验特性详情</h4>${this.renderAllChars('disabled', micOpts, methodOpts, spOpts)}</div>` : ''}
-      `;
+      return this.buildSplitLayoutView(p, fac, planCode, micOpts, methodOpts, spOpts);
     }
 
     // ── 编辑/新建模式：侧栏导航式 ──
@@ -794,6 +761,133 @@ const InspectionPlan = {
         <div class="sn-field-row">
           <div><label>取样方案</label><select class="form-input ip-char-sp" data-op-idx="${oi}" data-char-idx="${ci}"><option value="">— 可选 —</option>${spOpts}</select></div>
           <div></div>
+        </div>
+        ${typeFields}
+      </div>
+    </div>`;
+  },
+
+  // ==== 查看模式：侧栏导航式（只读）====
+
+  // ---- 构建查看模式侧栏导航布局 ----
+  buildSplitLayoutView(p, fac, planCode, micOpts, methodOpts, spOpts) {
+    const navItem = (id, label, badge, cls, active) =>
+      `<div class="split-nav-item${active?' active':''}" onclick="InspectionPlan.switchSplitNav('${id}')">
+        ${label}
+        ${badge ? `<span class="sn-badge ${cls}">${badge}</span>` : ''}
+      </div>`;
+
+    // 左侧导航（查看模式无"添加"按钮）
+    const navItems = `
+      <div class="split-nav-label">导航目录</div>
+      ${navItem('header', '📋 抬头信息', '', '', true)}
+      ${this.formOps.map((op, oi) => navItem(
+        'op-'+oi,
+        `<span class="sn-idx">${esc(op.opNum)}</span>${esc(op.opTypeName)} · ${esc(op.workCenterName)}`,
+        op.opType==='sampling'?'取样':'检验',
+        op.opType==='sampling'?'samp':'insp'
+      )).join('')}`;
+
+    // 右侧面板
+    const factoryName = esc(p.factoryName||ipFactoryOptions.find(f=>f.value===fac)?.label||fac);
+    const statusText = p.status==='active'?'启用':'停用';
+    const statusCls = p.status==='active'?'active':'disabled';
+
+    const panels = `
+      <!-- 抬头信息面板（只读） -->
+      <div class="split-panel active" data-split="header">
+        <div class="sn-section-title">抬头信息</div>
+        <div class="sn-field-row">
+          <div><label>检验计划编号</label><span class="sn-ro-val mono">${esc(planCode)}</span></div>
+          <div><label>工厂</label><span class="sn-ro-val">${factoryName}</span></div>
+        </div>
+        <div class="sn-field-row">
+          <div><label>物料编码</label><span class="sn-ro-val mono">${esc(p.materialCode||'—')}</span></div>
+          <div><label>物料名称</label><span class="sn-ro-val">${esc(p.materialName||'—')}</span></div>
+        </div>
+        <div class="sn-field-row">
+          <div><label>用途代码</label><span class="sn-ro-val mono">${esc(p.purposeCode||'—')}</span></div>
+          <div><label>用途名称</label><span class="sn-ro-val">${esc(p.purposeName||'—')}</span></div>
+        </div>
+        <div class="sn-field-row">
+          <div><label>状态</label><span class="sn-ro-status ${statusCls}"><span class="dot"></span>${statusText}</span></div>
+        </div>
+      </div>
+      <!-- 工序面板（只读） -->
+      ${this.formOps.map((op, oi) => this.buildSplitOpPanelView(op, oi, micOpts, methodOpts, spOpts)).join('')}`;
+
+    return `<div class="split-wrap" id="splitWrap">
+      <div class="split-left" id="splitNav">${navItems}</div>
+      <div class="split-right" id="splitRight">${panels}</div>
+    </div>`;
+  },
+
+  // ---- 构建查看模式工序面板（只读）----
+  buildSplitOpPanelView(op, oi, micOpts, methodOpts, spOpts) {
+    const isSampling = op.opType === 'sampling';
+    const isInspection = op.opType === 'inspection';
+
+    let charsSection = '';
+    if (isInspection) {
+      const charsHtml = (op.chars||[]).map((ch, ci) => this.buildSplitMicItemView(ch, oi, ci)).join('');
+      charsSection = `
+        <div class="sn-section-title">检验特性（${(op.chars||[]).length}项）</div>
+        <div>${charsHtml || '<div class="clean-empty-chars">暂无检验特性</div>'}</div>`;
+    }
+
+    return `<div class="split-panel" data-split="op-${oi}">
+      <div class="sn-section-title">
+        <span>工序 ${esc(op.opNum)}</span>
+        <span class="badge ${isSampling?'badge-green':'badge-purple'}">${esc(op.opTypeName)}</span>
+      </div>
+      <div class="sn-field-row">
+        <div><label>工序号</label><span class="sn-ro-val mono">${esc(op.opNum)}</span></div>
+        <div><label>工序类型</label><span class="sn-ro-val">${esc(op.opTypeName)}</span></div>
+      </div>
+      <div class="sn-field-row">
+        <div><label>工作中心</label><span class="sn-ro-val">${esc(op.workCenterName||op.workCenter)}</span></div>
+        ${isSampling
+          ? `<div><label>取样方案</label><span class="sn-ro-val">${esc(op.samplingPlanName||op.samplingPlan||'—')}</span></div>`
+          : `<div></div>`}
+      </div>
+      <div class="sn-field-row sn-single">
+        <div><label>工序描述</label><span class="sn-ro-val">${esc(op.description||'—')}</span></div>
+      </div>
+      ${charsSection}
+    </div>`;
+  },
+
+  // ---- 构建查看模式 MIC 特性卡片（只读）----
+  buildSplitMicItemView(ch, oi, ci) {
+    const isQuant = ch.micType === 'quantitative';
+    const isQual = ch.micType === 'qualitative';
+    const methodInfo = ch.methodCode ? `${esc(ch.methodName||'')}（${esc(ch.methodCode)}）` : '—';
+    const spInfo = ch.samplingPlanName || ch.samplingPlan || '—';
+
+    let typeFields = '';
+    if (isQuant) {
+      typeFields = `<div class="sn-field-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div><label>单位</label><span class="sn-ro-val">${esc(ch.unit||'—')}</span></div>
+        <div><label>小数位数</label><span class="sn-ro-val">${ch.decimal||0}</span></div>
+        <div><label>上规格限</label><span class="sn-ro-val">${esc(ch.upperSpec||'—')}</span></div>
+        <div><label>下规格限</label><span class="sn-ro-val">${esc(ch.lowerSpec||'—')}</span></div>
+      </div>`;
+    } else {
+      typeFields = `<div class="sn-field-row">
+        <div><label>代码组</label><span class="sn-ro-val mono">${esc(ch.codeGroup||'—')}</span></div>
+        <div><label>默认代码</label><span class="sn-ro-val mono">${esc(ch.defaultCode||'—')}</span></div>
+      </div>`;
+    }
+
+    return `<div class="sn-mic-item">
+      <div class="sn-mic-header">
+        <span>${esc(ch.micName||'新特性')} <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm" style="margin-left:4px;">${isQuant?'定量':'定性'}</span></span>
+        ${ch.micCode ? `<span class="sn-ro-code">${esc(ch.micCode)}</span>` : ''}
+      </div>
+      <div class="sn-mic-body">
+        <div class="sn-field-row">
+          <div><label>检验方法</label><span class="sn-ro-val">${methodInfo}</span></div>
+          <div><label>取样方案</label><span class="sn-ro-val">${spInfo}</span></div>
         </div>
         ${typeFields}
       </div>
