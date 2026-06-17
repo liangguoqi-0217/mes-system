@@ -72,27 +72,6 @@ const App = {
             { id:'result-record', label:'结果记录', route:'result-record' },
             { id:'usage-decision', label:'使用决策', route:'usage-decision' }
           ]
-        },
-        {
-          title:'稳定性与环境监测', items: [
-            { id:'stability-study', label:'稳定性考察', route:'stability-study' }
-          ]
-        },
-        {
-          title:'质量事件管理', items: [
-            { id:'deviation', label:'偏差管理', route:'deviation' },
-            { id:'oos-mgmt', label:'OOS 管理', route:'oos-mgmt' },
-            { id:'capa', label:'CAPA 管理', route:'capa' }
-          ]
-        },
-        {
-          title:'质量回顾与报表', items: [
-            { id:'apqr', label:'APQR/APR', route:'apqr' },
-            { id:'cpv', label:'CPV', route:'cpv' },
-            { id:'inspection-rate', label:'检验完成率', route:'inspection-rate' },
-            { id:'deviation-trend', label:'偏差/OOS 趋势', route:'deviation-trend' },
-            { id:'quality-kpi', label:'质量 KPI 看板', route:'quality-kpi' }
-          ]
         }
 
       ]
