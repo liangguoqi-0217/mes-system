@@ -281,23 +281,7 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    const actions = [];
-    actions.push(`<button class="btn btn-sm btn-outline" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`);
-
-    if (b.status === 'CRTD') {
-      actions.push(`<button class="btn btn-sm btn-blue" onclick="InspectionBatch.startSampling('${b.id}')">取样</button>`);
-    }
-    if (b.status === 'DONE') {
-      actions.push(`<button class="btn btn-sm btn-success" onclick="InspectionBatch.openDecision('${b.id}')">决策</button>`);
-    }
-    if (b.status === 'DEC') {
-      actions.push(`<button class="btn btn-sm btn-secondary" onclick="InspectionBatch.closeBatch('${b.id}')">关闭</button>`);
-    }
-    if (['CRTD','SAMP','INSP'].includes(b.status)) {
-      actions.push(`<button class="btn btn-sm btn-red" onclick="InspectionBatch.cancelBatch('${b.id}')">取消</button>`);
-    }
-
-    return actions.join('');
+    return `<button class="btn btn-sm btn-outline" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`;
   },
 
   // ==================== 待生成检验批表格 ====================
@@ -691,136 +675,355 @@ const InspectionBatch = {
     this.init();
   },
 
-  // ==================== 检验批详情（侧栏面板） ====================
+  // ==================== 检验批详情（弹窗模式） ====================
+
+  // 根据 planNo 解析计划数据（含 fallback）
+  _resolvePlan(b) {
+    const plans = (typeof ipData !== 'undefined' ? ipData : []);
+    let plan = plans.find(p => p.code === b.planNo);
+    if (!plan) plan = plans.find(p => p.materialCode === b.materialCode);
+    if (!plan) plan = plans[0]; // 最后的 fallback
+    return plan || null;
+  },
 
   openDetail(batchId) {
     const b = this.batchData.find(x => x.id === batchId);
     if (!b) return toast('检验批未找到');
 
+    const plan = this._resolvePlan(b);
+    const ops = (plan && plan.operations) ? plan.operations : [
+      { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'QC取样室', description:'按取样方案执行取样', samplingPlanName:'—', chars:[] },
+      { opNum:'0020', opType:'inspection', opTypeName:'检验', workCenterName:'QC实验室', description:'外观、含量、pH值等', samplingPlanName:'', chars:[] }
+    ];
+
     const statusBadge = this.getStatusBadgeHtml(b.status);
     const isActive = ['CRTD','SAMP','INSP','DONE'].includes(b.status);
+    const hasSamplingOp = ops.some(o => o.opType === 'sampling');
 
-    const bodyHtml = `
-      <div style="padding:4px 0;">
-        <!-- 基本信息 -->
-        <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-size:16px;font-weight:700;">${esc(b.batchNo)}</div>
-            <div>${statusBadge}</div>
+    // 工序行渲染
+    const opRows = ops.map((op, i) => {
+      const isSampling = op.opType === 'sampling';
+      const typeBadge = isSampling
+        ? '<span class="badge badge-yellow badge-sm">取样</span>'
+        : '<span class="badge badge-purple badge-sm">检验</span>';
+
+      // 工序状态
+      let opStatus = '';
+      if (isSampling) {
+        opStatus = b.status === 'CRTD'
+          ? '<span class="badge badge-gray">待执行</span>'
+          : b.status === 'SAMP'
+          ? '<span class="badge badge-yellow">进行中</span>'
+          : '<span class="badge badge-green">已完成</span>';
+      } else {
+        opStatus = ['CRTD','SAMP'].includes(b.status)
+          ? '<span class="badge badge-gray">待执行</span>'
+          : b.status === 'INSP'
+          ? '<span class="badge badge-purple">进行中</span>'
+          : '<span class="badge badge-green">已完成</span>';
+      }
+
+      // 操作按钮
+      let opBtn = '';
+      if (isSampling && b.status === 'CRTD') {
+        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openSamplingForm('${b.id}','${op.opNum}');closeModal();">取样</button>`;
+      } else if (!isSampling && ['SAMP','INSP'].includes(b.status)) {
+        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');closeModal();">录入结果</button>`;
+      } else if (!isSampling && !['CANC','CLSD'].includes(b.status)) {
+        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');closeModal();">录入结果</button>`;
+      } else {
+        opBtn = '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+      }
+
+      return `<tr>
+        <td style="font-family:monospace;font-weight:600;">${esc(op.opNum)}</td>
+        <td>${typeBadge}</td>
+        <td>${esc(op.workCenterName)}</td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(op.description||'')}">${esc(op.description||'—')}</td>
+        <td>${opStatus}</td>
+        <td style="text-align:center;">${opBtn}</td>
+      </tr>`;
+    }).join('');
+
+    // 时间线
+    const timelineHtml = `<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0;"></div>
+        <div><span style="color:var(--text-muted);">${b.createTime}</span> — 创建检验批（${esc(b.createBy)}）</div>
+      </div>
+      ${b.status!=='CRTD'?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#eab308;margin-top:6px;flex-shrink:0;"></div>
+        <div><span style="color:var(--text-muted);">${b.updateTime}</span> — 状态更新为"${b.statusName}"</div>
+      </div>`:''}
+      ${b.decisionTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:${b.decision==='release'?'#22c55e':'#dc2626'};margin-top:6px;flex-shrink:0;"></div>
+        <div><span style="color:var(--text-muted);">${b.decisionTime}</span> — ${b.decision==='release'?'放行':'冻结'}（${esc(b.decisionBy||'')}）</div>
+      </div>`:''}
+      ${b.closeTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#6b7280;margin-top:6px;flex-shrink:0;"></div>
+        <div><span style="color:var(--text-muted);">${b.closeTime}</span> — 已关闭归档</div>
+      </div>`:''}
+      ${b.cancelReason?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;margin-top:6px;flex-shrink:0;"></div>
+        <div><span style="color:var(--text-muted);">${b.updateTime}</span> — ${esc(b.cancelReason)}</div>
+      </div>`:''}`;
+
+    const bodyHtml = `<div style="padding:4px 0;">
+      <!-- 基本信息（紧凑两行） -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="font-size:18px;font-weight:700;color:var(--text);">${esc(b.batchNo)}</span>
+        <div>${statusBadge}</div>
+        <span style="color:#d1d5db;">|</span>
+        <span style="font-size:13px;color:var(--text-secondary);">计划：<span style="font-family:monospace;">${esc(b.planNo)}</span></span>
+        <span style="font-size:13px;color:var(--text-secondary);">${esc(b.purposeName)}</span>
+        <span style="font-size:13px;color:var(--text-secondary);">${esc(b.plantName)}</span>
+      </div>
+
+      <!-- 物料与批次（网格） -->
+      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
+          <div><span style="color:var(--text-muted);">物料编码：</span><span style="font-family:monospace;">${esc(b.materialCode)}</span></div>
+          <div><span style="color:var(--text-muted);">物料名称：</span><strong>${esc(b.materialName)}</strong></div>
+          <div><span style="color:var(--text-muted);">数量：</span>${b.quantity} ${esc(b.unit)}</div>
+          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
+          <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
+          <div><span style="color:var(--text-muted);">凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
+        </div>
+      </div>
+
+      <!-- 检验工序表格 -->
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">🔬 检验任务 · ${ops.length} 道工序</div>
+        <table class="data-table" style="min-width:100%;">
+          <thead><tr>
+            <th style="width:60px;">工序号</th>
+            <th style="width:60px;">类型</th>
+            <th>工作中心</th>
+            <th>工序描述</th>
+            <th style="width:80px;">状态</th>
+            <th style="width:90px;text-align:center;">操作</th>
+          </tr></thead>
+          <tbody>${opRows}</tbody>
+        </table>
+      </div>
+
+      <!-- 时间线 -->
+      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">📅 操作记录</div>
+        <div style="font-size:13px;">${timelineHtml}</div>
+      </div>
+    </div>`;
+
+    // 底部全局操作按钮
+    const footerBtns = [
+      { text:'关闭', cls:'btn-outline', action: closeModal }
+    ];
+    if (b.status === 'DONE') {
+      footerBtns.unshift({ text:'使用决策', cls:'btn-success', action: ()=>{ closeModal(); InspectionBatch.openDecision(batchId); } });
+    }
+    if (b.status === 'DEC') {
+      footerBtns.unshift({ text:'关闭归档', cls:'btn-secondary', action: ()=>{ closeModal(); InspectionBatch.closeBatch(batchId); } });
+    }
+    if (isActive) {
+      footerBtns.unshift({ text:'取消检验批', cls:'btn-red', action: ()=>{ closeModal(); InspectionBatch.cancelBatch(batchId); } });
+    }
+
+    showModal(`检验批详情 — ${b.batchNo}`, bodyHtml, footerBtns, 'modal-xl');
+  },
+
+  // ==================== 取样表单弹窗 ====================
+
+  openSamplingForm(batchId, opNum) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b || b.status !== 'CRTD') return toast('当前状态不允许取样');
+
+    showModal(
+      `取样 — ${b.batchNo}`,
+      `<div style="padding:4px 0;">
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+          <div style="font-weight:600;margin-bottom:4px;">工序 ${esc(opNum)} · 取样</div>
+          <div style="color:var(--text-secondary);">检验批号：${esc(b.batchNo)} | 物料：${esc(b.materialCode)} ${esc(b.materialName)}</div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>取样量<span class="req">*</span></label>
+            <input type="number" id="ibSampleQty" step="0.001" placeholder="请输入取样量" min="0">
+            <span style="font-size:12px;color:var(--text-muted);">单位：${esc(b.unit)}</span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 24px;font-size:13px;">
-            <div><span style="color:var(--text-muted);">检验计划：</span><span style="font-family:monospace;">${esc(b.planNo)}</span></div>
-            <div><span style="color:var(--text-muted);">用途代码：</span>${esc(b.purposeName)}</div>
-            <div><span style="color:var(--text-muted);">工厂：</span>${esc(b.plantName)}</div>
+          <div class="form-group">
+            <label>过账日期<span class="req">*</span></label>
+            <input type="date" id="ibPostDate" value="${new Date().toISOString().slice(0,10)}">
           </div>
         </div>
-
-        <!-- 物料与批次 -->
-        <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);">📦 物料与批次信息</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;font-size:13px;">
-            <div><span style="color:var(--text-muted);">物料编码：</span><span style="font-family:monospace;">${esc(b.materialCode)}</span></div>
-            <div><span style="color:var(--text-muted);">物料名称：</span>${esc(b.materialName)}</div>
-            <div><span style="color:var(--text-muted);">供应商批次号：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
-            <div><span style="color:var(--text-muted);">SAP批次号：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
-            <div><span style="color:var(--text-muted);">数量：</span>${b.quantity} ${esc(b.unit)}</div>
-            <div><span style="color:var(--text-muted);">物料凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
-          </div>
+        <div class="form-group full" style="margin-top:8px;">
+          <label>备注</label>
+          <input type="text" id="ibSampleRemark" placeholder="可选填写备注" style="width:100%;">
         </div>
-
-        <!-- 检验工序与任务 -->
-        <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);">🔬 检验任务</div>
-          <div style="overflow-x:auto;">
-            <table class="data-table" style="min-width:600px;">
-              <thead><tr>
-                <th>工序号</th><th>类型</th><th>工作中心</th><th>描述</th><th>状态</th>
-              </tr></thead>
-              <tbody>
-                <tr>
-                  <td><span style="font-family:monospace;">0010</span></td>
-                  <td><span class="badge badge-yellow badge-sm">取样</span></td>
-                  <td>QC取样室</td>
-                  <td>按取样方案执行取样</td>
-                  <td>${b.status==='CRTD'?'<span class="badge badge-gray">待执行</span>':b.status==='SAMP'?'<span class="badge badge-yellow">进行中</span>':'<span class="badge badge-green">已完成</span>'}</td>
-                </tr>
-                <tr>
-                  <td><span style="font-family:monospace;">0020</span></td>
-                  <td><span class="badge badge-purple badge-sm">检验</span></td>
-                  <td>QC实验室</td>
-                  <td>外观、含量、pH值、微生物限度等</td>
-                  <td>${['CRTD','SAMP'].includes(b.status)?'<span class="badge badge-gray">待执行</span>':b.status==='INSP'?'<span class="badge badge-purple">进行中</span>':'<span class="badge badge-green">已完成</span>'}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 时间线 -->
-        <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);">📅 操作记录</div>
-          <div style="font-size:13px;">
-            <div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-              <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0;"></div>
-              <div><span style="color:var(--text-muted);">${b.createTime}</span> — 创建检验批（${esc(b.createBy)}）</div>
-            </div>
-            ${b.status!=='CRTD'?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-              <div style="width:8px;height:8px;border-radius:50%;background:#eab308;margin-top:6px;flex-shrink:0;"></div>
-              <div><span style="color:var(--text-muted);">${b.updateTime}</span> — 状态更新为"${b.statusName}"</div>
-            </div>`:''}
-            ${b.decisionTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-              <div style="width:8px;height:8px;border-radius:50%;background:${b.decision==='release'?'#22c55e':'#dc2626'};margin-top:6px;flex-shrink:0;"></div>
-              <div><span style="color:var(--text-muted);">${b.decisionTime}</span> — ${b.decision==='release'?'放行':'冻结'}（${esc(b.decisionBy||'')}）</div>
-            </div>`:''}
-            ${b.closeTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-              <div style="width:8px;height:8px;border-radius:50%;background:#6b7280;margin-top:6px;flex-shrink:0;"></div>
-              <div><span style="color:var(--text-muted);">${b.closeTime}</span> — 已关闭归档</div>
-            </div>`:''}
-            ${b.cancelReason?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-              <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;margin-top:6px;flex-shrink:0;"></div>
-              <div><span style="color:var(--text-muted);">${b.updateTime}</span> — ${esc(b.cancelReason)}</div>
-            </div>`:''}
-          </div>
-        </div>
-
-        <!-- 操作区 -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid var(--border);">
-          <span></span>
-          <div style="display:flex;gap:8px;">
-            ${b.status==='CRTD'?`<button class="btn btn-blue" onclick="InspectionBatch.startSampling('${b.id}');closeSidePanel();">取样</button>`:''}
-            ${b.status==='DONE'?`<button class="btn btn-success" onclick="InspectionBatch.openDecision('${b.id}');closeSidePanel();">使用决策</button>`:''}
-            ${b.status==='DEC'?`<button class="btn btn-secondary" onclick="InspectionBatch.closeBatch('${b.id}');closeSidePanel();">关闭归档</button>`:''}
-            ${isActive?`<button class="btn btn-red" onclick="InspectionBatch.cancelBatch('${b.id}');closeSidePanel();">取消</button>`:''}
-            <button class="btn btn-outline" onclick="closeSidePanel()">关闭</button>
-          </div>
-        </div>
-      </div>`;
-
-    openSidePanel(
-      '检验批详情',
-      `检验批号: ${b.batchNo}`,
-      bodyHtml
+      </div>`,
+      [
+        { text:'取消', cls:'btn-secondary', action: closeModal },
+        { text:'确认取样', cls:'btn-primary', action: ()=>{ InspectionBatch.submitSampling(batchId); } }
+      ],
+      'modal-md'
     );
   },
 
-  // ==================== 取样操作 ====================
+  submitSampling(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b || b.status !== 'CRTD') return toast('当前状态不允许取样');
 
-  startSampling(batchId) {
-    // PRD 4.1: 操作前实时校验冲销
+    // PRD 4.1: 实时校验冲销
     if (Math.random() < 0.03) {
+      closeModal();
       this.doCancelBatch(batchId, 'SAP 收货凭证已被冲销，无法执行取样');
       return;
     }
 
-    const b = this.batchData.find(x => x.id === batchId);
-    if (!b || b.status !== 'CRTD') return toast('当前状态不允许取样');
+    const qty = parseFloat(document.getElementById('ibSampleQty')?.value);
+    const postDate = document.getElementById('ibPostDate')?.value;
+    const remark = (document.getElementById('ibSampleRemark')?.value||'').trim();
 
-    if (!confirm(`确认开始取样？检验批号：${b.batchNo}\n供应商批次号：${b.supplierBatch}`)) return;
+    if (!qty || qty <= 0) { toast('请输入有效的取样量'); return; }
+    if (!postDate) { toast('请选择过账日期'); return; }
 
     b.status = 'SAMP';
     b.statusName = '取样中';
     b.updateTime = new Date().toISOString().replace('T',' ').slice(0,19);
-    toast(`取样任务已下达，检验批 ${b.batchNo} 状态更新为"取样中"`);
+    b.sampleQty = qty;
+    b.postDate = postDate;
+    b.sampleRemark = remark;
+    toast(`取样已确认！取样量 ${qty} ${b.unit}，检验批 ${b.batchNo} 进入"取样中"`);
+    closeModal();
+    this.init();
+  },
+
+  // ==================== 检验结果录入弹窗 ====================
+
+  openResultEntry(batchId, opNum) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return toast('检验批未找到');
+    if (['CANC','CLSD'].includes(b.status)) return toast('当前状态不允许录入结果');
+
+    const plan = this._resolvePlan(b);
+    const op = (plan && plan.operations)
+      ? plan.operations.find(o => o.opNum === opNum)
+      : null;
+
+    const chars = (op && op.chars && op.chars.length > 0) ? op.chars : [];
+
+    if (chars.length === 0) {
+      toast('该检验工序暂无检验特性，请检查检验计划配置');
+      return;
+    }
+
+    const charRows = chars.map((c, i) => {
+      const isQuant = c.micType === 'quantitative';
+      const typeBadge = isQuant
+        ? '<span class="badge badge-blue badge-sm">定量</span>'
+        : '<span class="badge badge-purple badge-sm">定性</span>';
+      const specText = isQuant
+        ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}`
+        : (c.defaultCode||'合格');
+
+      let inputHtml = '';
+      if (isQuant) {
+        inputHtml = `<div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" id="ibCharVal_${i}" step="any" placeholder="实测值" style="width:120px;">
+          <span style="font-size:12px;color:var(--text-muted);">${c.unit||''}</span>
+        </div>`;
+      } else {
+        inputHtml = `<select id="ibCharVal_${i}" style="width:160px;">
+          <option value="">请选择</option>
+          <option value="合格">合格</option>
+          <option value="不合格">不合格</option>
+        </select>`;
+      }
+
+      return `<tr>
+        <td><span style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:500;">${esc(c.micCode)}</span></td>
+        <td><strong>${esc(c.micName)}</strong> ${typeBadge}</td>
+        <td style="font-size:12px;">${esc(c.methodName)||'—'}</td>
+        <td style="font-family:monospace;font-size:12px;">${specText}</td>
+        <td>${inputHtml}</td>
+      </tr>`;
+    }).join('');
+
+    showModal(
+      `录入检验结果 — ${b.batchNo}`,
+      `<div style="padding:4px 0;">
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+          <div style="font-weight:600;margin-bottom:4px;">工序 ${esc(opNum)} · ${esc(op?op.opTypeName:'检验')} · ${esc(op?op.workCenterName:'—')}</div>
+          <div style="color:var(--text-secondary);">检验批号：${esc(b.batchNo)} | 物料：${esc(b.materialCode)} ${esc(b.materialName)} | 计划：${esc(b.planNo)}</div>
+        </div>
+        <table class="data-table" style="min-width:100%;">
+          <thead><tr>
+            <th style="width:130px;">MIC编码</th>
+            <th>MIC名称</th>
+            <th style="width:140px;">检验方法</th>
+            <th style="width:130px;">规格范围</th>
+            <th style="width:170px;">实测值</th>
+          </tr></thead>
+          <tbody>${charRows}</tbody>
+        </table>
+        <div class="form-group full" style="margin-top:12px;">
+          <label>备注</label>
+          <input type="text" id="ibResultRemark" placeholder="可选填写备注" style="width:100%;">
+        </div>
+      </div>`,
+      [
+        { text:'取消', cls:'btn-secondary', action: closeModal },
+        { text:'保存草稿', cls:'btn-outline', action: ()=>{ toast('草稿已保存'); closeModal(); } },
+        { text:'提交结果', cls:'btn-primary', action: ()=>{ InspectionBatch.submitResult(batchId, opNum); } }
+      ],
+      'modal-lg'
+    );
+  },
+
+  submitResult(batchId, opNum) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b || ['CANC','CLSD'].includes(b.status)) return;
+
+    // PRD: 校验冲销
+    if (Math.random() < 0.03) {
+      closeModal();
+      this.doCancelBatch(batchId, 'SAP 凭证冲销，自动取消');
+      return;
+    }
+
+    const plan = this._resolvePlan(b);
+    const op = (plan && plan.operations)
+      ? plan.operations.find(o => o.opNum === opNum)
+      : null;
+    const chars = (op && op.chars) ? op.chars : [];
+    const remark = (document.getElementById('ibResultRemark')?.value||'').trim();
+
+    // 收集结果
+    let allValid = true;
+    const results = chars.map((c, i) => {
+      const valEl = document.getElementById('ibCharVal_' + i);
+      const val = valEl ? (valEl.value||'').trim() : '';
+      if (!val) { allValid = false; }
+      const verdict = c.micType === 'quantitative'
+        ? (parseFloat(val) >= parseFloat(c.lowerSpec) && parseFloat(val) <= parseFloat(c.upperSpec) ? '合格' : '不合格')
+        : (val === '合格' ? '合格' : '不合格');
+      return { micCode: c.micCode, micName: c.micName, value: val, verdict };
+    });
+
+    if (!allValid) { toast('请填写所有检验特性的实测值'); return; }
+
+    // 判定是否有不合格项
+    const hasFail = results.some(r => r.verdict === '不合格');
+
+    // 更新批次状态
+    b.status = 'DONE';
+    b.statusName = '检验完成';
+    b.updateTime = new Date().toISOString().replace('T',' ').slice(0,19);
+    b.inspectionResults = results;
+    b.inspectionVerdict = hasFail ? 'failed' : 'passed';
+    b.inspectionRemark = remark;
+
+    const failNote = hasFail ? ' 发现不合格项，请关注决策！' : '';
+    toast(`检验结果已提交！判定：${hasFail ? '不合格' : '合格'}${failNote}`);
+    closeModal();
     this.init();
   },
 
