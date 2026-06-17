@@ -281,7 +281,7 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    return `<button class="btn btn-sm" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`;
+    return `<button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`;
   },
 
   // ==================== 待生成检验批表格 ====================
