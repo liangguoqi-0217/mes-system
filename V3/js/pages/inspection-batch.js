@@ -281,7 +281,7 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    return `<button class="btn btn-sm btn-outline" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`;
+    return `<button class="btn btn-sm" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`;
   },
 
   // ==================== 待生成检验批表格 ====================
@@ -815,7 +815,7 @@ const InspectionBatch = {
 
     // 底部全局操作按钮
     const footerBtns = [
-      { text:'关闭', cls:'btn-outline', action: closeModal }
+      { text:'关闭', cls:'btn-secondary', action: closeModal }
     ];
     if (b.status === 'DONE') {
       footerBtns.unshift({ text:'使用决策', cls:'btn-success', action: ()=>{ closeModal(); InspectionBatch.openDecision(batchId); } });
@@ -971,7 +971,7 @@ const InspectionBatch = {
       </div>`,
       [
         { text:'取消', cls:'btn-secondary', action: closeModal },
-        { text:'保存草稿', cls:'btn-outline', action: ()=>{ toast('草稿已保存'); closeModal(); } },
+        { text:'保存草稿', cls:'btn-secondary', action: ()=>{ toast('草稿已保存'); closeModal(); } },
         { text:'提交结果', cls:'btn-primary', action: ()=>{ InspectionBatch.submitResult(batchId, opNum); } }
       ],
       'modal-lg'
