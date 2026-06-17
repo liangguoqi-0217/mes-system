@@ -164,7 +164,8 @@ const App = {
     'miniapp': MiniProgram,
     'inspection-char': InspectionChar,
     'inspection-method': InspectionMethod,
-    'inspection-plan': InspectionPlan
+    'inspection-plan': InspectionPlan,
+    'inspection-batch': InspectionBatch
   },
 
   init() {
