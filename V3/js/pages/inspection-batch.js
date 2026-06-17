@@ -1,7 +1,7 @@
 // ===== 检验批管理页面 =====
 // PRD v1.0 - 质量管理 → 质量检验 → 检验批管理
 const InspectionBatch = {
-  activeTab: 'list', // 'list' | 'pending'
+  activeTab: 'pending', // 'pending' | 'list'
   page: 1, pageSize: 10,
   filtered: [],
 
@@ -67,8 +67,8 @@ const InspectionBatch = {
 
         <!-- Tabs -->
         <div class="tabs" style="margin:0;padding:0 24px;background:white;border-bottom:1px solid var(--border);flex-shrink:0;">
-          <div class="tab ${this.activeTab==='list'?'active':''}" id="ibTabList" onclick="InspectionBatch.switchTab('list')">📋 检验批列表</div>
           <div class="tab ${this.activeTab==='pending'?'active':''}" id="ibTabPending" onclick="InspectionBatch.switchTab('pending')">⏳ 待生成检验批 <span class="badge badge-yellow badge-sm" style="margin-left:4px;">${this.pendingDocs.length}</span></div>
+          <div class="tab ${this.activeTab==='list'?'active':''}" id="ibTabList" onclick="InspectionBatch.switchTab('list')">📋 检验批列表</div>
         </div>
 
         <!-- 统计卡片（仅列表tab显示） -->
