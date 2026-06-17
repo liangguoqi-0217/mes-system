@@ -1,8 +1,8 @@
 // ===== 检验批管理页面 =====
 // PRD v1.0 - 质量管理 → 质量检验 → 检验批管理
-// ✨ v2.0 - 2026-06-17: 新增跨工厂检验协同功能
+// ✨ v2.1 - 2026-06-17: 跨工厂协同从"待生成"移至"检验批列表"
 const InspectionBatch = {
-  _version: '2.0-20260617',
+  _version: '2.1-20260617',
   activeTab: 'pending', // 'pending' | 'list'
   page: 1, pageSize: 10,
   filtered: [],
@@ -325,7 +325,88 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    return `<button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`;
+    const isActive = !['CANC','CLSD'].includes(b.status);
+    const crossBtn = isActive
+      ? `<button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>`
+      : '';
+    return `<div class="table-actions"><button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>${crossBtn}</div>`;
+  },
+
+  // ==================== 跨工厂检验协同（检验批列表tab） ====================
+
+  viewCrossPlant(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return toast('检验批未找到');
+
+    const crossBatches = this._findCrossPlantBatchesForBatch(b);
+
+    if (crossBatches.length === 0) {
+      toast('未找到其他工厂对相同供应商批次的协同检验记录');
+      return;
+    }
+
+    const allDone = crossBatches.every(cb => (cb.crossPlantOps||[]).every(o => o.status === 'done'));
+    const plantNames = [...new Set(crossBatches.map(cb => cb.plantName))].join('、');
+
+    // 每个跨工厂检验批的详情卡片
+    const crossCards = crossBatches.map(cb => {
+      const ops = cb.crossPlantOps || [];
+      const doneCount = ops.filter(o => o.status === 'done').length;
+      const isAllDone = ops.every(o => o.status === 'done');
+      return `<div style="background:${isAllDone?'#f0fdf4':'#fffbeb'};border:1px solid ${isAllDone?'#bbf7d0':'#fde68a'};border-radius:10px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-weight:600;font-size:14px;color:var(--text);">🏭 ${esc(cb.plantName)}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
+              检验批：<strong style="color:#2563eb;">${esc(cb.batchNo)}</strong>
+              <span style="margin:0 8px;color:#d1d5db;">|</span>
+              状态：<span class="badge badge-${isAllDone?'green':'yellow'} badge-sm">${isAllDone?'检验完成':'检验中'}</span>
+              <span style="margin:0 8px;color:#d1d5db;">|</span>
+              完成 ${doneCount}/${ops.length} 工序
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--text-muted);">
+            创建：${esc(cb.createTime?.slice(0,10))||'—'}<br>更新：${esc(cb.updateTime?.slice(0,10))||'—'}
+          </div>
+        </div>
+        ${this._renderCrossPlantSection(cb)}
+      </div>`;
+    }).join('');
+
+    showModal(
+      '🔗 跨工厂检验协同',
+      `<div style="padding:4px 0;">
+        <!-- 当前检验批信息 -->
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-secondary);">当前检验批</div>
+          <div style="font-weight:600;font-size:15px;color:#1d4ed8;margin-top:4px;">${esc(b.batchNo)}</div>
+          <div style="font-size:13px;color:var(--text);margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 16px;">
+            <span>📦 ${esc(b.materialName)} (${esc(b.materialCode)})</span>
+            <span>📋 供应商批次：<strong>${esc(b.supplierBatch)}</strong></span>
+            <span>🏭 ${esc(b.plantName)}</span>
+            <span>${this.getStatusBadgeHtml(b.status)}</span>
+          </div>
+        </div>
+
+        <!-- 跨工厂提示 -->
+        <div style="background:${allDone?'#f0fdf4':'#fffbeb'};border:1px solid ${allDone?'#bbf7d0':'#fde68a'};border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;">
+          <strong style="font-size:14px;">🔍 发现 ${crossBatches.length} 条跨工厂检验记录</strong>
+          <div style="margin-top:6px;color:var(--text-secondary);">
+            <strong>${plantNames}</strong> 已对同一供应商批次 <em style="color:#2563eb;font-weight:600;">${esc(b.supplierBatch)}</em>
+            的物料 <strong>${esc(b.materialName)}</strong> 进行了检验。
+            ${allDone
+              ? '✅ 所有协同工厂均已完成检验，可作为参考。'
+              : '⏳ 部分工厂尚未完成全部工序，可继续关注。'}
+          </div>
+        </div>
+
+        <!-- 跨工厂检验批详情列表 -->
+        <div style="max-height:60vh;overflow-y:auto;padding-right:4px;">
+          ${crossCards}
+        </div>
+      </div>`,
+      [{ text:'关闭', cls:'btn-outline', action: closeModal }]
+    );
   },
 
   // ==================== 待生成检验批表格 ====================
@@ -659,12 +740,24 @@ const InspectionBatch = {
 
   // ==================== 跨工厂检验协同校验 ====================
 
-  // 查找其他工厂对相同物料+供应商批次的检验记录
+  // 查找其他工厂对相同物料+供应商批次的检验记录（基于 pendingDoc）
   _findCrossPlantBatches(doc) {
     return this.batchData.filter(b =>
       b.plant !== doc.plant &&
       b.materialCode === doc.materialCode &&
       b.supplierBatch === doc.supplierBatch &&
+      b.crossPlantOps &&
+      !['CANC','CLSD'].includes(b.status)
+    );
+  },
+
+  // 查找其他工厂对相同物料+供应商批次的检验记录（基于检验批）
+  _findCrossPlantBatchesForBatch(batch) {
+    return this.batchData.filter(b =>
+      b.id !== batch.id &&
+      b.plant !== batch.plant &&
+      b.materialCode === batch.materialCode &&
+      b.supplierBatch === batch.supplierBatch &&
       b.crossPlantOps &&
       !['CANC','CLSD'].includes(b.status)
     );
@@ -977,15 +1070,6 @@ const InspectionBatch = {
 
     if (!planNo) { toast('请选择检验计划'); return; }
 
-    // ===== 跨工厂检验协同校验 =====
-    const crossBatches = this._findCrossPlantBatches(doc);
-
-    if (crossBatches.length > 0) {
-      this._showCrossPlantConfirm(docId, crossBatches);
-      return; // 中断，让用户选择
-    }
-
-    // 无跨工厂记录，直接生成
     this._executeGenerate(docId);
   },
 
