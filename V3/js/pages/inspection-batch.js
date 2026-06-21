@@ -353,6 +353,15 @@ const InspectionBatch = {
       const ops = cb.crossPlantOps || [];
       const doneCount = ops.filter(o => o.status === 'done').length;
       const isAllDone = ops.every(o => o.status === 'done');
+      // 构建虚拟计划对象供 _renderCrossPlantSection 使用
+      const synPlan = {
+        code: cb.batchNo,
+        materialCode: cb.materialCode,
+        materialName: cb.materialName,
+        purposeName: cb.purposeName || '—',
+        factoryName: cb.plantName,
+        operations: ops
+      };
       return `<div style="background:${isAllDone?'#f0fdf4':'#fffbeb'};border:1px solid ${isAllDone?'#bbf7d0':'#fde68a'};border-radius:10px;padding:16px;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
           <div>
@@ -369,7 +378,7 @@ const InspectionBatch = {
             创建：${esc(cb.createTime?.slice(0,10))||'—'}<br>更新：${esc(cb.updateTime?.slice(0,10))||'—'}
           </div>
         </div>
-        ${this._renderCrossPlantSection(cb)}
+        ${this._renderCrossPlantSection(cb, synPlan)}
       </div>`;
     }).join('');
 

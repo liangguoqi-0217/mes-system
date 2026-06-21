@@ -67,10 +67,7 @@ const App = {
         },
         {
           title:'质量检验', items: [
-            { id:'inspection-batch', label:'检验批管理', route:'inspection-batch' },
-            { id:'sampling-exec', label:'取样执行', route:'sampling-exec' },
-            { id:'result-record', label:'结果记录', route:'result-record' },
-            { id:'usage-decision', label:'使用决策', route:'usage-decision' }
+            { id:'inspection-batch', label:'检验批管理', route:'inspection-batch' }
           ]
         }
 
