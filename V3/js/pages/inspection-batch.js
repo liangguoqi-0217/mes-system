@@ -341,19 +341,11 @@ const InspectionBatch = {
     const samplingOp = ops.find(o => o.opType === 'sampling');
     const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
 
-    // 根据状态动态显示操作按钮
-    let decisionBtn = '';
-    if (b.status === 'DONE') {
-      decisionBtn = `<button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>`;
-    } else if (b.status === 'DEC') {
-      decisionBtn = `<span style="font-size:12px;color:#059669;font-weight:600;" title="${esc(b.decisionDesc||'')} · ${esc(b.decisionAction||'')}">✅ ${esc(b.decision||'')} · ${esc(b.decisionDesc?.slice(0, 8)||'')}</span>`;
-    }
-
     return `<div class="table-actions">
       <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>
-      ${['CRTD','SAMP','INSP','DONE'].includes(b.status) ? `<button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>` : ''}
-      ${['CRTD','SAMP','INSP','DONE'].includes(b.status) ? `<button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>` : ''}
-      ${decisionBtn}
+      <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
+      <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
+      <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>
       <button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>
     </div>`;
   },
