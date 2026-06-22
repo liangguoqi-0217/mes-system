@@ -23,7 +23,14 @@ const InspectionBatch = {
     { id:'B001', batchNo:'1000-2606-001', docNo:'4900000100', materialCode:'MAT-10005', materialName:'布洛芬原料药', sapBatch:'SAP-BT-20260501', supplierBatch:'BT202606A1', quantity:'200.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CRTD', statusName:'已创建', createTime:'2026-06-14 09:00:00', createBy:'张工', updateTime:'2026-06-14 09:00:00' },
     { id:'B002', batchNo:'1000-2606-002', docNo:'4900000101', materialCode:'MAT-10006', materialName:'维生素C原料', sapBatch:'SAP-BT-20260502', supplierBatch:'AK2606B02', quantity:'150.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'SAMP', statusName:'取样中', createTime:'2026-06-14 10:30:00', createBy:'李工', updateTime:'2026-06-14 14:00:00' },
     { id:'B003', batchNo:'1000-2606-003', docNo:'4900000102', materialCode:'MAT-10007', materialName:'葡萄糖原料', sapBatch:'SAP-BT-20260510', supplierBatch:'GL2026C05', quantity:'800.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'INSP', statusName:'检验中', createTime:'2026-06-15 08:15:00', createBy:'张工', updateTime:'2026-06-16 09:00:00' },
-    { id:'B004', batchNo:'2001-2606-001', docNo:'4900000103', materialCode:'MAT-10008', materialName:'盐酸克林霉素', sapBatch:'SAP-BT-20260512', supplierBatch:'YK2606D08', quantity:'50.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'IP-2001-001', purposeCode:'QC-02', purposeName:'中间品检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-16 11:00:00', createBy:'王工', updateTime:'2026-06-17 08:30:00' },
+    { id:'B004', batchNo:'2001-2606-001', docNo:'4900000103', materialCode:'MAT-10008', materialName:'盐酸克林霉素', sapBatch:'SAP-BT-20260512', supplierBatch:'YK2606D08', quantity:'50.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'IP-2001-001', purposeCode:'QC-02', purposeName:'中间品检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-16 11:00:00', createBy:'王工', updateTime:'2026-06-17 08:30:00',
+    inspectionVerdict:'passed', inspectionResults:[
+      { micCode:'2001-MIC-001', micName:'外观', micType:'qualitative', methodName:'目视检查法', unit:'', lowerSpec:'—', upperSpec:'合格', value:'合格', verdict:'合格' },
+      { micCode:'2001-MIC-002', micName:'pH值', micType:'quantitative', methodName:'pH值测定法', unit:'pH', lowerSpec:'3.5', upperSpec:'5.5', value:'4.62', verdict:'合格' },
+      { micCode:'2001-MIC-003', micName:'含量测定', micType:'quantitative', methodName:'HPLC法', unit:'%', lowerSpec:'95.0', upperSpec:'105.0', value:'99.1', verdict:'合格' },
+      { micCode:'2001-MIC-004', micName:'水分', micType:'quantitative', methodName:'干燥失重法', unit:'%', lowerSpec:'0', upperSpec:'2.0', value:'1.3', verdict:'合格' },
+      { micCode:'2001-MIC-005', micName:'有关物质', micType:'quantitative', methodName:'HPLC法', unit:'%', lowerSpec:'0', upperSpec:'1.0', value:'0.82', verdict:'合格' }
+    ] },
     { id:'B005', batchNo:'2002-2606-001', docNo:'4900000104', materialCode:'MAT-20002', materialName:'注射用水', sapBatch:'SAP-BT-20260515', supplierBatch:'ZS2606E10', quantity:'2000.000', unit:'L', plant:'2002', plantName:'山东丹红制药工厂', planNo:'IP-2002-001', purposeCode:'QC-03', purposeName:'成品检验', status:'DEC', statusName:'已决策', createTime:'2026-06-13 07:00:00', createBy:'赵工', updateTime:'2026-06-14 16:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-14 16:00:00' },
     { id:'B006', batchNo:'1000-2606-004', docNo:'4900000105', materialCode:'MAT-10009', materialName:'甘露醇辅料', sapBatch:'SAP-BT-20260518', supplierBatch:'GL2606F12', quantity:'100.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CLSD', statusName:'已关闭', createTime:'2026-06-12 09:30:00', createBy:'张工', updateTime:'2026-06-13 17:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-13 10:00:00', closeTime:'2026-06-13 17:00:00' },
     { id:'B007', batchNo:'1000-2606-005', docNo:'4900000106', materialCode:'MAT-10010', materialName:'微晶纤维素', sapBatch:'SAP-BT-20260520', supplierBatch:'WX2026G13', quantity:'300.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'CANC', statusName:'已取消', createTime:'2026-06-11 10:00:00', createBy:'李工', updateTime:'2026-06-12 08:00:00', cancelReason:'SAP 凭证冲销，自动取消' },
@@ -334,11 +341,19 @@ const InspectionBatch = {
     const samplingOp = ops.find(o => o.opType === 'sampling');
     const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
 
+    // 根据状态动态显示操作按钮
+    let decisionBtn = '';
+    if (b.status === 'DONE') {
+      decisionBtn = `<button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>`;
+    } else if (b.status === 'DEC') {
+      decisionBtn = `<span style="font-size:12px;color:#059669;font-weight:600;" title="${esc(b.decisionDesc||'')} · ${esc(b.decisionAction||'')}">✅ ${esc(b.decision||'')} · ${esc(b.decisionDesc?.slice(0, 8)||'')}</span>`;
+    }
+
     return `<div class="table-actions">
       <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>
-      <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
-      <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
-      <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策（放行/冻结）">使用决策</button>
+      ${['CRTD','SAMP','INSP','DONE'].includes(b.status) ? `<button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>` : ''}
+      ${['CRTD','SAMP','INSP','DONE'].includes(b.status) ? `<button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>` : ''}
+      ${decisionBtn}
       <button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>
     </div>`;
   },
@@ -1218,8 +1233,8 @@ const InspectionBatch = {
         <div><span style="color:var(--text-muted);">${b.updateTime}</span> — 状态更新为"${b.statusName}"</div>
       </div>`:''}
       ${b.decisionTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:${b.decision==='release'?'#22c55e':'#dc2626'};margin-top:6px;flex-shrink:0;"></div>
-        <div><span style="color:var(--text-muted);">${b.decisionTime}</span> — ${b.decision==='release'?'放行':'冻结'}（${esc(b.decisionBy||'')}）</div>
+        <div style="width:8px;height:8px;border-radius:50%;background:${(b.decision||'').startsWith('A')?'#22c55e':'#dc2626'};margin-top:6px;flex-shrink:0;"></div>
+        <div><span style="color:var(--text-muted);">${b.decisionTime}</span> — 决策：<strong>${esc(b.decision||'')} ${esc(b.decisionDesc||'')}</strong>（${esc(b.decisionBy||'')}）${b.qualityScore!=null?` — 得分：${b.qualityScore}分`:''}${b.decisionRemarks?`<br><span style="font-size:12px;color:var(--text-muted);">备注：${esc(b.decisionRemarks)}</span>`:''}</div>
       </div>`:''}
       ${b.closeTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
         <div style="width:8px;height:8px;border-radius:50%;background:#6b7280;margin-top:6px;flex-shrink:0;"></div>
@@ -1579,49 +1594,296 @@ const InspectionBatch = {
 
   // ==================== 使用决策 ====================
 
+  // 决策代码配置（对应 PRD 4.2.3 字段1）
+  decisionCodes: [
+    { code:'A1', description:'合格（接收）', suggestedAction:'放行至可用库存', targetStock:'可用库存' },
+    { code:'A2', description:'让步接收', suggestedAction:'放行至可用库存，并记录偏差', targetStock:'可用库存' },
+    { code:'R1', description:'拒收', suggestedAction:'转移至冻结库存，触发退货流程', targetStock:'冻结库存' },
+    { code:'R2', description:'报废', suggestedAction:'转移至冻结库存，触发报废流程', targetStock:'冻结库存' }
+  ],
+
+  // 提取检验结果（统一处理 inspectionResults 和 crossPlantOps）
+  _getInspectionResults(b) {
+    if (b.inspectionResults && b.inspectionResults.length > 0) {
+      return b.inspectionResults;
+    }
+    // 从跨工厂协同数据中提取
+    if (b.crossPlantOps) {
+      const results = [];
+      b.crossPlantOps.forEach(op => {
+        if (op.opType === 'inspection' && op.status === 'done' && op.results) {
+          op.results.forEach(r => results.push(r));
+        }
+      });
+      if (results.length > 0) return results;
+    }
+    return [];
+  },
+
   openDecision(batchId) {
     const b = this.batchData.find(x => x.id === batchId);
     if (!b || b.status !== 'DONE') return toast('只有检验完成的批次才能执行决策');
 
-    showModal(
-      '使用决策',
-      `<div style="padding:4px 0;">
-        <div style="background:#f8fafc;border-radius:8px;padding:16px;margin-bottom:16px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:8px;">检验批信息</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px;">
-            <div><span style="color:var(--text-muted);">检验批号：</span><strong>${esc(b.batchNo)}</strong></div>
-            <div><span style="color:var(--text-muted);">物料：</span>${esc(b.materialName)}</div>
-            <div><span style="color:var(--text-muted);">供应商批次号：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
-            <div><span style="color:var(--text-muted);">数量：</span>${b.quantity} ${esc(b.unit)}</div>
+    const results = this._getInspectionResults(b);
+    const totalQty = parseFloat(b.quantity) || 0;
+    const failCount = results.filter(r => r.verdict === '不合格').length;
+    const passCount = results.length - failCount;
+    // 自动计算质量得分
+    const autoScore = results.length > 0 ? Math.round((passCount / results.length) * 100) : 100;
+    const verdictText = failCount > 0 ? '不合格' : '合格';
+
+    // ============ 决策依据概览表格 ============
+    let resultsTableHtml = '';
+    if (results.length > 0) {
+      const rows = results.map((r, i) => {
+        const isQuant = r.micType === 'quantitative';
+        const isPass = r.verdict === '合格';
+        const specRange = isQuant
+          ? `${r.lowerSpec||'—'} ~ ${r.upperSpec||'—'} ${r.unit||''}`
+          : (r.upperSpec || r.defaultCode || '—');
+        const valueCell = r.value || '—';
+        return `<tr class="${isPass ? '' : 'dc-fail-row'}" style="${isPass ? '' : 'background:#fef2f2;'}">
+          <td style="font-size:12px;">${i + 1}</td>
+          <td style="font-weight:500;font-size:13px;">${esc(r.micName)}</td>
+          <td style="font-family:monospace;font-size:11px;color:var(--text-secondary);">${specRange}</td>
+          <td style="font-family:monospace;font-weight:600;font-size:13px;${isPass?'color:#15803d;':'color:#dc2626;'}">${esc(valueCell)} ${isQuant?esc(r.unit||''):''}</td>
+          <td><span class="badge ${isPass?'badge-green':'badge-red'} badge-sm">${esc(r.verdict)}</span></td>
+        </tr>`;
+      }).join('');
+
+      resultsTableHtml = `<table class="data-table" style="width:100%;font-size:13px;">
+        <thead><tr>
+          <th style="width:40px;">#</th><th>特性描述</th><th style="width:140px;">规格范围</th><th style="width:130px;">实测值</th><th style="width:70px;">判定</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    } else {
+      resultsTableHtml = `<div style="text-align:center;padding:20px;color:var(--text-muted);">暂无检验结果数据</div>`;
+    }
+
+    // ============ 决策代码选项 ============
+    const codeOptions = this.decisionCodes.map(dc =>
+      `<option value="${dc.code}">${dc.code} — ${esc(dc.description)}</option>`
+    ).join('');
+
+    // ============ 完整弹窗 HTML ============
+    const bodyHtml = `<div style="padding:4px 0;max-height:72vh;overflow-y:auto;">
+      <!-- 区域1：上下文信息区（PRD 4.2.1） -->
+      <div style="background:#f0f9ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:10px;">📋 上下文信息</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
+          <div><span style="color:var(--text-muted);">检验批号：</span><strong style="font-family:monospace;color:#2563eb;">${esc(b.batchNo)}</strong></div>
+          <div><span style="color:var(--text-muted);">物料号：</span><strong style="font-family:monospace;">${esc(b.materialCode)}</strong></div>
+          <div><span style="color:var(--text-muted);">物料描述：</span><strong>${esc(b.materialName)}</strong></div>
+          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
+          <div><span style="color:var(--text-muted);">工厂：</span>${esc(b.plantName)}</div>
+          <div><span style="color:var(--text-muted);">检验类型：</span>${esc(b.purposeName)}</div>
+          <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
+          <div><span style="color:var(--text-muted);">数量：</span><strong>${b.quantity} ${esc(b.unit)}</strong></div>
+          <div></div>
+        </div>
+      </div>
+
+      <!-- 区域2：决策依据概览区（PRD 4.2.2） -->
+      <div style="background:${failCount>0?'#fff5f5':'#f0fdf4'};border:1px solid ${failCount>0?'#fecaca':'#bbf7d0'};border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:700;color:${failCount>0?'#dc2626':'#15803d'};">🔍 决策依据概览 — 检验结果汇总</div>
+          <div style="font-size:12px;">
+            <span class="badge ${failCount>0?'badge-red':'badge-green'}">综合判定：${verdictText}</span>
+            <span style="margin-left:8px;color:var(--text-muted);">${passCount}/${results.length} 项合格</span>
+            ${failCount>0 ? `<span style="margin-left:4px;color:#dc2626;font-weight:600;">${failCount} 项不合格</span>` : ''}
           </div>
         </div>
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
-          <strong>✅ 检验判定汇总：</strong>全部检验项目合格，可以进行使用决策。
+        ${resultsTableHtml}
+      </div>
+
+      <!-- 区域3：决策录入区（PRD 4.2.3 — 核心操作区） -->
+      <div style="background:#fff;border:2px solid #6366f1;border-radius:10px;padding:18px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#4338ca;margin-bottom:14px;">✍️ 决策录入</div>
+
+        <!-- 字段1：决策代码（必填） -->
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="font-weight:600;">决策代码 <span style="color:#dc2626;">*</span></label>
+          <select id="dcCode" onchange="InspectionBatch._onDecisionCodeChange('${batchId}')" style="width:100%;font-size:14px;padding:10px;">
+            <option value="">— 请选择决策代码 —</option>
+            ${codeOptions}
+          </select>
+          <div id="dcSuggestedAction" style="font-size:12px;color:var(--text-muted);margin-top:6px;min-height:18px;"></div>
         </div>
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
-          请选择使用决策，系统将自动同步 SAP 库存移动：
+
+        <!-- 字段2：质量得分（可选，自动计算 + 可手动调整） -->
+        <div class="form-group" style="margin-bottom:14px;">
+          <label style="font-weight:600;">质量得分 <span style="font-size:12px;color:var(--text-muted);">（0-100，可选）</span></label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="range" id="dcScoreRange" min="0" max="100" value="${autoScore}" style="flex:1;"
+              oninput="document.getElementById('dcScore').value=this.value">
+            <input type="number" id="dcScore" value="${autoScore}" min="0" max="100" style="width:70px;text-align:center;font-weight:600;font-size:16px;"
+              oninput="var v=parseInt(this.value)||0; if(v>100)v=100; if(v<0)v=0; this.value=v; document.getElementById('dcScoreRange').value=v;">
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+            系统建议：<strong>${autoScore}</strong> 分（基于 ${passCount}/${results.length} 合格率）
+          </div>
         </div>
-        <div style="display:flex;gap:12px;">
-          <button class="btn btn-success" style="flex:1;padding:14px;font-size:15px;" onclick="InspectionBatch.doDecision('${batchId}','release')">
-            ✅ 放行<br><span style="font-size:12px;font-weight:400;opacity:0.8;">移动类型 321 → 非限制库存</span>
-          </button>
-          <button class="btn btn-red" style="flex:1;padding:14px;font-size:15px;" onclick="InspectionBatch.doDecision('${batchId}','freeze')">
-            🚫 冻结<br><span style="font-size:12px;font-weight:400;opacity:0.8;">移动类型 331 → 冻结库存</span>
-          </button>
+
+        <!-- 字段3：库存过账（条件必填） -->
+        <div style="background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:14px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px;">📦 库存过账 <span style="font-size:12px;color:var(--text-muted);">（条件必填）</span></div>
+          <table class="data-table" style="width:100%;font-size:13px;">
+            <thead><tr>
+              <th>库存类型</th><th style="width:100px;">当前数量</th><th style="width:120px;">合格品数量</th><th style="width:120px;">不合格品数量</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="badge badge-yellow badge-sm">待检库存</span></td>
+                <td style="font-weight:600;">${b.quantity} ${esc(b.unit)}</td>
+                <td><input type="number" id="dcQtyOk" step="any" min="0" max="${totalQty}" value="0" style="width:100px;"
+                  onchange="InspectionBatch._onQtyChange('${batchId}')"></td>
+                <td><input type="number" id="dcQtyNg" step="any" min="0" max="${totalQty}" value="0" style="width:100px;"
+                  onchange="InspectionBatch._onQtyChange('${batchId}')"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="dcStockInfo" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
         </div>
-      </div>`,
+
+        <!-- 字段4：备注/决策原因（可选） -->
+        <div class="form-group">
+          <label style="font-weight:600;">备注 / 决策原因 <span style="font-size:12px;color:var(--text-muted);">（可选）</span></label>
+          <textarea id="dcRemarks" rows="3" style="width:100%;resize:vertical;" placeholder="请输入决策原因或补充说明..."></textarea>
+        </div>
+      </div>
+
+      <!-- 区域4：操作与提交区（PRD 4.2.4） -->
+      <div style="display:flex;gap:12px;justify-content:flex-end;padding:8px 0 0;">
+        <button class="btn btn-secondary" onclick="closeModal()" style="padding:10px 28px;">取消</button>
+        <button class="btn btn-primary" onclick="InspectionBatch._doDecisionSave('${batchId}')" style="padding:10px 28px;font-size:15px;">
+          保存决策
+        </button>
+      </div>
+    </div>`;
+
+    showModal(
+      `使用决策 — ${esc(b.batchNo)}`,
+      bodyHtml,
+      [],  // 底部按钮内置在 body 中
+      'modal-xl'
+    );
+  },
+
+  // 决策代码变更 → 联动更新建议动作、库存目标
+  _onDecisionCodeChange(batchId) {
+    const code = document.getElementById('dcCode')?.value || '';
+    const dc = this.decisionCodes.find(d => d.code === code);
+    const actionEl = document.getElementById('dcSuggestedAction');
+    const stockInfoEl = document.getElementById('dcStockInfo');
+    const qtyOkEl = document.getElementById('dcQtyOk');
+    const qtyNgEl = document.getElementById('dcQtyNg');
+
+    if (!dc) {
+      if (actionEl) actionEl.innerHTML = '';
+      if (stockInfoEl) stockInfoEl.innerHTML = '';
+      if (qtyOkEl) qtyOkEl.value = 0;
+      if (qtyNgEl) qtyNgEl.value = 0;
+      return;
+    }
+
+    const b = this.batchData.find(x => x.id === batchId);
+    const totalQty = parseFloat(b?.quantity) || 0;
+
+    if (actionEl) {
+      actionEl.innerHTML = `<span style="color:#2563eb;">📌 建议跟进动作：<strong>${esc(dc.suggestedAction)}</strong></span>`;
+    }
+
+    // 根据决策代码自动填充库存过账
+    if (dc.code === 'A1' || dc.code === 'A2') {
+      // 接收类：全部 → 可用库存
+      if (qtyOkEl) qtyOkEl.value = totalQty;
+      if (qtyNgEl) qtyNgEl.value = 0;
+      if (stockInfoEl) stockInfoEl.innerHTML = `<span style="color:#059669;">✅ 建议：将全部 <strong>${totalQty} ${esc(b?.unit||'')}</strong> 从「待检库存」转移至「<strong>${esc(dc.targetStock)}</strong>」${dc.code==='A2'?'（需记录偏差）':''}</span>`;
+    } else {
+      // 拒绝类：全部 → 冻结库存
+      if (qtyOkEl) qtyOkEl.value = 0;
+      if (qtyNgEl) qtyNgEl.value = totalQty;
+      if (stockInfoEl) stockInfoEl.innerHTML = `<span style="color:#dc2626;">🚫 建议：将全部 <strong>${totalQty} ${esc(b?.unit||'')}</strong> 从「待检库存」转移至「<strong>${esc(dc.targetStock)}</strong>」</span>`;
+    }
+  },
+
+  // 库存数量变更 → 校验总数
+  _onQtyChange(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    const totalQty = parseFloat(b?.quantity) || 0;
+    const ok = parseFloat(document.getElementById('dcQtyOk')?.value) || 0;
+    const ng = parseFloat(document.getElementById('dcQtyNg')?.value) || 0;
+    const sum = ok + ng;
+    const stockInfoEl = document.getElementById('dcStockInfo');
+    if (stockInfoEl) {
+      if (sum > totalQty) {
+        stockInfoEl.innerHTML = `<span style="color:#dc2626;">⚠️ 合格品 + 不合格品数量超过总量 ${totalQty} ${esc(b?.unit||'')}，请调整</span>`;
+      } else {
+        stockInfoEl.innerHTML = `<span style="color:var(--text-muted);">已分配：${ok} 合格 + ${ng} 不合格 = ${sum} ${esc(b?.unit||'')}${sum < totalQty ? `（剩余 ${(totalQty - sum).toFixed(3)} 未分配）` : ' ✓'}</span>`;
+      }
+    }
+  },
+
+  // 保存决策（含二次确认对话框）
+  _doDecisionSave(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b || b.status !== 'DONE') return;
+
+    // ========== 必填项校验 ==========
+    const code = document.getElementById('dcCode')?.value || '';
+    if (!code) { toast('请选择决策代码'); return; }
+
+    const dc = this.decisionCodes.find(d => d.code === code);
+    const qtyOk = parseFloat(document.getElementById('dcQtyOk')?.value) || 0;
+    const qtyNg = parseFloat(document.getElementById('dcQtyNg')?.value) || 0;
+    const totalQty = parseFloat(b.quantity) || 0;
+    const score = parseInt(document.getElementById('dcScore')?.value) || 0;
+    const remarks = (document.getElementById('dcRemarks')?.value || '').trim();
+    const sum = qtyOk + qtyNg;
+
+    if (sum <= 0) { toast('请至少填写合格品或不格品数量'); return; }
+    if (sum > totalQty + 0.001) { toast(`合格品+不合格品(${sum})超过检验批总量(${totalQty})，请调整`); return; }
+
+    // ========== 二次确认对话框 ==========
+    const actionText = code.startsWith('A') ? '接收' : '拒绝';
+    const confirmHtml = `<div style="padding:8px 0;">
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
+        <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
+        <div style="font-size:16px;font-weight:700;color:#92400e;">确认执行使用决策</div>
+        <div style="font-size:13px;color:#a16207;margin-top:6px;">此操作将完成检验批并触发后续动作，是否确认？</div>
+      </div>
+      <table style="width:100%;font-size:13px;border-collapse:collapse;">
+        <tr><td style="padding:6px 12px;color:var(--text-muted);width:90px;">检验批号</td><td style="padding:6px 12px;font-weight:600;font-family:monospace;color:#2563eb;">${esc(b.batchNo)}</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">决策代码</td><td style="padding:6px 12px;"><span class="badge ${code.startsWith('A')?'badge-green':'badge-red'}">${esc(code)} — ${esc(dc?.description||'')}</span></td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">跟进动作</td><td style="padding:6px 12px;color:#2563eb;font-weight:500;">${esc(dc?.suggestedAction||'')}</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">质量得分</td><td style="padding:6px 12px;font-weight:600;">${score} 分</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">合格品数量</td><td style="padding:6px 12px;color:#059669;font-weight:600;">${qtyOk} ${esc(b.unit)} → 可用库存</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">不合格品数量</td><td style="padding:6px 12px;color:#dc2626;font-weight:600;">${qtyNg > 0 ? qtyNg + ' ' + esc(b.unit) + ' → 冻结库存' : '—'}</td></tr>
+        ${remarks ? `<tr><td style="padding:6px 12px;color:var(--text-muted);">备注</td><td style="padding:6px 12px;">${esc(remarks)}</td></tr>` : ''}
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">决策人</td><td style="padding:6px 12px;">质量工程师（当前用户）</td></tr>
+      </table>
+    </div>`;
+
+    showModal(
+      '二次确认 — 使用决策',
+      confirmHtml,
       [
-        { text:'取消', cls:'btn-secondary', action: closeModal }
+        { text:'取消', cls:'btn-secondary', action: closeModal },
+        { text:'✅ 确认执行', cls:'btn-primary', action: function() {
+          closeModal();
+          InspectionBatch._doDecisionConfirm(batchId, code, dc, qtyOk, qtyNg, score, remarks);
+        }}
       ],
       'modal-md'
     );
   },
 
-  doDecision(batchId, type) {
+  // 最终执行决策
+  _doDecisionConfirm(batchId, code, dc, qtyOk, qtyNg, score, remarks) {
     // PRD 4.1: 决策前实时校验冲销
     if (Math.random() < 0.03) {
       toast('该检验批对应的 SAP 收货凭证已被冲销，无法执行决策');
-      closeModal();
       this.doCancelBatch(batchId, 'SAP 凭证冲销，自动取消');
       return;
     }
@@ -1629,22 +1891,22 @@ const InspectionBatch = {
     const b = this.batchData.find(x => x.id === batchId);
     if (!b || b.status !== 'DONE') return;
 
-    const decisionLabel = type === 'release' ? '放行' : '冻结';
-    const movType = type === 'release' ? '321' : '331';
-
-    if (!confirm(`确认执行"${decisionLabel}"决策？\n\nSAP 将执行移动类型 ${movType}，不可撤销。`)) return;
-
-    // 模拟 SAP 接口调用
     const now = new Date().toISOString().replace('T',' ').slice(0,19);
     b.status = 'DEC';
     b.statusName = '已决策';
-    b.decision = type;
-    b.decisionBy = 'QA经理';
+    b.decision = code;
+    b.decisionDesc = dc.description;
+    b.decisionBy = '质量工程师';
     b.decisionTime = now;
     b.updateTime = now;
+    b.qualityScore = score;
+    b.qtyOk = qtyOk;
+    b.qtyNg = qtyNg;
+    b.decisionRemarks = remarks;
+    b.decisionAction = dc.suggestedAction;
+    b.targetStock = dc.targetStock;
 
-    closeModal();
-    toast(`使用决策"${decisionLabel}"已执行，SAP 移动类型 ${movType} 同步成功，检验批状态已更新`);
+    toast(`使用决策「${code} — ${dc.description}」已执行！检验批 ${b.batchNo} 状态已更新为"已决策"${remarks ? '，备注已记录' : ''}`);
     this.init();
   },
 
