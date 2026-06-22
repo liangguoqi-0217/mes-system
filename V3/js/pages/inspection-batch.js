@@ -1146,18 +1146,6 @@ const InspectionBatch = {
           : '<span class="badge badge-green">已完成</span>';
       }
 
-      // 操作按钮
-      let opBtn = '';
-      if (isSampling && b.status === 'CRTD') {
-        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openSamplingForm('${b.id}','${op.opNum}');">取样</button>`;
-      } else if (!isSampling && ['SAMP','INSP'].includes(b.status)) {
-        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');">录入结果</button>`;
-      } else if (!isSampling && !['CANC','CLSD'].includes(b.status)) {
-        opBtn = `<button class="btn btn-sm btn-blue" onclick="InspectionBatch.openResultEntry('${b.id}','${op.opNum}');">录入结果</button>`;
-      } else {
-        opBtn = '<span style="color:var(--text-muted);font-size:12px;">—</span>';
-      }
-
       // 详情面板内容
       let detailHtml = '';
       if (isSampling) {
@@ -1197,11 +1185,10 @@ const InspectionBatch = {
         <td>${esc(op.workCenterName)}</td>
         <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(op.description||'')}">${esc(op.description||'—')}</td>
         <td>${opStatus}</td>
-        <td style="text-align:center;">${opBtn}</td>
       </tr>`;
 
       const detailRow = hasDetail ? `<tr class="op-detail-row" id="${detailId}" style="display:none;">
-        <td colspan="6" style="background:#f8fafc;border-bottom:2px solid #e5e7eb;padding:12px 16px 12px 36px;">${detailHtml}</td>
+        <td colspan="5" style="background:#f8fafc;border-bottom:2px solid #e5e7eb;padding:12px 16px 12px 36px;">${detailHtml}</td>
       </tr>` : '';
 
       return mainRow + detailRow;
@@ -1281,7 +1268,6 @@ const InspectionBatch = {
             <th>工作中心</th>
             <th>工序描述</th>
             <th style="width:80px;">状态</th>
-            <th style="width:90px;text-align:center;">操作</th>
           </tr></thead>
           <tbody>${opRows}</tbody>
         </table>
