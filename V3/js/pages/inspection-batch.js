@@ -325,21 +325,19 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    // 解析计划以获取取样/检验工序编号
+    // 解析计划以获取取样工序编号
     const plan = this._resolvePlan(b);
     const ops = (plan && plan.operations) ? plan.operations : [
       { opNum:'0010', opType:'sampling' },
       { opNum:'0020', opType:'inspection' }
     ];
     const samplingOp = ops.find(o => o.opType === 'sampling');
-    const inspectionOp = ops.find(o => o.opType !== 'sampling');
     const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
-    const inspectionOpNum = inspectionOp ? inspectionOp.opNum : '0020';
 
     return `<div class="table-actions">
       <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>
       <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
-      <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.openResultEntry('${b.id}','${inspectionOpNum}')" title="录入检验结果">结果录入</button>
+      <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
       <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策（放行/冻结）">使用决策</button>
       <button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>
     </div>`;
@@ -1380,6 +1378,72 @@ const InspectionBatch = {
   },
 
   // ==================== 检验结果录入弹窗 ====================
+
+  // 用户选择要录入结果的检验工序
+  selectOpForResult(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return toast('检验批未找到');
+    if (['CANC','CLSD'].includes(b.status)) return toast('当前状态不允许录入结果');
+
+    const plan = this._resolvePlan(b);
+    const allOps = (plan && plan.operations) ? plan.operations : [
+      { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'QC取样室', description:'按取样方案执行取样' },
+      { opNum:'0020', opType:'inspection', opTypeName:'检验', workCenterName:'QC实验室', description:'外观、含量、pH值等' }
+    ];
+
+    // 只筛选检验类型的工序
+    const inspectionOps = allOps.filter(o => o.opType !== 'sampling');
+
+    if (inspectionOps.length === 0) {
+      toast('该检验计划暂无检验工序，请检查检验计划配置');
+      return;
+    }
+
+    // 如果只有一个检验工序，直接进入录入
+    if (inspectionOps.length === 1) {
+      this.openResultEntry(batchId, inspectionOps[0].opNum);
+      return;
+    }
+
+    const opCards = inspectionOps.map((op, i) => {
+      const hasChars = op.chars && op.chars.length > 0;
+      const charCount = hasChars ? op.chars.length : 0;
+      return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-weight:600;font-size:14px;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-family:monospace;color:#6366f1;">${esc(op.opNum)}</span>
+            <span>${esc(op.opTypeName)}</span>
+            <span class="badge badge-sm" style="background:#eef2ff;color:#4338ca;">${esc(op.workCenterName)}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+            ${esc(op.description||'—')}
+            ${hasChars
+              ? `<span style="margin-left:8px;color:#059669;">· ${charCount} 个检验特性</span>`
+              : '<span style="margin-left:8px;color:#ef4444;">· 无检验特性</span>'}
+          </div>
+        </div>
+        <button class="btn btn-sm" style="background:#6366f1;color:#fff;flex-shrink:0;" onclick="closeModal();InspectionBatch.openResultEntry('${batchId}','${op.opNum}');">
+          录入结果
+        </button>
+      </div>`;
+    }).join('');
+
+    showModal(
+      `选择检验工序 — ${esc(b.batchNo)}`,
+      `<div style="padding:4px 0;">
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+          <div style="font-weight:600;margin-bottom:4px;">📋 ${esc(b.batchNo)}</div>
+          <div style="color:var(--text-secondary);">物料：${esc(b.materialCode)} ${esc(b.materialName)} | 计划：${esc(b.planNo)}</div>
+        </div>
+        <div style="margin-bottom:8px;font-size:13px;color:var(--text-secondary);">请选择要录入结果的检验工序：</div>
+        <div style="display:flex;flex-direction:column;gap:10px;max-height:50vh;overflow-y:auto;">
+          ${opCards}
+        </div>
+      </div>`,
+      [{ text:'取消', cls:'btn-outline', action: closeModal }],
+      'modal-lg'
+    );
+  },
 
   openResultEntry(batchId, opNum) {
     const b = this.batchData.find(x => x.id === batchId);
