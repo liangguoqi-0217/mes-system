@@ -271,7 +271,7 @@ const InspectionBatch = {
     const el = document.getElementById('ibTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1400px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1550px;">
       <thead><tr>
         <th style="width:50px;">序号</th>
         <th style="width:200px;">检验批号</th>
@@ -285,7 +285,7 @@ const InspectionBatch = {
         <th style="width:80px;">创建人</th>
         <th style="width:140px;">创建时间</th>
         <th style="width:140px;">更新时间</th>
-        <th style="width:160px;">操作</th>
+        <th style="width:290px;">操作</th>
       </tr></thead>
       <tbody>${page.map((b,i) => this.renderBatchRow(b, start+i+1)).join('')}</tbody>
     </table>`;
@@ -325,11 +325,45 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    const isActive = !['CANC','CLSD'].includes(b.status);
-    const crossBtn = isActive
-      ? `<button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>`
-      : '';
-    return `<div class="table-actions"><button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>${crossBtn}</div>`;
+    const isCancClosed = ['CANC','CLSD'].includes(b.status);
+
+    // 解析计划以获取取样/检验工序编号
+    const plan = this._resolvePlan(b);
+    const ops = (plan && plan.operations) ? plan.operations : [
+      { opNum:'0010', opType:'sampling' },
+      { opNum:'0020', opType:'inspection' }
+    ];
+    const samplingOp = ops.find(o => o.opType === 'sampling');
+    const inspectionOp = ops.find(o => o.opType !== 'sampling');
+    const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
+    const inspectionOpNum = inspectionOp ? inspectionOp.opNum : '0020';
+
+    const btns = [];
+
+    // 查看
+    btns.push(`<button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>`);
+
+    // 取样（仅 CRTD 状态）
+    if (b.status === 'CRTD') {
+      btns.push(`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>`);
+    }
+
+    // 结果录入（非 CANC/CLSD 均可录入）
+    if (!isCancClosed) {
+      btns.push(`<button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.openResultEntry('${b.id}','${inspectionOpNum}')" title="录入检验结果">结果录入</button>`);
+    }
+
+    // 使用决策（仅 DONE 状态）
+    if (b.status === 'DONE') {
+      btns.push(`<button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策（放行/冻结）">使用决策</button>`);
+    }
+
+    // 协同（非 CANC/CLSD）
+    if (!isCancClosed) {
+      btns.push(`<button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>`);
+    }
+
+    return `<div class="table-actions">${btns.join('')}</div>`;
   },
 
   // ==================== 跨工厂检验协同（检验批列表tab） ====================
