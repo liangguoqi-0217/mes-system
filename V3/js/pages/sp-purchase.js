@@ -124,18 +124,9 @@ const SpPurchase = {
       const isNewGroup = row.docNo !== lastDoc;
       lastDoc = row.docNo;
 
-      const canEdit = row.status === '草稿';
-      const canWithdraw = row.status === '审批中';
       let actions = '';
       if (isNewGroup) {
         actions += `<button class="btn btn-outline btn-sm" onclick="SpPurchase.viewDetail('${row.docNo}')">查看</button>`;
-        if (canEdit) {
-          actions += `<button class="btn btn-primary btn-sm" onclick="SpPurchase.openEditModal('${row.docNo}')">修改</button>`;
-          actions += `<button class="btn btn-secondary btn-sm" onclick="SpPurchase.deleteReq('${row.docNo}')">删除</button>`;
-        }
-        if (canWithdraw) {
-          actions += `<button class="btn btn-warning btn-sm" onclick="SpPurchase.withdraw('${row.docNo}')">撤回</button>`;
-        }
       }
 
       const bgStyle = isNewGroup ? '' : '';
@@ -639,10 +630,17 @@ const SpPurchase = {
               </table>
             </div>
           </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="SpPurchase.closeDetail()">关闭</button>
-            <button class="btn btn-outline btn-sm" onclick="SpPurchase.printSingle('${pr.docNo}')">打印</button>
-            <button class="btn btn-outline btn-sm" onclick="SpPurchase.exportData()">导出</button>
+          <div class="modal-footer" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-secondary" onclick="SpPurchase.closeDetail()">关闭</button>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              ${pr.status==='草稿' ? `<button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">修改</button>
+              <button class="btn btn-danger btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.deleteReq('${pr.docNo}')">删除</button>` : ''}
+              ${pr.status==='审批中' ? `<button class="btn btn-warning btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.withdraw('${pr.docNo}')">撤回</button>` : ''}
+              <button class="btn btn-outline btn-sm" onclick="SpPurchase.printSingle('${pr.docNo}')">打印</button>
+              <button class="btn btn-outline btn-sm" onclick="SpPurchase.exportData()">导出</button>
+            </div>
           </div>
         </div>
       </div>`;
