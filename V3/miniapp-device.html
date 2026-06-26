@@ -864,63 +864,6 @@
   .inv-status-badge.s-inspection { border-color: #ff832b; color: #ff832b; }
   .inv-status-badge.s-frozen     { border-color: var(--cds-red-60); color: var(--cds-red-60); }
 
-  /* Inventory summary table */
-  .inv-summary-table-wrap {
-    margin: 0 16px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .inv-summary-table {
-    width: 100%;
-    min-width: 1100px;
-    border-collapse: collapse;
-    background: var(--cds-white);
-    font-size: 13px;
-  }
-  .inv-summary-table thead th {
-    background: var(--cds-gray-10);
-    color: var(--cds-text-secondary);
-    font-weight: 600;
-    font-size: 12px;
-    letter-spacing: 0.32px;
-    padding: 10px 8px;
-    text-align: left;
-    white-space: nowrap;
-    border-bottom: 2px solid var(--cds-gray-30);
-    position: sticky;
-    top: 0;
-    z-index: 1;
-  }
-  .inv-summary-table thead th.num-col {
-    text-align: right;
-  }
-  .inv-summary-table tbody td {
-    padding: 10px 8px;
-    border-bottom: 1px solid var(--cds-gray-20);
-    color: var(--cds-text-primary);
-    vertical-align: middle;
-  }
-  .inv-summary-table tbody td.num-col {
-    text-align: right;
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
-  }
-  .inv-summary-table tbody td.qty-zero {
-    color: var(--cds-text-secondary);
-    font-weight: 400;
-  }
-  .inv-summary-table tbody tr:active {
-    background: var(--cds-layer-02);
-  }
-  .inv-summary-table .cell-mono {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-  }
-  .inv-summary-table .cell-plant {
-    font-weight: 600;
-    color: var(--cds-link);
-  }
-
   /* Fault code tree */
   .fc-tree { padding: 6px 0 20px; user-select: none; }
   /* Level 1: 目录类型 */
@@ -1239,10 +1182,6 @@
           <option value="A02-李工">A02-李工</option>
           <option value="A06-其他" selected>A06-其他</option>
         </select>
-        <select class="cds-select" id="invDisplayType">
-          <option value="summary" selected>显示汇总库存</option>
-          <option value="batch">显示批次库存</option>
-        </select>
         <input type="text" class="cds-input" id="invSearchCode" placeholder="物料号 / 物料描述">
         <button class="cds-btn-primary cds-btn-primary--full" onclick="searchInventory()" style="grid-column:1/-1;">搜索库存</button>
       </div>
@@ -1384,18 +1323,18 @@ let currentUser = '赵志强'; // 默认当前用户；管理员为 '张工'
 let isAdmin = false; // 管理员模式开关
 
 const inventoryData = [
-  { id:'INV001',code:'10000001',name:'封口工位气缸',spec:'CDJP2B16-30D',unit:'个',unrestrictedQty:3,inspectionQty:0,frozenQty:0,qty:3,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'非限制',safetyStock:5,supplier:'SMC中国',unitPrice:1850,lastIn:'2026-05-10',mrpController:'A01-张工',wbsCode:'WBS-2026-001',specialStock:'',customer:'' },
-  { id:'INV002',code:'10000002',name:'316L不锈钢密封圈（DN50）',spec:'DN50-PTFE-316L',unit:'个',unrestrictedQty:20,inspectionQty:5,frozenQty:0,qty:25,plant:'1000',storageBin:'A02',storageDesc:'A区-密封件库',invStatus:'非限制',safetyStock:10,supplier:'宁波易天地',unitPrice:85,lastIn:'2026-05-20',mrpController:'A01-张工',wbsCode:'WBS-2026-002',specialStock:'',customer:'' },
-  { id:'INV003',code:'10000003',name:'深沟球轴承 6205-2RS',spec:'6205-2RS-SKF',unit:'个',unrestrictedQty:0,inspectionQty:2,frozenQty:0,qty:2,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'质检',safetyStock:8,supplier:'SKF',unitPrice:320,lastIn:'2026-04-15',mrpController:'A02-李工',wbsCode:'WBS-2026-003',specialStock:'',customer:'' },
-  { id:'INV004',code:'10000004',name:'伺服电机（DMG专用）',spec:'1FT7084-5AF71-1',unit:'台',unrestrictedQty:0,inspectionQty:0,frozenQty:1,qty:1,plant:'1000',storageBin:'B01',storageDesc:'B区-电气备件库',invStatus:'冻结',safetyStock:2,supplier:'西门子',unitPrice:28500,lastIn:'2026-03-01',mrpController:'A01-张工',wbsCode:'WBS-2026-004',specialStock:'E-特殊',customer:'客户A' },
-  { id:'INV005',code:'10000005',name:'PLC数字量输入模块',spec:'6ES7521-1BL00-0AB0',unit:'块',unrestrictedQty:0,inspectionQty:4,frozenQty:0,qty:4,plant:'2000',storageBin:'B02',storageDesc:'B区-电气备件库',invStatus:'质检',safetyStock:2,supplier:'西门子',unitPrice:4200,lastIn:'2026-05-08',mrpController:'A06-其他',wbsCode:'WBS-2026-005',specialStock:'',customer:'' },
-  { id:'INV006',code:'10000006',name:'温度传感器 PT100',spec:'PT100-3W-A级',unit:'个',unrestrictedQty:8,inspectionQty:0,frozenQty:0,qty:8,plant:'1000',storageBin:'B03',storageDesc:'B区-传感器库',invStatus:'非限制',safetyStock:5,supplier:'欧姆龙',unitPrice:280,lastIn:'2026-05-15',mrpController:'A02-李工',wbsCode:'WBS-2026-006',specialStock:'',customer:'' },
-  { id:'INV007',code:'10000007',name:'同步带（HTD-8M）',spec:'HTD-8M-30-1280',unit:'条',unrestrictedQty:6,inspectionQty:0,frozenQty:0,qty:6,plant:'2000',storageBin:'C01',storageDesc:'C区-耗材库',invStatus:'非限制',safetyStock:3,supplier:'盖茨',unitPrice:450,lastIn:'2026-05-25',mrpController:'A06-其他',wbsCode:'WBS-2026-007',specialStock:'',customer:'' },
-  { id:'INV008',code:'10000008',name:'高效过滤器 H13',spec:'H13-610x610x292',unit:'个',unrestrictedQty:0,inspectionQty:0,frozenQty:0,qty:0,plant:'1000',storageBin:'C01',storageDesc:'C区-耗材库',invStatus:'非限制',safetyStock:4,supplier:'康菲尔',unitPrice:1200,lastIn:'2026-02-20',mrpController:'A06-其他',wbsCode:'WBS-2026-008',specialStock:'',customer:'' },
-  { id:'INV009',code:'10000009',name:'合成齿轮油 SHC 629',spec:'20L/桶-Mobil SHC 629',unit:'桶',unrestrictedQty:0,inspectionQty:3,frozenQty:0,qty:3,plant:'2000',storageBin:'D01',storageDesc:'D区-油品库',invStatus:'质检',safetyStock:2,supplier:'美孚',unitPrice:3800,lastIn:'2026-04-28',mrpController:'A01-张工',wbsCode:'WBS-2026-009',specialStock:'',customer:'' },
-  { id:'INV010',code:'10000010',name:'食品级润滑脂 FM 222',spec:'400g/支-Kluber',unit:'支',unrestrictedQty:10,inspectionQty:0,frozenQty:2,qty:12,plant:'1000',storageBin:'D01',storageDesc:'D区-油品库',invStatus:'非限制',safetyStock:5,supplier:'克鲁勃',unitPrice:650,lastIn:'2026-05-18',mrpController:'A06-其他',wbsCode:'WBS-2026-010',specialStock:'K-寄售',customer:'客户B' },
-  { id:'INV011',code:'10000011',name:'气动球阀 DN25',spec:'DN25-316L-双作用',unit:'个',unrestrictedQty:0,inspectionQty:0,frozenQty:0,qty:0,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'非限制',safetyStock:3,supplier:'费斯托',unitPrice:2600,lastIn:'2026-01-10',mrpController:'A02-李工',wbsCode:'WBS-2026-011',specialStock:'',customer:'' },
-  { id:'INV012',code:'10000012',name:'变频器 ATV320',spec:'ATV320U22N4B',unit:'台',unrestrictedQty:1,inspectionQty:0,frozenQty:1,qty:2,plant:'1000',storageBin:'B01',storageDesc:'B区-电气备件库',invStatus:'非限制',safetyStock:2,supplier:'施耐德',unitPrice:5600,lastIn:'2026-05-12',mrpController:'A01-张工',wbsCode:'WBS-2026-012',specialStock:'',customer:'' }
+  { id:'INV001',code:'SP-CYL-006',name:'封口工位气缸',spec:'CDJP2B16-30D',unit:'个',qty:3,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'非限制',safetyStock:5,supplier:'SMC中国',unitPrice:1850,lastIn:'2026-05-10',mrpController:'A01-张工' },
+  { id:'INV002',code:'SP-SEAL-012',name:'316L不锈钢密封圈（DN50）',spec:'DN50-PTFE-316L',unit:'个',qty:25,plant:'1000',storageBin:'A02',storageDesc:'A区-密封件库',invStatus:'非限制',safetyStock:10,supplier:'宁波易天地',unitPrice:85,lastIn:'2026-05-20',mrpController:'A01-张工' },
+  { id:'INV003',code:'SP-BRG-008',name:'深沟球轴承 6205-2RS',spec:'6205-2RS-SKF',unit:'个',qty:2,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'质检',safetyStock:8,supplier:'SKF',unitPrice:320,lastIn:'2026-04-15',mrpController:'A02-李工' },
+  { id:'INV004',code:'SP-MOT-001',name:'伺服电机（DMG专用）',spec:'1FT7084-5AF71-1',unit:'台',qty:1,plant:'1000',storageBin:'B01',storageDesc:'B区-电气备件库',invStatus:'非限制',safetyStock:2,supplier:'西门子',unitPrice:28500,lastIn:'2026-03-01',mrpController:'A01-张工' },
+  { id:'INV005',code:'SP-PLC-003',name:'PLC数字量输入模块',spec:'6ES7521-1BL00-0AB0',unit:'块',qty:4,plant:'2000',storageBin:'B02',storageDesc:'B区-电气备件库',invStatus:'冻结',safetyStock:2,supplier:'西门子',unitPrice:4200,lastIn:'2026-05-08',mrpController:'A06-其他' },
+  { id:'INV006',code:'SP-SEN-015',name:'温度传感器 PT100',spec:'PT100-3W-A级',unit:'个',qty:8,plant:'1000',storageBin:'B03',storageDesc:'B区-传感器库',invStatus:'非限制',safetyStock:5,supplier:'欧姆龙',unitPrice:280,lastIn:'2026-05-15',mrpController:'A02-李工' },
+  { id:'INV007',code:'SP-BELT-009',name:'同步带（HTD-8M）',spec:'HTD-8M-30-1280',unit:'条',qty:6,plant:'2000',storageBin:'C01',storageDesc:'C区-耗材库',invStatus:'非限制',safetyStock:3,supplier:'盖茨',unitPrice:450,lastIn:'2026-05-25',mrpController:'A06-其他' },
+  { id:'INV008',code:'SP-FILT-004',name:'高效过滤器 H13',spec:'H13-610x610x292',unit:'个',qty:0,plant:'1000',storageBin:'C01',storageDesc:'C区-耗材库',invStatus:'非限制',safetyStock:4,supplier:'康菲尔',unitPrice:1200,lastIn:'2026-02-20',mrpController:'A06-其他' },
+  { id:'INV009',code:'SP-OIL-007',name:'合成齿轮油 SHC 629',spec:'20L/桶-Mobil SHC 629',unit:'桶',qty:3,plant:'2000',storageBin:'D01',storageDesc:'D区-油品库',invStatus:'质检',safetyStock:2,supplier:'美孚',unitPrice:3800,lastIn:'2026-04-28',mrpController:'A01-张工' },
+  { id:'INV010',code:'SP-OIL-008',name:'食品级润滑脂 FM 222',spec:'400g/支-Kluber',unit:'支',qty:12,plant:'1000',storageBin:'D01',storageDesc:'D区-油品库',invStatus:'非限制',safetyStock:5,supplier:'克鲁勃',unitPrice:650,lastIn:'2026-05-18',mrpController:'A06-其他' },
+  { id:'INV011',code:'SP-VLV-011',name:'气动球阀 DN25',spec:'DN25-316L-双作用',unit:'个',qty:0,plant:'1000',storageBin:'A01',storageDesc:'A区-机械备件库',invStatus:'非限制',safetyStock:3,supplier:'费斯托',unitPrice:2600,lastIn:'2026-01-10',mrpController:'A02-李工' },
+  { id:'INV012',code:'SP-CON-006',name:'变频器 ATV320',spec:'ATV320U22N4B',unit:'台',qty:2,plant:'1000',storageBin:'B01',storageDesc:'B区-电气备件库',invStatus:'非限制',safetyStock:2,supplier:'施耐德',unitPrice:5600,lastIn:'2026-05-12',mrpController:'A01-张工' }
 ];
 
 const faultCodeData = [
@@ -2113,7 +2052,6 @@ function searchInventory() {
   const bin = document.getElementById('invSearchBin').value;
   const mrp = document.getElementById('invSearchMRP').value;
   const codeKw = document.getElementById('invSearchCode').value.trim().toLowerCase();
-  const displayType = document.getElementById('invDisplayType').value; // summary | batch
 
   if (!plant) {
     document.getElementById('invResultList').innerHTML = '<div class="empty-msg"><span class="empty-icon"><svg viewBox="0 0 24 24" width="36" height="36"><path d="M3 9l9-5 9 5-9 5-9-5z" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 9v6l9 5 9-5V9" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/></svg></span>请选择工厂</div>';
@@ -2132,61 +2070,6 @@ function searchInventory() {
     );
   }
 
-  if (displayType === 'summary') {
-    // 汇总库存：按总库存量过滤
-    const totalQty = d => (d.unrestrictedQty||0) + (d.inspectionQty||0) + (d.frozenQty||0);
-    data = data.filter(d => totalQty(d) > 0);
-
-    const cnt = data.length;
-    document.getElementById('invCountBar').innerHTML = `<span>${cnt} 条物料（汇总库存）</span>`;
-
-    if (cnt === 0) {
-      document.getElementById('invResultList').innerHTML = '<div class="empty-msg"><span class="empty-icon"><svg viewBox="0 0 24 24" width="36" height="36"><path d="M3 9l9-5 9 5-9 5-9-5z" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 9v6l9 5 9-5V9" fill="none" stroke="var(--cds-gray-30)" stroke-width="1.5" stroke-linejoin="round"/></svg></span>未找到匹配的库存物料</div>';
-      return;
-    }
-
-    const rowsHtml = data.map(d => {
-      const uQty = d.unrestrictedQty||0;
-      const iQty = d.inspectionQty||0;
-      const fQty = d.frozenQty||0;
-      const plantName = ({'1000':'1000', '2000':'2000', '3000':'3000'})[d.plant] || d.plant;
-      return `<tr>
-        <td class="cell-plant">${plantName}</td>
-        <td>${d.storageDesc||''}</td>
-        <td class="cell-mono">${d.code}</td>
-        <td>${d.name}（${d.spec||''}）</td>
-        <td class="num-col${uQty===0?' qty-zero':''}">${uQty.toLocaleString()}</td>
-        <td class="num-col${iQty===0?' qty-zero':''}">${iQty.toLocaleString()}</td>
-        <td class="num-col${fQty===0?' qty-zero':''}">${fQty.toLocaleString()}</td>
-        <td>${d.unit}</td>
-        <td>${d.wbsCode||''}</td>
-        <td>${d.specialStock||''}</td>
-        <td>${d.customer||''}</td>
-      </tr>`;
-    }).join('');
-
-    document.getElementById('invResultList').innerHTML = `<div class="inv-summary-table-wrap">
-      <table class="inv-summary-table">
-        <thead><tr>
-          <th>工厂</th>
-          <th>库位</th>
-          <th>物料号</th>
-          <th>物料描述</th>
-          <th class="num-col">非限制库存</th>
-          <th class="num-col">质检库存</th>
-          <th class="num-col">冻结库存</th>
-          <th>单位</th>
-          <th>WBS编号</th>
-          <th>特殊库存</th>
-          <th>客户</th>
-        </tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-    </div>`;
-    return;
-  }
-
-  // 批次库存：保持原有卡片列表
   // Filter out zero-stock items
   data = data.filter(d => d.qty > 0);
 
@@ -2228,6 +2111,7 @@ function searchInventory() {
         </div>
       </div>`;
     }).join('');
+}
 
 function showInvDetail(id) {
   const d = inventoryData.find(i => i.id === id);
