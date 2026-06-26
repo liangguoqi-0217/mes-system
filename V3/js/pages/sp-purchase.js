@@ -35,7 +35,7 @@ const SpPurchase = {
     return `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <div><div style="font-size:18px;font-weight:700;">采购申请提报</div><div style="font-size:13px;opacity:0.8;">手工提报采购申请，支持单据多行项目</div></div>
+          <div><div style="font-size:18px;font-weight:700;">采购申请提报</div><div style="font-size:13px;opacity:0.8;">支持手工填写和模板批导两种方式创建采购申请</div></div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-blue" onclick="SpPurchase.openNewModal()"><span style="font-weight:700;font-size:16px;">+</span> 新建申请</button>
           </div>
@@ -197,10 +197,45 @@ const SpPurchase = {
   nextPage() { const tp = Math.ceil(this.filteredFlat.length/this.pageSize); if (this.page < tp) { this.page++; this.renderTable(); } },
   changePageSize() { this.pageSize = parseInt(document.getElementById('prPageSizeSel').value); this.page = 1; this.renderTable(); },
 
-  // ---- CRUD ----
+  // ---- 新建采购申请：弹出选择弹框（手工填写 / 模板批导）----
   openNewModal() {
+    document.getElementById('prModalContainer').innerHTML = `
+      <div class="modal-backdrop" onclick="SpPurchase.closeModal()">
+        <div class="modal" style="max-width:500px;text-align:center;" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title">新建采购申请</div>
+            <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
+          </div>
+          <div class="modal-body" style="padding:32px 24px;">
+            <div style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;">请选择创建方式</div>
+            <div style="display:flex;gap:16px;justify-content:center;">
+              <div class="choice-card" onclick="SpPurchase.openManualForm()" style="flex:1;max-width:180px;padding:24px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s;background:white;">
+                <div style="font-size:36px;margin-bottom:12px;">📝</div>
+                <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:6px;">手工填写</div>
+                <div style="font-size:12px;color:var(--text-muted);">逐项填写物料信息，适合单次少量采购申请</div>
+              </div>
+              <div class="choice-card" onclick="SpPurchase.openBatchImportModal()" style="flex:1;max-width:180px;padding:24px 16px;border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all 0.2s;background:white;">
+                <div style="font-size:36px;margin-bottom:12px;">📋</div>
+                <div style="font-weight:700;font-size:15px;color:var(--text-primary);margin-bottom:6px;">模板批导</div>
+                <div style="font-size:12px;color:var(--text-muted);">下载模板批量填写后上传，适合大批量采购申请</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer" style="justify-content:center;">
+            <button class="btn btn-secondary" onclick="SpPurchase.closeModal()">取消</button>
+          </div>
+        </div>
+      </div>
+      <style>
+        .choice-card:hover { border-color: var(--primary) !important; box-shadow: 0 4px 20px rgba(37,99,235,0.12); transform: translateY(-2px); }
+      </style>`;
+  },
+
+  // ---- 手工填写表单（原逻辑）----
+  openManualForm() {
     this.editMode = false;
     this.editId = null;
+    this._batchImport = false;
     const emptyPr = {
       docNo: '', applyDate: new Date().toISOString().slice(0,10),
       plant: '1000', dept: '', applicant: '', status: '草稿',
@@ -210,12 +245,257 @@ const SpPurchase = {
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(emptyPr);
   },
 
+  // ---- 模板批导弹框 ----
+  openBatchImportModal() {
+    this._batchImport = true;
+    this._batchRawData = [];
+    document.getElementById('prModalContainer').innerHTML = `
+      <div class="modal-backdrop" onclick="SpPurchase.closeModal()">
+        <div class="modal" style="max-width:960px;" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title">模板批导 - 批量导入采购申请</div>
+            <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
+          </div>
+          <div class="modal-body" style="max-height:calc(85vh-140px);">
+            <!-- Step 1: 下载模板并填写 -->
+            <div class="form-section">
+              <div class="form-section-title">第一步：下载模板并填写</div>
+              <div style="display:flex;align-items:center;gap:12px;padding:12px 0;">
+                <button class="btn btn-primary" onclick="SpPurchase.downloadTemplate()" style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-size:18px;">⬇</span> 下载CSV模板
+                </button>
+                <span style="font-size:12px;color:var(--text-muted);">模板包含表头行和示例，请严格按照模板格式填写数据</span>
+              </div>
+            </div>
+
+            <!-- Step 2: 上传文件 -->
+            <div class="form-section" style="margin-top:14px;">
+              <div class="form-section-title">第二步：上传填好的文件</div>
+              <div id="batchUploadArea" style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all 0.2s;"
+                onclick="document.getElementById('batchFileInput').click()"
+                ondragover="this.style.borderColor='var(--primary)';this.style.background='#eff6ff';"
+                ondragleave="this.style.borderColor='var(--border)';this.style.background='transparent';"
+                ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='transparent';SpPurchase.handleBatchFileDrop(event)">
+                <div style="font-size:40px;margin-bottom:8px;">📂</div>
+                <div style="font-weight:600;color:var(--text-primary);">点击选择文件或拖拽文件到此处</div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">支持 .csv 文件，编码 UTF-8</div>
+                <input type="file" id="batchFileInput" accept=".csv" style="display:none;" onchange="SpPurchase.handleBatchFileSelect(event)">
+              </div>
+              <div id="batchUploadInfo" style="margin-top:10px;font-size:13px;"></div>
+            </div>
+
+            <!-- Step 3: 预览数据 -->
+            <div id="batchPreviewSection" class="form-section" style="margin-top:14px;display:none;">
+              <div class="form-section-title">第三步：预览数据（共 <span id="batchRowCount">0</span> 行）</div>
+              <div style="overflow-x:auto;max-height:320px;">
+                <table class="data-table" style="min-width:900px;font-size:12px;">
+                  <thead><tr>
+                    <th>#</th><th>物料</th><th>短文本</th><th style="text-align:right;">数量</th><th>Un</th>
+                    <th>交货日期</th><th>需求日期</th><th style="text-align:right;">价格</th>
+                    <th style="text-align:right;">总价值</th>
+                  </tr></thead>
+                  <tbody id="batchPreviewBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 表头信息 -->
+            <div class="form-section" style="margin-top:14px;">
+              <div class="form-section-title">表头信息（统一应用于所有行）</div>
+              <div class="form-grid">
+                <div class="form-group"><label><span class="req">*</span> 部门</label><select id="prFDept"><option value="">请选择</option><option value="设备部">设备部</option><option value="生产部">生产部</option><option value="质量部">质量部</option><option value="仓储物流部">仓储物流部</option></select></div>
+                <div class="form-group"><label><span class="req">*</span> 申请人</label><input type="text" id="prFApplicant" placeholder="申请人姓名"></div>
+                <div class="form-group"><label>工厂</label><select id="prFPlant">
+                  <option value="1000">1000 - 山东步长制药工厂</option>
+                  <option value="2001">2001 - 陕西步长制药工厂</option>
+                  <option value="2002">2002 - 山东丹红制药工厂</option>
+                  <option value="2003">2003 - 山东神州制药工厂</option>
+                  <option value="2004">2004 - 山东康爱制药工厂</option>
+                  <option value="2005">2005 - 通化谷红制药工厂</option>
+                  <option value="2006">2006 - 吉林天成制药工厂</option>
+                  <option value="2007">2007 - 通化天实制药工厂</option>
+                  <option value="2008">2008 - 梅河口步长制药工厂</option>
+                  <option value="2009">2009 - 辽宁奥达制药工厂</option>
+                  <option value="2010">2010 - 保定天浩制药工厂</option>
+                  <option value="2011">2011 - 邛崃天银制药工厂</option>
+                  <option value="2012">2012 - 陕西步长高新制药工厂</option>
+                  <option value="2013">2013 - 杨凌步长制药工厂</option>
+                </select></div>
+                <div class="form-group"><label>申请日期</label><input type="date" id="prFApplyDate" value="${new Date().toISOString().slice(0,10)}"></div>
+                <div class="form-group"><label>WBS编号</label><input type="text" id="prFWbsNo" placeholder="项目编号"></div>
+                <div class="form-group full"><label>用途说明</label><textarea id="prFPurpose" rows="2" placeholder="采购用途描述"></textarea></div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="SpPurchase.closeModal()">取消</button>
+            <button class="btn btn-primary" id="batchSubmitBtn" disabled onclick="SpPurchase.submitBatchImport()">确认导入</button>
+          </div>
+        </div>
+      </div>`;
+  },
+
   openEditModal(docNo) {
     const pr = spPurchaseData.find(r => r.docNo === docNo);
     if (!pr) return;
     this.editMode = true;
     this.editId = docNo;
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(JSON.parse(JSON.stringify(pr)));
+  },
+
+  // ---- 下载CSV模板 ----
+  downloadTemplate() {
+    const headers = ['物料号','短文本(物料描述)','申请数量','单位','交货日期(YYYYMMDD)','需求日期(YYYY.MM.DD)','评价价格'];
+    const exampleRow = ['60001018','高效过滤器-MIIPDF-635*520*93','48','个','20260715','2026.06.20','850.00'];
+    const instructionsRow = ['# 说明：请保留表头行，按格式填写数据；单位可选：个/KG/套/袋/件/台/支/桶/组/箱/卷/瓶/盒/方/张'];
+    const csvContent = '\uFEFF' + [headers.join(','), exampleRow.join(','), instructionsRow.join(',')].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '采购申请模板.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('模板已下载，请按格式填写后上传');
+  },
+
+  // ---- 文件拖拽处理 ----
+  handleBatchFileDrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) this._parseBatchCSV(file);
+  },
+
+  handleBatchFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) this._parseBatchCSV(file);
+    e.target.value = '';
+  },
+
+  // ---- 解析CSV文件 ----
+  _parseBatchCSV(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
+      if (lines.length < 2) { toast('文件内容为空或格式不正确'); return; }
+
+      const headers = this._parseCSVLine(lines[0]);
+      if (headers.length < 6) { toast('表头列数与模板不符，请使用下载的模板'); return; }
+
+      const dataRows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = this._parseCSVLine(lines[i]);
+        if (cols.length < 6) continue;
+        const matCode = (cols[0] || '').trim();
+        const shortText = (cols[1] || '').trim();
+        const reqQty = parseFloat(cols[2]) || 0;
+        if (!matCode || !shortText || reqQty <= 0) continue;
+        const price = parseFloat(cols[6]) || 0;
+        dataRows.push({
+          matCode, shortText, reqQty,
+          unit: (cols[3] || '个').trim(),
+          deliveryDate: (cols[4] || '').trim(),
+          requiredDate: (cols[5] || '').trim(),
+          price, totalValue: reqQty * price
+        });
+      }
+
+      if (!dataRows.length) { toast('未解析到有效数据行，请检查文件内容'); return; }
+
+      this._batchRawData = dataRows;
+      this._renderBatchPreview(dataRows);
+
+      const info = document.getElementById('batchUploadInfo');
+      if (info) info.innerHTML = '<span style="color:#16a34a;font-weight:600;">✅ 已成功解析 ' + dataRows.length + ' 行物料数据（文件名：' + esc(file.name) + '）</span>';
+      const section = document.getElementById('batchPreviewSection');
+      if (section) section.style.display = 'block';
+      const btn = document.getElementById('batchSubmitBtn');
+      if (btn) btn.disabled = false;
+    };
+    reader.readAsText(file, 'UTF-8');
+  },
+
+  _parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+        else { inQuotes = !inQuotes; }
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current);
+    return result;
+  },
+
+  _renderBatchPreview(rows) {
+    const tbody = document.getElementById('batchPreviewBody');
+    const countEl = document.getElementById('batchRowCount');
+    if (!tbody) return;
+    if (countEl) countEl.textContent = rows.length;
+    tbody.innerHTML = rows.map((r, i) => `<tr>
+      <td style="text-align:center;">${i + 1}</td>
+      <td><strong>${esc(r.matCode)}</strong></td>
+      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.shortText)}">${esc(r.shortText)}</td>
+      <td style="text-align:right;">${Number(r.reqQty).toLocaleString()}</td>
+      <td style="text-align:center;">${esc(r.unit)}</td>
+      <td style="white-space:nowrap;">${esc(r.deliveryDate || '-')}</td>
+      <td style="white-space:nowrap;">${esc(r.requiredDate || '-')}</td>
+      <td style="text-align:right;">${Number(r.price).toFixed(2)}</td>
+      <td style="text-align:right;font-weight:700;color:var(--danger);">${Number(r.totalValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+    </tr>`).join('');
+  },
+
+  // ---- 批量导入提交 ----
+  submitBatchImport() {
+    const f = id => document.getElementById(id)?.value ?? '';
+    const dept = f('prFDept');
+    const applicant = f('prFApplicant');
+
+    if (!dept || !applicant) { toast('请填写必填字段：部门、申请人'); return; }
+    if (!this._batchRawData || !this._batchRawData.length) { toast('未解析到物料数据，请先上传文件'); return; }
+
+    const prData = {
+      docNo: '21' + String(Math.floor(Math.random() * 900000000 + 100000000)),
+      applyDate: f('prFApplyDate') || new Date().toISOString().slice(0, 10),
+      plant: f('prFPlant') || '1000',
+      dept, applicant,
+      wbsNo: f('prFWbsNo'),
+      purpose: f('prFPurpose'),
+      notes: '',
+      poNo: '',
+      status: '审批中',
+      lines: this._batchRawData.map((r, i) => ({
+        itemNo: (i + 1) * 10,
+        matCode: r.matCode,
+        shortText: r.shortText,
+        reqQty: r.reqQty,
+        unit: r.unit,
+        orderQty: r.reqQty,
+        deliveryDate: r.deliveryDate,
+        requiredDate: r.requiredDate,
+        deliveryDate2: r.deliveryDate,
+        price: r.price,
+        totalValue: r.totalValue
+      }))
+    };
+
+    spPurchaseData.unshift(prData);
+    toast('批量导入成功！已创建采购申请 ' + prData.docNo + '（' + prData.lines.length + ' 行物料）');
+
+    this.closeModal();
+    this.flatRows = this.flattenData();
+    this.filteredFlat = [...this.flatRows];
+    this.page = 1;
+    this.renderTable();
   },
 
   closeModal() { document.getElementById('prModalContainer').innerHTML = ''; },
