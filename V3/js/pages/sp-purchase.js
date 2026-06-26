@@ -579,12 +579,12 @@ const SpPurchase = {
     const grandTotal = pr.lines.reduce((s,l)=>s+(l.totalValue||0),0);
     const html = `
       <div class="modal-backdrop" id="prDetailBackdrop" onclick="SpPurchase.closeDetail()">
-        <div class="modal" style="max-width:920px;" onclick="event.stopPropagation()">
+        <div class="modal" style="max-width:96vw;width:1400px;" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">采购申请详情 - ${esc(pr.docNo)} ${sb(pr.status)}</div>
             <button class="modal-close" onclick="SpPurchase.closeDetail()">✕</button>
           </div>
-          <div class="modal-body" style="max-height:calc(85vh-120px);">
+          <div class="modal-body" style="max-height:calc(92vh-100px);">
             <div class="form-section">
               <div class="form-section-title">表头信息</div>
               <div class="detail-grid">
@@ -635,7 +635,7 @@ const SpPurchase = {
               <button class="btn btn-secondary" onclick="SpPurchase.closeDetail()">关闭</button>
             </div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              ${pr.status==='草稿' ? `<button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">修改</button>
+              ${pr.status==='草稿' ? `<button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">编辑</button>
               <button class="btn btn-danger btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.deleteReq('${pr.docNo}')">删除</button>` : ''}
               ${pr.status==='审批中' ? `<button class="btn btn-warning btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.withdraw('${pr.docNo}')">撤回</button>` : ''}
               <button class="btn btn-outline btn-sm" onclick="SpPurchase.printSingle('${pr.docNo}')">打印</button>
