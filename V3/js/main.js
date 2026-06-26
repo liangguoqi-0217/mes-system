@@ -123,8 +123,12 @@ const App = {
         {
           title:'备品备件管理', items: [
             { id:'sp-stock', label:'库存查询', route:'sp-stock' },
-            { id:'sp-purchase', label:'采购申请', route:'sp-purchase' },
             { id:'sp-pick', label:'备件领用', route:'sp-pick' }
+          ]
+        },
+        {
+          title:'采购申请管理', items: [
+            { id:'sp-purchase', label:'采购申请管理', route:'sp-purchase' }
           ]
         }
       ]
