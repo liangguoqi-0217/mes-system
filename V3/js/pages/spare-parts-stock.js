@@ -29,8 +29,8 @@ const SparePartsStock = {
             <option value="1004">1004 (冷库-冷链库)</option>
           </select></div>
           <div class="filter-group"><label>显示类型</label><select id="spDisplayType">
+            <option value="summary" selected>显示汇总库存</option>
             <option value="batch">显示批次库存</option>
-            <option value="summary">汇总显示</option>
           </select></div>
           <div class="filter-group"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
@@ -48,7 +48,7 @@ const SparePartsStock = {
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">
-            <thead><tr>
+            <thead id="spTableHead"><tr>
               <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th>
               <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
               <th>WBS编号</th><th>特殊库存</th><th>客户</th><th>供应商</th>
@@ -72,44 +72,93 @@ const SparePartsStock = {
   init() {
     this.filtered = [...sparePartsStockData];
     this.page = 1;
+    const displayType = document.getElementById('spDisplayType').value;
+    if (displayType === 'summary') this._aggregate();
     this.renderTable();
+  },
+
+  _aggregate() {
+    const aggMap = new Map();
+    this.filtered.forEach(row => {
+      const key = `${row.factory}|${row.storageLoc}|${row.matCode}|${row.wbsNo||''}|${row.specialStock||''}|${row.customer||''}`;
+      if (!aggMap.has(key)) {
+        aggMap.set(key, { ...row, unrestrictedQty: 0, qualityQty: 0, blockedQty: 0 });
+      }
+      const agg = aggMap.get(key);
+      agg.unrestrictedQty = (agg.unrestrictedQty || 0) + (row.unrestrictedQty || 0);
+      agg.qualityQty = (agg.qualityQty || 0) + (row.qualityQty || 0);
+      agg.blockedQty = (agg.blockedQty || 0) + (row.blockedQty || 0);
+    });
+    this.filtered = [...aggMap.values()];
   },
 
   renderTable() {
     const start = (this.page - 1) * this.pageSize;
     const page = this.filtered.slice(start, start + this.pageSize);
     const totalPages = Math.ceil(this.filtered.length / this.pageSize) || 1;
+    const displayType = document.getElementById('spDisplayType').value;
+    const isSummary = displayType === 'summary';
+
     document.getElementById('spCount').textContent = `共 ${this.filtered.length} 条`;
     document.getElementById('spPageInfo').textContent = `第 ${this.page} / ${totalPages} 页`;
     document.getElementById('spPrev').disabled = this.page <= 1;
     document.getElementById('spNext').disabled = this.page >= totalPages;
     document.getElementById('spPageSizeSel').value = this.pageSize;
 
+    // Update table head based on display type
+    document.getElementById('spTableHead').innerHTML = isSummary
+      ? `<tr>
+          <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th>
+          <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
+          <th>WBS编号</th><th>特殊库存</th><th>客户</th>
+        </tr>`
+      : `<tr>
+          <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th>
+          <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
+          <th>WBS编号</th><th>特殊库存</th><th>客户</th><th>供应商</th>
+          <th>供应商批次</th><th>生产日期</th><th>有效期至</th>
+        </tr>`;
+
     const fmtNum = n => n != null && n !== '' ? Number(n).toLocaleString() : '';
-    document.getElementById('spTableBody').innerHTML = page.map(row => `
-      <tr>
-        <td>${esc(row.factory)}</td>
-        <td>${esc(row.storageLoc)}</td>
-        <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
-        <td>${esc(row.matDesc)}</td>
-        <td>${esc(row.batch)}</td>
-        <td style="text-align:right;color:#16a34a;">${fmtNum(row.unrestrictedQty)}</td>
-        <td style="text-align:right;color:#ca8a04;">${fmtNum(row.qualityQty)}</td>
-        <td style="text-align:right;color:#dc2626;">${fmtNum(row.blockedQty)}</td>
-        <td style="text-align:center;">${esc(row.unit)}</td>
-        <td>${esc(row.wbsNo||'-')}</td>
-        <td>${esc(row.specialStock||'-')}</td>
-        <td>${esc(row.customer||'-')}</td>
-        <td>${esc(row.vendor||'-')}</td>
-        <td>${esc(row.vendorBatch||'-')}</td>
-        <td style="white-space:nowrap;">${esc(row.prodDate||'-')}</td>
-        <td style="white-space:nowrap;${row.isExpiringSoon ? 'color:#dc2626;font-weight:700;' : ''}">${esc(row.expiryDate||'-')}</td>
-      </tr>`).join('');
+    document.getElementById('spTableBody').innerHTML = page.map(row => isSummary
+      ? `<tr>
+          <td>${esc(row.factory)}</td>
+          <td>${esc(row.storageLoc)}</td>
+          <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
+          <td>${esc(row.matDesc)}</td>
+          <td style="text-align:right;color:#16a34a;">${fmtNum(row.unrestrictedQty)}</td>
+          <td style="text-align:right;color:#ca8a04;">${fmtNum(row.qualityQty)}</td>
+          <td style="text-align:right;color:#dc2626;">${fmtNum(row.blockedQty)}</td>
+          <td style="text-align:center;">${esc(row.unit)}</td>
+          <td>${esc(row.wbsNo||'-')}</td>
+          <td>${esc(row.specialStock||'-')}</td>
+          <td>${esc(row.customer||'-')}</td>
+        </tr>`
+      : `<tr>
+          <td>${esc(row.factory)}</td>
+          <td>${esc(row.storageLoc)}</td>
+          <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
+          <td>${esc(row.matDesc)}</td>
+          <td>${esc(row.batch)}</td>
+          <td style="text-align:right;color:#16a34a;">${fmtNum(row.unrestrictedQty)}</td>
+          <td style="text-align:right;color:#ca8a04;">${fmtNum(row.qualityQty)}</td>
+          <td style="text-align:right;color:#dc2626;">${fmtNum(row.blockedQty)}</td>
+          <td style="text-align:center;">${esc(row.unit)}</td>
+          <td>${esc(row.wbsNo||'-')}</td>
+          <td>${esc(row.specialStock||'-')}</td>
+          <td>${esc(row.customer||'-')}</td>
+          <td>${esc(row.vendor||'-')}</td>
+          <td>${esc(row.vendorBatch||'-')}</td>
+          <td style="white-space:nowrap;">${esc(row.prodDate||'-')}</td>
+          <td style="white-space:nowrap;${row.isExpiringSoon ? 'color:#dc2626;font-weight:700;' : ''}">${esc(row.expiryDate||'-')}</td>
+        </tr>`
+    ).join('');
   },
 
   search() {
     const factory = document.getElementById('spFactory').value;
     const storageLoc = document.getElementById('spStorageLoc').value;
+    const displayType = document.getElementById('spDisplayType').value;
     const wbsNo = document.getElementById('spWbsNo').value.trim();
     const matCode = document.getElementById('spMatCode').value.trim();
     const stockType = document.getElementById('spStockType').value;
@@ -127,6 +176,10 @@ const SparePartsStock = {
       if (stockType === 'blocked' && (!row.blockedQty || row.blockedQty <= 0)) return false;
       return true;
     });
+
+    // Summary mode: aggregate by matCode + storageLoc + factory
+    if (displayType === 'summary') this._aggregate();
+
     this.page = 1;
     this.renderTable();
   },
@@ -134,12 +187,13 @@ const SparePartsStock = {
   reset() {
     document.getElementById('spFactory').value = '';
     document.getElementById('spStorageLoc').value = '';
-    document.getElementById('spDisplayType').value = 'batch';
+    document.getElementById('spDisplayType').value = 'summary';
     document.getElementById('spWbsNo').value = '';
     document.getElementById('spMatCode').value = '';
     document.getElementById('spStockType').value = '';
     document.getElementById('spBatch').value = '';
     this.filtered = [...sparePartsStockData];
+    this._aggregate();
     this.page = 1;
     this.renderTable();
   },
