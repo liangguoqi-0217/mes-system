@@ -171,7 +171,7 @@ const SpPurchase = {
               ` : `
               <th>工厂</th><th>采购申请</th><th style="width:55px;text-align:center;">请求<br/>项目</th>
               <th>物料</th><th>短文本</th><th style="text-align:right;">申请数量</th><th style="width:38px;">单位</th>
-              <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>申请人</th>
+              <th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>申请人</th>
               <th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
               <th style="width:90px;">操作</th>
               `}
@@ -289,7 +289,6 @@ const SpPurchase = {
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.shortText)}">${esc(row.shortText)}</td>
         <td style="text-align:right;">${Number(row.reqQty).toLocaleString()}</td>
         <td style="text-align:center;">${esc(row.unit)}</td>
-        <td style="text-align:right;color:var(--text-secondary);">${Number(row.orderQty).toLocaleString()}</td>
         <td style="text-align:center;white-space:nowrap;">${statusBadge(row.status)}</td>
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
         <td>${esc(row.applicant)}</td>
@@ -921,7 +920,7 @@ const SpPurchase = {
               <table class="data-table" style="min-width:${isZ02?'1000px':'1280px'};">
                 <thead><tr>
                   <th>项次</th>${isZ01?'<th>物料</th>':''}<th>短文本</th><th>科目分配类别</th><th>成本中心</th><th>物料组</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>单位</th>
-                  <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
+                  <th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
                 </tr></thead>
                 <tbody>${pr.lines.map((l,i)=>{
                   const acctLabel = ACCT_ASS_CATEGORY_OPTIONS.find(o=>o.value===l.acctAssCategory);
@@ -937,7 +936,6 @@ const SpPurchase = {
                   <td>${esc(l.poNo||'-')}</td>
                   <td style="text-align:right;">${Number(l.reqQty).toLocaleString()}</td>
                   <td style="text-align:center;">${esc(l.unit)}</td>
-                  <td style="text-align:right;color:var(--text-secondary);">${Number(l.orderQty).toLocaleString()}</td>
                   <td style="text-align:center;">${sb(l.status||'N')}</td>
                   <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
                   <td style="white-space:nowrap;">${esc(l.requiredDate||'-')}</td>
@@ -1035,7 +1033,6 @@ const SpPurchase = {
                     <th style="min-width:80px;" id="prThMatGroup">物料组</th>
                     <th style="min-width:75px;text-align:right;"><span class="req">*</span> 申请数量</th>
                     <th style="width:52px;">单位</th>
-                    <th style="min-width:70px;text-align:right;">订货数量</th>
                     <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:95px;">需求日期</th>
                     <th style="min-width:95px;">交货日期</th>
@@ -1112,7 +1109,6 @@ const SpPurchase = {
       <td style="padding:5px;"><select data-field="unit" style="width:48px;padding:4px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;" onchange="SpPurchase.recalcTotal()">
         <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="方"${line.unit==='方'?' selected':''}>方</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
       </select></td>
-      <td style="padding:5px;"><input type="number" data-field="orderQty" value="${line.orderQty||''}" min="0" style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" value="${esc(line.deliveryDate||'')}" placeholder="YYYYMMDD" style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" value="${esc(line.requiredDate||'')}" placeholder="YYYY.MM.DD" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" value="${esc(line.deliveryDate2||'')}" placeholder="YYYY.MM.DD" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
