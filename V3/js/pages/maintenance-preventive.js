@@ -107,12 +107,7 @@ const MaintPreventive = {
   },
 
   _planRowActions(d) {
-    let btns = `<button class="btn btn-blue btn-sm" onclick="MaintPreventive.viewPlan('${d.id}')">查看</button>`;
-    if (d.status === 'active') {
-      btns += ` <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:none;" onclick="MaintPreventive.disablePlan('${d.id}')">失效</button>`;
-    }
-    if (d.status === 'inactive') btns += ` <button class="btn btn-sm" style="background:#d1fae5;color:#065f46;border:none;" onclick="MaintPreventive.enablePlan('${d.id}')">生效</button>`;
-    return btns;
+    return `<button class="btn btn-blue btn-sm" onclick="MaintPreventive.viewPlan('${d.id}')">查看</button>`;
   },
 
   searchPlan() { this.page = 1; this._refreshContent(); },

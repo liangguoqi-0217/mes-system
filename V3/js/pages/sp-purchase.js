@@ -181,8 +181,6 @@ const SpPurchase = {
         <td style="white-space:nowrap;">${esc(doc.applyDate)}</td>
         <td>
           <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;" onclick="SpPurchase.viewDetail('${doc.docNo}')">查看</button>
-          <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;" onclick="SpPurchase.openEditModal('${doc.docNo}')">编辑</button>
-          <button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;" onclick="SpPurchase.deleteReq('${doc.docNo}')">删除</button>
         </td>
       </tr>`).join('');
   },

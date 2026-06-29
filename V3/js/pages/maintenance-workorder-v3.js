@@ -116,11 +116,6 @@ const MaintenanceWorkOrderV3 = {
         <td>${esc(w.PERNR)}</td>
         <td class="table-actions">
           <button class="btn btn-blue btn-sm" onclick="MaintenanceWorkOrderV3.detail('${w.id}')">详情</button>
-          ${w.STAT==='CRTE'?`<button class="btn btn-warning btn-sm" style="background:#f97316;color:white;border:none;" onclick="MaintenanceWorkOrderV3.changeStatus('${w.id}','APPR')">提交审批</button>`:''}
-          ${w.STAT==='APPR'?`<button class="btn btn-success btn-sm" onclick="MaintenanceWorkOrderV3.changeStatus('${w.id}','REL')">审批通过</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:none;" onclick="MaintenanceWorkOrderV3.changeStatus('${w.id}','CRTE')">退回</button>`:''}
-          ${w.STAT==='REL'?`<button class="btn btn-warning btn-sm" style="background:var(--warning);color:white;border:none;" onclick="MaintenanceWorkOrderV3.changeStatus('${w.id}','EXEC')">开始执行</button>`:''}
-          ${w.STAT==='EXEC'?`<button class="btn btn-sm" style="background:#059669;color:white;border:none;" onclick="MaintenanceWorkOrderV3.changeStatus('${w.id}','COMP')">完工</button>`:''}
-          ${w.STAT==='COMP'?`<button class="btn btn-secondary btn-sm" onclick="MaintenanceWorkOrderV3.changeStatus('${w.id}','CLSD')">关闭归档</button>`:''}
         </td>
       </tr>`).join('');
   },
