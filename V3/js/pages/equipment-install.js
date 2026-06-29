@@ -79,6 +79,9 @@ const EquipmentInstall = {
         <td>${esc(d.handler||'-')}</td>
         <td class="table-actions">
           <button class="btn btn-outline btn-sm" onclick="EquipmentInstall.viewDoc('${d.id}')">查看</button>
+          ${canEdit ? `<button class="btn btn-blue btn-sm" onclick="EquipmentInstall.editDoc('${d.id}')">编辑</button>` : ''}
+          ${canWithdraw ? `<button class="btn btn-warning btn-sm" onclick="EquipmentInstall.withdrawDoc('${d.id}')">撤回</button>` : ''}
+          <button class="btn btn-outline btn-sm" style="color:var(--text-muted);" onclick="EquipmentInstall.showLog('${d.id}')">日志</button>
         </td>
       </tr>`;
     }).join('');

@@ -121,7 +121,15 @@ const MeasurementPoint = {
           <td>${counterBadge}</td>
           <td>${statusBadge}</td>
           <td>
-            <button class="btn btn-outline btn-sm" onclick="MeasurementPoint.viewDetail('${mp.id}')">查看</button>
+            <div class="table-actions">
+              <button class="btn btn-outline btn-sm" onclick="MeasurementPoint.openEditDialog('${mp.id}')">编辑</button>
+              ${mp.status === 'active'
+                ? `<button class="btn btn-secondary btn-sm" onclick="MeasurementPoint.toggleStatus('${mp.id}')">停用</button>`
+                : `<button class="btn btn-success btn-sm" onclick="MeasurementPoint.toggleStatus('${mp.id}')">启用</button>`}
+              ${!hasRecords
+                ? `<button class="btn btn-secondary btn-sm" style="color:var(--danger);" onclick="MeasurementPoint.deletePoint('${mp.id}')">删除</button>`
+                : `<button class="btn btn-secondary btn-sm" disabled title="已产生测量记录，不可删除" style="opacity:0.4;">删除</button>`}
+            </div>
           </td>
         </tr>`;
       });

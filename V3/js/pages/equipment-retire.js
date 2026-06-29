@@ -68,6 +68,12 @@ const EquipmentRetire = {
         <td>${esc(d.applicant||'-')}</td>
         <td class="table-actions">
           <button class="btn btn-sm btn-outline" onclick="EquipmentRetire.viewDetail('${d.id}')">查看</button>
+          ${d.disposalStatus==='draft'?`<button class="btn btn-sm btn-primary" onclick="EquipmentRetire.editDoc('${d.id}')">编辑</button>`:''}
+          ${d.disposalStatus==='draft'?`<button class="btn btn-sm btn-yellow" onclick="EquipmentRetire.submitEval('${d.id}')">提交评估</button>`:''}
+          ${d.disposalStatus==='pending_eval'?`<button class="btn btn-sm btn-blue" onclick="EquipmentRetire.submitEvalFromList('${d.id}')">进入审批</button>`:''}
+          ${d.disposalStatus==='pending_approval'?`<button class="btn btn-sm btn-purple" onclick="EquipmentRetire.startDisposal('${d.id}')">开始拆机</button>`:''}
+          ${d.disposalStatus==='pending_disposal'?`<button class="btn btn-sm btn-green" onclick="EquipmentRetire.completeDisposal('${d.id}')">完成处置</button>`:''}
+          ${['draft','pending_eval','pending_approval'].includes(d.disposalStatus)?`<button class="btn btn-sm btn-danger-outline" onclick="EquipmentRetire.withdrawDoc('${d.id}')">撤销</button>`:''}
         </td>
       </tr>`;
     }).join('');
