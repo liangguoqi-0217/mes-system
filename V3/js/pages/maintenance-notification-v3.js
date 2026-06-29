@@ -99,7 +99,7 @@ const MaintenanceNotificationV3 = {
         <td>${statusBadge(n.STAT)}</td>
         <td>${esc(n.QMDAT)}</td>
         <td class="table-actions">
-          <button class="btn btn-outline btn-sm" onclick="MaintenanceNotificationV3.detail('${n.id}')">查看</button>
+          <button class="btn btn-blue btn-sm" onclick="MaintenanceNotificationV3.detail('${n.id}')">查看</button>
           ${n.STAT==='CRTE'?`
             <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:none;" onclick="MaintenanceNotificationV3.closeNotify('${n.id}')">关闭</button>
           `:''}

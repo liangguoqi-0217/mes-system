@@ -115,7 +115,7 @@ const MaintenanceWorkOrderV3 = {
         <td style="font-size:12px;">${esc(w.GSTRP)}</td>
         <td>${esc(w.PERNR)}</td>
         <td class="table-actions">
-          <button class="btn btn-outline btn-sm" onclick="MaintenanceWorkOrderV3.detail('${w.id}')">查看</button>
+          <button class="btn btn-blue btn-sm" onclick="MaintenanceWorkOrderV3.detail('${w.id}')">查看</button>
         </td>
       </tr>`).join('');
   },

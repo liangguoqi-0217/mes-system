@@ -107,7 +107,7 @@ const MaintPreventive = {
   },
 
   _planRowActions(d) {
-    return `<button class="btn btn-outline btn-sm" onclick="MaintPreventive.viewPlan('${d.id}')">查看</button>`;
+    return `<button class="btn btn-blue btn-sm" onclick="MaintPreventive.viewPlan('${d.id}')">查看</button>`;
   },
 
   searchPlan() { this.page = 1; this._refreshContent(); },
@@ -735,7 +735,7 @@ const MaintPreventive = {
   },
 
   _scheduleRowActions(d) {
-    return `<button class="btn btn-outline btn-sm" onclick="MaintPreventive.viewSchedule('${d.id}')">查看</button>`;
+    return `<button class="btn btn-blue btn-sm" onclick="MaintPreventive.viewSchedule('${d.id}')">查看</button>`;
   },
 
   searchSchedule() { this.page = 1; this._refreshContent(); },

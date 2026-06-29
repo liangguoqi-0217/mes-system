@@ -65,7 +65,7 @@ const EquipmentMaster = {
         <td><span style="color:var(--primary-lighter);cursor:pointer;text-decoration:underline;" onclick="EquipmentMaster.showLocation('${eq.location}')">${esc(eq.locationName)}</span></td>
         <td>${esc(eq.typeName)}</td><td>${getStatusBadge(eq.status)}</td>
         <td class="table-actions">
-          <button class="btn btn-outline btn-sm" onclick="EquipmentMaster.maintain('${eq.id}')">${eq.status==='scrapped'?'查看':'维护'}</button>
+          <button class="btn btn-blue btn-sm" onclick="EquipmentMaster.maintain('${eq.id}')">${eq.status==='scrapped'?'查看':'维护'}</button>
           <button class="btn btn-success btn-sm" onclick="EquipmentMaster.goBOM('${eq.id}')">BOM</button>
           <button class="btn btn-warning btn-sm" onclick="EquipmentMaster.goMeasurementPoint('${eq.id}')" style="background:var(--warning);color:white;border:none;">测量点</button>
         </td>

@@ -342,7 +342,7 @@ const InspectionBatch = {
     const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
 
     return `<div class="table-actions">
-      <button class="btn btn-outline btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>
+      <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="查看详情">查看</button>
       <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
       <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
       <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>

@@ -107,7 +107,7 @@ const SpPick = {
       <td>${esc(r.applicant)}</td>
       <td>${sb(r.status)}</td>
       <td>
-        <button class="btn btn-outline btn-sm" onclick="SpPick.viewDetail('${r.docNo}')">查看</button>
+        <button class="btn btn-blue btn-sm" onclick="SpPick.viewDetail('${r.docNo}')">查看</button>
       </td>
     </tr>`).join('');
   },

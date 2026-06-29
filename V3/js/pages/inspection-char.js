@@ -190,7 +190,7 @@ const InspectionChar = {
         : '<span class="badge badge-gray">定性</span>';
 
       const viewBtn = canEdit && m.status!=='deleted'
-        ? `<button class="btn btn-outline btn-sm" onclick="InspectionChar.openView('${m.id}')">查看</button>`
+        ? `<button class="btn btn-blue btn-sm" onclick="InspectionChar.openView('${m.id}')">查看</button>`
         : (m.status==='deleted' ? '-' : '');
 
       return `<tr>

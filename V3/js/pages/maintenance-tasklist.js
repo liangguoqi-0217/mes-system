@@ -87,7 +87,7 @@ const MaintenanceTasklist = {
         <td><span class="badge ${statusCls(tl.PLNST)}">${esc(tl.PLNST)}</span></td>
         <td style="font-size:12px;">${esc(tl.ERNAM)} / ${esc(tl.ERDAT)}</td>
         <td class="table-actions">
-          <button class="btn btn-outline btn-sm" onclick="MaintenanceTasklist.viewDetail('${tl.id}')">查看</button>
+          <button class="btn btn-blue btn-sm" onclick="MaintenanceTasklist.viewDetail('${tl.id}')">查看</button>
         </td>
       </tr>`).join('');
   },

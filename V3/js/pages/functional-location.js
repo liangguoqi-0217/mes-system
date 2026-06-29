@@ -271,7 +271,7 @@ const FunctionalLocation = {
                 <td>${d.level || '-'} - ${typeLabel[d.type]||d.type||'-'}</td>
                 <td>${getFLStatusBadge(d.status)}</td>
                 <td>${categoryMap[d.category]||d.category||'-'}</td>
-                <td><button class="btn btn-outline btn-sm" onclick="FunctionalLocation.viewDetail('${d.id}')">查看</button></td>
+                <td><button class="btn btn-blue btn-sm" onclick="FunctionalLocation.viewDetail('${d.id}')">查看</button></td>
               </tr>`).join('')}
           </tbody>
         </table>
