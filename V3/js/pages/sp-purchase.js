@@ -1308,7 +1308,7 @@ const SpPurchase = {
         </div>
 
         <!-- 数据表格 -->
-        <div style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <div style="max-height:550px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
           <table class="data-table" style="min-width:1100px;font-size:12px;">
             <thead><tr>
               <th style="width:36px;text-align:center;"><input type="checkbox" id="alertCheckAll" onchange="SpPurchase._toggleAllAlert(this)" title="全选红灯物料"></th>
@@ -1327,7 +1327,7 @@ const SpPurchase = {
     showModal('📊 按安全库存预警创建采购申请', body, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
       { text: '确认创建', cls: 'btn btn-primary', action: () => SpPurchase._confirmAlertCreate() }
-    ], 'modal-xl');
+    ], 'modal-xxl');
   },
 
   _buildAlertDataForPurchase() {

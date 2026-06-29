@@ -131,6 +131,7 @@ body {
 .modal-md  { max-width: 680px; }
 .modal-lg  { max-width: 820px; }
 .modal-xl  { max-width: 1020px; }
+.modal-xxl { max-width: 1340px; }
 .mp-modal  { max-width: 1120px; max-height: 88vh; }
 .mp-modal .modal-body { padding: 28px 32px !important; }
 
@@ -347,7 +348,7 @@ body {
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
   .modal { max-width: 95vw; }
-  .modal-sm, .modal-md, .modal-lg, .modal-xl { max-width: 95vw; }
+  .modal-sm, .modal-md, .modal-lg, .modal-xl, .modal-xxl { max-width: 95vw; }
   .modal-header { padding: 16px 20px; }
   .modal-body { padding: 20px; }
   .modal-footer { padding: 14px 20px; flex-wrap: wrap; }
