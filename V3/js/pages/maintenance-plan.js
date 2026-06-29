@@ -1,4 +1,6 @@
 // ===== 3.1 维护计划定义 =====
+// 注：此功能已被 MaintPreventive.js 替代，前台使用后者，此文件整文件注释
+/* 原代码已注释
 const MaintPlan = {
   mode:'list', page:1, pageSize:10,
   filter:{code:'',name:'',maintenanceType:'',eqCategory:'',status:'',effectiveDate:''},
@@ -281,3 +283,4 @@ const MaintPlan = {
 
   init(){}
 };
+*/

@@ -1,4 +1,6 @@
 // ===== 4.4 设备退役/报废 =====
+// 注：此功能暂未挂菜单，前台无法访问，整文件注释待确认是否删除
+/* 原代码已注释
 const EquipmentRetire = {
   mode:'list', page:1, pageSize:10, filtered:[], formId:null, formData:null, formSection:'sec1',
 
@@ -268,3 +270,4 @@ const EquipmentRetire = {
     document.getElementById('rtSectionContent').innerHTML=html;
   }
 };
+*/

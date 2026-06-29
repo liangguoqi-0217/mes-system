@@ -1,4 +1,6 @@
 ﻿// ===== 4.3 设备改造/升级 =====
+// 注：此功能暂未挂菜单，前台无法访问，整文件注释待确认是否删除
+/* 原代码已注释
 const EquipmentRetrofit = {
   mode:'list', page:1, pageSize:10, filtered:[], formId:null, formData:null, formTab:'tab1',
 
@@ -282,3 +284,4 @@ const EquipmentRetrofit = {
     document.getElementById('rfTabContent').innerHTML=html;
   }
 };
+*/

@@ -1,4 +1,6 @@
 // ===== 2.2 维修工单 =====
+// 注：此功能已被 MaintenanceWorkOrderV3.js 替代，前台使用后者，此文件整文件注释
+/* 原代码已注释
 const MfOrder = {
   mode:'list', page:1, pageSize:10,
   filter:{docNo:'',orderType:'',eqInfo:'',location:'',workCenter:'',execStatus:'',planStart:'',planEnd:''},
@@ -229,3 +231,4 @@ const MfOrder = {
   print(id){const d=mfOrderData.find(x=>x.id===id)||{};toast('打印工单：'+(d.docNo||'')+'（演示模式）');},
   exportDoc(id){const d=mfOrderData.find(x=>x.id===id)||{};toast('导出工单：'+(d.docNo||'')+'（演示模式，导出PDF/Excel）');}
 };
+*/

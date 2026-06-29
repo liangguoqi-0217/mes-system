@@ -1,4 +1,6 @@
 ﻿// ===== 设备安装/移交 页面模块 =====
+// 注：此功能暂未挂菜单，前台无法访问，整文件注释待确认是否删除
+/* 原代码已注释
 const EquipmentInstall = {
   mode: 'list', page: 1, pageSize: 10, filtered: [],
   formId: null, formData: null,
@@ -478,3 +480,4 @@ const EquipmentInstall = {
     toast('单据已作废！');
   }
 };
+*/
