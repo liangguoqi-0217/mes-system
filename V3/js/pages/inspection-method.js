@@ -253,7 +253,7 @@ const InspectionMethod = {
     tbEl.innerHTML = page.map((m, i) => {
       let actions = '';
       if (canEdit) {
-        actions += `<button class="btn btn-blue btn-sm" onclick="InspectionMethod.openView('${m.id}')">查看</button>`;
+        actions += `<button class="btn btn-outline btn-sm" onclick="InspectionMethod.openView('${m.id}')">查看</button>`;
         if (m.status==='active') {
           actions += `<button class="btn btn-sm" style="background:#fef3c7;color:#b45309;border:1px solid #fcd34d;" onclick="InspectionMethod.toggleDisable('${m.id}')">停用</button>`;
         } else if (m.status==='disabled') {

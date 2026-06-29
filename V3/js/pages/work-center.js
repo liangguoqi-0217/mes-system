@@ -287,7 +287,7 @@ const WorkCenter = {
                 <td>${typeMap[wc.type]||wc.type}</td>
                 <td><span class="badge ${statusCls[wc.status]||'badge-gray'}">${statusMap[wc.status]||wc.status}</span></td>
                 <td>${esc(wc.leader)}</td>
-                <td><button class="btn btn-blue btn-sm" onclick="WorkCenter.viewDetail('${wc.id}')">查看</button></td>
+                <td><button class="btn btn-outline btn-sm" onclick="WorkCenter.viewDetail('${wc.id}')">查看</button></td>
               </tr>`).join('')}
           </tbody>
         </table>

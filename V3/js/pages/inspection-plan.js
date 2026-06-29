@@ -463,7 +463,7 @@ const InspectionPlan = {
     tb.innerHTML = page.map((m, i) => {
       const opCount = (m.operations || []).length;
       const viewBtn = m.status !== 'deleted'
-        ? `<button class="btn btn-blue btn-sm" onclick="InspectionPlan.openView('${m.id}')">查看</button>`
+        ? `<button class="btn btn-outline btn-sm" onclick="InspectionPlan.openView('${m.id}')">查看</button>`
         : '<span class="badge badge-gray">—</span>';
       return `<tr>
         <td>${start+i+1}</td>

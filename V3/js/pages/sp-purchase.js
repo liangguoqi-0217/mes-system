@@ -180,7 +180,7 @@ const SpPurchase = {
         <td style="text-align:right;font-weight:700;color:var(--danger);">¥ ${Number(doc.totalValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
         <td style="white-space:nowrap;">${esc(doc.applyDate)}</td>
         <td>
-          <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;" onclick="SpPurchase.viewDetail('${doc.docNo}')">查看</button>
+          <button class="btn btn-outline btn-sm" onclick="SpPurchase.viewDetail('${doc.docNo}')">查看</button>
         </td>
       </tr>`).join('');
   },
