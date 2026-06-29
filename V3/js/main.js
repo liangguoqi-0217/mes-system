@@ -151,7 +151,6 @@ const App = {
     'functional-location': FunctionalLocation,
     'work-center': WorkCenter,
     'equipment-bom': EquipmentBOM,
-    'measurement-point': MeasurementPoint,
     'mr-entry': MeasurementRecord,
     'sp-stock': SparePartsStock,
     'sp-purchase': SpPurchase,

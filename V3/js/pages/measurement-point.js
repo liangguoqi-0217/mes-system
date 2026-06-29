@@ -1,5 +1,7 @@
 // ===== 测量点定义页面 (静态主数据) =====
 // 位置：设备主数据详情页 → "测量点" 按钮
+// 注：此功能暂未挂菜单，前台无法访问，整文件注释
+/* 原代码已注释
 const MeasurementPoint = {
   currentEquipmentId: '',
   currentEquipmentName: '',
@@ -611,3 +613,4 @@ const MeasurementPoint = {
     this.renderTable();
   }
 };
+*/

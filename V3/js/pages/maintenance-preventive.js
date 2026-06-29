@@ -735,12 +735,7 @@ const MaintPreventive = {
   },
 
   _scheduleRowActions(d) {
-    let btns = '';
-    if (d.status === 'active') btns += `<button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:none;" onclick="MaintPreventive.pauseSchedule('${d.id}')">暂停</button>`;
-    if (d.status === 'active') btns += ` <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:none;" onclick="MaintPreventive.stopSchedule('${d.id}')">终止</button>`;
-    if (d.status === 'paused') btns += `<button class="btn btn-sm" style="background:#d1fae5;color:#065f46;border:none;" onclick="MaintPreventive.activateSchedule('${d.id}')">启用</button>`;
-    btns += ` <button class="btn btn-sm" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);" onclick="MaintPreventive.viewScheduleLog('${d.id}')">日志</button>`;
-    return btns || '-';
+    return `<button class="btn btn-blue btn-sm" onclick="MaintPreventive.viewSchedule('${d.id}')">查看</button>`;
   },
 
   searchSchedule() { this.page = 1; this._refreshContent(); },
