@@ -15,7 +15,7 @@ const SpPurchase = {
           matCode: line.matCode || '', shortText: line.shortText || '',
           reqQty: line.reqQty, unit: line.unit || '',
           orderQty: line.orderQty || 0, deliveryDate: line.deliveryDate || '',
-          applicant: pr.applicant, poNo: pr.poNo || '-',
+          applicant: line.applicant || '', poNo: line.poNo || '',
           requiredDate: line.requiredDate || '',
           deliveryDate2: line.deliveryDate2 || '',
           price: line.price || 0, totalValue: line.totalValue || 0,
@@ -139,8 +139,8 @@ const SpPurchase = {
         <td style="text-align:right;color:var(--text-secondary);">${Number(row.orderQty).toLocaleString()}</td>
         <td style="text-align:center;white-space:nowrap;">${statusBadge(row.status)}</td>
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
-        <td>${isNewGroup ? esc(row.applicant) : ''}</td>
-        <td style="color:var(--primary-lighter);font-size:12px;">${isNewGroup ? esc(row.poNo) : ''}</td>
+        <td>${esc(row.applicant)}</td>
+        <td style="color:var(--primary-lighter);font-size:12px;">${esc(row.poNo)}</td>
         <td style="white-space:nowrap;">${esc(row.requiredDate)}</td>
         <td style="white-space:nowrap;">${esc(row.deliveryDate2)}</td>
         <td style="text-align:right;">${Number(row.price).toFixed(2)}</td>
@@ -228,9 +228,9 @@ const SpPurchase = {
     this._batchImport = false;
     const emptyPr = {
       docNo: '', applyDate: new Date().toISOString().slice(0,10),
-      plant: '1000', dept: '', applicant: '',
-      wbsNo: '', purpose: '', notes: '', poNo: '',
-      lines: [{ itemNo:10, matCode:'', shortText:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N' }]
+      plant: '1000', dept: '',
+      wbsNo: '', purpose: '', notes: '',
+      lines: [{ itemNo:10, matCode:'', shortText:'', applicant:'', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N' }]
     };
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(emptyPr);
   },
@@ -280,7 +280,7 @@ const SpPurchase = {
               <div style="overflow-x:auto;max-height:320px;">
                 <table class="data-table" style="min-width:900px;font-size:12px;">
                   <thead><tr>
-                    <th>#</th><th>物料</th><th>短文本</th><th style="text-align:right;">数量</th><th>Un</th>
+                    <th>#</th><th>物料</th><th>短文本</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">数量</th><th>Un</th>
                     <th>交货日期</th><th>需求日期</th><th style="text-align:right;">价格</th>
                     <th style="text-align:right;">总价值</th>
                   </tr></thead>
@@ -294,7 +294,6 @@ const SpPurchase = {
               <div class="form-section-title">表头信息（统一应用于所有行）</div>
               <div class="form-grid">
                 <div class="form-group"><label><span class="req">*</span> 部门</label><select id="prFDept"><option value="">请选择</option><option value="设备部">设备部</option><option value="生产部">生产部</option><option value="质量部">质量部</option><option value="仓储物流部">仓储物流部</option></select></div>
-                <div class="form-group"><label><span class="req">*</span> 申请人</label><input type="text" id="prFApplicant" placeholder="申请人姓名"></div>
                 <div class="form-group"><label>工厂</label><select id="prFPlant">
                   <option value="1000">1000 - 山东步长制药工厂</option>
                   <option value="2001">2001 - 陕西步长制药工厂</option>
@@ -335,9 +334,9 @@ const SpPurchase = {
 
   // ---- 下载CSV模板 ----
   downloadTemplate() {
-    const headers = ['物料号','短文本(物料描述)','申请数量','单位','交货日期(YYYYMMDD)','需求日期(YYYY.MM.DD)','评价价格'];
-    const exampleRow = ['60001018','高效过滤器-MIIPDF-635*520*93','48','个','20260715','2026.06.20','850.00'];
-    const instructionsRow = ['# 说明：请保留表头行，按格式填写数据；单位可选：个/KG/套/袋/件/台/支/桶/组/箱/卷/瓶/盒/方/张'];
+    const headers = ['物料号','短文本(物料描述)','申请人','采购订单','申请数量','单位','交货日期(YYYYMMDD)','需求日期(YYYY.MM.DD)','评价价格'];
+    const exampleRow = ['60001018','高效过滤器-MIIPDF-635*520*93','李君','4100014248','48','个','20260715','2026.06.20','850.00'];
+    const instructionsRow = ['# 说明：请保留表头行，按格式填写数据；申请人和采购订单为必填；单位可选：个/KG/套/袋/件/台/支/桶/组/箱/卷/瓶/盒/方/张'];
     const csvContent = '\uFEFF' + [headers.join(','), exampleRow.join(','), instructionsRow.join(',')].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -371,22 +370,24 @@ const SpPurchase = {
       if (lines.length < 2) { toast('文件内容为空或格式不正确'); return; }
 
       const headers = this._parseCSVLine(lines[0]);
-      if (headers.length < 6) { toast('表头列数与模板不符，请使用下载的模板'); return; }
+      if (headers.length < 8) { toast('表头列数与模板不符，请使用下载的模板'); return; }
 
       const dataRows = [];
       for (let i = 1; i < lines.length; i++) {
         const cols = this._parseCSVLine(lines[i]);
-        if (cols.length < 6) continue;
+        if (cols.length < 8) continue;
         const matCode = (cols[0] || '').trim();
         const shortText = (cols[1] || '').trim();
-        const reqQty = parseFloat(cols[2]) || 0;
-        if (!matCode || !shortText || reqQty <= 0) continue;
-        const price = parseFloat(cols[6]) || 0;
+        const applicant = (cols[2] || '').trim();
+        const poNo = (cols[3] || '').trim();
+        const reqQty = parseFloat(cols[4]) || 0;
+        if (!matCode || !shortText || !applicant || !poNo || reqQty <= 0) continue;
+        const price = parseFloat(cols[8]) || 0;
         dataRows.push({
-          matCode, shortText, reqQty,
-          unit: (cols[3] || '个').trim(),
-          deliveryDate: (cols[4] || '').trim(),
-          requiredDate: (cols[5] || '').trim(),
+          matCode, shortText, applicant, poNo, reqQty,
+          unit: (cols[5] || '个').trim(),
+          deliveryDate: (cols[6] || '').trim(),
+          requiredDate: (cols[7] || '').trim(),
           price, totalValue: reqQty * price
         });
       }
@@ -434,7 +435,9 @@ const SpPurchase = {
     tbody.innerHTML = rows.map((r, i) => `<tr>
       <td style="text-align:center;">${i + 1}</td>
       <td><strong>${esc(r.matCode)}</strong></td>
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.shortText)}">${esc(r.shortText)}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.shortText)}">${esc(r.shortText)}</td>
+      <td>${esc(r.applicant)}</td>
+      <td style="font-size:12px;color:var(--primary-lighter);">${esc(r.poNo)}</td>
       <td style="text-align:right;">${Number(r.reqQty).toLocaleString()}</td>
       <td style="text-align:center;">${esc(r.unit)}</td>
       <td style="white-space:nowrap;">${esc(r.deliveryDate || '-')}</td>
@@ -448,24 +451,24 @@ const SpPurchase = {
   submitBatchImport() {
     const f = id => document.getElementById(id)?.value ?? '';
     const dept = f('prFDept');
-    const applicant = f('prFApplicant');
 
-    if (!dept || !applicant) { toast('请填写必填字段：部门、申请人'); return; }
+    if (!dept) { toast('请填写必填字段：部门'); return; }
     if (!this._batchRawData || !this._batchRawData.length) { toast('未解析到物料数据，请先上传文件'); return; }
 
     const prData = {
       docNo: '21' + String(Math.floor(Math.random() * 900000000 + 100000000)),
       applyDate: f('prFApplyDate') || new Date().toISOString().slice(0, 10),
       plant: f('prFPlant') || '1000',
-      dept, applicant,
+      dept,
       wbsNo: f('prFWbsNo'),
       purpose: f('prFPurpose'),
       notes: '',
-      poNo: '',
       lines: this._batchRawData.map((r, i) => ({
         itemNo: (i + 1) * 10,
         matCode: r.matCode,
         shortText: r.shortText,
+        applicant: r.applicant,
+        poNo: r.poNo,
         reqQty: r.reqQty,
         unit: r.unit,
         orderQty: r.reqQty,
@@ -498,15 +501,13 @@ const SpPurchase = {
       applyDate: f('prFApplyDate'),
       plant: f('prFPlant'),
       dept: f('prFDept'),
-      applicant: f('prFApplicant'),
       wbsNo: f('prFWbsNo'),
       purpose: f('prFPurpose'),
       notes: f('prFNotes'),
-      poNo: '',
       lines: []
     };
 
-    if (!prData.dept || !prData.applicant) { toast('请填写必填字段：申请部门、申请人'); return; }
+    if (!prData.dept) { toast('请填写必填字段：申请部门'); return; }
 
     // Collect lines from dynamic table
     const tbody = document.getElementById('prLinesBody');
@@ -516,19 +517,21 @@ const SpPurchase = {
       const r = tbody.rows[i];
       const mc = (r.cells[1]?.querySelector('input')?.value||'').trim();
       const st = (r.cells[2]?.querySelector('input')?.value||'').trim();
-      const q = parseFloat(r.cells[3]?.querySelector('input')?.value)||0;
-      const u = r.cells[4]?.querySelector('select')?.value||'';
+      const applicant = (r.cells[3]?.querySelector('input')?.value||'').trim();
+      const poNo = (r.cells[4]?.querySelector('input')?.value||'').trim();
+      const q = parseFloat(r.cells[5]?.querySelector('input')?.value)||0;
+      const u = r.cells[6]?.querySelector('select')?.value||'';
       if (!mc && !st && !q) continue; // skip empty lines
-      if (!mc || !st || !q) { toast(`请完整填写第 ${i+1} 行的物料号、短文本和数量`); return; }
+      if (!mc || !st || !applicant || !poNo || !q) { toast(`请完整填写第 ${i+1} 行的物料号、短文本、申请人、采购订单和数量`); return; }
       hasValidLine = true;
-      const p = parseFloat(r.cells[9]?.querySelector('input')?.value)||0;
+      const p = parseFloat(r.cells[11]?.querySelector('input')?.value)||0;
       prData.lines.push({
         itemNo: (i + 1) * 10,
-        matCode: mc, shortText: st, reqQty: q, unit: u,
-        orderQty: parseFloat(r.cells[5]?.querySelector('input')?.value)||0,
-        deliveryDate: r.cells[6]?.querySelector('input')?.value||'',
-        requiredDate: r.cells[7]?.querySelector('input')?.value||'',
-        deliveryDate2: r.cells[8]?.querySelector('input')?.value||'',
+        matCode: mc, shortText: st, applicant, poNo, reqQty: q, unit: u,
+        orderQty: parseFloat(r.cells[7]?.querySelector('input')?.value)||0,
+        deliveryDate: r.cells[8]?.querySelector('input')?.value||'',
+        requiredDate: r.cells[9]?.querySelector('input')?.value||'',
+        deliveryDate2: r.cells[10]?.querySelector('input')?.value||'',
         price: p, totalValue: q * p, status: 'N'
       });
     }
@@ -585,9 +588,7 @@ const SpPurchase = {
                 <div class="detail-item"><dt>申请日期</dt><dd>${esc(pr.applyDate)}</dd></div>
                 <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}</dd></div>
                 <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
-                <div class="detail-item"><dt>申请人</dt><dd>${esc(pr.applicant)}</dd></div>
                 <div class="detail-item"><dt>WBS编号</dt><dd>${esc(pr.wbsNo||'-')}</dd></div>
-                <div class="detail-item"><dt>采购订单</dt><dd>${esc(pr.poNo||'-')}</dd></div>
               </div>
               <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:6px;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;">
                 <dt style="color:var(--text-secondary);">用途说明</dt><dd>${esc(pr.purpose||'-')}</dd>
@@ -598,13 +599,15 @@ const SpPurchase = {
               <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
               <table class="data-table" style="min-width:960px;">
                 <thead><tr>
-                  <th>项次</th><th>物料</th><th>短文本</th><th style="text-align:right;">申请数量</th><th>Un</th>
+                  <th>项次</th><th>物料</th><th>短文本</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>Un</th>
                   <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期A</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
                 </tr></thead>
                 <tbody>${pr.lines.map((l,i)=>`<tr>
                   <td style="text-align:center;">${l.itemNo}</td>
                   <td><strong>${esc(l.matCode)}</strong></td>
                   <td>${esc(l.shortText)}</td>
+                  <td>${esc(l.applicant||'-')}</td>
+                  <td>${esc(l.poNo||'-')}</td>
                   <td style="text-align:right;">${Number(l.reqQty).toLocaleString()}</td>
                   <td style="text-align:center;">${esc(l.unit)}</td>
                   <td style="text-align:right;color:var(--text-secondary);">${Number(l.orderQty).toLocaleString()}</td>
@@ -617,7 +620,7 @@ const SpPurchase = {
                 </tr>`).join('')}
                 </tbody>
                 <tfoot><tr style="background:#fef3f2;border-top:3px solid var(--border);">
-                  <td colspan="11" style="text-align:right;font-weight:700;">合计：</td>
+                  <td colspan="13" style="text-align:right;font-weight:700;">合计：</td>
                   <td style="text-align:right;font-weight:800;color:var(--danger);font-size:15px;">¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
                 </tr></tfoot>
               </table>
@@ -657,7 +660,6 @@ const SpPurchase = {
               <div class="form-section-title">表头信息</div>
               <div class="form-grid">
                 <div class="form-group"><label>采购申请编号</label><input type="text" value="${esc(pr.docNo||'(自动生成)')}" disabled style="background:#f8fafc;"></div>
-                <div class="form-group"><label><span class="req">*</span> 申请人</label><input type="text" id="prFApplicant" value="${esc(pr.applicant)}" placeholder="申请人姓名"></div>
                 <div class="form-group"><label><span class="req">*</span> 部门</label><select id="prFDept"><option value="">请选择</option><option value="设备部"${pr.dept==='设备部'?' selected':''}>设备部</option><option value="生产部"${pr.dept==='生产部'?' selected':''}>生产部</option><option value="质量部"${pr.dept==='质量部'?' selected':''}>质量部</option><option value="仓储物流部"${pr.dept==='仓储物流部'?' selected':''}>仓储物流部</option></select></div>
                 <div class="form-group"><label>工厂</label><select id="prFPlant">
                   <option value="1000"${pr.plant==='1000'?' selected':''}>1000 - 山东步长制药工厂</option>
@@ -691,11 +693,13 @@ const SpPurchase = {
                 </div>
               </div>
               <div style="overflow-x:auto;">
-                <table class="data-table" id="prLinesTable" style="min-width:920px;">
+                <table class="data-table" id="prLinesTable" style="min-width:1280px;">
                   <thead><tr>
                     <th style="width:36px;text-align:center;">#</th>
                     <th style="min-width:100px;"><span class="req">*</span> 物料</th>
-                    <th style="min-width:240px;"><span class="req">*</span> 短文本</th>
+                    <th style="min-width:200px;"><span class="req">*</span> 短文本</th>
+                    <th style="min-width:70px;"><span class="req">*</span> 申请人</th>
+                    <th style="min-width:90px;"><span class="req">*</span> 采购订单</th>
                     <th style="min-width:75px;text-align:right;"><span class="req">*</span> 申请数量</th>
                     <th style="width:52px;">Un</th>
                     <th style="min-width:70px;text-align:right;">订货数量</th>
@@ -728,6 +732,8 @@ const SpPurchase = {
       <td style="text-align:center;color:var(--text-muted);font-weight:600;">${idx+1}</td>
       <td><input type="text" value="${esc(line.matCode||'')}" placeholder="物料号" style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;" oninput="SpPurchase.recalcTotal()"></td>
       <td><input type="text" value="${esc(line.shortText||'')}" placeholder="物料描述" style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;" oninput="SpPurchase.recalcTotal()"></td>
+      <td style="padding:5px;"><input type="text" value="${esc(line.applicant||'')}" placeholder="申请人" style="width:66px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><input type="text" value="${esc(line.poNo||'')}" placeholder="采购订单号" style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="number" value="${line.reqQty||''}" min="0" step="any" style="width:72px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;" oninput="SpPurchase.recalcTotal()"></td>
       <td style="padding:5px;"><select style="width:48px;padding:4px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;" onchange="SpPurchase.recalcTotal()">
         <option value="个"${line.unit==='个'?' selected':''}>个</option>
@@ -760,7 +766,7 @@ const SpPurchase = {
     const tbody = document.getElementById('prLinesBody');
     const idx = tbody.rows.length;
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0 }, idx);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant:'', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0 }, idx);
     tbody.appendChild(tr);
     // re-index numbers
     this.reindexRows();
@@ -786,8 +792,8 @@ const SpPurchase = {
     const rows = document.querySelectorAll('#prLinesBody tr');
     let grand = 0;
     rows.forEach(tr => {
-      const qty = parseFloat(tr.cells[3].querySelector('input')?.value) || 0;
-      const price = parseFloat(tr.cells[9].querySelector('input')?.value) || 0;
+      const qty = parseFloat(tr.cells[5].querySelector('input')?.value) || 0;
+      const price = parseFloat(tr.cells[11].querySelector('input')?.value) || 0;
       const val = qty * price;
       const td = tr.querySelector('.line-total');
       if (td) td.textContent = val.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -805,163 +811,152 @@ const SpPurchase = {
 // ===== Demo Data for Purchase Requisition (real factory codes & material codes) =====
 const spPurchaseData = [
   {
-    docNo:'2100002651', applyDate:'2026-05-06', plant:'1000 - 山东步长制药工厂', dept:'设备部', applicant:'李君',
+    docNo:'2100002651', applyDate:'2026-05-06', plant:'1000 - 山东步长制药工厂', dept:'设备部',
     wbsNo:'PRJ-2026-001', purpose:'固体制剂车间空调净化系统高效过滤器年度更换', notes:'原厂康斐尔/AAF品牌',
-    poNo:'4100014248',
     lines:[
-      {itemNo:10,matCode:'60001018',shortText:'高效过滤器-MIIPDF-635*520*93-27-AAF', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:850.00,totalValue:40800,status:'B'},
-      {itemNo:20,matCode:'60001019',shortText:'高效过滤器-MIIPDF-635*762*93-27-AAF', reqQty:36,unit:'个',orderQty:36,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:920.00,totalValue:33120,status:'B'},
-      {itemNo:30,matCode:'60001020',shortText:'高效过滤器-MIIPDF-416*416*93-27-AAF', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:680.00,totalValue:16320,status:'B'},
-      {itemNo:40,matCode:'60001021',shortText:'高效过滤器-MIIPDF-635*1030*93-27-AAF', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:1050.00,totalValue:21000,status:'B'},
-      {itemNo:50,matCode:'60001022',shortText:'高效过滤器-GSF-LS-631*516*95-01/22-康斐尔', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:750.00,totalValue:24000,status:'B'},
-      {itemNo:60,matCode:'60001023',shortText:'高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:820.00,totalValue:19680,status:'B'},
-      {itemNo:70,matCode:'60001024',shortText:'高效过滤器-GSF-LS-412*412*95-01/22-康斐尔', reqQty:16,unit:'个',orderQty:16,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:620.00,totalValue:9920,status:'B'},
-      {itemNo:80,matCode:'60001025',shortText:'高效过滤器-GSF-LS-1026*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:1100.00,totalValue:13200,status:'B'},
-      {itemNo:90,matCode:'60001026',shortText:'高效过滤器-GSF-LS-762*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:960.00,totalValue:11520,status:'B'},
-      {itemNo:100,matCode:'60001012',shortText:'耐湿高效过滤器-GKYS-305*30*150', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:580.00,totalValue:4640,status:'B'}
+      {itemNo:10,matCode:'60001018',shortText:'高效过滤器-MIIPDF-635*520*93-27-AAF', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:850.00,totalValue:40800,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:20,matCode:'60001019',shortText:'高效过滤器-MIIPDF-635*762*93-27-AAF', reqQty:36,unit:'个',orderQty:36,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:920.00,totalValue:33120,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:30,matCode:'60001020',shortText:'高效过滤器-MIIPDF-416*416*93-27-AAF', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:680.00,totalValue:16320,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:40,matCode:'60001021',shortText:'高效过滤器-MIIPDF-635*1030*93-27-AAF', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:1050.00,totalValue:21000,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:50,matCode:'60001022',shortText:'高效过滤器-GSF-LS-631*516*95-01/22-康斐尔', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:750.00,totalValue:24000,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:60,matCode:'60001023',shortText:'高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:820.00,totalValue:19680,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:70,matCode:'60001024',shortText:'高效过滤器-GSF-LS-412*412*95-01/22-康斐尔', reqQty:16,unit:'个',orderQty:16,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:620.00,totalValue:9920,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:80,matCode:'60001025',shortText:'高效过滤器-GSF-LS-1026*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:1100.00,totalValue:13200,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:90,matCode:'60001026',shortText:'高效过滤器-GSF-LS-762*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:960.00,totalValue:11520,applicant:'李君',poNo:'4100014248',status:'B'},
+      {itemNo:100,matCode:'60001012',shortText:'耐湿高效过滤器-GKYS-305*30*150', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:580.00,totalValue:4640,applicant:'李君',poNo:'4100014248',status:'B'}
     ]
   },
   {
-    docNo:'2100002752', applyDate:'2026-05-07', plant:'2001 - 陕西步长制药工厂', dept:'设备部', applicant:'王海涛',
+    docNo:'2100002752', applyDate:'2026-05-07', plant:'2001 - 陕西步长制药工厂', dept:'设备部',
     wbsNo:'PRJ-2026-002', purpose:'发酵罐及配液罐O型密封圈年度备件采购', notes:'要求氟橡胶材质，需提供材质证明',
-    poNo:'4100015321',
     lines:[
-      {itemNo:10,matCode:'60001086',shortText:'O型圈-Φ360*5.7-材质:氟橡胶', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:65.00,totalValue:1300,status:'B'},
-      {itemNo:20,matCode:'60001087',shortText:'O型圈-Φ506*6.99-材质:氟橡胶', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:85.00,totalValue:1275,status:'B'},
-      {itemNo:30,matCode:'60001088',shortText:'O型圈-Φ399.5*8.4-材质:氟橡胶', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:78.00,totalValue:1170,status:'B'},
-      {itemNo:40,matCode:'60001089',shortText:'O型圈-Φ44*3-材质:氟橡胶', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:8.00,totalValue:400,status:'B'},
-      {itemNo:50,matCode:'60001090',shortText:'O型圈-Φ13.94*2.62-材质:氟橡胶', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:3.50,totalValue:350,status:'B'},
-      {itemNo:60,matCode:'60001091',shortText:'O型圈-Φ6*2-材质:氟橡胶', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:2.00,totalValue:200,status:'B'},
-      {itemNo:70,matCode:'60001092',shortText:'O型圈-Φ42*2.5-材质:氟橡胶', reqQty:80,unit:'个',orderQty:80,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:7.50,totalValue:600,status:'B'},
-      {itemNo:80,matCode:'60001093',shortText:'O型圈-Φ7.6*2.62-材质:氟橡胶', reqQty:120,unit:'个',orderQty:120,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:2.50,totalValue:300,status:'B'},
-      {itemNo:90,matCode:'60001094',shortText:'O型圈-Φ59.92*3.53-材质:氟橡胶', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:12.00,totalValue:720,status:'B'},
-      {itemNo:100,matCode:'60001095',shortText:'O型圈-Φ10.77*2.62-材质:氟橡胶', reqQty:150,unit:'个',orderQty:150,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:3.00,totalValue:450,status:'B'}
+      {itemNo:10,matCode:'60001086',shortText:'O型圈-Φ360*5.7-材质:氟橡胶', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:65.00,totalValue:1300,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:20,matCode:'60001087',shortText:'O型圈-Φ506*6.99-材质:氟橡胶', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:85.00,totalValue:1275,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:30,matCode:'60001088',shortText:'O型圈-Φ399.5*8.4-材质:氟橡胶', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:78.00,totalValue:1170,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:40,matCode:'60001089',shortText:'O型圈-Φ44*3-材质:氟橡胶', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:8.00,totalValue:400,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:50,matCode:'60001090',shortText:'O型圈-Φ13.94*2.62-材质:氟橡胶', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:3.50,totalValue:350,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:60,matCode:'60001091',shortText:'O型圈-Φ6*2-材质:氟橡胶', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:2.00,totalValue:200,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:70,matCode:'60001092',shortText:'O型圈-Φ42*2.5-材质:氟橡胶', reqQty:80,unit:'个',orderQty:80,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:7.50,totalValue:600,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:80,matCode:'60001093',shortText:'O型圈-Φ7.6*2.62-材质:氟橡胶', reqQty:120,unit:'个',orderQty:120,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:2.50,totalValue:300,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:90,matCode:'60001094',shortText:'O型圈-Φ59.92*3.53-材质:氟橡胶', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:12.00,totalValue:720,applicant:'王海涛',poNo:'4100015321',status:'B'},
+      {itemNo:100,matCode:'60001095',shortText:'O型圈-Φ10.77*2.62-材质:氟橡胶', reqQty:150,unit:'个',orderQty:150,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:3.00,totalValue:450,applicant:'王海涛',poNo:'4100015321',status:'B'}
     ]
   },
   {
-    docNo:'2100002873', applyDate:'2026-05-09', plant:'2002 - 山东丹红制药工厂', dept:'设备部', applicant:'张建国',
+    docNo:'2100002873', applyDate:'2026-05-09', plant:'2002 - 山东丹红制药工厂', dept:'设备部',
     wbsNo:'PRJ-2026-003', purpose:'配液系统隔膜阀膜片及管道法兰垫片更换', notes:'宝帝原厂膜片，需随货附合格证',
-    poNo:'4100014655',
     lines:[
-      {itemNo:10,matCode:'60001146',shortText:'隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:180.00,totalValue:5400,status:'B'},
-      {itemNo:20,matCode:'60001147',shortText:'隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:220.00,totalValue:5280,status:'B'},
-      {itemNo:30,matCode:'60001148',shortText:'隔膜阀膜片-尺寸:DN40-材质:PTFE/EPDM-宝帝', reqQty:16,unit:'个',orderQty:16,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:280.00,totalValue:4480,status:'B'},
-      {itemNo:40,matCode:'60001149',shortText:'隔膜阀膜片-尺寸:DN50-材质:PTFE/EPDM-宝帝', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:350.00,totalValue:4200,status:'B'},
-      {itemNo:50,matCode:'60001150',shortText:'隔膜阀膜片-尺寸:DN65-材质:PTFE/EPDM-宝帝', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:480.00,totalValue:3840,status:'B'},
-      {itemNo:60,matCode:'60001103',shortText:'法兰垫片-DN100-材质:PTFE', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:25.00,totalValue:500,status:'B'},
-      {itemNo:70,matCode:'60001107',shortText:'金属缠绕石墨垫-DN50', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:15.00,totalValue:450,status:'B'},
-      {itemNo:80,matCode:'60001108',shortText:'金属缠绕石墨垫-DN80', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:22.00,totalValue:440,status:'B'}
+      {itemNo:10,matCode:'60001146',shortText:'隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:180.00,totalValue:5400,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:20,matCode:'60001147',shortText:'隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:220.00,totalValue:5280,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:30,matCode:'60001148',shortText:'隔膜阀膜片-尺寸:DN40-材质:PTFE/EPDM-宝帝', reqQty:16,unit:'个',orderQty:16,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:280.00,totalValue:4480,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:40,matCode:'60001149',shortText:'隔膜阀膜片-尺寸:DN50-材质:PTFE/EPDM-宝帝', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:350.00,totalValue:4200,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:50,matCode:'60001150',shortText:'隔膜阀膜片-尺寸:DN65-材质:PTFE/EPDM-宝帝', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:480.00,totalValue:3840,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:60,matCode:'60001103',shortText:'法兰垫片-DN100-材质:PTFE', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:25.00,totalValue:500,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:70,matCode:'60001107',shortText:'金属缠绕石墨垫-DN50', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:15.00,totalValue:450,applicant:'张建国',poNo:'4100014655',status:'B'},
+      {itemNo:80,matCode:'60001108',shortText:'金属缠绕石墨垫-DN80', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:22.00,totalValue:440,applicant:'张建国',poNo:'4100014655',status:'B'}
     ]
   },
   {
-    docNo:'2100002984', applyDate:'2026-05-12', plant:'2003 - 山东神州制药工厂', dept:'生产部', applicant:'陈永刚',
+    docNo:'2100002984', applyDate:'2026-05-12', plant:'2003 - 山东神州制药工厂', dept:'生产部',
     wbsNo:'', purpose:'车间照明及办公电器补充采购', notes:'',
-    poNo:'',
     lines:[
-      {itemNo:10,matCode:'60000655',shortText:'LED灯泡-30W', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:25.00,totalValue:1250,status:'N'},
-      {itemNo:20,matCode:'60000656',shortText:'LED灯泡-60W', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:35.00,totalValue:1050,status:'N'},
-      {itemNo:30,matCode:'60000657',shortText:'LED灯泡-100W', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:45.00,totalValue:900,status:'N'},
-      {itemNo:40,matCode:'60000667',shortText:'插排-3插位', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:18.00,totalValue:270,status:'N'},
-      {itemNo:50,matCode:'60000668',shortText:'插排-6插位', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:32.00,totalValue:320,status:'N'},
-      {itemNo:60,matCode:'60001205',shortText:'插线板-6插位-3米', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:28.00,totalValue:560,status:'N'},
-      {itemNo:70,matCode:'60001297',shortText:'插线板-8插位', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:38.00,totalValue:380,status:'N'},
-      {itemNo:80,matCode:'60001298',shortText:'公牛插线板-4插位-5米', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:42.00,totalValue:336,status:'N'}
+      {itemNo:10,matCode:'60000655',shortText:'LED灯泡-30W', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:25.00,totalValue:1250,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:20,matCode:'60000656',shortText:'LED灯泡-60W', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:35.00,totalValue:1050,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:30,matCode:'60000657',shortText:'LED灯泡-100W', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:45.00,totalValue:900,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:40,matCode:'60000667',shortText:'插排-3插位', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:18.00,totalValue:270,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:50,matCode:'60000668',shortText:'插排-6插位', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:32.00,totalValue:320,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:60,matCode:'60001205',shortText:'插线板-6插位-3米', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:28.00,totalValue:560,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:70,matCode:'60001297',shortText:'插线板-8插位', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:38.00,totalValue:380,applicant:'陈永刚',poNo:'4100014901',status:'N'},
+      {itemNo:80,matCode:'60001298',shortText:'公牛插线板-4插位-5米', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:42.00,totalValue:336,applicant:'陈永刚',poNo:'4100014901',status:'N'}
     ]
   },
   {
-    docNo:'2100003105', applyDate:'2026-05-14', plant:'1000 - 山东步长制药工厂', dept:'设备部', applicant:'李君',
+    docNo:'2100003105', applyDate:'2026-05-14', plant:'1000 - 山东步长制药工厂', dept:'设备部',
     wbsNo:'PRJ-2026-005', purpose:'洁净区初效、中效过滤器季度更换', notes:'含安装服务',
-    poNo:'4100016742',
     lines:[
-      {itemNo:10,matCode:'60001128',shortText:'初效过滤器-592*592*360-G4-袋式', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:95.00,totalValue:5700,status:'B'},
-      {itemNo:20,matCode:'60001129',shortText:'初效过滤器-286*592*360-G4-袋式', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:75.00,totalValue:3000,status:'B'},
-      {itemNo:30,matCode:'60001130',shortText:'初效过滤器-592*286*360-G4-袋式', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:75.00,totalValue:3000,status:'B'},
-      {itemNo:40,matCode:'60001131',shortText:'初效过滤器-286*286*360-G4-袋式', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:55.00,totalValue:1650,status:'B'},
-      {itemNo:50,matCode:'60001132',shortText:'中效过滤器-592*592*600-M5-袋式', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:120.00,totalValue:5760,status:'B'},
-      {itemNo:60,matCode:'60001133',shortText:'中效过滤器-286*592*600-M5-袋式', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:100.00,totalValue:3200,status:'B'},
-      {itemNo:70,matCode:'60001134',shortText:'中效过滤器-592*286*600-M5-袋式', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:100.00,totalValue:3200,status:'B'},
-      {itemNo:80,matCode:'60001036',shortText:'中效过滤器-286*286 效率 M5铝合金框-袋长600-分6P', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:82.00,totalValue:1968,status:'B'}
+      {itemNo:10,matCode:'60001128',shortText:'初效过滤器-592*592*360-G4-袋式', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:95.00,totalValue:5700,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:20,matCode:'60001129',shortText:'初效过滤器-286*592*360-G4-袋式', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:75.00,totalValue:3000,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:30,matCode:'60001130',shortText:'初效过滤器-592*286*360-G4-袋式', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:75.00,totalValue:3000,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:40,matCode:'60001131',shortText:'初效过滤器-286*286*360-G4-袋式', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:55.00,totalValue:1650,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:50,matCode:'60001132',shortText:'中效过滤器-592*592*600-M5-袋式', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:120.00,totalValue:5760,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:60,matCode:'60001133',shortText:'中效过滤器-286*592*600-M5-袋式', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:100.00,totalValue:3200,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:70,matCode:'60001134',shortText:'中效过滤器-592*286*600-M5-袋式', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:100.00,totalValue:3200,applicant:'李君',poNo:'4100016742',status:'B'},
+      {itemNo:80,matCode:'60001036',shortText:'中效过滤器-286*286 效率 M5铝合金框-袋长600-分6P', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:82.00,totalValue:1968,applicant:'李君',poNo:'4100016742',status:'B'}
     ]
   },
   {
-    docNo:'2100003206', applyDate:'2026-05-16', plant:'2006 - 吉林天成制药工厂', dept:'设备部', applicant:'刘志强',
+    docNo:'2100003206', applyDate:'2026-05-16', plant:'2006 - 吉林天成制药工厂', dept:'设备部',
     wbsNo:'', purpose:'气管及接头备件采购', notes:'需重新确认规格型号',
-    poNo:'',
     lines:[
-      {itemNo:10,matCode:'60001238',shortText:'宝塔式气路接头-管子直径10mm-螺纹口1/4', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:8.00,totalValue:400,status:'N'},
-      {itemNo:20,matCode:'60001242',shortText:'T型接头-3/8"-10个/包-ZD-30703-77 PVDF', reqQty:10,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:15.00,totalValue:150,status:'N'},
-      {itemNo:30,matCode:'60001243',shortText:'T型接头-1/2"-10个/包-ZD-30703-78 PVDF', reqQty:10,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:18.00,totalValue:180,status:'N'},
-      {itemNo:40,matCode:'60001256',shortText:'直型接头-1/8"-10个/包-ZD-40703-02 PVDF', reqQty:15,unit:'个',orderQty:150,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:12.00,totalValue:180,status:'N'},
-      {itemNo:50,matCode:'60001257',shortText:'直型接头-3/8"-10个/包-ZD-30703-07 PVDF', reqQty:15,unit:'个',orderQty:150,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:14.00,totalValue:210,status:'N'},
-      {itemNo:60,matCode:'60001258',shortText:'直型接头-1/2"-10个/包-ZD-30703-08 PVDF', reqQty:15,unit:'个',orderQty:150,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:16.00,totalValue:240,status:'N'},
-      {itemNo:70,matCode:'60001105',shortText:'气管变径-12mm变10mm', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:5.00,totalValue:150,status:'N'},
-      {itemNo:80,matCode:'60001106',shortText:'气管三通-12mm三通', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:4.50,totalValue:180,status:'N'}
+      {itemNo:10,matCode:'60001238',shortText:'宝塔式气路接头-管子直径10mm-螺纹口1/4', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:8.00,totalValue:400,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:20,matCode:'60001242',shortText:'T型接头-3/8"-10个/包-ZD-30703-77 PVDF', reqQty:10,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:15.00,totalValue:150,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:30,matCode:'60001243',shortText:'T型接头-1/2"-10个/包-ZD-30703-78 PVDF', reqQty:10,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:18.00,totalValue:180,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:40,matCode:'60001256',shortText:'直型接头-1/8"-10个/包-ZD-40703-02 PVDF', reqQty:15,unit:'个',orderQty:150,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:12.00,totalValue:180,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:50,matCode:'60001257',shortText:'直型接头-3/8"-10个/包-ZD-30703-07 PVDF', reqQty:15,unit:'个',orderQty:150,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:14.00,totalValue:210,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:60,matCode:'60001258',shortText:'直型接头-1/2"-10个/包-ZD-30703-08 PVDF', reqQty:15,unit:'个',orderQty:150,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:16.00,totalValue:240,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:70,matCode:'60001105',shortText:'气管变径-12mm变10mm', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:5.00,totalValue:150,applicant:'刘志强',poNo:'4100015200',status:'N'},
+      {itemNo:80,matCode:'60001106',shortText:'气管三通-12mm三通', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:4.50,totalValue:180,applicant:'刘志强',poNo:'4100015200',status:'N'}
     ]
   },
   {
-    docNo:'2100003307', applyDate:'2026-05-18', plant:'2010 - 保定天浩制药工厂', dept:'质量部', applicant:'赵雪梅',
+    docNo:'2100003307', applyDate:'2026-05-18', plant:'2010 - 保定天浩制药工厂', dept:'质量部',
     wbsNo:'PRJ-2026-007', purpose:'QC实验室培养皿架及不锈钢配件采购', notes:'补充设备使用年限说明后重新提交',
-    poNo:'',
     lines:[
-      {itemNo:10,matCode:'60001271',shortText:'304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', reqQty:6,unit:'个',orderQty:6,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:380.00,totalValue:2280,status:'N'},
-      {itemNo:20,matCode:'60001272',shortText:'304不锈钢培养皿架-90mm培养皿-放80个-带可翻转提手', reqQty:4,unit:'个',orderQty:4,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:520.00,totalValue:2080,status:'N'},
-      {itemNo:30,matCode:'60001273',shortText:'不锈钢试管架-40孔/个-孔径21mm', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:120.00,totalValue:1200,status:'N'},
-      {itemNo:40,matCode:'60001293',shortText:'贴壁式不锈钢置物架-304不锈钢-30cm*15cm*12cm', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:160.00,totalValue:1280,status:'N'}
+      {itemNo:10,matCode:'60001271',shortText:'304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', reqQty:6,unit:'个',orderQty:6,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:380.00,totalValue:2280,applicant:'赵雪梅',poNo:'4100015300',status:'N'},
+      {itemNo:20,matCode:'60001272',shortText:'304不锈钢培养皿架-90mm培养皿-放80个-带可翻转提手', reqQty:4,unit:'个',orderQty:4,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:520.00,totalValue:2080,applicant:'赵雪梅',poNo:'4100015300',status:'N'},
+      {itemNo:30,matCode:'60001273',shortText:'不锈钢试管架-40孔/个-孔径21mm', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:120.00,totalValue:1200,applicant:'赵雪梅',poNo:'4100015300',status:'N'},
+      {itemNo:40,matCode:'60001293',shortText:'贴壁式不锈钢置物架-304不锈钢-30cm*15cm*12cm', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:160.00,totalValue:1280,applicant:'赵雪梅',poNo:'4100015300',status:'N'}
     ]
   },
   {
-    docNo:'2100003408', applyDate:'2026-05-20', plant:'1000 - 山东步长制药工厂', dept:'设备部', applicant:'王海涛',
+    docNo:'2100003408', applyDate:'2026-05-20', plant:'1000 - 山东步长制药工厂', dept:'设备部',
     wbsNo:'PRJ-2026-008', purpose:'气路系统管道接头及过滤器更换', notes:'需304不锈钢材质',
-    poNo:'4100017356',
     lines:[
-      {itemNo:10,matCode:'60001249',shortText:'宝塔头-外径25mm-内径9.6mm-30700-60', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:18.00,totalValue:360,status:'B'},
-      {itemNo:20,matCode:'60001250',shortText:'宝塔头-外径50mm-内径9.6mm-30700-49', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:25.00,totalValue:375,status:'B'},
-      {itemNo:30,matCode:'60001251',shortText:'卡箍-25mm-30800-75-304L不锈钢', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:10.00,totalValue:400,status:'B'},
-      {itemNo:40,matCode:'60001252',shortText:'卡箍-50mm-30800-76-304L不锈钢', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:15.00,totalValue:450,status:'B'},
-      {itemNo:50,matCode:'60001278',shortText:'管路直角接头-φ51mm', reqQty:25,unit:'个',orderQty:25,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:12.00,totalValue:300,status:'B'},
-      {itemNo:60,matCode:'60001274',shortText:'气管直通变径接头-PG8-6-接头φP15mm-接头总长39.5mm', reqQty:35,unit:'个',orderQty:35,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:6.50,totalValue:227.50,status:'B'},
-      {itemNo:70,matCode:'60001122',shortText:'不锈钢快装直通过滤器-20"226-插口(K50.5)-304不锈钢-226', reqQty:5,unit:'个',orderQty:5,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:350.00,totalValue:1750,status:'B'},
-      {itemNo:80,matCode:'60001112',shortText:'Y型过滤器滤网-长460mm*宽18mm-材质:304不锈钢-DN15', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:65.00,totalValue:650,status:'B'}
+      {itemNo:10,matCode:'60001249',shortText:'宝塔头-外径25mm-内径9.6mm-30700-60', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:18.00,totalValue:360,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:20,matCode:'60001250',shortText:'宝塔头-外径50mm-内径9.6mm-30700-49', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:25.00,totalValue:375,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:30,matCode:'60001251',shortText:'卡箍-25mm-30800-75-304L不锈钢', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:10.00,totalValue:400,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:40,matCode:'60001252',shortText:'卡箍-50mm-30800-76-304L不锈钢', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:15.00,totalValue:450,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:50,matCode:'60001278',shortText:'管路直角接头-φ51mm', reqQty:25,unit:'个',orderQty:25,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:12.00,totalValue:300,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:60,matCode:'60001274',shortText:'气管直通变径接头-PG8-6-接头φP15mm-接头总长39.5mm', reqQty:35,unit:'个',orderQty:35,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:6.50,totalValue:227.50,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:70,matCode:'60001122',shortText:'不锈钢快装直通过滤器-20"226-插口(K50.5)-304不锈钢-226', reqQty:5,unit:'个',orderQty:5,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:350.00,totalValue:1750,applicant:'王海涛',poNo:'4100017356',status:'B'},
+      {itemNo:80,matCode:'60001112',shortText:'Y型过滤器滤网-长460mm*宽18mm-材质:304不锈钢-DN15', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:65.00,totalValue:650,applicant:'王海涛',poNo:'4100017356',status:'B'}
     ]
   },
   {
-    docNo:'2100003509', applyDate:'2026-05-22', plant:'2013 - 杨凌步长制药工厂', dept:'质量部', applicant:'赵雪梅',
+    docNo:'2100003509', applyDate:'2026-05-22', plant:'2013 - 杨凌步长制药工厂', dept:'质量部',
     wbsNo:'', purpose:'计量器具及环境监测仪表采购', notes:'需提供第三方检定证书',
-    poNo:'',
     lines:[
-      {itemNo:10,matCode:'60001207',shortText:'砝码-F1等级 1000g', reqQty:2,unit:'个',orderQty:2,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:680.00,totalValue:1360,status:'N'},
-      {itemNo:20,matCode:'60001202',shortText:'温湿度计-GJWS-A1', reqQty:5,unit:'个',orderQty:5,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:85.00,totalValue:425,status:'N'},
-      {itemNo:30,matCode:'60001294',shortText:'电子数显温湿度表-黑白色-带背光', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:68.00,totalValue:544,status:'N'},
-      {itemNo:40,matCode:'60001229',shortText:'仪表加温度探头', reqQty:4,unit:'个',orderQty:4,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:350.00,totalValue:1400,status:'N'},
-      {itemNo:50,matCode:'60001259',shortText:'红外测温仪--50~600℃', reqQty:2,unit:'个',orderQty:2,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:420.00,totalValue:840,status:'N'}
+      {itemNo:10,matCode:'60001207',shortText:'砝码-F1等级 1000g', reqQty:2,unit:'个',orderQty:2,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:680.00,totalValue:1360,applicant:'赵雪梅',poNo:'4100015400',status:'N'},
+      {itemNo:20,matCode:'60001202',shortText:'温湿度计-GJWS-A1', reqQty:5,unit:'个',orderQty:5,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:85.00,totalValue:425,applicant:'赵雪梅',poNo:'4100015400',status:'N'},
+      {itemNo:30,matCode:'60001294',shortText:'电子数显温湿度表-黑白色-带背光', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:68.00,totalValue:544,applicant:'赵雪梅',poNo:'4100015400',status:'N'},
+      {itemNo:40,matCode:'60001229',shortText:'仪表加温度探头', reqQty:4,unit:'个',orderQty:4,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:350.00,totalValue:1400,applicant:'赵雪梅',poNo:'4100015400',status:'N'},
+      {itemNo:50,matCode:'60001259',shortText:'红外测温仪--50~600℃', reqQty:2,unit:'个',orderQty:2,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:420.00,totalValue:840,applicant:'赵雪梅',poNo:'4100015400',status:'N'}
     ]
   },
   {
-    docNo:'2100003600', applyDate:'2026-05-24', plant:'2005 - 通化谷红制药工厂', dept:'生产部', applicant:'陈永刚',
+    docNo:'2100003600', applyDate:'2026-05-24', plant:'2005 - 通化谷红制药工厂', dept:'生产部',
     wbsNo:'PRJ-2026-009', purpose:'配料罐硅胶垫圈及法兰垫片更换', notes:'需食品级硅胶/PTFE材质',
-    poNo:'4100017892',
     lines:[
-      {itemNo:10,matCode:'60001154',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径25*内径9', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:3.50,totalValue:350,status:'B'},
-      {itemNo:20,matCode:'60001155',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径25*内径16', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:4.00,totalValue:400,status:'B'},
-      {itemNo:30,matCode:'60001156',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径34*内径19', reqQty:80,unit:'个',orderQty:80,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:5.50,totalValue:440,status:'B'},
-      {itemNo:40,matCode:'60001157',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径40*内径25', reqQty:80,unit:'个',orderQty:80,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:6.00,totalValue:480,status:'B'},
-      {itemNo:50,matCode:'60001158',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径50.5*内径22', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:7.50,totalValue:450,status:'B'},
-      {itemNo:60,matCode:'60001159',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径50.5*内径29', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:8.00,totalValue:480,status:'B'},
-      {itemNo:70,matCode:'60001160',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径50.5*内径35', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:8.50,totalValue:510,status:'B'},
-      {itemNo:80,matCode:'60001104',shortText:'卡盘垫片-尺寸:4″-PTFE-卡盘外径:119mm-卡盘内径:97.4mm', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:18.00,totalValue:540,status:'B'},
-      {itemNo:90,matCode:'60001151',shortText:'氟橡胶垫片FKM-材质:氟胶-尺寸:外径50.5*内径23.5', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:6.00,totalValue:240,status:'B'},
-      {itemNo:100,matCode:'60001152',shortText:'氟橡胶垫片FKM-材质:氟胶-尺寸:外径50.5*内径30', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:6.50,totalValue:260,status:'B'}
+      {itemNo:10,matCode:'60001154',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径25*内径9', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:3.50,totalValue:350,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:20,matCode:'60001155',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径25*内径16', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:4.00,totalValue:400,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:30,matCode:'60001156',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径34*内径19', reqQty:80,unit:'个',orderQty:80,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:5.50,totalValue:440,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:40,matCode:'60001157',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径40*内径25', reqQty:80,unit:'个',orderQty:80,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:6.00,totalValue:480,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:50,matCode:'60001158',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径50.5*内径22', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:7.50,totalValue:450,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:60,matCode:'60001159',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径50.5*内径29', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:8.00,totalValue:480,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:70,matCode:'60001160',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径50.5*内径35', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:8.50,totalValue:510,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:80,matCode:'60001104',shortText:'卡盘垫片-尺寸:4″-PTFE-卡盘外径:119mm-卡盘内径:97.4mm', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:18.00,totalValue:540,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:90,matCode:'60001151',shortText:'氟橡胶垫片FKM-材质:氟胶-尺寸:外径50.5*内径23.5', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:6.00,totalValue:240,applicant:'陈永刚',poNo:'4100017892',status:'B'},
+      {itemNo:100,matCode:'60001152',shortText:'氟橡胶垫片FKM-材质:氟胶-尺寸:外径50.5*内径30', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:6.50,totalValue:260,applicant:'陈永刚',poNo:'4100017892',status:'B'}
     ]
   },
   {
-    docNo:'2100003701', applyDate:'2026-05-26', plant:'2012 - 陕西步长高新制药工厂', dept:'设备部', applicant:'刘志强',
+    docNo:'2100003701', applyDate:'2026-05-26', plant:'2012 - 陕西步长高新制药工厂', dept:'设备部',
     wbsNo:'', purpose:'原料药车间压力表年度校验更换', notes:'部分压力表损坏需更换',
-    poNo:'4100018125',
     lines:[
-      {itemNo:10,matCode:'60001281',shortText:'压力表-0-2.5MPa', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:85.00,totalValue:1275,status:'B'},
-      {itemNo:20,matCode:'60001282',shortText:'压力表-0-40', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:75.00,totalValue:750,status:'B'},
-      {itemNo:30,matCode:'60001283',shortText:'压力表-0-1.6MPa', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:78.00,totalValue:936,status:'B'},
-      {itemNo:40,matCode:'60001284',shortText:'压力表-0-1MPa', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:78.00,totalValue:936,status:'B'}
+      {itemNo:10,matCode:'60001281',shortText:'压力表-0-2.5MPa', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:85.00,totalValue:1275,applicant:'刘志强',poNo:'4100018125',status:'B'},
+      {itemNo:20,matCode:'60001282',shortText:'压力表-0-40', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:75.00,totalValue:750,applicant:'刘志强',poNo:'4100018125',status:'B'},
+      {itemNo:30,matCode:'60001283',shortText:'压力表-0-1.6MPa', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:78.00,totalValue:936,applicant:'刘志强',poNo:'4100018125',status:'B'},
+      {itemNo:40,matCode:'60001284',shortText:'压力表-0-1MPa', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:78.00,totalValue:936,applicant:'刘志强',poNo:'4100018125',status:'B'}
     ]
   }
 ];
