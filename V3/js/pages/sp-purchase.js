@@ -441,6 +441,65 @@ const SpPurchase = {
       lines: [{ itemNo:10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N', acctAssCategory:'', matGroup:'', storageLocation:'', costCenter:'' }]
     };
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(emptyPr);
+
+    // 检查是否从安全库存预警跳转过来，有待填充的行项目
+    setTimeout(() => {
+      const raw = sessionStorage.getItem('ssa_purchase_lines');
+      if (raw) {
+        try {
+          const lines = JSON.parse(raw);
+          if (lines && lines.length > 0) {
+            SpPurchase._fillFromSafetyAlert(lines);
+          }
+        } catch(e) {}
+        sessionStorage.removeItem('ssa_purchase_lines');
+      }
+    }, 100);
+  },
+
+  /**
+   * 从安全库存预警带入行项目数据
+   * lines: [{ matCode, shortText, reqQty, unit, matGroup, price }]
+   */
+  _fillFromSafetyAlert(lines) {
+    if (!lines || lines.length === 0) return;
+    const tbody = document.getElementById('prLinesBody');
+    if (!tbody) return;
+
+    // 清空默认空行
+    tbody.innerHTML = '';
+
+    const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
+
+    lines.forEach((line, idx) => {
+      const lineData = {
+        itemNo: (idx + 1) * 10,
+        matCode: line.matCode || '',
+        shortText: line.shortText || '',
+        applicant: window.currentUserId || 'admin',
+        poNo: '',
+        reqQty: line.reqQty || 0,
+        unit: line.unit || '个',
+        orderQty: line.reqQty || 0,
+        deliveryDate: '',
+        requiredDate: '',
+        deliveryDate2: '',
+        price: line.price || 0,
+        totalValue: (line.reqQty || 0) * (line.price || 0),
+        status: 'N',
+        acctAssCategory: 'K',
+        matGroup: line.matGroup || '',
+        storageLocation: '',
+        costCenter: ''
+      };
+      const tr = document.createElement('tr');
+      tr.innerHTML = this.renderLineRow(lineData, idx, purchaseType);
+      tbody.appendChild(tr);
+    });
+
+    this.reindexRows();
+    this.recalcTotal();
+    toast(`已从安全库存预警带入 ${lines.length} 个物料`);
   },
 
   // ---- 模板批导弹框 ----
