@@ -3,10 +3,12 @@
 
 // ---- 常量选项 ----
 const micFactoryOptions = [
-  { value:'1000', label:'1000（山东步长）' },
-  { value:'2001', label:'2001（陕西步长）' },
-  { value:'2002', label:'2002（山东丹红）' },
-  { value:'2003', label:'2003（神州步长）' }
+  { value:'1000', label:'1000（山东步长制药）' },
+  { value:'2001', label:'2001（陕西步长制药）' },
+  { value:'2002', label:'2002（山东丹红制药）' },
+  { value:'2003', label:'2003（山东神州制药）' },
+  { value:'2004', label:'2004（山东康爱制药）' },
+  { value:'2005', label:'2005（通化谷红制药）' }
 ];
 const micUnitOptions = ['%','pH','℃','g','mg','mL','L','kg','mm','cm','μm','mPa·s','cfu/g','个/mL','N','min'];
 const micCodeGroupOptions = [

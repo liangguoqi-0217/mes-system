@@ -16,7 +16,7 @@ const EquipmentMaster = {
           </div>
         </div>
         <div class="filter-bar" style="flex-shrink:0;">
-          <div class="filter-group"><label>工厂</label><select id="eqFactory"><option value="">全部</option><option value="F001">制剂工厂</option><option value="F002">原料药工厂</option><option value="F003">仓储中心</option></select></div>
+          <div class="filter-group"><label>工厂</label><select id="eqFactory"><option value="">全部</option><option value="1000">1000-山东步长制药工厂</option><option value="2001">2001-陕西步长制药工厂</option><option value="2002">2002-山东丹红制药工厂</option><option value="2003">2003-山东神州制药工厂</option><option value="2004">2004-山东康爱制药工厂</option><option value="2005">2005-通化谷红制药工厂</option></select></div>
           <div class="filter-group"><label>功能位置</label><input type="text" id="eqLocation" placeholder="模糊查询"></div>
           <div class="filter-group"><label>设备类型</label><select id="eqType"><option value="">全部</option>${eqTypeOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>运行状态</label><select id="eqStatus"><option value="">全部</option>${eqStatusOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>

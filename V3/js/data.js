@@ -71,12 +71,13 @@ const FL_FACTORIES = [
   { code:'2005', name:'通化谷红制药工厂' },
   { code:'2006', name:'吉林天成制药工厂' },
   { code:'2007', name:'通化天实制药工厂' },
-  { code:'2008', name:'梅河口步长制药工厂' },
   { code:'2009', name:'辽宁奥达制药工厂' },
   { code:'2010', name:'保定天浩制药工厂' },
   { code:'2011', name:'邛崃天银制药工厂' },
   { code:'2012', name:'陕西步长高新制药工厂' },
-  { code:'2013', name:'杨凌步长制药工厂' }
+  { code:'2013', name:'杨凌步长制药工厂' },
+  { code:'2014', name:'重庆市医济堂生物制品工厂' },
+  { code:'3001', name:'泸州步长生物工厂' }
 ];
 
 const flMockData = { tree: [
@@ -1683,9 +1684,21 @@ const taskListMockData = [
 
 // ===== Material Master Data =====
 const materialFactoryOptions = [
-  { value:'1000', label:'1000（山东步长）' },
-  { value:'1100', label:'1100（天津基地）' },
-  { value:'1200', label:'1200（菏泽分厂）' }
+  { value:'1000', label:'1000（山东步长制药工厂）' },
+  { value:'2001', label:'2001（陕西步长制药工厂）' },
+  { value:'2002', label:'2002（山东丹红制药工厂）' },
+  { value:'2003', label:'2003（山东神州制药工厂）' },
+  { value:'2004', label:'2004（山东康爱制药工厂）' },
+  { value:'2005', label:'2005（通化谷红制药工厂）' },
+  { value:'2006', label:'2006（吉林天成制药工厂）' },
+  { value:'2007', label:'2007（通化天实制药工厂）' },
+  { value:'2009', label:'2009（辽宁奥达制药工厂）' },
+  { value:'2010', label:'2010（保定天浩制药工厂）' },
+  { value:'2011', label:'2011（邛崃天银制药工厂）' },
+  { value:'2012', label:'2012（陕西步长高新制药工厂）' },
+  { value:'2013', label:'2013（杨凌步长制药工厂）' },
+  { value:'2014', label:'2014（重庆市医济堂生物制品工厂）' },
+  { value:'3001', label:'3001（泸州步长生物工厂）' }
 ];
 
 const materialMrpCtrlOptions = [
@@ -1710,97 +1723,97 @@ const materialProcTypeOptions = [
 const materialTypeOptions = [
   { value:'Z001', label:'Z001-成品' },
   { value:'Z002', label:'Z002-半成品' },
-  { value:'Z003', label:'Z003-原料' },
+  { value:'Z003', label:'Z003-原材料' },
   { value:'Z004', label:'Z004-辅料' },
-  { value:'Z005', label:'Z005-包材' },
+  { value:'Z005', label:'Z005-包装材料' },
   { value:'Z006', label:'Z006-耗材及其他' }
 ];
 
 const materialData = [
   { id:'MAT001', code:'60000001', description:'大桶-天兰', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'601', materialGroupName:'非生产性材料-低值易耗品',
     baseUnit:'件', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT002', code:'60000002', description:'大桶-粉', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'601', materialGroupName:'非生产性材料-低值易耗品',
     baseUnit:'件', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT003', code:'60000003', description:'一服区工服...', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT004', code:'60000004', description:'一服区工服...', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT005', code:'60000005', description:'一服区工服...', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT006', code:'60000006', description:'一服区工服...', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT007', code:'60000007', description:'洁净区服-蓝', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT008', code:'60000008', description:'洁净区服-粉', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT009', code:'60000009', description:'洁净区工服...', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'套', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   { id:'MAT010', code:'60000010', description:'工服袋', factory:'1000', factoryName:'1000',
     materialType:'Z006', materialTypeName:'耗材及其他',
-    materialGroup:'605', materialGroupName:'非生产性材料-...',
+    materialGroup:'605', materialGroupName:'非生产性材料-劳保用品',
     baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'D', overviewScreen:'',
     mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'N'
   },
   // 安全库存预警相关物料主数据
-  { id:'MAT011', code:'10000009', description:'腎石利通片-0.45g*5*2板/盒', factory:'1000', factoryName:'1000', materialType:'Z001', materialTypeName:'成品', materialGroup:'100', materialGroupName:'成品', baseUnit:'盒', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A01', procurementType:'internal', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT012', code:'10000010', description:'阿莫西林胶囊-0.25g*24粒/盒', factory:'1000', factoryName:'1000', materialType:'Z001', materialTypeName:'成品', materialGroup:'100', materialGroupName:'成品', baseUnit:'盒', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A01', procurementType:'internal', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT013', code:'10000011', description:'头孢克肟分散片-0.1g*6片/盒', factory:'1000', factoryName:'1000', materialType:'Z001', materialTypeName:'成品', materialGroup:'100', materialGroupName:'成品', baseUnit:'盒', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A01', procurementType:'internal', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT014', code:'50000001', description:'7-氨基头孢烷酸(7-ACA)-1kg/桶', factory:'2000', factoryName:'2000', materialType:'Z002', materialTypeName:'半成品', materialGroup:'500', materialGroupName:'中间体', baseUnit:'桶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A02', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT015', code:'50000002', description:'青霉素G钾工业盐-25kg/桶', factory:'2000', factoryName:'2000', materialType:'Z002', materialTypeName:'半成品', materialGroup:'500', materialGroupName:'中间体', baseUnit:'桶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A02', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT016', code:'20000001', description:'淀粉（药用级）-25kg/袋', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原料', materialGroup:'200', materialGroupName:'原材料', baseUnit:'袋', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT017', code:'20000002', description:'微晶纤维素 PH102-20kg/袋', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原料', materialGroup:'200', materialGroupName:'原材料', baseUnit:'袋', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT018', code:'20000003', description:'硬脂酸镁-10kg/桶', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原料', materialGroup:'200', materialGroupName:'原材料', baseUnit:'桶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT019', code:'20000004', description:'PVP K30-15kg/袋', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原料', materialGroup:'200', materialGroupName:'原材料', baseUnit:'袋', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT020', code:'40000001', description:'人血白蛋白-12.5g(25%,50ml)/瓶', factory:'1000', factoryName:'1000', materialType:'Z004', materialTypeName:'辅料', materialGroup:'400', materialGroupName:'冷链药品', baseUnit:'瓶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A04', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT021', code:'40000002', description:'重组人干扰素α2b注射液-18μg:0.3ml/支', factory:'1000', factoryName:'1000', materialType:'Z004', materialTypeName:'辅料', materialGroup:'400', materialGroupName:'冷链药品', baseUnit:'支', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A04', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT022', code:'30000001', description:'铝塑泡罩包装膜-PVC/PVDC复合膜-1200m/卷', factory:'1000', factoryName:'1000', materialType:'Z005', materialTypeName:'包材', materialGroup:'300', materialGroupName:'包装材料', baseUnit:'卷', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A05', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT023', code:'30000002', description:'口服固体药用高密度聚乙烯瓶-100ml-500个/箱', factory:'1000', factoryName:'1000', materialType:'Z005', materialTypeName:'包材', materialGroup:'300', materialGroupName:'包装材料', baseUnit:'箱', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A05', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
-  { id:'MAT024', code:'30000003', description:'药品说明书纸-80g双胶纸-10000张/捆', factory:'1000', factoryName:'1000', materialType:'Z005', materialTypeName:'包材', materialGroup:'300', materialGroupName:'包装材料', baseUnit:'捆', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A05', procurementType:'external', batchManagement:'N', allowUnplanned:'N' },
-  { id:'MAT025', code:'60001018', description:'高效过滤器-MIIPDF-635*520*93-27-AAF', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'600', materialGroupName:'过滤器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT026', code:'60001019', description:'高效过滤器-MIIPDF-635*762*93-27-AAF', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'600', materialGroupName:'过滤器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT027', code:'60001021', description:'高效过滤器-MIIPDF-635*1030*93-27-AAF', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'600', materialGroupName:'过滤器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT028', code:'60001146', description:'隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'601', materialGroupName:'密封件类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT029', code:'60001147', description:'隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'601', materialGroupName:'密封件类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT030', code:'60000655', description:'LED灯泡-30W', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'604', materialGroupName:'电器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT031', code:'60000656', description:'LED灯泡-60W', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'604', materialGroupName:'电器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT032', code:'60001271', description:'304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'605', materialGroupName:'不锈钢制品类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT033', code:'60001207', description:'砝码-F1等级 1000g', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'603', materialGroupName:'仪表仪器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT034', code:'60001128', description:'初效过滤器-592*592*360-G4-袋式', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'600', materialGroupName:'过滤器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
-  { id:'MAT035', code:'60001131', description:'初效过滤器-286*286*360-G4-袋式', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'600', materialGroupName:'过滤器类', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' }
+  { id:'MAT011', code:'10000009', description:'腎石利通片-0.45g*5*2板/盒', factory:'1000', factoryName:'1000', materialType:'Z001', materialTypeName:'成品', materialGroup:'101', materialGroupName:'成品-药品', baseUnit:'盒', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A01', procurementType:'internal', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT012', code:'10000010', description:'阿莫西林胶囊-0.25g*24粒/盒', factory:'1000', factoryName:'1000', materialType:'Z001', materialTypeName:'成品', materialGroup:'101', materialGroupName:'成品-药品', baseUnit:'盒', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A01', procurementType:'internal', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT013', code:'10000011', description:'头孢克肟分散片-0.1g*6片/盒', factory:'1000', factoryName:'1000', materialType:'Z001', materialTypeName:'成品', materialGroup:'101', materialGroupName:'成品-药品', baseUnit:'盒', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A01', procurementType:'internal', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT014', code:'50000001', description:'7-氨基头孢烷酸(7-ACA)-1kg/桶', factory:'2001', factoryName:'2001', materialType:'Z002', materialTypeName:'半成品', materialGroup:'201', materialGroupName:'半成品-中间产品', baseUnit:'桶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A02', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT015', code:'50000002', description:'青霉素G钾工业盐-25kg/桶', factory:'2001', factoryName:'2001', materialType:'Z002', materialTypeName:'半成品', materialGroup:'201', materialGroupName:'半成品-中间产品', baseUnit:'桶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A02', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT016', code:'20000001', description:'淀粉（药用级）-25kg/袋', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原材料', materialGroup:'304', materialGroupName:'原料-化学材料', baseUnit:'袋', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT017', code:'20000002', description:'微晶纤维素 PH102-20kg/袋', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原材料', materialGroup:'304', materialGroupName:'原料-化学材料', baseUnit:'袋', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT018', code:'20000003', description:'硬脂酸镁-10kg/桶', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原材料', materialGroup:'304', materialGroupName:'原料-化学材料', baseUnit:'桶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT019', code:'20000004', description:'PVP K30-15kg/袋', factory:'1000', factoryName:'1000', materialType:'Z003', materialTypeName:'原材料', materialGroup:'304', materialGroupName:'原料-化学材料', baseUnit:'袋', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A03', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT020', code:'40000001', description:'人血白蛋白-12.5g(25%,50ml)/瓶', factory:'1000', factoryName:'1000', materialType:'Z004', materialTypeName:'辅料', materialGroup:'305', materialGroupName:'原料-生物材料', baseUnit:'瓶', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A04', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT021', code:'40000002', description:'重组人干扰素α2b注射液-18μg:0.3ml/支', factory:'1000', factoryName:'1000', materialType:'Z004', materialTypeName:'辅料', materialGroup:'305', materialGroupName:'原料-生物材料', baseUnit:'支', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A04', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT022', code:'30000001', description:'铝塑泡罩包装膜-PVC/PVDC复合膜-1200m/卷', factory:'1000', factoryName:'1000', materialType:'Z005', materialTypeName:'包装材料', materialGroup:'501', materialGroupName:'包装材料-内包材', baseUnit:'卷', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A05', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT023', code:'30000002', description:'口服固体药用高密度聚乙烯瓶-100ml-500个/箱', factory:'1000', factoryName:'1000', materialType:'Z005', materialTypeName:'包装材料', materialGroup:'501', materialGroupName:'包装材料-内包材', baseUnit:'箱', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A05', procurementType:'external', batchManagement:'Y', allowUnplanned:'N' },
+  { id:'MAT024', code:'30000003', description:'药品说明书纸-80g双胶纸-10000张/捆', factory:'1000', factoryName:'1000', materialType:'Z005', materialTypeName:'包装材料', materialGroup:'502', materialGroupName:'包装材料-外包材', baseUnit:'捆', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'PD', mrpController:'A05', procurementType:'external', batchManagement:'N', allowUnplanned:'N' },
+  { id:'MAT025', code:'60001018', description:'高效过滤器-MIIPDF-635*520*93-27-AAF', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT026', code:'60001019', description:'高效过滤器-MIIPDF-635*762*93-27-AAF', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT027', code:'60001021', description:'高效过滤器-MIIPDF-635*1030*93-27-AAF', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT028', code:'60001146', description:'隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT029', code:'60001147', description:'隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT030', code:'60000655', description:'LED灯泡-30W', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60402', materialGroupName:'非生产性材料-备品备件-电料', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT031', code:'60000656', description:'LED灯泡-60W', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60402', materialGroupName:'非生产性材料-备品备件-电料', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT032', code:'60001271', description:'304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60406', materialGroupName:'非生产性材料-备品备件-检验辅助用料', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT033', code:'60001207', description:'砝码-F1等级 1000g', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60406', materialGroupName:'非生产性材料-备品备件-检验辅助用料', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT034', code:'60001128', description:'初效过滤器-592*592*360-G4-袋式', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' },
+  { id:'MAT035', code:'60001131', description:'初效过滤器-286*286*360-G4-袋式', factory:'1000', factoryName:'1000', materialType:'Z006', materialTypeName:'耗材及其他', materialGroup:'60405', materialGroupName:'非生产性材料-备品备件-设备备件', baseUnit:'个', plannedDeliveryTime:null, originalValue:'', deleteFlag:'', overviewScreen:'', mrpType:'ND', mrpController:'A06', procurementType:'external', batchManagement:'N', allowUnplanned:'Y' }
 ];

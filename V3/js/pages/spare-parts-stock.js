@@ -17,9 +17,14 @@ const SparePartsStock = {
         <div class="filter-bar" style="flex-shrink:0;">
           <div class="filter-group"><label>工厂</label><select id="spFactory">
             <option value="">全部</option>
-            <option value="1000">1000 (山东寿光)</option>
-            <option value="2000">2000 (江苏南通)</option>
-            <option value="3000">3000 (浙江台州)</option>
+            <option value="1000">1000 (山东步长制药工厂)</option>
+            <option value="2001">2001 (陕西步长制药工厂)</option>
+            <option value="2002">2002 (山东丹红制药工厂)</option>
+            <option value="2003">2003 (山东神州制药工厂)</option>
+            <option value="2004">2004 (山东康爱制药工厂)</option>
+            <option value="2005">2005 (通化谷红制药工厂)</option>
+            <option value="2006">2006 (吉林天成制药工厂)</option>
+            <option value="2007">2007 (通化天实制药工厂)</option>
           </select></div>
           <div class="filter-group"><label>库位</label><select id="spStorageLoc">
             <option value="">全部</option>
@@ -239,11 +244,11 @@ const sparePartsStockData = [
   { factory:'1000', storageLoc:'1004-冷库-冷链库', matCode:'40000001', matDesc:'人血白蛋白-12.5g(25%,50ml)/瓶', batch:'260108', unrestrictedQty:200, qualityQty:50, blockedQty:10, unit:'瓶', wbsNo:'', specialStock:'', customer:'', vendor:'成都蓉生药业', vendorBatch:'RS-260108', prodDate:'2026-01-08', expiryDate:'2027-07', isExpiringSoon:true },
   { factory:'1000', storageLoc:'1004-冷库-冷链库', matCode:'40000001', matDesc:'人血白蛋白-12.5g(25%,50ml)/瓶', batch:'260215', unrestrictedQty:300, qualityQty:null, blockedQty:null, unit:'瓶', wbsNo:'', specialStock:'', customer:'', vendor:'成都蓉生药业', vendorBatch:'RS-260215', prodDate:'2026-02-15', expiryDate:'2027-08', isExpiringSoon:true },
   { factory:'1000', storageLoc:'1004-冷库-冷链库', matCode:'40000002', matDesc:'重组人干扰素α2b注射液-18μg:0.3ml/支', batch:'260320', unrestrictedQty:1500, qualityQty:200, blockedQty:50, unit:'支', wbsNo:'', specialStock:'', customer:'', vendor:'安徽安科生物', vendorBatch:'AK-260320', prodDate:'2026-03-20', expiryDate:'2027-06', isExpiringSoon:true },
-  { factory:'2000', storageLoc:'2001-原料仓库-A区', matCode:'50000001', matDesc:'7-氨基头孢烷酸(7-ACA)-1kg/桶', batch:'260118', unrestrictedQty:85, qualityQty:5, blockedQty:2, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'健康元海滨制药', vendorBatch:'JK-260118', prodDate:'2026-01-18', expiryDate:'2027-01', isExpiringSoon:true },
-  { factory:'2000', storageLoc:'2001-原料仓库-A区', matCode:'50000001', matDesc:'7-氨基头孢烷酸(7-ACA)-1kg/桶', batch:'260303', unrestrictedQty:120, qualityQty:null, blockedQty:null, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'健康元海滨制药', vendorBatch:'JK-260303', prodDate:'2026-03-03', expiryDate:'2027-03', isExpiringSoon:false },
-  { factory:'2000', storageLoc:'2001-原料仓库-A区', matCode:'50000002', matDesc:'青霉素G钾工业盐-25kg/桶', batch:'260212', unrestrictedQty:60, qualityQty:3, blockedQty:1, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'河南新乡华星', vendorBatch:'HX-260212', prodDate:'2026-02-12', expiryDate:'2027-08', isExpiringSoon:true },
-  { factory:'2000', storageLoc:'2002-中间体库-B区', matCode:'60000001', matDesc:'头孢克肟活性酯-5kg/桶', batch:'260228', unrestrictedQty:35, qualityQty:2, blockedQty:1, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'浙江昂利康', vendorBatch:'AL-260228', prodDate:'2026-02-28', expiryDate:'2027-02', isExpiringSoon:true },
-  { factory:'2000', storageLoc:'2002-中间体库-B区', matCode:'60000001', matDesc:'头孢克肟活性酯-5kg/桶', batch:'260310', unrestrictedQty:42, qualityQty:null, blockedQty:null, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'浙江昂利康', vendorBatch:'AL-260310', prodDate:'2026-03-10', expiryDate:'2027-03', isExpiringSoon:false },
+  { factory:'2001', storageLoc:'2001-原料仓库-A区', matCode:'50000001', matDesc:'7-氨基头孢烷酸(7-ACA)-1kg/桶', batch:'260118', unrestrictedQty:85, qualityQty:5, blockedQty:2, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'健康元海滨制药', vendorBatch:'JK-260118', prodDate:'2026-01-18', expiryDate:'2027-01', isExpiringSoon:true },
+  { factory:'2001', storageLoc:'2001-原料仓库-A区', matCode:'50000001', matDesc:'7-氨基头孢烷酸(7-ACA)-1kg/桶', batch:'260303', unrestrictedQty:120, qualityQty:null, blockedQty:null, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'健康元海滨制药', vendorBatch:'JK-260303', prodDate:'2026-03-03', expiryDate:'2027-03', isExpiringSoon:false },
+  { factory:'2001', storageLoc:'2001-原料仓库-A区', matCode:'50000002', matDesc:'青霉素G钾工业盐-25kg/桶', batch:'260212', unrestrictedQty:60, qualityQty:3, blockedQty:1, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'河南新乡华星', vendorBatch:'HX-260212', prodDate:'2026-02-12', expiryDate:'2027-08', isExpiringSoon:true },
+  { factory:'2001', storageLoc:'2002-中间体库-B区', matCode:'60000001', matDesc:'头孢克肟活性酯-5kg/桶', batch:'260228', unrestrictedQty:35, qualityQty:2, blockedQty:1, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'浙江昂利康', vendorBatch:'AL-260228', prodDate:'2026-02-28', expiryDate:'2027-02', isExpiringSoon:true },
+  { factory:'2001', storageLoc:'2002-中间体库-B区', matCode:'60000001', matDesc:'头孢克肟活性酯-5kg/桶', batch:'260310', unrestrictedQty:42, qualityQty:null, blockedQty:null, unit:'桶', wbsNo:'', specialStock:'', customer:'', vendor:'浙江昂利康', vendorBatch:'AL-260310', prodDate:'2026-03-10', expiryDate:'2027-03', isExpiringSoon:false },
   // ===== 红灯 Demo 数据（库存不足，触发安全库存预警）=====
   { factory:'1000', storageLoc:'A01', matCode:'60001018', matDesc:'高效过滤器-MIIPDF-635*520*93-27-AAF', batch:'251101', unrestrictedQty:8, qualityQty:2, blockedQty:null, unit:'个', wbsNo:'', specialStock:'', customer:'', vendor:'AAF国际', vendorBatch:'AAF-251101', prodDate:'2025-11-10', expiryDate:'2027-11', isExpiringSoon:false },
   { factory:'1000', storageLoc:'A01', matCode:'60001019', matDesc:'高效过滤器-MIIPDF-635*762*93-27-AAF', batch:'251201', unrestrictedQty:5, qualityQty:3, blockedQty:null, unit:'个', wbsNo:'', specialStock:'', customer:'', vendor:'AAF国际', vendorBatch:'AAF-251201', prodDate:'2025-12-05', expiryDate:'2027-12', isExpiringSoon:false },

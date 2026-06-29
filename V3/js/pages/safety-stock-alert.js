@@ -25,18 +25,23 @@ const SafetyStockAlert = {
         <div class="filter-bar" style="flex-shrink:0;">
           <div class="filter-group"><label>工厂</label><select id="ssaFactory">
             <option value="">全部</option>
-            <option value="1000">1000 (山东寿光)</option>
-            <option value="2000">2000 (江苏南通)</option>
-            <option value="3000">3000 (浙江台州)</option>
+            <option value="1000">1000 (山东步长制药工厂)</option>
+            <option value="2001">2001 (陕西步长制药工厂)</option>
+            <option value="2002">2002 (山东丹红制药工厂)</option>
+            <option value="2003">2003 (山东神州制药工厂)</option>
+            <option value="2004">2004 (山东康爱制药工厂)</option>
+            <option value="2005">2005 (通化谷红制药工厂)</option>
+            <option value="2006">2006 (吉林天成制药工厂)</option>
+            <option value="2007">2007 (通化天实制药工厂)</option>
           </select></div>
           <div class="filter-group"><label>物料</label><input type="text" id="ssaMatCode" placeholder="物料号或描述"></div>
           <div class="filter-group"><label>物料类型</label><select id="ssaMatType">
             <option value="">全部</option>
             <option value="Z001">Z001-成品</option>
             <option value="Z002">Z002-半成品</option>
-            <option value="Z003">Z003-原料</option>
+            <option value="Z003">Z003-原材料</option>
             <option value="Z004">Z004-辅料</option>
-            <option value="Z005">Z005-包材</option>
+            <option value="Z005">Z005-包装材料</option>
             <option value="Z006">Z006-耗材及其他</option>
           </select></div>
           <div class="filter-group"><label>库存安全线状态</label><select id="ssaStatus">

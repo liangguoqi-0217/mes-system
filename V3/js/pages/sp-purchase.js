@@ -18,54 +18,55 @@ const COST_CENTER_OPTIONS = [
   { value: '100601', label: '100601-研发试制成本中心' }
 ];
 const PURCHASE_GROUP_OPTIONS = [
-  { value: 'Z001', label: '原辅包采购组' },
-  { value: 'Z002', label: '非生产型采购组' },
-  { value: 'Z003', label: '费用化采购组' }
+  { value: 'PG001', label: '原辅包采购组' },
+  { value: 'PG002', label: '非生产型采购组' },
+  { value: 'PG003', label: '费用化采购组' }
 ];
 const MAT_GROUP_OPTIONS = [
-  { value: '600', label: '600-过滤器类' },
-  { value: '601', label: '601-密封件类' },
-  { value: '602', label: '602-接头管件类' },
-  { value: '603', label: '603-仪表仪器类' },
-  { value: '604', label: '604-电器类' },
-  { value: '605', label: '605-不锈钢制品类' },
-  { value: '606', label: '606-实验室用品类' },
-  { value: '607', label: '607-通用工具类' },
-  { value: '608', label: '608-备品备件类' }
+  { value: '60401', label: '60401-备品备件-五金' },
+  { value: '60402', label: '60402-备品备件-电料' },
+  { value: '60403', label: '60403-备品备件-水暖管件' },
+  { value: '60404', label: '60404-备品备件-工具' },
+  { value: '60405', label: '60405-备品备件-设备备件' },
+  { value: '60406', label: '60406-备品备件-检验辅助用料' },
+  { value: '60407', label: '60407-备品备件-其他' },
+  { value: '605', label: '605-劳保用品' },
+  { value: '406', label: '406-生产性材料-气体' },
+  { value: '502', label: '502-包装材料-外包材' }
 ];
 
 // ---- 物料主数据 Mock（供 Z01 自动带出用）----
 const materialMasterMock = [
-  { matCode: '60001018', shortText: '高效过滤器-MIIPDF-635*520*93-27-AAF', matGroup: '600', storageLocation: 'A01', price: 850.00 },
-  { matCode: '60001019', shortText: '高效过滤器-MIIPDF-635*762*93-27-AAF', matGroup: '600', storageLocation: 'A01', price: 920.00 },
-  { matCode: '60001020', shortText: '高效过滤器-MIIPDF-416*416*93-27-AAF', matGroup: '600', storageLocation: 'A02', price: 680.00 },
-  { matCode: '60001021', shortText: '高效过滤器-MIIPDF-635*1030*93-27-AAF', matGroup: '600', storageLocation: 'A01', price: 1050.00 },
-  { matCode: '60001022', shortText: '高效过滤器-GSF-LS-631*516*95-01/22-康斐尔', matGroup: '600', storageLocation: 'A01', price: 750.00 },
-  { matCode: '60001023', shortText: '高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', matGroup: '600', storageLocation: 'A01', price: 820.00 },
-  { matCode: '60001024', shortText: '高效过滤器-GSF-LS-412*412*95-01/22-康斐尔', matGroup: '600', storageLocation: 'A02', price: 620.00 },
-  { matCode: '60001025', shortText: '高效过滤器-GSF-LS-1026*631*95-01/22-康斐尔', matGroup: '600', storageLocation: 'A01', price: 1100.00 },
-  { matCode: '60001026', shortText: '高效过滤器-GSF-LS-762*631*95-01/22-康斐尔', matGroup: '600', storageLocation: 'A01', price: 960.00 },
-  { matCode: '60001012', shortText: '耐湿高效过滤器-GKYS-305*30*150', matGroup: '600', storageLocation: 'A02', price: 580.00 },
-  { matCode: '60001086', shortText: 'O型圈-Φ360*5.7-材质:氟橡胶', matGroup: '601', storageLocation: 'B01', price: 65.00 },
-  { matCode: '60001087', shortText: 'O型圈-Φ506*6.99-材质:氟橡胶', matGroup: '601', storageLocation: 'B01', price: 85.00 },
-  { matCode: '60001088', shortText: 'O型圈-Φ399.5*8.4-材质:氟橡胶', matGroup: '601', storageLocation: 'B01', price: 78.00 },
-  { matCode: '60001089', shortText: 'O型圈-Φ44*3-材质:氟橡胶', matGroup: '601', storageLocation: 'B02', price: 8.00 },
-  { matCode: '60001090', shortText: 'O型圈-Φ13.94*2.62-材质:氟橡胶', matGroup: '601', storageLocation: 'B02', price: 3.50 },
-  { matCode: '60001146', shortText: '隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', matGroup: '601', storageLocation: 'B03', price: 180.00 },
-  { matCode: '60001147', shortText: '隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', matGroup: '601', storageLocation: 'B03', price: 220.00 },
-  { matCode: '60000655', shortText: 'LED灯泡-30W', matGroup: '604', storageLocation: 'C01', price: 25.00 },
-  { matCode: '60000656', shortText: 'LED灯泡-60W', matGroup: '604', storageLocation: 'C01', price: 35.00 },
-  { matCode: '60000657', shortText: 'LED灯泡-100W', matGroup: '604', storageLocation: 'C01', price: 45.00 },
-  { matCode: '60001128', shortText: '初效过滤器-592*592*360-G4-袋式', matGroup: '600', storageLocation: 'A03', price: 95.00 },
-  { matCode: '60001129', shortText: '初效过滤器-286*592*360-G4-袋式', matGroup: '600', storageLocation: 'A03', price: 75.00 },
-  { matCode: '60001131', shortText: '初效过滤器-286*286*360-G4-袋式', matGroup: '600', storageLocation: 'A03', price: 55.00 },
-  { matCode: '60001132', shortText: '中效过滤器-592*592*600-M5-袋式', matGroup: '600', storageLocation: 'A04', price: 120.00 },
-  { matCode: '60001238', shortText: '宝塔式气路接头-管子直径10mm-螺纹口1/4', matGroup: '602', storageLocation: 'D01', price: 8.00 },
-  { matCode: '60001271', shortText: '304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', matGroup: '605', storageLocation: 'E01', price: 380.00 },
-  { matCode: '60001272', shortText: '304不锈钢培养皿架-90mm培养皿-放80个-带可翻转提手', matGroup: '605', storageLocation: 'E01', price: 520.00 },
-  { matCode: '60001249', shortText: '宝塔头-外径25mm-内径9.6mm-30700-60', matGroup: '602', storageLocation: 'D02', price: 18.00 },
-  { matCode: '60001207', shortText: '砝码-F1等级 1000g', matGroup: '603', storageLocation: 'F01', price: 680.00 },
-  { matCode: '60001281', shortText: '压力表-0-2.5MPa', matGroup: '603', storageLocation: 'F02', price: 85.00 }
+  { matCode: '60001018', shortText: '高效过滤器-MIIPDF-635*520*93-27-AAF', matGroup: '60405', storageLocation: 'A01', price: 850.00 },
+  { matCode: '60001019', shortText: '高效过滤器-MIIPDF-635*762*93-27-AAF', matGroup: '60405', storageLocation: 'A01', price: 920.00 },
+  { matCode: '60001020', shortText: '高效过滤器-MIIPDF-416*416*93-27-AAF', matGroup: '60405', storageLocation: 'A02', price: 680.00 },
+  { matCode: '60001021', shortText: '高效过滤器-MIIPDF-635*1030*93-27-AAF', matGroup: '60405', storageLocation: 'A01', price: 1050.00 },
+  { matCode: '60001022', shortText: '高效过滤器-GSF-LS-631*516*95-01/22-康斐尔', matGroup: '60405', storageLocation: 'A01', price: 750.00 },
+  { matCode: '60001023', shortText: '高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', matGroup: '60405', storageLocation: 'A01', price: 820.00 },
+  { matCode: '60001024', shortText: '高效过滤器-GSF-LS-412*412*95-01/22-康斐尔', matGroup: '60405', storageLocation: 'A02', price: 620.00 },
+  { matCode: '60001025', shortText: '高效过滤器-GSF-LS-1026*631*95-01/22-康斐尔', matGroup: '60405', storageLocation: 'A01', price: 1100.00 },
+  { matCode: '60001026', shortText: '高效过滤器-GSF-LS-762*631*95-01/22-康斐尔', matGroup: '60405', storageLocation: 'A01', price: 960.00 },
+  { matCode: '60001012', shortText: '耐湿高效过滤器-GKYS-305*30*150', matGroup: '60405', storageLocation: 'A02', price: 580.00 },
+  { matCode: '60001086', shortText: 'O型圈-Φ360*5.7-材质:氟橡胶', matGroup: '60405', storageLocation: 'B01', price: 65.00 },
+  { matCode: '60001087', shortText: 'O型圈-Φ506*6.99-材质:氟橡胶', matGroup: '60405', storageLocation: 'B01', price: 85.00 },
+  { matCode: '60001088', shortText: 'O型圈-Φ399.5*8.4-材质:氟橡胶', matGroup: '60405', storageLocation: 'B01', price: 78.00 },
+  { matCode: '60001089', shortText: 'O型圈-Φ44*3-材质:氟橡胶', matGroup: '60405', storageLocation: 'B02', price: 8.00 },
+  { matCode: '60001090', shortText: 'O型圈-Φ13.94*2.62-材质:氟橡胶', matGroup: '60405', storageLocation: 'B02', price: 3.50 },
+  { matCode: '60001146', shortText: '隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', matGroup: '60405', storageLocation: 'B03', price: 180.00 },
+  { matCode: '60001147', shortText: '隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', matGroup: '60405', storageLocation: 'B03', price: 220.00 },
+  { matCode: '60000655', shortText: 'LED灯泡-30W', matGroup: '60402', storageLocation: 'C01', price: 25.00 },
+  { matCode: '60000656', shortText: 'LED灯泡-60W', matGroup: '60402', storageLocation: 'C01', price: 35.00 },
+  { matCode: '60000657', shortText: 'LED灯泡-100W', matGroup: '60402', storageLocation: 'C01', price: 45.00 },
+  { matCode: '60001128', shortText: '初效过滤器-592*592*360-G4-袋式', matGroup: '60405', storageLocation: 'A03', price: 95.00 },
+  { matCode: '60001129', shortText: '初效过滤器-286*592*360-G4-袋式', matGroup: '60405', storageLocation: 'A03', price: 75.00 },
+  { matCode: '60001131', shortText: '初效过滤器-286*286*360-G4-袋式', matGroup: '60405', storageLocation: 'A03', price: 55.00 },
+  { matCode: '60001132', shortText: '中效过滤器-592*592*600-M5-袋式', matGroup: '60405', storageLocation: 'A04', price: 120.00 },
+  { matCode: '60001238', shortText: '宝塔式气路接头-管子直径10mm-螺纹口1/4', matGroup: '60403', storageLocation: 'D01', price: 8.00 },
+  { matCode: '60001271', shortText: '304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', matGroup: '60406', storageLocation: 'E01', price: 380.00 },
+  { matCode: '60001272', shortText: '304不锈钢培养皿架-90mm培养皿-放80个-带可翻转提手', matGroup: '60406', storageLocation: 'E01', price: 520.00 },
+  { matCode: '60001249', shortText: '宝塔头-外径25mm-内径9.6mm-30700-60', matGroup: '60403', storageLocation: 'D02', price: 18.00 },
+  { matCode: '60001207', shortText: '砝码-F1等级 1000g', matGroup: '60406', storageLocation: 'F01', price: 680.00 },
+  { matCode: '60001281', shortText: '压力表-0-2.5MPa', matGroup: '60405', storageLocation: 'F02', price: 85.00 }
 ];
 
 const SpPurchase = {
@@ -580,12 +581,13 @@ const SpPurchase = {
                   <option value="2005">2005 - 通化谷红制药工厂</option>
                   <option value="2006">2006 - 吉林天成制药工厂</option>
                   <option value="2007">2007 - 通化天实制药工厂</option>
-                  <option value="2008">2008 - 梅河口步长制药工厂</option>
                   <option value="2009">2009 - 辽宁奥达制药工厂</option>
                   <option value="2010">2010 - 保定天浩制药工厂</option>
                   <option value="2011">2011 - 邛崃天银制药工厂</option>
                   <option value="2012">2012 - 陕西步长高新制药工厂</option>
                   <option value="2013">2013 - 杨凌步长制药工厂</option>
+                  <option value="2014">2014 - 重庆市医济堂生物制品工厂</option>
+                  <option value="3001">3001 - 泸州步长生物工厂</option>
                 </select></div>
                 <div class="form-group"><label>申请日期</label><input type="date" id="prFApplyDate" value="${new Date().toISOString().slice(0,10)}"></div>
 
@@ -999,12 +1001,13 @@ const SpPurchase = {
                   <option value="2005"${pr.plant==='2005'?' selected':''}>2005 - 通化谷红制药工厂</option>
                   <option value="2006"${pr.plant==='2006'?' selected':''}>2006 - 吉林天成制药工厂</option>
                   <option value="2007"${pr.plant==='2007'?' selected':''}>2007 - 通化天实制药工厂</option>
-                  <option value="2008"${pr.plant==='2008'?' selected':''}>2008 - 梅河口步长制药工厂</option>
                   <option value="2009"${pr.plant==='2009'?' selected':''}>2009 - 辽宁奥达制药工厂</option>
                   <option value="2010"${pr.plant==='2010'?' selected':''}>2010 - 保定天浩制药工厂</option>
                   <option value="2011"${pr.plant==='2011'?' selected':''}>2011 - 邛崃天银制药工厂</option>
                   <option value="2012"${pr.plant==='2012'?' selected':''}>2012 - 陕西步长高新制药工厂</option>
                   <option value="2013"${pr.plant==='2013'?' selected':''}>2013 - 杨凌步长制药工厂</option>
+                  <option value="2014"${pr.plant==='2014'?' selected':''}>2014 - 重庆市医济堂生物制品工厂</option>
+                  <option value="3001"${pr.plant==='3001'?' selected':''}>3001 - 泸州步长生物工厂</option>
                 </select></div>
                 <div class="form-group"><label>申请日期</label><input type="date" id="prFApplyDate" value="${esc(pr.applyDate)}"></div>
 
@@ -1107,7 +1110,7 @@ const SpPurchase = {
       ${matGroupCell}
       <td style="padding:5px;"><input type="number" data-field="reqQty" value="${line.reqQty||''}" min="0" step="any" style="width:72px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;" oninput="SpPurchase.recalcTotal()" required></td>
       <td style="padding:5px;"><select data-field="unit" style="width:48px;padding:4px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;" onchange="SpPurchase.recalcTotal()">
-        <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="方"${line.unit==='方'?' selected':''}>方</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
+        <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
       </select></td>
       <td style="padding:5px;"><input type="text" value="${esc(line.deliveryDate||'')}" placeholder="YYYYMMDD" style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" value="${esc(line.requiredDate||'')}" placeholder="YYYY.MM.DD" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
@@ -1281,17 +1284,22 @@ const SpPurchase = {
         <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
           <select id="alertFilterFactory" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
             <option value="">全部工厂</option>
-            <option value="1000">1000 (山东寿光)</option>
-            <option value="2000">2000 (江苏南通)</option>
-            <option value="3000">3000 (浙江台州)</option>
+            <option value="1000">1000 (山东步长制药工厂)</option>
+            <option value="2001">2001 (陕西步长制药工厂)</option>
+            <option value="2002">2002 (山东丹红制药工厂)</option>
+            <option value="2003">2003 (山东神州制药工厂)</option>
+            <option value="2004">2004 (山东康爱制药工厂)</option>
+            <option value="2005">2005 (通化谷红制药工厂)</option>
+            <option value="2006">2006 (吉林天成制药工厂)</option>
+            <option value="2007">2007 (通化天实制药工厂)</option>
           </select>
           <select id="alertFilterMatType" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
             <option value="">全部物料类型</option>
             <option value="Z001">Z001-成品</option>
             <option value="Z002">Z002-半成品</option>
-            <option value="Z003">Z003-原料</option>
+            <option value="Z003">Z003-原材料</option>
             <option value="Z004">Z004-辅料</option>
-            <option value="Z005">Z005-包材</option>
+            <option value="Z005">Z005-包装材料</option>
             <option value="Z006">Z006-耗材及其他</option>
           </select>
           <select id="alertFilterStatus" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
