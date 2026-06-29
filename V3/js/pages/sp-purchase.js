@@ -1,7 +1,27 @@
 // ===== Spare Parts Purchase Requisition Page =====
 const SpPurchase = {
   page: 1, pageSize: 20, flatRows: [],
+  viewMode: 'doc', // 'doc' = 按申请单聚合, 'line' = 平铺行项目
+  docRows: [], filteredDocs: [],
   editMode: false, editId: null,
+
+  // Aggregate data: one row per purchase requisition document
+  aggregateData() {
+    return spPurchaseData.map(pr => {
+      const lineCount = pr.lines ? pr.lines.length : 0;
+      const totalValue = pr.lines ? pr.lines.reduce((s, l) => s + (l.totalValue || 0), 0) : 0;
+      const statuses = pr.lines ? [...new Set(pr.lines.map(l => l.status).filter(Boolean))] : [];
+      let statusLabel = 'N-未编辑';
+      if (statuses.includes('B')) statusLabel = 'B-已创建采购订单';
+      return {
+        docNo: pr.docNo, plant: pr.plant, dept: pr.dept,
+        applyDate: pr.applyDate, wbsNo: pr.wbsNo || '',
+        purpose: pr.purpose || '', notes: pr.notes || '',
+        lineCount, totalValue, statusLabel,
+        statuses, _pr: pr
+      };
+    });
+  },
 
   // Flatten data: each line item becomes one row for display
   flattenData() {
@@ -29,14 +49,26 @@ const SpPurchase = {
   },
 
   render() {
+    // Prepare data for both views
     this.flatRows = this.flattenData();
-    this.filteredFlat = [...this.flatRows];
+    this.docRows = this.aggregateData();
+    if (this.viewMode === 'doc') {
+      this.filteredDocs = [...this.docRows];
+    } else {
+      this.filteredFlat = [...this.flatRows];
+    }
     this.page = 1;
+
+    const isDoc = this.viewMode === 'doc';
     return `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div><div style="font-size:18px;font-weight:700;">采购申请提报</div><div style="font-size:13px;opacity:0.8;">支持手工填写和模板批导两种方式创建采购申请</div></div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:2px;background:rgba(255,255,255,0.18);border-radius:8px;padding:3px;">
+              <button class="btn btn-sm" style="border-radius:6px;padding:5px 14px;font-size:12px;${isDoc?'background:white;color:var(--primary);font-weight:700;':'background:transparent;color:rgba(255,255,255,0.85);'}" onclick="SpPurchase.switchView('doc')">按申请单</button>
+              <button class="btn btn-sm" style="border-radius:6px;padding:5px 14px;font-size:12px;${!isDoc?'background:white;color:var(--primary);font-weight:700;':'background:transparent;color:rgba(255,255,255,0.85);'}" onclick="SpPurchase.switchView('line')">行项目视图</button>
+            </div>
             <button class="btn btn-blue" onclick="SpPurchase.openNewModal()"><span style="font-weight:700;font-size:16px;">+</span> 新建申请</button>
           </div>
         </div>
@@ -54,7 +86,7 @@ const SpPurchase = {
             <option value="B">B-已创建采购订单</option>
             <option value="N">N-未编辑</option>
           </select></div>
-          <div class="filter-group"><label>物料号</label><input type="text" id="prMatCode" placeholder="物料号"></div>
+          ${isDoc ? '' : '<div class="filter-group"><label>物料号</label><input type="text" id="prMatCode" placeholder="物料号"></div>'}
           <div class="filter-group"><label>申请日期</label><input type="date" id="prDateFrom" style="padding:6px 10px;"></div>
           <div class="filter-group"><label>至</label><input type="date" id="prDateTo" style="padding:6px 10px;"></div>
           <div class="filter-actions">
@@ -65,25 +97,29 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table" style="min-width:1400px;">
+          <table class="data-table" style="min-width:${isDoc ? '900px' : '1400px'};">
             <thead><tr>
+              ${isDoc ? `
+              <th>采购申请</th><th>工厂</th><th>部门</th><th style="width:72px;text-align:center;">状态</th><th style="text-align:center;">行项目</th><th style="text-align:right;">总金额</th><th>申请日期</th><th style="width:160px;">操作</th>
+              ` : `
               <th>工厂</th><th>采购申请</th><th style="width:55px;text-align:center;">请求<br/>项目</th>
               <th>物料</th><th>短文本</th><th style="text-align:right;">申请数量</th><th style="width:38px;">Un</th>
               <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期 A</th><th>申请人</th><th>采购订单</th>
               <th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
               <th style="width:90px;">操作</th>
+              `}
             </tr></thead>
             <tbody id="prTableBody"></tbody>
           </table>
         </div>
         <div class="list-toolbar" style="flex-shrink:0;">
           <div class="list-info">
-            <span class="list-count" id="prCount">共 ${this.flatRows.length} 行</span>
-            <span style="color:var(--text-muted);font-size:12px;">(共 ${spPurchaseData.length} 张申请单)</span>
+            <span class="list-count" id="prCount">${isDoc ? `共 ${this.docRows.length} 张申请单` : `共 ${this.flatRows.length} 行`}</span>
+            <span style="color:var(--text-muted);font-size:12px;">${isDoc ? '' : `(共 ${spPurchaseData.length} 张申请单)`}</span>
           </div>
           <div class="pagination">
             <button class="pagination-btn" id="prPrev" disabled onclick="SpPurchase.prevPage()">‹</button>
-            <span class="pagination-info" id="prPageInfo">第 ${this.page} / ${Math.ceil(Math.max(this.flatRows.length,1)/this.pageSize)} 页</span>
+            <span class="pagination-info" id="prPageInfo">第 ${this.page} / ${Math.ceil(Math.max((isDoc ? this.docRows.length : this.flatRows.length),1)/this.pageSize)} 页</span>
             <button class="pagination-btn" id="prNext" onclick="SpPurchase.nextPage()">›</button>
             <select class="page-size-select" id="prPageSizeSel" onchange="SpPurchase.changePageSize()"><option value="20">20条</option><option value="40">40条</option><option value="80">80条</option></select>
           </div>
@@ -94,20 +130,77 @@ const SpPurchase = {
 
   init() {
     this.flatRows = this.flattenData();
+    this.docRows = this.aggregateData();
     this.filteredFlat = [...this.flatRows];
+    this.filteredDocs = [...this.docRows];
     this.page = 1;
-    this.renderTable();
+    // Full render: the caller should set innerHTML of the container to this.render()
+    // For backward compatibility, if table body already exists, just render table
+    if (document.getElementById('prTableBody')) {
+      this.renderTable();
+    }
   },
 
   renderTable() {
+    const isDoc = this.viewMode === 'doc';
+    if (isDoc) {
+      this._renderDocTable();
+    } else {
+      this._renderLineTable();
+    }
+  },
+
+  _renderDocTable() {
+    const start = (this.page - 1) * this.pageSize;
+    const page = this.filteredDocs.slice(start, start + this.pageSize);
+    const totalPages = Math.ceil(this.filteredDocs.length / this.pageSize) || 1;
+    const countEl = document.getElementById('prCount');
+    if (countEl) countEl.textContent = `共 ${this.filteredDocs.length} 张申请单`;
+    const pageInfo = document.getElementById('prPageInfo');
+    if (pageInfo) pageInfo.textContent = `第 ${this.page} / ${totalPages} 页`;
+    const prevBtn = document.getElementById('prPrev');
+    if (prevBtn) prevBtn.disabled = this.page <= 1;
+    const nextBtn = document.getElementById('prNext');
+    if (nextBtn) nextBtn.disabled = this.page >= totalPages;
+    const sizeSel = document.getElementById('prPageSizeSel');
+    if (sizeSel) sizeSel.value = this.pageSize;
+
+    const statusBadge = label => {
+      const map = { 'B-已创建采购订单':'badge-green','N-未编辑':'badge-gray' };
+      return `<span class="badge ${map[label]||'badge-gray'}">${esc(label)}</span>`;
+    };
+
+    document.getElementById('prTableBody').innerHTML = page.map(doc => `
+      <tr style="cursor:pointer;" ondblclick="SpPurchase.viewDetail('${doc.docNo}')">
+        <td><strong style="color:var(--primary);">${esc(doc.docNo)}</strong></td>
+        <td style="white-space:nowrap;">${esc(doc.plant)}</td>
+        <td>${esc(doc.dept)}</td>
+        <td style="text-align:center;white-space:nowrap;">${statusBadge(doc.statusLabel)}</td>
+        <td style="text-align:center;font-weight:600;">${doc.lineCount}</td>
+        <td style="text-align:right;font-weight:700;color:var(--danger);">¥ ${Number(doc.totalValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+        <td style="white-space:nowrap;">${esc(doc.applyDate)}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;" onclick="SpPurchase.viewDetail('${doc.docNo}')">查看</button>
+          <button class="btn btn-outline btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;" onclick="SpPurchase.openEditModal('${doc.docNo}')">编辑</button>
+          <button class="btn btn-danger btn-sm" style="padding:3px 10px;font-size:12px;margin-left:4px;" onclick="SpPurchase.deleteReq('${doc.docNo}')">删除</button>
+        </td>
+      </tr>`).join('');
+  },
+
+  _renderLineTable() {
     const start = (this.page - 1) * this.pageSize;
     const page = this.filteredFlat.slice(start, start + this.pageSize);
     const totalPages = Math.ceil(this.filteredFlat.length / this.pageSize) || 1;
-    document.getElementById('prCount').textContent = `共 ${this.filteredFlat.length} 行`;
-    document.getElementById('prPageInfo').textContent = `第 ${this.page} / ${totalPages} 页`;
-    document.getElementById('prPrev').disabled = this.page <= 1;
-    document.getElementById('prNext').disabled = this.page >= totalPages;
-    document.getElementById('prPageSizeSel').value = this.pageSize;
+    const countEl = document.getElementById('prCount');
+    if (countEl) countEl.textContent = `共 ${this.filteredFlat.length} 行`;
+    const pageInfo = document.getElementById('prPageInfo');
+    if (pageInfo) pageInfo.textContent = `第 ${this.page} / ${totalPages} 页`;
+    const prevBtn = document.getElementById('prPrev');
+    if (prevBtn) prevBtn.disabled = this.page <= 1;
+    const nextBtn = document.getElementById('prNext');
+    if (nextBtn) nextBtn.disabled = this.page >= totalPages;
+    const sizeSel = document.getElementById('prPageSizeSel');
+    if (sizeSel) sizeSel.value = this.pageSize;
 
     const statusBadge = s => {
       const map = { 'B':'badge-green','N':'badge-gray' };
@@ -115,20 +208,15 @@ const SpPurchase = {
       return `<span class="badge ${map[s]||'badge-gray'}">${esc(label[s]||s)}</span>`;
     };
 
-    // Group consecutive same-docNo rows for visual grouping
     let lastDoc = '';
-    let groupIdx = 0;
     document.getElementById('prTableBody').innerHTML = page.map(row => {
       const isNewGroup = row.docNo !== lastDoc;
       lastDoc = row.docNo;
-
       let actions = '';
       if (isNewGroup) {
         actions += `<button class="btn btn-outline btn-sm" onclick="SpPurchase.viewDetail('${row.docNo}')">查看</button>`;
       }
-
-      const bgStyle = isNewGroup ? '' : '';
-      return `<tr${bgStyle}>
+      return `<tr>
         <td style="white-space:nowrap;">${isNewGroup ? esc(row.plant) : ''}</td>
         <td><strong style="color:var(--primary);">${isNewGroup ? esc(row.docNo) : ''}</strong></td>
         <td style="text-align:center;font-weight:600;">${row.itemNo}</td>
@@ -150,23 +238,53 @@ const SpPurchase = {
     }).join('');
   },
 
+  switchView(mode) {
+    if (this.viewMode === mode) return;
+    this.viewMode = mode;
+    this.page = 1;
+    if (mode === 'doc') {
+      this.docRows = this.aggregateData();
+      this.filteredDocs = [...this.docRows];
+    } else {
+      this.flatRows = this.flattenData();
+      this.filteredFlat = [...this.flatRows];
+    }
+    // Re-render the whole page in contentArea
+    const container = document.getElementById('contentArea');
+    if (container) {
+      container.innerHTML = this.render();
+      this.renderTable();
+    }
+  },
+
   search() {
     const docNo = document.getElementById('prDocNo').value.trim();
     const dept = document.getElementById('prDept').value;
     const status = document.getElementById('prStatus').value;
-    const matCode = document.getElementById('prMatCode').value.trim();
+    const matCode = document.getElementById('prMatCode') ? document.getElementById('prMatCode').value.trim() : '';
     const dateFrom = document.getElementById('prDateFrom').value;
     const dateTo = document.getElementById('prDateTo').value;
 
-    this.filteredFlat = this.flatRows.filter(row => {
-      if (docNo && !row.docNo.includes(docNo)) return false;
-      if (dept && row.dept !== dept) return false;
-      if (status && row.status !== status) return false;
-      if (matCode && !(row.matCode||'').includes(matCode)) return false;
-      if (dateFrom && row.applyDate < dateFrom) return false;
-      if (dateTo && row.applyDate > dateTo) return false;
-      return true;
-    });
+    if (this.viewMode === 'doc') {
+      this.filteredDocs = this.docRows.filter(doc => {
+        if (docNo && !doc.docNo.includes(docNo)) return false;
+        if (dept && doc.dept !== dept) return false;
+        if (status && !doc.statuses.includes(status)) return false;
+        if (dateFrom && doc.applyDate < dateFrom) return false;
+        if (dateTo && doc.applyDate > dateTo) return false;
+        return true;
+      });
+    } else {
+      this.filteredFlat = this.flatRows.filter(row => {
+        if (docNo && !row.docNo.includes(docNo)) return false;
+        if (dept && row.dept !== dept) return false;
+        if (status && row.status !== status) return false;
+        if (matCode && !(row.matCode||'').includes(matCode)) return false;
+        if (dateFrom && row.applyDate < dateFrom) return false;
+        if (dateTo && row.applyDate > dateTo) return false;
+        return true;
+      });
+    }
     this.page = 1;
     this.renderTable();
   },
@@ -175,17 +293,31 @@ const SpPurchase = {
     document.getElementById('prDocNo').value = '';
     document.getElementById('prDept').value = '';
     document.getElementById('prStatus').value = '';
-    document.getElementById('prMatCode').value = '';
+    if (document.getElementById('prMatCode')) document.getElementById('prMatCode').value = '';
     document.getElementById('prDateFrom').value = '';
     document.getElementById('prDateTo').value = '';
-    this.filteredFlat = [...this.flatRows];
+    if (this.viewMode === 'doc') {
+      this.filteredDocs = [...this.docRows];
+    } else {
+      this.filteredFlat = [...this.flatRows];
+    }
     this.page = 1;
     this.renderTable();
   },
 
-  prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
-  nextPage() { const tp = Math.ceil(this.filteredFlat.length/this.pageSize); if (this.page < tp) { this.page++; this.renderTable(); } },
-  changePageSize() { this.pageSize = parseInt(document.getElementById('prPageSizeSel').value); this.page = 1; this.renderTable(); },
+  prevPage() {
+    if (this.page > 1) { this.page--; this.renderTable(); }
+  },
+  nextPage() {
+    const total = this.viewMode === 'doc' ? this.filteredDocs.length : this.filteredFlat.length;
+    const tp = Math.ceil(total / this.pageSize) || 1;
+    if (this.page < tp) { this.page++; this.renderTable(); }
+  },
+  changePageSize() {
+    this.pageSize = parseInt(document.getElementById('prPageSizeSel').value);
+    this.page = 1;
+    this.renderTable();
+  },
 
   // ---- 新建采购申请：弹出选择弹框（手工填写 / 模板批导）----
   openNewModal() {
