@@ -104,7 +104,7 @@ const SpPurchase = {
               ` : `
               <th>工厂</th><th>采购申请</th><th style="width:55px;text-align:center;">请求<br/>项目</th>
               <th>物料</th><th>短文本</th><th style="text-align:right;">申请数量</th><th style="width:38px;">Un</th>
-              <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期 A</th><th>申请人</th><th>采购订单</th>
+              <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>申请人</th><th>采购订单</th>
               <th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
               <th style="width:90px;">操作</th>
               `}
@@ -730,7 +730,7 @@ const SpPurchase = {
               <table class="data-table" style="min-width:960px;">
                 <thead><tr>
                   <th>项次</th><th>物料</th><th>短文本</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>Un</th>
-                  <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期A</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
+                  <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
                 </tr></thead>
                 <tbody>${pr.lines.map((l,i)=>`<tr>
                   <td style="text-align:center;">${l.itemNo}</td>
@@ -833,7 +833,7 @@ const SpPurchase = {
                     <th style="min-width:75px;text-align:right;"><span class="req">*</span> 申请数量</th>
                     <th style="width:52px;">Un</th>
                     <th style="min-width:70px;text-align:right;">订货数量</th>
-                    <th style="min-width:95px;">交货日期A</th>
+                    <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:95px;">需求日期</th>
                     <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:70px;text-align:right;">评价价格</th>
