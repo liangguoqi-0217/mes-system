@@ -108,8 +108,6 @@ const SpPick = {
       <td>${sb(r.status)}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="SpPick.viewDetail('${r.docNo}')">查看</button>
-        ${r.status==='草稿'?`<button class="btn btn-primary btn-sm" onclick="SpPick.openEditModal('${r.docNo}')">修改</button>`:''}
-        ${r.status==='草稿'||r.status==='待审批'?`<button class="btn btn-secondary btn-sm" onclick="SpPick.deleteReq('${r.docNo}')">删除</button>`:''}
       </td>
     </tr>`).join('');
   },

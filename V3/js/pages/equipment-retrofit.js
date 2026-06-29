@@ -67,13 +67,6 @@ const EquipmentRetrofit = {
         <td>${esc(d.leader||'-')}</td>
         <td class="table-actions">
           <button class="btn btn-sm btn-outline" onclick="EquipmentRetrofit.viewDetail('${d.id}')">查看</button>
-          ${d.projStatus==='draft'?`<button class="btn btn-sm btn-primary" onclick="EquipmentRetrofit.editDoc('${d.id}')">编辑</button>`:''}
-          ${d.projStatus==='draft'?`<button class="btn btn-sm btn-blue" onclick="EquipmentRetrofit.submitApproval('${d.id}')">提交审批</button>`:''}
-          ${d.projStatus==='pending_approval'?`<button class="btn btn-sm btn-danger-outline" onclick="EquipmentRetrofit.withdraw('${d.id}')">撤回</button>`:''}
-          ${d.projStatus==='pending_approval'?`<button class="btn btn-sm btn-blue" onclick="EquipmentRetrofit.approve('${d.id}')">审批通过</button>`:''}
-          ${d.projStatus==='pending_approval'?`<button class="btn btn-sm btn-warning" onclick="EquipmentRetrofit.startConstruction('${d.id}')">开始施工</button>`:''}
-          ${d.projStatus==='construction'?`<button class="btn btn-sm btn-purple" onclick="EquipmentRetrofit.submitAcceptance('${d.id}')">提交验收</button>`:''}
-          ${d.projStatus==='acceptance'?`<button class="btn btn-sm btn-green" onclick="EquipmentRetrofit.accept('${d.id}')">验收完成</button>`:''}
         </td>
       </tr>`;
     }).join('');

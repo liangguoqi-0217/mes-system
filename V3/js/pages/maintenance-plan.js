@@ -47,14 +47,7 @@ const MaintPlan = {
   },
 
   _rowActions(d){
-    let btns='<button class="btn btn-sm btn-outline" onclick="MaintPlan.view(\''+d.id+'\')">查看</button>';
-    if(d.status==='draft') btns+=' <button class="btn btn-sm btn-outline" onclick="MaintPlan.edit(\''+d.id+'\')">编辑</button>';
-    if(d.status==='draft') btns+=' <button class="btn btn-sm btn-blue" onclick="MaintPlan.submitReview(\''+d.id+'\')">提交审核</button>';
-    if(d.status==='active') btns+=' <button class="btn btn-sm btn-yellow" onclick="MaintPlan.disable(\''+d.id+'\')">停用</button>';
-    if(d.status==='disabled') btns+=' <button class="btn btn-sm btn-green" onclick="MaintPlan.enable(\''+d.id+'\')">启用</button>';
-    btns+=' <button class="btn btn-sm btn-outline" onclick="MaintPlan.copy(\''+d.id+'\')">复制</button>';
-    btns+=' <button class="btn btn-sm btn-outline" onclick="MaintPlan.versionLog(\''+d.id+'\')">版本日志</button>';
-    return '<div class="table-actions">'+btns+'</div>';
+    return '<div class="table-actions"><button class="btn btn-sm btn-outline" onclick="MaintPlan.view(\''+d.id+'\')">查看</button></div>';
   },
 
   _renderPagination(total,totalPages){

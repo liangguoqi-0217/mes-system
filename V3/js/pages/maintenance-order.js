@@ -50,14 +50,7 @@ const MfOrder = {
   },
 
   _rowActions(d){
-    let btns=`<button class="btn btn-sm btn-outline" onclick="MfOrder.detail('${d.id}')">详情</button>`;
-    if(d.orderStatus==='draft')btns=`<button class="btn btn-sm btn-outline" onclick="MfOrder.edit('${d.id}')">编辑</button> ${btns}`;
-    if(d.orderStatus==='released'||d.orderStatus==='draft')btns+=` <button class="btn btn-sm btn-blue" onclick="MfOrder.dispatch('${d.id}')">派工</button>`;
-    if(d.orderStatus==='dispatched')btns+=` <button class="btn btn-sm btn-green" onclick="MfOrder.startExec('${d.id}')">开始执行</button>`;
-    if(d.orderStatus==='executing')btns+=` <button class="btn btn-sm btn-purple" onclick="MfOrder.finishExec('${d.id}')">完工报工</button>`;
-    if(d.orderStatus==='acceptance')btns+=` <button class="btn btn-sm btn-green" onclick="MfOrder.accept('${d.id}')">验收</button>`;
-    btns+=` <button class="btn btn-sm btn-outline" onclick="MfOrder.print('${d.id}')">打印</button>`;
-    return `<div class="table-actions">${btns}</div>`;
+    return `<div class="table-actions"><button class="btn btn-sm btn-outline" onclick="MfOrder.detail('${d.id}')">详情</button></div>`;
   },
 
   _renderPagination(total,totalPages){
