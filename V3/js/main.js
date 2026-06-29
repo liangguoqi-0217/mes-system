@@ -123,7 +123,8 @@ const App = {
         {
           title:'备品备件管理', items: [
             { id:'sp-stock', label:'库存查询', route:'sp-stock' },
-            { id:'sp-pick', label:'备件领用', route:'sp-pick' }
+            { id:'sp-pick', label:'备件领用', route:'sp-pick' },
+            { id:'safety-stock-alert', label:'安全库存预警', route:'safety-stock-alert', pageObj:'SafetyStockAlert' }
           ]
         },
         {
@@ -165,7 +166,8 @@ const App = {
     'inspection-char': InspectionChar,
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
-    'inspection-batch': InspectionBatch
+    'inspection-batch': InspectionBatch,
+    'safety-stock-alert': SafetyStockAlert
   },
 
   init() {
