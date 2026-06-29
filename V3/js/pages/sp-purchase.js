@@ -391,8 +391,8 @@ const SpPurchase = {
         请选择一种方式创建采购申请
       </div>
 
-      <!-- 1×2 网格布局 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <!-- 1×3 网格布局 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
 
         <!-- 卡片一：手工填写 -->
         <div onclick="closeModal();SpPurchase.openManualForm()"
@@ -414,6 +414,17 @@ const SpPurchase = {
           <div style="font-size:15px;font-weight:700;color:#065f46;margin-bottom:4px;">模板批导</div>
           <div style="font-size:12px;color:#6b7280;line-height:1.45;">下载模板批量填写后上传，适合大批量采购申请</div>
           <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:#10b981;color:#fff;cursor:pointer;">开始批导 →</span></div>
+        </div>
+
+        <!-- 卡片三：按安全库存预警创建 -->
+        <div onclick="closeModal();SpPurchase.openAlertCreateModal()"
+          style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #fcd34d;border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
+          onmouseenter="this.style.borderColor='#f59e0b';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(245,158,11,.15)'"
+          onmouseleave="this.style.borderColor='#fcd34d';this.style.transform='translateY(0)';this.style.boxShadow='none'">
+          <div style="font-size:36px;margin-bottom:8px;">📊</div>
+          <div style="font-size:15px;font-weight:700;color:#92400e;margin-bottom:4px;">按安全库存预警创建</div>
+          <div style="font-size:12px;color:#6b7280;line-height:1.45;">从安全库存预警报表中勾选缺货物料，自动生成采购申请</div>
+          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:#f59e0b;color:#fff;cursor:pointer;">选择物料 →</span></div>
         </div>
 
       </div>
@@ -1243,7 +1254,217 @@ const SpPurchase = {
 
   printList() { toast('打印功能开发中...'); },
   printSingle(docNo) { toast('打印申请单 ' + docNo + ' ...'); },
-  exportData() { toast('导出功能开发中...'); }
+  exportData() { toast('导出功能开发中...'); },
+
+  // ---- 第三种创建方式：按安全库存预警创建 ----
+  openAlertCreateModal() {
+    const alertData = this._buildAlertDataForPurchase();
+    const fmtNum = n => n != null && n !== '' ? Number(n).toLocaleString() : '0';
+    const redCount = alertData.filter(r => r.status === 'red').length;
+    const greenCount = alertData.filter(r => r.status === 'green').length;
+
+    const body = `
+      <div style="padding:4px 0;">
+        <!-- 统计卡片 -->
+        <div style="display:flex;gap:12px;margin-bottom:12px;">
+          <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;background:#16a34a;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:white;">✓</div>
+            <div><div style="font-size:18px;font-weight:700;color:#16a34a;">${greenCount}</div><div style="font-size:11px;color:#15803d;">绿灯（库存充足）</div></div>
+          </div>
+          <div style="flex:1;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;background:#dc2626;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:white;">✗</div>
+            <div><div style="font-size:18px;font-weight:700;color:#dc2626;">${redCount}</div><div style="font-size:11px;color:#991b1b;">红灯（库存不足）</div></div>
+          </div>
+          <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 16px;display:flex;align-items:center;gap:10px;">
+            <div style="width:32px;height:32px;background:#64748b;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;color:white;">Σ</div>
+            <div><div style="font-size:18px;font-weight:700;color:#334155;">${alertData.length}</div><div style="font-size:11px;color:#64748b;">总计物料</div></div>
+          </div>
+        </div>
+
+        <!-- 筛选条件 -->
+        <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="alertFilterFactory" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+            <option value="">全部工厂</option>
+            <option value="1000">1000 (山东寿光)</option>
+            <option value="2000">2000 (江苏南通)</option>
+            <option value="3000">3000 (浙江台州)</option>
+          </select>
+          <select id="alertFilterMatType" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+            <option value="">全部物料类型</option>
+            <option value="Z001">Z001-成品</option>
+            <option value="Z002">Z002-半成品</option>
+            <option value="Z003">Z003-原料</option>
+            <option value="Z004">Z004-辅料</option>
+            <option value="Z005">Z005-包材</option>
+            <option value="Z006">Z006-耗材及其他</option>
+          </select>
+          <select id="alertFilterStatus" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+            <option value="">全部状态</option>
+            <option value="green">绿灯（库存充足）</option>
+            <option value="red">红灯（库存不足）</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="SpPurchase._filterAlertTable()" style="padding:5px 14px;font-size:12px;">查询</button>
+          <button class="btn btn-secondary btn-sm" onclick="SpPurchase._resetAlertFilter()" style="padding:5px 14px;font-size:12px;">重置</button>
+        </div>
+
+        <!-- 数据表格 -->
+        <div style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+          <table class="data-table" style="min-width:1100px;font-size:12px;">
+            <thead><tr>
+              <th style="width:36px;text-align:center;"><input type="checkbox" id="alertCheckAll" onchange="SpPurchase._toggleAllAlert(this)" title="全选红灯物料"></th>
+              <th>工厂</th><th>物料</th><th>物料描述</th><th>物料类型</th><th style="text-align:right;">非限制库存</th><th style="text-align:right;">安全库存</th><th>单位</th><th>状态</th>
+            </tr></thead>
+            <tbody id="alertTableBody">
+              ${this._renderAlertTableRows(alertData)}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);text-align:center;">
+          💡 仅<span style="color:#dc2626;font-weight:600;">红灯（库存不足）</span>物料可勾选创建采购申请
+        </div>
+      </div>`;
+
+    showModal('📊 按安全库存预警创建采购申请', body, [
+      { text: '取消', cls: 'btn-secondary', action: closeModal },
+      { text: '确认创建', cls: 'btn btn-primary', action: () => SpPurchase._confirmAlertCreate() }
+    ], 'modal-xl');
+  },
+
+  _buildAlertDataForPurchase() {
+    // 复用安全库存预警逻辑
+    const aggMap = new Map();
+    sparePartsStockData.forEach(row => {
+      const key = `${row.factory}|${row.matCode}`;
+      if (!aggMap.has(key)) {
+        aggMap.set(key, {
+          factory: row.factory,
+          matCode: row.matCode,
+          matDesc: row.matDesc,
+          unit: row.unit,
+          unrestrictedQty: 0,
+          qualityQty: 0,
+          safetyStock: typeof SafetyStockAlert !== 'undefined' ? SafetyStockAlert._getSafetyStock(row.matCode) : 0
+        });
+      }
+      const agg = aggMap.get(key);
+      agg.unrestrictedQty += (row.unrestrictedQty || 0);
+      agg.qualityQty += (row.qualityQty || 0);
+    });
+    return [...aggMap.values()].map(row => {
+      row.availableQty = row.unrestrictedQty + row.qualityQty;
+      row.status = row.safetyStock > 0 && row.availableQty < row.safetyStock ? 'red' : 'green';
+      row.shortfallQty = row.status === 'red' ? Math.max(0, row.safetyStock - row.availableQty) : 0;
+      row.matType = (typeof SafetyStockAlert !== 'undefined')
+        ? SafetyStockAlert._getMatTypeFromMaterialData(row.matCode)
+        : '';
+      return row;
+    });
+  },
+
+  _renderAlertTableRows(data) {
+    const fmtNum = n => n != null && n !== '' ? Number(n).toLocaleString() : '0';
+    const redRows = data.filter(r => r.status === 'red');
+    const greenRows = data.filter(r => r.status === 'green');
+    // 红灯排前面
+    const sorted = [...redRows, ...greenRows];
+    return sorted.map(row => {
+      const isRed = row.status === 'red';
+      const statusHtml = isRed
+        ? '<span style="display:inline-flex;align-items:center;gap:4px;color:#dc2626;font-weight:600;"><span style="width:8px;height:8px;background:#dc2626;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;"></span> 红灯</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:4px;color:#16a34a;font-weight:600;"><span style="width:8px;height:8px;background:#16a34a;border-radius:50%;display:inline-block;"></span> 绿灯</span>';
+      return `<tr style="${isRed ? 'background:#fef2f2;' : ''}" data-matcode="${esc(row.matCode)}" data-factory="${esc(row.factory)}" data-status="${row.status}">
+        <td style="text-align:center;"><input type="checkbox" class="alert-row-cb" ${!isRed ? 'disabled' : ''} data-matcode="${esc(row.matCode)}" data-factory="${esc(row.factory)}"></td>
+        <td>${esc(row.factory)}</td>
+        <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
+        <td>${esc(row.matDesc)}</td>
+        <td>${esc(row.matType)}</td>
+        <td style="text-align:right;color:#16a34a;font-weight:500;">${fmtNum(row.unrestrictedQty)}</td>
+        <td style="text-align:right;font-weight:600;${isRed ? 'color:#dc2626;' : 'color:#16a34a;'}">${fmtNum(row.safetyStock)}</td>
+        <td style="text-align:center;">${esc(row.unit)}</td>
+        <td style="text-align:center;">${statusHtml}</td>
+      </tr>`;
+    }).join('');
+  },
+
+  _filterAlertTable() {
+    const factory = document.getElementById('alertFilterFactory').value;
+    const matType = document.getElementById('alertFilterMatType').value;
+    const status = document.getElementById('alertFilterStatus').value;
+
+    let data = this._buildAlertDataForPurchase();
+    if (factory) data = data.filter(r => r.factory === factory);
+    if (matType) data = data.filter(r => r.matType && r.matType.startsWith(matType));
+    if (status) data = data.filter(r => r.status === status);
+
+    const tbody = document.getElementById('alertTableBody');
+    if (tbody) tbody.innerHTML = this._renderAlertTableRows(data);
+    // Uncheck all
+    const allCb = document.getElementById('alertCheckAll');
+    if (allCb) allCb.checked = false;
+  },
+
+  _resetAlertFilter() {
+    const factoryEl = document.getElementById('alertFilterFactory');
+    const matTypeEl = document.getElementById('alertFilterMatType');
+    const statusEl = document.getElementById('alertFilterStatus');
+    if (factoryEl) factoryEl.value = '';
+    if (matTypeEl) matTypeEl.value = '';
+    if (statusEl) statusEl.value = '';
+    const data = this._buildAlertDataForPurchase();
+    const tbody = document.getElementById('alertTableBody');
+    if (tbody) tbody.innerHTML = this._renderAlertTableRows(data);
+    const allCb = document.getElementById('alertCheckAll');
+    if (allCb) allCb.checked = false;
+  },
+
+  _toggleAllAlert(el) {
+    const checkboxes = document.querySelectorAll('#alertTableBody .alert-row-cb:not([disabled])');
+    checkboxes.forEach(cb => { cb.checked = el.checked; });
+  },
+
+  _confirmAlertCreate() {
+    const checked = document.querySelectorAll('#alertTableBody .alert-row-cb:checked');
+    if (checked.length === 0) {
+      toast('请至少勾选一个红灯物料');
+      return;
+    }
+
+    // 收集勾选的物料数据
+    const alertData = this._buildAlertDataForPurchase();
+    const lines = [];
+    checked.forEach(cb => {
+      const matCode = cb.getAttribute('data-matcode');
+      const factory = cb.getAttribute('data-factory');
+      const row = alertData.find(r => r.matCode === matCode && r.factory === factory);
+      if (row) {
+        // 从 materialMasterMock 查找价格
+        const master = materialMasterMock.find(m => m.matCode === row.matCode);
+        const matGroup = master ? master.matGroup : row.matCode.substring(0, 3);
+        const price = master ? master.price : 0;
+        lines.push({
+          matCode: row.matCode,
+          shortText: row.matDesc,
+          reqQty: Math.max(1, row.shortfallQty || row.safetyStock - row.availableQty),
+          unit: row.unit,
+          matGroup: matGroup,
+          price: price,
+          totalValue: 0,
+          status: 'N'
+        });
+      }
+    });
+
+    // 存储到 sessionStorage
+    sessionStorage.setItem('ssa_purchase_lines', JSON.stringify(lines));
+
+    // 关闭当前弹窗
+    closeModal();
+
+    // 打开手工填写表单（会自动读取 sessionStorage 并填充）
+    setTimeout(() => {
+      SpPurchase.openManualForm();
+    }, 150);
+  },
 };
 
 // ===== Demo Data for Purchase Requisition (real factory codes & material codes) =====

@@ -44,3 +44,13 @@ Soul名称：YYDS・神人
 常用触发：Task.Decompose、Fallback.Replan、Search.DeepDive、Decision.Select
 谨慎触发：Task.Clarify、OpenEnded.Explore、Emotion.Mirror
 回退时触发：Error.Recover、Fallback.Replan、Constraint.Check、Search.DeepDive
+
+## 框架 UI 设计规范
+
+### 页面顶部渐变色
+所有页面顶部标题栏统一使用蓝色渐变：`linear-gradient(135deg, var(--primary), var(--primary-light))`，不得使用其他颜色（如黄色、红色等）。
+
+### 操作按钮风格
+- 列表页行项目「查看」按钮：统一使用 `btn btn-blue btn-sm` 样式
+- 主操作按钮：统一使用 `btn btn-primary`
+- 取消/次要按钮：统一使用 `btn btn-secondary`
