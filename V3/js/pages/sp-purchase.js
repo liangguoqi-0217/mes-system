@@ -835,10 +835,10 @@ const SpPurchase = {
               <div class="detail-grid">
                 <div class="detail-item"><dt>采购申请类型</dt><dd><strong>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}</strong></dd></div>
                 <div class="detail-item"><dt>申请编号</dt><dd><strong>${esc(pr.docNo)}</strong></dd></div>
-                <div class="detail-item"><dt>申请日期</dt><dd>${esc(pr.applyDate)}</dd></div>
-                <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}</dd></div>
                 <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
                 <div class="detail-item"><dt>采购组</dt><dd>${esc(pgLabel?pgLabel.label:pr.purchaseGroup||'-')}</dd></div>
+                <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}</dd></div>
+                <div class="detail-item"><dt>申请日期</dt><dd>${esc(pr.applyDate)}</dd></div>
 
               </div>
               <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:6px;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;">
@@ -850,7 +850,7 @@ const SpPurchase = {
               <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
               <table class="data-table" style="min-width:${isZ02?'1000px':'1280px'};">
                 <thead><tr>
-                  <th>项次</th>${isZ01?'<th>物料</th>':''}<th>短文本</th>${isZ02?'<th>科目分配类别</th>':''}${isZ02?'<th>成本中心</th>':''}<th>物料组</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>单位</th>
+                  <th>项次</th>${isZ01?'<th>物料</th>':''}<th>短文本</th><th>科目分配类别</th><th>成本中心</th><th>物料组</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>单位</th>
                   <th style="text-align:right;">订货数量</th><th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
                 </tr></thead>
                 <tbody>${pr.lines.map((l,i)=>{
@@ -860,7 +860,8 @@ const SpPurchase = {
                   <td style="text-align:center;">${l.itemNo}</td>
                   ${isZ01?`<td><strong>${esc(l.matCode)}</strong></td>`:''}
                   <td>${esc(l.shortText)}</td>
-                  ${isZ02?`<td>${esc(acctLabel?acctLabel.label:l.acctAssCategory||'-')}</td>`:''}${isZ02?`<td>${esc(l.costCenter||'-')}</td>`:''}
+                  <td>${esc(acctLabel?acctLabel.label:l.acctAssCategory||'-')}</td>
+                  <td>${esc(l.costCenter||'-')}</td>
                   <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
                   <td>${esc(l.applicant||'-')}</td>
                   <td>${esc(l.poNo||'-')}</td>
@@ -877,7 +878,7 @@ const SpPurchase = {
                 }).join('')}
                 </tbody>
                 <tfoot><tr style="background:#fef3f2;border-top:3px solid var(--border);">
-                  <td colspan="${isZ02?'15':'14'}" style="text-align:right;font-weight:700;">合计：</td>
+                  <td colspan="${isZ02?'15':'16'}" style="text-align:right;font-weight:700;">合计：</td>
                   <td style="text-align:right;font-weight:800;color:var(--danger);font-size:15px;">¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
                 </tr></tfoot>
               </table>

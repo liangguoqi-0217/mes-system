@@ -2120,6 +2120,7 @@ const MaintenanceWorkOrderV3 = {
       <div class="tab ${this._detailTab==='operations'?'active':''}" onclick="MaintenanceWorkOrderV3._switchTab(event,'operations')">工序 (${ops.length})</div>
       <div class="tab ${this._detailTab==='materials'?'active':''}" onclick="MaintenanceWorkOrderV3._switchTab(event,'materials')">物料组件 (${mats.length})</div>
       <div class="tab ${this._detailTab==='safety'?'active':''}" onclick="MaintenanceWorkOrderV3._switchTab(event,'safety')">安全措施</div>
+      <div class="tab ${this._detailTab==='attachment'?'active':''}" onclick="MaintenanceWorkOrderV3._switchTab(event,'attachment')">附件</div>
       <div class="tab ${this._detailTab==='feedback'?'active':''}" onclick="MaintenanceWorkOrderV3._switchTab(event,'feedback')">执行反馈与关闭</div>
     </div>
 
@@ -2153,9 +2154,38 @@ const MaintenanceWorkOrderV3 = {
       case 'operations': return this._buildOperationsTab(wo,ops);
       case 'materials': return this._buildMaterialsTab(wo,mats);
       case 'safety': return this._buildSafetyTab(wo);
+      case 'attachment': return this._buildAttachmentTab(wo);
       case 'feedback': return this._buildFeedbackTab(wo,ops);
       default: return '';
     }
+  },
+
+  _buildAttachmentTab(wo) {
+    const attachments = wo.attachments || [];
+    return `
+      <div style="padding:8px 0;">
+        <div style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;"
+          onclick="toast('附件上传功能将在后续版本实现')"
+          onmouseenter="this.style.borderColor='var(--primary)';this.style.background='#f8fafc';"
+          onmouseleave="this.style.borderColor='var(--border)';this.style.background='white';">
+          <div style="font-size:32px;margin-bottom:6px;">📎</div>
+          <div style="font-size:13px;color:var(--text-secondary);">点击上传附件</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">支持图片、文档（作业指导书、参考图纸等）</div>
+        </div>
+        ${attachments.length ? `
+        <div style="margin-top:12px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:var(--text-secondary);">已上传附件 (${attachments.length})</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${attachments.map(a => `
+              <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#f8fafc;border-radius:6px;font-size:13px;">
+                <span style="font-size:18px;">📄</span>
+                <span style="flex:1;">${esc(a.name||'附件')}</span>
+                <span style="color:var(--text-muted);font-size:11px;">${esc(a.uploadTime||'')}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : ''}
+      </div>`;
   },
 
   _buildHeaderTab(wo,eq,srcNotif,srcTL) {

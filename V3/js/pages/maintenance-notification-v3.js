@@ -519,6 +519,7 @@ const MaintenanceNotificationV3 = {
         <div class="detail-item"><dt>优先级</dt><dd>${esc(n.PRIOK)}</dd></div>
         <div class="detail-item"><dt>发现人</dt><dd>${esc(n.QMNAM)}</dd></div>
         <div class="detail-item"><dt>发现时间</dt><dd>${esc(n.QMDAT)}</dd></div>
+        <div class="detail-item"><dt>期望完成日期</dt><dd>${esc(n.expectedDate||'-')}</dd></div>
         <div class="detail-item"><dt>来源</dt><dd>${srcTag}</dd></div>
         ${wo?`<div class="detail-item"><dt>关联工单</dt><dd><span style="color:var(--primary-lighter);font-weight:600;">${esc(wo.AUFNR)} (${esc(wo.STAT_TXT)})</span></dd></div>`:''}
         ${n.closeReason?`<div class="detail-item"><dt>关闭原因</dt><dd style="color:var(--text-muted);">${esc(n.closeReason)}</dd></div>`:''}
