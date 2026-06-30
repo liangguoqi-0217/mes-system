@@ -171,19 +171,32 @@ const App = {
   },
 
   init() {
-    // 清除任何历史错误
-    if (window._errors) window._errors = [];
-    // 1. 初始化用户界面
-    this._initUserUI();
-    // 2. 初始化数据持久化服务
-    this._initPersistence();
-    this.renderSidebar();
-    this.setupMenuToggle();
-    this.setupTopbarButtons();
-    this.navigateTo('home');
-    // 标记页面已加载完成，之后出现的错误才显示
-    var ca = document.getElementById('contentArea');
-    if (ca) ca.dataset.loaded = '1';
+    console.log('[App] init() 开始执行');
+    try {
+      // 清除任何历史错误
+      if (window._errors) window._errors = [];
+      // 1. 初始化用户界面
+      console.log('[App] 正在初始化用户界面...');
+      this._initUserUI();
+      // 2. 初始化数据持久化服务
+      console.log('[App] 正在初始化数据持久化服务...');
+      this._initPersistence();
+      console.log('[App] 正在渲染侧边栏...');
+      this.renderSidebar();
+      console.log('[App] 正在设置菜单切换...');
+      this.setupMenuToggle();
+      console.log('[App] 正在设置顶栏按钮...');
+      this.setupTopbarButtons();
+      console.log('[App] 正在导航到首页...');
+      this.navigateTo('home');
+      // 标记页面已加载完成，之后出现的错误才显示
+      var ca = document.getElementById('contentArea');
+      if (ca) ca.dataset.loaded = '1';
+      console.log('[App] init() 执行完成');
+    } catch (e) {
+      console.error('[App] init() 执行失败:', e);
+      alert('初始化失败: ' + e.message);
+    }
   },
 
   /* ===== 用户界面初始化 ===== */
@@ -541,7 +554,6 @@ const App = {
                   setTimeout(function() { location.reload(); }, 1000);
                 }}
               ], 'modal-sm')
-            );
           }},
           { text:'关闭', cls:'btn-secondary', action:closeModal }
         ]
