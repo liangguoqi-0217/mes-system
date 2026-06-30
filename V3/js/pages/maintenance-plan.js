@@ -96,14 +96,14 @@ const MaintPlan = {
     showModal('启用计划','确定启用该维护计划？启用后可用于调度配置。',[
       {text:'取消',action:closeModal,cls:'btn-secondary'},
       {text:'确认启用',action:function(){closeModal();const p=pmPlanData.find(x=>x.id===id);if(p){p.status='active';p.statusName='已生效'} MaintPlan.renderTo(); toast('计划已启用')},cls:'btn-green'}
-    ]);
+    ], 'modal-sm');
   },
 
   disable(id){
     showModal('停用计划','停用后关联的调度方案将不生成新工单，确定停用？',[
       {text:'取消',action:closeModal,cls:'btn-secondary'},
       {text:'确认停用',action:function(){closeModal();const p=pmPlanData.find(x=>x.id===id);if(p){p.status='disabled';p.statusName='已停用'} MaintPlan.renderTo(); toast('计划已停用')},cls:'btn-yellow'}
-    ]);
+    ], 'modal-sm');
   },
 
   copy(id){

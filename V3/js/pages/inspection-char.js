@@ -578,7 +578,7 @@ const InspectionChar = {
           this.init();
           toast(`MIC ${m.code} 已停用`);
         }}
-      ]
+      ], 'modal-sm'
     );
   },
 
@@ -612,7 +612,7 @@ const InspectionChar = {
           this.init();
           toast(`MIC ${m.code} 已标记删除（不可恢复）`);
         }}
-      ]
+      ], 'modal-sm'
     );
   }
 };

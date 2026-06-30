@@ -784,21 +784,21 @@ const MaintPreventive = {
     showModal('启用调度', '确定启用该调度方案？启用后将按规则自动生成工单。', [
       { text: '取消', action: closeModal, cls: 'btn-secondary' },
       { text: '确认启用', action: () => { closeModal(); const s = pmScheduleData.find(x => x.id === id); if (s) { s.status = 'active'; s.statusName = '已启用'; } this._refreshContent(); toast('调度已启用'); }, cls: 'btn-primary' }
-    ]);
+    ], 'modal-sm');
   },
 
   pauseSchedule(id) {
     showModal('暂停调度', '暂停后不再自动生成工单，可随时恢复。', [
       { text: '取消', action: closeModal, cls: 'btn-secondary' },
       { text: '确认暂停', action: () => { closeModal(); const s = pmScheduleData.find(x => x.id === id); if (s) { s.status = 'paused'; s.statusName = '已暂停'; } this._refreshContent(); toast('调度已暂停'); }, cls: 'btn-primary' }
-    ]);
+    ], 'modal-sm');
   },
 
   stopSchedule(id) {
     showModal('终止调度', '终止后永久停止，无法恢复。确定终止？', [
       { text: '取消', action: closeModal, cls: 'btn-secondary' },
       { text: '确认终止', action: () => { closeModal(); const s = pmScheduleData.find(x => x.id === id); if (s) { s.status = 'stopped'; s.statusName = '已终止'; } this._refreshContent(); toast('调度已终止'); }, cls: 'btn-primary' }
-    ]);
+    ], 'modal-sm');
   },
 
   viewScheduleLog(id) {

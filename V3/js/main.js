@@ -447,7 +447,7 @@ const App = {
             localStorage.removeItem('pm_v2_current_user');
             window.location.href = 'login.html';
           }}
-        ]);
+        ], 'modal-sm');
         break;
     }
   },
@@ -498,7 +498,7 @@ const App = {
             });
             document.body.removeChild(input);
           }}
-        ]
+        ], 'modal-sm'
       );
     });
 
@@ -540,7 +540,7 @@ const App = {
                   toast('数据已清除，页面将刷新');
                   setTimeout(function() { location.reload(); }, 1000);
                 }}
-              ]
+              ], 'modal-sm')
             );
           }},
           { text:'关闭', cls:'btn-secondary', action:closeModal }

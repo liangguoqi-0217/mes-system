@@ -578,7 +578,7 @@ const MeasurementPoint = {
         this.doFilter();
         toast(`测量点已${actionText}`);
       }}
-    ]);
+    ], 'modal-sm');
   },
 
   deletePoint(id) {
@@ -595,7 +595,7 @@ const MeasurementPoint = {
         this.doFilter();
         toast('测量点已删除');
       }}
-    ]);
+    ], 'modal-sm');
   },
 
   setupEvents() {

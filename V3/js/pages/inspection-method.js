@@ -698,7 +698,7 @@ const InspectionMethod = {
           this.init();
           toast(`方法 ${m.code} 已停用`);
         }}
-      ]
+      ], 'modal-sm'
     );
   },
 
@@ -732,7 +732,7 @@ const InspectionMethod = {
           this.init();
           toast(`方法 ${m.code} 已标记删除（不可恢复）`);
         }}
-      ]
+      ], 'modal-sm'
     );
   }
 };
