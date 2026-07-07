@@ -1,6 +1,6 @@
 // ===== 检验批管理页面 =====
 // PRD v1.0 - 质量管理 → 质量检验 → 检验批管理
-// ✨ v2.1 - 2026-06-17: 跨工厂协同从"待生成"移至"检验批列表"
+// ✨ v2.2 - 2026-07-07: 移除跨工厂检验协同功能（协同按钮/弹窗/生成确认）
 const InspectionBatch = {
   _version: '2.1-20260617',
   activeTab: 'pending', // 'pending' | 'list'
@@ -34,7 +34,7 @@ const InspectionBatch = {
     { id:'B005', batchNo:'2002-2606-001', docNo:'4900000104', materialCode:'MAT-20002', materialName:'注射用水', sapBatch:'SAP-BT-20260515', supplierBatch:'ZS2606E10', quantity:'2000.000', unit:'L', plant:'2002', plantName:'山东丹红制药工厂', planNo:'IP-2002-001', purposeCode:'QC-03', purposeName:'成品检验', status:'DEC', statusName:'已决策', createTime:'2026-06-13 07:00:00', createBy:'赵工', updateTime:'2026-06-14 16:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-14 16:00:00' },
     { id:'B006', batchNo:'1000-2606-004', docNo:'4900000105', materialCode:'MAT-10009', materialName:'甘露醇辅料', sapBatch:'SAP-BT-20260518', supplierBatch:'GL2606F12', quantity:'100.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CLSD', statusName:'已关闭', createTime:'2026-06-12 09:30:00', createBy:'张工', updateTime:'2026-06-13 17:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-13 10:00:00', closeTime:'2026-06-13 17:00:00' },
     { id:'B007', batchNo:'1000-2606-005', docNo:'4900000106', materialCode:'MAT-10010', materialName:'微晶纤维素', sapBatch:'SAP-BT-20260520', supplierBatch:'WX2026G13', quantity:'300.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'CANC', statusName:'已取消', createTime:'2026-06-11 10:00:00', createBy:'李工', updateTime:'2026-06-12 08:00:00', cancelReason:'SAP 凭证冲销，自动取消' },
-    // 跨工厂检验协同数据（演示用）
+    // 其他工厂检验批数据（演示用）
     { id:'B008', batchNo:'2001-2606-008', docNo:'4900000180', materialCode:'MAT-10001', materialName:'阿莫西林原料药', sapBatch:'SAP-BT-20260601', supplierBatch:'AM2026H14', quantity:'500.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'2001-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-15 08:00:00', createBy:'刘工', updateTime:'2026-06-17 14:00:00',
       decision:'pending', decisionBy:'', decisionTime:'', inspectionVerdict:'passed', inspectionRemark:'所有项目均合格',
       crossPlantOps: [
@@ -342,656 +342,14 @@ const InspectionBatch = {
     const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
 
     return `<div class="table-actions">
-      <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">详情</button>
       <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
       <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
       <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>
-      <button class="btn btn-sm btn-outline" style="color:#7c3aed;border-color:#c4b5fd;" onclick="InspectionBatch.viewCrossPlant('${b.id}')" title="跨工厂检验协同">🔗 协同</button>
+      <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">详情</button>
     </div>`;
   },
 
-  // ==================== 跨工厂检验协同（检验批列表tab） ====================
-
-  viewCrossPlant(batchId) {
-    const b = this.batchData.find(x => x.id === batchId);
-    if (!b) return toast('检验批未找到');
-
-    const crossBatches = this._findCrossPlantBatchesForBatch(b);
-
-    if (crossBatches.length === 0) {
-      toast('未找到其他工厂对相同供应商批次的协同检验记录');
-      return;
-    }
-
-    const allDone = crossBatches.every(cb => (cb.crossPlantOps||[]).every(o => o.status === 'done'));
-    const plantNames = [...new Set(crossBatches.map(cb => cb.plantName))].join('、');
-
-    // 每个跨工厂检验批的详情卡片
-    const crossCards = crossBatches.map(cb => {
-      const ops = cb.crossPlantOps || [];
-      const doneCount = ops.filter(o => o.status === 'done').length;
-      const isAllDone = ops.every(o => o.status === 'done');
-      // 构建虚拟计划对象供 _renderCrossPlantSection 使用
-      const synPlan = {
-        code: cb.batchNo,
-        materialCode: cb.materialCode,
-        materialName: cb.materialName,
-        purposeName: cb.purposeName || '—',
-        factoryName: cb.plantName,
-        operations: ops
-      };
-      return `<div style="background:${isAllDone?'#f0fdf4':'#fffbeb'};border:1px solid ${isAllDone?'#bbf7d0':'#fde68a'};border-radius:10px;padding:16px;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-weight:600;font-size:14px;color:var(--text);">🏭 ${esc(cb.plantName)}</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
-              检验批：<strong style="color:#2563eb;">${esc(cb.batchNo)}</strong>
-              <span style="margin:0 8px;color:#d1d5db;">|</span>
-              状态：<span class="badge badge-${isAllDone?'green':'yellow'} badge-sm">${isAllDone?'检验完成':'检验中'}</span>
-              <span style="margin:0 8px;color:#d1d5db;">|</span>
-              完成 ${doneCount}/${ops.length} 工序
-            </div>
-          </div>
-          <div style="text-align:right;font-size:12px;color:var(--text-muted);">
-            创建：${esc(cb.createTime?.slice(0,10))||'—'}<br>更新：${esc(cb.updateTime?.slice(0,10))||'—'}
-          </div>
-        </div>
-        ${this._renderCrossPlantSection(cb, synPlan)}
-      </div>`;
-    }).join('');
-
-    showModal(
-      '🔗 跨工厂检验协同',
-      `<div style="padding:4px 0;">
-        <!-- 当前检验批信息 -->
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-          <div style="font-size:13px;color:var(--text-secondary);">当前检验批</div>
-          <div style="font-weight:600;font-size:15px;color:#1d4ed8;margin-top:4px;">${esc(b.batchNo)}</div>
-          <div style="font-size:13px;color:var(--text);margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 16px;">
-            <span>📦 ${esc(b.materialName)} (${esc(b.materialCode)})</span>
-            <span>📋 供应商批次：<strong>${esc(b.supplierBatch)}</strong></span>
-            <span>🏭 ${esc(b.plantName)}</span>
-            <span>${this.getStatusBadgeHtml(b.status)}</span>
-          </div>
-        </div>
-
-        <!-- 跨工厂提示 -->
-        <div style="background:${allDone?'#f0fdf4':'#fffbeb'};border:1px solid ${allDone?'#bbf7d0':'#fde68a'};border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;">
-          <strong style="font-size:14px;">🔍 发现 ${crossBatches.length} 条跨工厂检验记录</strong>
-          <div style="margin-top:6px;color:var(--text-secondary);">
-            <strong>${plantNames}</strong> 已对同一供应商批次 <em style="color:#2563eb;font-weight:600;">${esc(b.supplierBatch)}</em>
-            的物料 <strong>${esc(b.materialName)}</strong> 进行了检验。
-            ${allDone
-              ? '✅ 所有协同工厂均已完成检验，可作为参考。'
-              : '⏳ 部分工厂尚未完成全部工序，可继续关注。'}
-          </div>
-        </div>
-
-        <!-- 跨工厂检验批详情列表 -->
-        <div style="max-height:60vh;overflow-y:auto;padding-right:4px;">
-          ${crossCards}
-        </div>
-      </div>`,
-      [{ text:'关闭', cls:'btn-outline', action: closeModal }]
-    );
-  },
-
-  // ==================== 待生成检验批表格 ====================
-
-  renderPendingTable() {
-    this.pendingFiltered = [...this.pendingDocs];
-    this.pendingPage = 1;
-    this.doRenderPendingTable();
-  },
-
-  doRenderPendingTable() {
-    const start = (this.pendingPage-1)*this.pageSize;
-    const page = this.pendingFiltered.slice(start, start+this.pageSize);
-    const el = document.getElementById('ibTableWrapper');
-    if (!el) return;
-
-    el.innerHTML = `<table class="data-table" style="min-width:1200px;">
-      <thead><tr>
-        <th style="width:50px;">序号</th>
-        <th style="width:140px;">物料凭证号</th>
-        <th style="width:150px;">供应商批次号</th>
-        <th style="width:120px;">物料编码</th>
-        <th style="width:140px;">物料名称</th>
-        <th style="width:100px;">数量</th>
-        <th style="width:80px;">移动类型</th>
-        <th style="width:100px;">工厂</th>
-        <th style="width:80px;">库存地点</th>
-        <th style="width:100px;">收货日期</th>
-        <th style="width:120px;">操作</th>
-      </tr></thead>
-      <tbody>${page.map((d,i) => this.renderPendingRow(d, start+i+1)).join('')}</tbody>
-    </table>`;
-
-    this.renderPendingPagination();
-  },
-
-  renderPendingRow(d, idx) {
-    return `<tr>
-      <td>${idx}</td>
-      <td style="color:#2563eb;font-weight:600;font-family:monospace;">${esc(d.docNo)}</td>
-      <td style="font-weight:700;font-size:13px;">${esc(d.supplierBatch)}</td>
-      <td style="font-family:monospace;font-size:12px;">${esc(d.materialCode)}</td>
-      <td>${esc(d.materialName)}</td>
-      <td>${d.quantity} ${esc(d.unit)}</td>
-      <td><span class="badge badge-blue">${esc(d.movementName)}</span></td>
-      <td>${esc(d.plantName)}</td>
-      <td>${esc(d.storageName)}</td>
-      <td>${d.receiptDate}</td>
-      <td><button class="btn btn-sm btn-blue" onclick="InspectionBatch.openGenerateModal('${d.id}')">生成检验批</button></td>
-    </tr>`;
-  },
-
-  // ==================== 待生成 - 筛选 ====================
-
-  pendingFiltered: [],
-  pendingPage: 1,
-
-  searchPending() {
-    const factory = document.getElementById('ibPendFactory')?.value||'';
-    const material = (document.getElementById('ibPendMaterial')?.value||'').trim();
-    const suppBatch = (document.getElementById('ibPendSuppBatch')?.value||'').trim();
-    const sapBatch = (document.getElementById('ibPendSapBatch')?.value||'').trim();
-    const receiptDate = document.getElementById('ibPendReceiptDate')?.value||'';
-
-    this.pendingFiltered = this.pendingDocs.filter(d => {
-      if (factory && d.plant !== factory) return false;
-      if (material && !d.materialCode.includes(material) && !d.materialName.includes(material)) return false;
-      if (suppBatch && !d.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
-      if (sapBatch && !d.sapBatch.toLowerCase().includes(sapBatch.toLowerCase())) return false;
-      if (receiptDate && d.receiptDate !== receiptDate) return false;
-      return true;
-    });
-    this.pendingPage = 1;
-    this.doRenderPendingTable();
-  },
-
-  resetPendingFilter() {
-    ['ibPendMaterial','ibPendSuppBatch','ibPendSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const f = document.getElementById('ibPendFactory'); if (f) f.value = '';
-    const r = document.getElementById('ibPendReceiptDate'); if (r) r.value = '';
-    this.pendingFiltered = [...this.pendingDocs];
-    this.pendingPage = 1;
-    this.doRenderPendingTable();
-  },
-
-  // ==================== 分页 ====================
-
-  renderPagination() {
-    const total = this.filtered.length;
-    const totalPages = Math.ceil(total/this.pageSize)||1;
-    const el = document.getElementById('ibPagination');
-    if (!el) return;
-
-    el.innerHTML = `<div class="list-toolbar">
-      <div class="list-info"><span class="list-count">共 ${total} 条</span></div>
-      <div class="pagination">
-        <button class="pagination-btn" ${this.page<=1?'disabled':''} onclick="InspectionBatch.prevPage()">‹</button>
-        <span class="pagination-info">第 ${this.page} / ${totalPages} 页</span>
-        <button class="pagination-btn" ${this.page>=totalPages?'disabled':''} onclick="InspectionBatch.nextPage()">›</button>
-        <select class="page-size-select" onchange="InspectionBatch.changePageSize()">
-          <option value="10" ${this.pageSize===10?'selected':''}>10条</option>
-          <option value="20" ${this.pageSize===20?'selected':''}>20条</option>
-          <option value="50" ${this.pageSize===50?'selected':''}>50条</option>
-        </select>
-      </div>
-    </div>`;
-  },
-
-  renderPendingPagination() {
-    const total = this.pendingFiltered.length;
-    const totalPages = Math.ceil(total/this.pageSize)||1;
-
-    document.getElementById('ibPagination').innerHTML = `<div class="list-toolbar">
-      <div class="list-info"><span class="list-count">共 ${total} 条待处理凭证</span></div>
-      <div class="pagination">
-        <button class="pagination-btn" ${this.pendingPage<=1?'disabled':''} onclick="InspectionBatch.prevPendingPage()">‹</button>
-        <span class="pagination-info">第 ${this.pendingPage} / ${totalPages} 页</span>
-        <button class="pagination-btn" ${this.pendingPage>=totalPages?'disabled':''} onclick="InspectionBatch.nextPendingPage()">›</button>
-        <select class="page-size-select" onchange="InspectionBatch.changePendingPageSize()">
-          <option value="10" ${this.pageSize===10?'selected':''}>10条</option>
-          <option value="20" ${this.pageSize===20?'selected':''}>20条</option>
-          <option value="50" ${this.pageSize===50?'selected':''}>50条</option>
-        </select>
-      </div>
-    </div>`;
-  },
-
-  prevPage() { if (this.page>1) { this.page--; this.renderBatchTable(); this.renderPagination(); } },
-  nextPage() { if (this.page<Math.ceil(this.filtered.length/this.pageSize)) { this.page++; this.renderBatchTable(); this.renderPagination(); } },
-  changePageSize() {
-    const sel = document.querySelector('#ibPagination .page-size-select');
-    if (sel) { this.pageSize = parseInt(sel.value); this.page = 1; this.renderBatchTable(); this.renderPagination(); }
-  },
-
-  prevPendingPage() { if (this.pendingPage>1) { this.pendingPage--; this.doRenderPendingTable(); } },
-  nextPendingPage() { if (this.pendingPage<Math.ceil(this.pendingFiltered.length/this.pageSize)) { this.pendingPage++; this.doRenderPendingTable(); } },
-  changePendingPageSize() {
-    const sel = document.querySelector('#ibPagination .page-size-select');
-    if (sel) { this.pageSize = parseInt(sel.value); this.pendingPage = 1; this.doRenderPendingTable(); }
-  },
-
-  // ==================== 生成检验批弹窗 ====================
-
-  openGenerateModal(docId) {
-    const doc = this.pendingDocs.find(d => d.id === docId);
-    if (!doc) return toast('凭证未找到');
-
-    // 获取该物料可用的检验计划
-    const planOptions = this.getPlanOptions(doc.materialCode);
-    const planSelectOpts = planOptions.map(p => `<option value="${p.no}">${p.no} — ${p.name}</option>`).join('');
-
-    // 历史检验批检测
-    const histBatches = this.batchData.filter(b =>
-      b.supplierBatch === doc.supplierBatch && b.status === 'CANC'
-    );
-    const histNote = histBatches.length > 0
-      ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
-          <strong>⚠️ 发现历史记录：</strong>该供应商批次号 <em style="font-weight:700;">${esc(doc.supplierBatch)}</em> 在近期存在已取消的检验批 <strong>${esc(histBatches[0].batchNo)}</strong>，是否引用其检验结果？
-          <div style="margin-top:8px;">
-            <label style="cursor:pointer;"><input type="checkbox" id="ibRefHist"> 引用历史检验结果（需逐项核对确认）</label>
-          </div>
-        </div>`
-      : '';
-
-    showModal(
-      '生成检验批',
-      `<div style="padding:4px 0;">
-        ${histNote}
-        <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">物料凭证信息</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
-            <div><span style="color:var(--text-muted);">凭证号：</span><strong>${esc(doc.docNo)}</strong></div>
-            <div><span style="color:var(--text-muted);">移动类型：</span>${esc(doc.movementName)}</div>
-            <div><span style="color:var(--text-muted);">数量：</span>${doc.quantity} ${esc(doc.unit)}</div>
-            <div><span style="color:var(--text-muted);">物料编码：</span><strong>${esc(doc.materialCode)}</strong></div>
-            <div><span style="color:var(--text-muted);">物料名称：</span>${esc(doc.materialName)}</div>
-            <div><span style="color:var(--text-muted);">工厂：</span>${esc(doc.plantName)}</div>
-            <div><span style="color:var(--text-muted);">供应商批次号：</span><strong style="color:#2563eb;">${esc(doc.supplierBatch)}</strong></div>
-            <div><span style="color:var(--text-muted);">SAP批次号：</span><span style="font-family:monospace;">${esc(doc.sapBatch)}</span></div>
-            <div></div>
-          </div>
-        </div>
-        <div class="form-grid">
-          <div class="form-group"><label>用途代码<span class="req">*</span></label><select id="ibGenPurpose">
-            ${this.purposeOptions.map(p => `<option value="${p.code}">${p.code} - ${p.name}</option>`).join('')}
-          </select></div>
-          <div class="form-group"><label>检验计划<span class="req">*</span></label><select id="ibGenPlan" onchange="InspectionBatch.onPlanChange()">
-            <option value="">请选择</option>
-            ${planSelectOpts || '<option value="" disabled>暂无匹配的检验计划</option>'}
-          </select></div>
-        </div>
-        <!-- 检验计划详情预览 -->
-        <div id="ibPlanPreview" style="margin-top:16px;"></div>
-        <div class="form-group full" style="margin-top:12px;">
-          <label>备注</label>
-          <textarea id="ibGenRemark" placeholder="可选填写备注信息" rows="2" style="width:100%;"></textarea>
-        </div>
-      </div>`,
-      [
-        { text:'取消', cls:'btn-secondary', action: closeModal },
-        { text:'确认生成', cls:'btn-primary', action: ()=>{ InspectionBatch.doGenerate(docId); } }
-      ],
-      'modal-xl'
-    );
-
-    // 存储当前 docId 和 planOptions 引用，供 onPlanChange 使用
-    this._genDocId = docId;
-    this._genPlanOptions = planOptions;
-  },
-
-  // 检验计划选择变更 → 展示计划详情
-  onPlanChange() {
-    const selVal = document.getElementById('ibGenPlan')?.value;
-    const previewEl = document.getElementById('ibPlanPreview');
-    if (!previewEl) return;
-
-    if (!selVal) {
-      previewEl.innerHTML = '';
-      return;
-    }
-
-    const plan = (typeof ipData !== 'undefined' ? ipData : []).find(p => p.code === selVal);
-    if (!plan) {
-      previewEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px;background:#f8fafc;border-radius:8px;">未找到该计划的详细数据</div>';
-      return;
-    }
-
-    previewEl.innerHTML = this.renderPlanPreview(plan);
-  },
-
-  // 渲染检验计划详情预览 — 折叠式卡片布局
-  renderPlanPreview(plan) {
-    // 工序卡片（折叠式）
-    const opCards = plan.operations.map((op, i) => {
-      const isSampling = op.opType === 'sampling';
-      const uid = 'opp' + i + '_' + Date.now();
-      const hasChars = !isSampling && op.chars && op.chars.length > 0;
-
-      // MIC 详情（默认折叠）
-      let charsPanel = '';
-      if (hasChars) {
-        const maxCols = Math.min(op.chars.length, 2);
-        charsPanel = `<div id="${uid}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #d1d5db;">
-          <div style="display:grid;grid-template-columns:repeat(${maxCols},1fr);gap:8px 16px;">
-            ${op.chars.map(c => {
-              const specRange = c.micType === 'quantitative'
-                ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}`
-                : (c.defaultCode||'—');
-              const isQuant = c.micType === 'quantitative';
-              return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                  <span style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:600;">${esc(c.micCode)}</span>
-                  <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm" style="font-size:10px;">${isQuant?'定量':'定性'}</span>
-                </div>
-                <div style="font-weight:500;color:var(--text);margin-bottom:4px;">${esc(c.micName)}</div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-secondary);">
-                  <span>方法：${esc(c.methodName)||'—'}</span>
-                  <span style="font-weight:500;color:var(--text);">规格：${specRange}</span>
-                  ${c.samplingPlanName ? `<span>取样：${esc(c.samplingPlanName)}</span>` : ''}
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`;
-      }
-
-      const typeCls = isSampling ? 'badge-blue' : 'badge-green';
-      const typeLabel = isSampling ? '取样' : '检验';
-      const icon = isSampling ? '🔬' : '🧪';
-      const stepNum = i + 1;
-
-      return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;background:#fff;${i > 0 ? 'margin-top:8px;' : ''}">
-        <div style="display:flex;align-items:center;gap:10px;min-height:32px;">
-          <div style="background:${isSampling?'#dbeafe':'#dcfce7'};color:${isSampling?'#1d4ed8':'#15803d'};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${stepNum}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-              <span style="font-size:14px;font-weight:600;color:var(--text);">${esc(op.opNum)}</span>
-              <span class="badge ${typeCls} badge-sm">${typeLabel}</span>
-              <span style="color:var(--text-muted);font-size:13px;">· ${esc(op.workCenterName)}</span>
-              ${op.description ? `<span style="color:var(--text-secondary);font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">— ${esc(op.description)}</span>` : ''}
-            </div>
-            ${isSampling ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">取样方案：${esc(op.samplingPlanName) || '—'}</div>` : ''}
-          </div>
-          ${hasChars ? `<button onclick="InspectionBatch._toggleOpChars('${uid}',this)" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
-            <span class="_expandLabel">展开</span> ${op.chars.length} 项特性 ▾
-          </button>` : ''}
-        </div>
-        ${charsPanel}
-      </div>`;
-    }).join('');
-
-    // 工序间箭头连接
-    const flowHtml = `<div style="display:flex;align-items:center;gap:0;font-size:12px;color:#9ca3af;padding:0 14px;margin-bottom:4px;">
-      ${plan.operations.map((_,i) => {
-        if (i === 0) return `<span style="flex-shrink:0;width:48px;text-align:center;">开始</span>`;
-        return `<span style="flex-shrink:0;width:48px;text-align:center;">↓</span>`;
-      }).join('')}
-    </div>`;
-
-    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px 18px;">
-      <!-- 计划基本信息（紧凑） -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-        <span style="font-size:15px;font-weight:700;color:var(--text);">📋 ${esc(plan.code)}</span>
-        <span class="badge badge-green">已启用</span>
-        <span style="color:#d1d5db;">|</span>
-        <span style="font-size:13px;color:var(--text-secondary);"><strong>${esc(plan.materialCode)}</strong> ${esc(plan.materialName)}</span>
-        <span style="font-size:13px;color:var(--text-muted);">· ${esc(plan.purposeName)}</span>
-        <span style="font-size:13px;color:var(--text-muted);">· ${esc(plan.factoryName)}</span>
-        <span style="font-size:13px;color:var(--text-muted);">· ${plan.operations.length} 道工序</span>
-      </div>
-      <!-- 工序卡片列表 -->
-      ${opCards}
-    </div>`;
-  },
-
-  // 折叠/展开工序的 MIC 特性
-  _toggleOpChars(uid, btn) {
-    const panel = document.getElementById(uid);
-    const label = btn.querySelector('._expandLabel');
-    if (!panel) return;
-    if (panel.style.display === 'none') {
-      panel.style.display = 'block';
-      if (label) label.textContent = '收起';
-      btn.innerHTML = btn.innerHTML.replace('▾', '▴');
-    } else {
-      panel.style.display = 'none';
-      if (label) label.textContent = '展开';
-      btn.innerHTML = btn.innerHTML.replace('▴', '▾');
-    }
-  },
-
-  // ==================== 跨工厂检验协同校验 ====================
-
-  // 查找其他工厂对相同物料+供应商批次的检验记录（基于 pendingDoc）
-  _findCrossPlantBatches(doc) {
-    return this.batchData.filter(b =>
-      b.plant !== doc.plant &&
-      b.materialCode === doc.materialCode &&
-      b.supplierBatch === doc.supplierBatch &&
-      b.crossPlantOps &&
-      !['CANC','CLSD'].includes(b.status)
-    );
-  },
-
-  // 查找其他工厂对相同物料+供应商批次的检验记录（基于检验批）
-  _findCrossPlantBatchesForBatch(batch) {
-    return this.batchData.filter(b =>
-      b.id !== batch.id &&
-      b.plant !== batch.plant &&
-      b.materialCode === batch.materialCode &&
-      b.supplierBatch === batch.supplierBatch &&
-      b.crossPlantOps &&
-      !['CANC','CLSD'].includes(b.status)
-    );
-  },
-
-  // 渲染单个跨工厂检验批的工序详情（用于弹出面板）
-  _renderCrossPlantSection(crossBatch, plan) {
-    const ops = crossBatch.crossPlantOps || [];
-    const doneCount = ops.filter(o => o.status === 'done').length;
-    const totalOps = ops.length;
-    const isAllDone = doneCount === totalOps;
-    const progressPct = totalOps > 0 ? Math.round(doneCount/totalOps*100) : 0;
-
-    // 进度条
-    const progressBar = `<div style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;">
-        <span style="font-weight:600;color:var(--text);">检验进度</span>
-        <span style="color:var(--text-secondary);">${doneCount}/${totalOps} 工序已完成</span>
-      </div>
-      <div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;">
-        <div style="background:${isAllDone?'#22c55e':'#3b82f6'};height:100%;width:${progressPct}%;border-radius:4px;transition:width .3s;"></div>
-      </div>
-    </div>`;
-
-    // 每个工序行
-    const opCards = ops.map((op, i) => {
-      const isSampling = op.opType === 'sampling';
-      const isDone = op.status === 'done';
-      const stepNum = i + 1;
-
-      // 状态标记
-      let statusBadge = '';
-      if (isSampling) {
-        statusBadge = isDone
-          ? '<span class="badge badge-green badge-sm">已取样</span>'
-          : '<span class="badge badge-gray badge-sm">待取样</span>';
-      } else {
-        statusBadge = isDone
-          ? '<span class="badge badge-green badge-sm">已检验</span>'
-          : '<span class="badge badge-yellow badge-sm">检验中</span>';
-      }
-
-      const borderColor = isDone ? '#bbf7d0' : (isSampling ? '#dbeafe' : '#fde68a');
-      const bgColor = isDone ? '#f0fdf4' : (isSampling ? '#eff6ff' : '#fffdf5');
-      const typeCls = isSampling ? 'badge-yellow' : 'badge-purple';
-      const typeLabel = isSampling ? '取样' : '检验';
-
-      // 取样工序详情
-      let opDetail = '';
-      if (isSampling && isDone) {
-        opDetail = `<div style="font-size:12px;color:var(--text-secondary);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap;">
-          <span>取样量：<strong style="color:var(--text);">${op.sampleQty||'—'} ${crossBatch.unit}</strong></span>
-          <span>取样人：<strong style="color:var(--text);">${esc(op.sampledBy)||'—'}</strong></span>
-          <span>取样时间：${esc(op.sampleTime)||'—'}</span>
-          <span>方案：${esc(op.samplingPlanName)||'—'}</span>
-        </div>`;
-      } else if (isSampling && !isDone) {
-        opDetail = `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">取样方案：${esc(op.samplingPlanName)||'—'}</div>`;
-      }
-
-      // 检验工序 MIC 结果表格
-      let micTable = '';
-      if (!isSampling && isDone && op.results && op.results.length > 0) {
-        const rows = op.results.map(r => {
-          const isQuant = r.micType === 'quantitative';
-          const specRange = isQuant ? `${r.lowerSpec||'—'} ~ ${r.upperSpec||'—'} ${r.unit||''}` : (r.defaultCode||'—');
-          const valueOk = r.verdict === '合格';
-          return `<tr>
-            <td style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:500;">${esc(r.micCode)}</td>
-            <td style="font-weight:500;">${esc(r.micName)}</td>
-            <td style="font-size:11px;color:var(--text-secondary);">${esc(r.methodName)||'—'}</td>
-            <td style="font-family:monospace;font-size:11px;">${specRange}</td>
-            <td style="font-weight:600;color:${valueOk?'#15803d':'#dc2626'};font-family:monospace;">${esc(r.value)}</td>
-            <td><span class="badge ${valueOk?'badge-green':'badge-red'} badge-sm">${esc(r.verdict)}</span></td>
-          </tr>`;
-        }).join('');
-        micTable = `<table class="data-table" style="width:100%;margin-top:8px;font-size:12px;">
-          <thead><tr>
-            <th style="width:120px;">MIC编码</th><th>MIC名称</th><th style="width:110px;">方法</th><th style="width:110px;">规格</th><th style="width:90px;">实测值</th><th style="width:60px;">判定</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>`;
-      } else if (!isSampling && !isDone && op.results && op.results.length > 0) {
-        const pendingRows = op.results.map(r => {
-          const isQuant = r.micType === 'quantitative';
-          const specRange = isQuant ? `${r.lowerSpec||'—'} ~ ${r.upperSpec||'—'} ${r.unit||''}` : (r.defaultCode||'—');
-          return `<tr>
-            <td style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:500;">${esc(r.micCode)}</td>
-            <td style="font-weight:500;">${esc(r.micName)}</td>
-            <td style="font-size:11px;color:var(--text-secondary);">${esc(r.methodName)||'—'}</td>
-            <td style="font-family:monospace;font-size:11px;">${specRange}</td>
-            <td style="color:var(--text-muted);">待检验</td>
-            <td><span class="badge badge-gray badge-sm">—</span></td>
-          </tr>`;
-        }).join('');
-        micTable = `<div style="font-size:12px;color:var(--text-muted);margin-top:6px;margin-bottom:4px;">⚠️ 以下 ${op.results.length} 项待检验（${esc(op.doneBy)||'吴工'} 尚未完成）</div>
-          <table class="data-table" style="width:100%;font-size:12px;opacity:0.75;">
-          <thead><tr>
-            <th style="width:120px;">MIC编码</th><th>MIC名称</th><th style="width:110px;">方法</th><th style="width:110px;">规格</th><th style="width:90px;">实测值</th><th style="width:60px;">判定</th>
-          </tr></thead>
-          <tbody>${pendingRows}</tbody>
-        </table>`;
-      }
-
-      return `<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:8px;padding:12px 14px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="background:${isSampling?'#dbeafe':'#dcfce7'};color:${isSampling?'#1d4ed8':'#15803d'};width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${stepNum}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span style="font-size:14px;font-weight:600;color:var(--text);">${esc(op.opNum)}</span>
-              <span class="badge ${typeCls} badge-sm">${typeLabel}</span>
-              <span style="color:var(--text-muted);font-size:13px;">· ${esc(op.workCenterName)}</span>
-              ${statusBadge}
-            </div>
-            ${opDetail}
-            ${micTable}
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-
-    return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px;">
-      ${progressBar}
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        ${opCards}
-      </div>
-      ${isAllDone
-        ? `<div style="margin-top:14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:13px;color:#15803d;">
-            ✅ 该工厂已完成全部检验工序，判定<strong>${crossBatch.inspectionVerdict === 'passed' ? '合格' : '不合格'}</strong>，可直接复制实测值到新建检验批。
-          </div>`
-        : `<div style="margin-top:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;">
-            ⏳ 该工厂尚有 <strong>${totalOps-doneCount}</strong> 个工序未完成检验，你可以等待完成后直接复制，或现在自行创建检验批。
-          </div>`
-      }
-    </div>`;
-  },
-
-  // 跨工厂协同弹窗 — 在生成弹窗下方展开
-  _showCrossPlantConfirm(docId, crossBatches) {
-    const doc = this.pendingDocs.find(d => d.id === docId);
-    if (!doc) return;
-
-    const planOptions = this._genPlanOptions || this.getPlanOptions(doc.materialCode);
-    const planSelectOpts = planOptions.map(p => `<option value="${p.no}">${p.no} — ${p.name}</option>`).join('');
-
-    // 跨工厂检验批卡片列表
-    const crossCards = crossBatches.map(cb => {
-      const ops = cb.crossPlantOps || [];
-      const doneCount = ops.filter(o => o.status === 'done').length;
-      const isAllDone = ops.every(o => o.status === 'done');
-      return `<div style="background:${isAllDone?'#f0fdf4':'#fffbeb'};border:1px solid ${isAllDone?'#bbf7d0':'#fde68a'};border-radius:10px;padding:16px;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-weight:600;font-size:14px;color:var(--text);">🏭 ${esc(cb.plantName)}</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">
-              检验批：<strong style="color:#2563eb;">${esc(cb.batchNo)}</strong>
-              <span style="margin:0 8px;color:#d1d5db;">|</span>
-              状态：<span class="badge badge-${isAllDone?'green':'yellow'} badge-sm">${isAllDone?'检验完成':'检验中'}</span>
-              <span style="margin:0 8px;color:#d1d5db;">|</span>
-              完成 ${doneCount}/${ops.length} 工序
-            </div>
-          </div>
-          <div style="text-align:right;font-size:12px;color:var(--text-muted);">
-            创建：${esc(cb.createTime?.slice(0,10))||'—'}<br>更新：${esc(cb.updateTime?.slice(0,10))||'—'}
-          </div>
-        </div>
-        ${this._renderCrossPlantSection(cb)}
-      </div>`;
-    }).join('');
-
-    // 构建跨工厂提示
-    const plantNames = [...new Set(crossBatches.map(cb => cb.plantName))].join('、');
-    const allDone = crossBatches.every(cb => (cb.crossPlantOps||[]).every(o=>o.status==='done'));
-    const anyDone = crossBatches.some(cb => (cb.crossPlantOps||[]).some(o=>o.status==='done'));
-
-    showModal(
-      '检验协同 — 跨工厂校验',
-      `<div style="padding:4px 0;">
-        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px;font-size:13px;">
-          <strong style="font-size:14px;">⚠️ 发现跨工厂检验记录</strong>
-          <div style="margin-top:6px;color:var(--text-secondary);">
-            <strong>${plantNames}</strong> 已针对同一供应商批次 <em style="color:#2563eb;font-weight:600;">${esc(doc.supplierBatch)}</em> 
-            的物料 <strong>${esc(doc.materialName)} (${esc(doc.materialCode)})</strong> 进行了检验。
-            ${allDone
-              ? '该工厂已完成全部检验，你可以直接复制实测值。'
-              : '你可以查看当前进度并决定是否等待完成后复制。'}
-          </div>
-        </div>
-        ${crossCards}
-      </div>`,
-      [
-        { text:'忽略，继续生成', cls:'btn-secondary', action: ()=>{ InspectionBatch._executeGenerate(docId); } },
-        ...(allDone ? [
-          { text:'复制检验结果并生成', cls:'btn-blue', action: ()=>{ InspectionBatch._executeGenerate(docId, crossBatches); } }
-        ] : []),
-        { text:'取消', cls:'btn-outline', action: closeModal }
-      ],
-      'modal-xl'
-    );
-
-    // 保留生成所需的临时变量
-    this._genDocId = docId;
-    this._genPlanOptions = planOptions;
-  },
-
-  // 跨工厂校验通过后，执行真正的生成逻辑
-  _executeGenerate(docId, crossBatches) {
+  _executeGenerate(docId) {
     const doc = this.pendingDocs.find(d => d.id === docId);
     if (!doc) return;
 
@@ -1020,28 +378,6 @@ const InspectionBatch = {
     const refHist = document.getElementById('ibRefHist')?.checked;
     const now = new Date().toISOString().replace('T',' ').slice(0,19);
 
-    // 如果从跨工厂复制检验结果
-    let copiedFromInfo = '';
-    let copiedResults = null;
-    if (crossBatches && crossBatches.length > 0) {
-      // 取第一个（通常是唯一一个匹配的）跨工厂检验批的结果
-      const source = crossBatches[0];
-      const allResults = [];
-      (source.crossPlantOps||[]).forEach(op => {
-        if (op.opType === 'inspection' && op.status === 'done' && op.results) {
-          op.results.forEach(r => {
-            allResults.push({
-              micCode: r.micCode, micName: r.micName, micType: r.micType,
-              value: r.value, verdict: r.verdict,
-              source: `来自 ${source.plantName} (${source.batchNo})`
-            });
-          });
-        }
-      });
-      copiedResults = allResults;
-      copiedFromInfo = `已从 ${source.plantName} 检验批 ${source.batchNo} 复制检验结果，请逐项核对确认`;
-    }
-
     const newBatch = {
       id: 'B' + String(this.batchData.length+1).padStart(3,'0'),
       batchNo,
@@ -1063,18 +399,15 @@ const InspectionBatch = {
       createTime: now,
       createBy: '张工',
       updateTime: now,
-      remark: remark || copiedFromInfo || (refHist ? '已引用历史检验结果，待逐项核对' : ''),
-      refHistBatch: refHist ? (this.batchData.filter(b=>b.supplierBatch===doc.supplierBatch&&b.status==='CANC')[0]?.batchNo||'') : '',
-      crossPlantRef: crossBatches ? crossBatches.map(cb => cb.batchNo).join(',') : '',
-      crossPlantResults: copiedResults
+      remark: remark || (refHist ? '已引用历史检验结果，待逐项核对' : ''),
+      refHistBatch: refHist ? (this.batchData.filter(b=>b.supplierBatch===doc.supplierBatch&&b.status==='CANC')[0]?.batchNo||'') : ''
     };
 
     this.batchData.unshift(newBatch);
     this.pendingDocs = this.pendingDocs.filter(d => d.id !== docId);
 
     closeModal();
-    const copyMsg = copiedResults ? '检验结果已从协同工厂复制，请进入详情页面逐项核对。' : '';
-    toast(`检验批 ${batchNo} 已生成！${copyMsg}${refHist ? '历史结果已引用，请核对确认。' : ''}`);
+    toast(`检验批 ${batchNo} 已生成！${refHist ? '历史结果已引用，请核对确认。' : ''}`);
     this.init();
   },
 
@@ -1122,8 +455,8 @@ const InspectionBatch = {
     ];
 
     const statusBadge = this.getStatusBadgeHtml(b.status);
-    const isActive = ['CRTD','SAMP','INSP','DONE'].includes(b.status);
     const hasSamplingOp = ops.some(o => o.opType === 'sampling');
+
 
 
 
@@ -1154,19 +487,10 @@ const InspectionBatch = {
       <div class="ib-tab-panel" data-ibpanel="flow">${this._renderFlowTab(b)}</div>
     </div>`;
 
-    // 底部全局操作按钮
+    // 底部全局操作按钮：仅保留「关闭」
     const footerBtns = [
       { text:'关闭', cls:'btn-secondary', action: closeModal }
     ];
-    if (b.status === 'DONE') {
-      footerBtns.unshift({ text:'使用决策', cls:'btn-success', action: ()=>{ closeModal(); InspectionBatch.openDecision(batchId); } });
-    }
-    if (b.status === 'DEC') {
-      footerBtns.unshift({ text:'关闭归档', cls:'btn-secondary', action: ()=>{ closeModal(); InspectionBatch.closeBatch(batchId); } });
-    }
-    if (isActive) {
-      footerBtns.unshift({ text:'取消检验批', cls:'btn-red', action: ()=>{ closeModal(); InspectionBatch.cancelBatch(batchId); } });
-    }
 
     showModal(`检验批详情 — ${b.batchNo}`, bodyHtml, footerBtns, 'modal-xl');
   },
@@ -1261,9 +585,6 @@ const InspectionBatch = {
     }).join('');
 
     return `
-      ${b.crossPlantRef ? `<div style="background:#fefce8;border:1px solid #eab308;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;">
-        <strong>📋 跨工厂协同记录：</strong>此检验批从 <span style="font-weight:600;color:#2563eb;">${esc(b.crossPlantRef)}</span> 复制了检验实测值（${b.crossPlantResults ? b.crossPlantResults.length : 0} 项），请在录入结果时逐项核对确认。
-      </div>` : ''}
       <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
           <div><span style="color:var(--text-muted);">物料编码：</span><span style="font-family:monospace;">${esc(b.materialCode)}</span></div>
@@ -1276,8 +597,22 @@ const InspectionBatch = {
       </div>
       <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)} · 点击工序展开特性）</span></div>
       ${ops.length ? `<table class="ib-ops-table"><thead><tr><th style="width:230px;">工序</th><th style="width:160px;">类型</th><th>工作中心</th><th>关键信息</th></tr></thead><tbody>${opRows}</tbody></table>` : '<div style="color:var(--text-muted);font-size:13px;">暂无工序数据</div>'}
+      <div style="margin-top:18px;padding:12px 16px;border:1px dashed #d1d5db;border-radius:8px;background:#fffbfb;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
+          <input type="checkbox" id="ibDelFlag_${b.id}" ${b._deleteFlag ? 'checked' : ''} onchange="InspectionBatch._toggleDeleteFlag('${b.id}', this.checked)" />
+          <span>🗑️ 删除标记（勾选后，系统将依据此标记处理该检验批）</span>
+        </label>
+      </div>
     `;
   },
+
+  _toggleDeleteFlag(batchId, checked) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return;
+    b._deleteFlag = checked;
+    toast(checked ? '已勾选删除标记' : '已取消删除标记');
+  },
+
 
   _renderSamplingTab(b) {
     const recs = this._getSamplingRecords(b);
@@ -1535,10 +870,6 @@ const InspectionBatch = {
       return;
     }
 
-    // 检查是否有跨工厂复制的检验结果
-    const crossResults = b.crossPlantResults || [];
-    const hasCrossFill = crossResults.length > 0;
-
     const charRows = chars.map((c, i) => {
       const isQuant = c.micType === 'quantitative';
       const typeBadge = isQuant
@@ -1548,27 +879,21 @@ const InspectionBatch = {
         ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}`
         : (c.defaultCode||'合格');
 
-      // 查找匹配的跨工厂预填值
-      const crossMatch = crossResults.find(r => r.micCode === c.micCode);
-      const prefilledValue = crossMatch ? crossMatch.value : '';
-      const crossSource = crossMatch ? crossMatch.source : '';
-
       let inputHtml = '';
       if (isQuant) {
         inputHtml = `<div style="display:flex;align-items:center;gap:8px;">
-          <input type="number" id="ibCharVal_${i}" step="any" placeholder="实测值" value="${prefilledValue}" style="width:120px;${prefilledValue?'background:#fefce8;border-color:#eab308;':''}">
+          <input type="number" id="ibCharVal_${i}" step="any" placeholder="实测值" style="width:120px;">
           <span style="font-size:12px;color:var(--text-muted);">${c.unit||''}</span>
-          ${crossSource ? `<span style="font-size:10px;color:#eab308;white-space:nowrap;" title="${esc(crossSource)}">↖ 预填</span>` : ''}
         </div>`;
       } else {
-        inputHtml = `<select id="ibCharVal_${i}" style="width:160px;${prefilledValue?'background:#fefce8;border-color:#eab308;':''}">
+        inputHtml = `<select id="ibCharVal_${i}" style="width:160px;">
           <option value="">请选择</option>
-          <option value="合格"${prefilledValue==='合格'?' selected':''}>合格</option>
-          <option value="不合格"${prefilledValue==='不合格'?' selected':''}>不合格</option>
-        </select>${crossSource ? `<span style="font-size:10px;color:#eab308;margin-left:4px;white-space:nowrap;" title="${esc(crossSource)}">↖预填</span>` : ''}`;
+          <option value="合格">合格</option>
+          <option value="不合格">不合格</option>
+        </select>`;
       }
 
-      return `<tr${prefilledValue?' style="background:#fffdf5;"':''}>
+      return `<tr>
         <td><span style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:500;">${esc(c.micCode)}</span></td>
         <td><strong>${esc(c.micName)}</strong> ${typeBadge}</td>
         <td style="font-size:12px;">${esc(c.methodName)||'—'}</td>
@@ -1577,12 +902,6 @@ const InspectionBatch = {
       </tr>`;
     }).join('');
 
-    const crossFillBanner = hasCrossFill
-      ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e;">
-          <strong>📋 跨工厂协同提示：</strong>以下黄色高亮字段已预填来自协同工厂的实测值（${crossResults[0]?.source||''}），请逐项核对确认后提交。
-        </div>`
-      : '';
-
     showModal(
       `录入检验结果 — ${b.batchNo}`,
       `<div style="padding:4px 0;">
@@ -1590,7 +909,6 @@ const InspectionBatch = {
           <div style="font-weight:600;margin-bottom:4px;">工序 ${esc(opNum)} · ${esc(op?op.opTypeName:'检验')} · ${esc(op?op.workCenterName:'—')}</div>
           <div style="color:var(--text-secondary);">检验批号：${esc(b.batchNo)} | 物料：${esc(b.materialCode)} ${esc(b.materialName)} | 计划：${esc(b.planNo)}</div>
         </div>
-        ${crossFillBanner}
         <table class="data-table" style="min-width:100%;">
           <thead><tr>
             <th style="width:130px;">MIC编码</th>
@@ -1679,7 +997,7 @@ const InspectionBatch = {
     if (b.inspectionResults && b.inspectionResults.length > 0) {
       return b.inspectionResults;
     }
-    // 从跨工厂协同数据中提取
+    // 从工序数据中提取
     if (b.crossPlantOps) {
       const results = [];
       b.crossPlantOps.forEach(op => {
