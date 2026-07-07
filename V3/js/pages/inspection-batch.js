@@ -1125,121 +1125,11 @@ const InspectionBatch = {
     const isActive = ['CRTD','SAMP','INSP','DONE'].includes(b.status);
     const hasSamplingOp = ops.some(o => o.opType === 'sampling');
 
-    // 工序行渲染（含可展开的详情面板）
-    const opRows = ops.map((op, i) => {
-      const isSampling = op.opType === 'sampling';
-      const detailId = 'opDetail_' + i + '_' + b.id.replace(/[^a-zA-Z0-9]/g,'');
-      const iconId = 'opIcon_' + i + '_' + b.id.replace(/[^a-zA-Z0-9]/g,'');
-      const hasChars = !isSampling && op.chars && op.chars.length > 0;
-      const hasDetail = isSampling || hasChars;
 
-      const typeBadge = isSampling
-        ? '<span class="badge badge-yellow badge-sm">取样</span>'
-        : '<span class="badge badge-purple badge-sm">检验</span>';
-
-      // 工序状态
-      let opStatus = '';
-      if (isSampling) {
-        opStatus = b.status === 'CRTD'
-          ? '<span class="badge badge-gray">待执行</span>'
-          : b.status === 'SAMP'
-          ? '<span class="badge badge-yellow">进行中</span>'
-          : '<span class="badge badge-green">已完成</span>';
-      } else {
-        opStatus = ['CRTD','SAMP'].includes(b.status)
-          ? '<span class="badge badge-gray">待执行</span>'
-          : b.status === 'INSP'
-          ? '<span class="badge badge-purple">进行中</span>'
-          : '<span class="badge badge-green">已完成</span>';
-      }
-
-      // 详情面板内容
-      let detailHtml = '';
-      if (isSampling) {
-        detailHtml = `<div style="display:flex;align-items:center;gap:8px;font-size:13px;">
-          <span style="color:var(--text-muted);">📋 取样方案：</span>
-          <span style="font-weight:600;color:var(--text);">${esc(op.samplingPlanName) || '—'}</span>
-          ${op.description ? `<span style="color:#d1d5db;">|</span><span style="color:var(--text-secondary);">${esc(op.description)}</span>` : ''}
-        </div>`;
-      } else if (hasChars) {
-        const charCards = op.chars.map(c => {
-          const isQuant = c.micType === 'quantitative';
-          const specRange = isQuant ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}` : (c.defaultCode||'—');
-          return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;font-size:12px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span style="font-family:monospace;font-weight:600;color:#2563eb;">${esc(c.micCode)}</span>
-              <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm" style="font-size:10px;">${isQuant?'定量':'定性'}</span>
-              <span style="font-weight:500;color:var(--text);">${esc(c.micName)}</span>
-            </div>
-            <div style="display:flex;gap:16px;color:var(--text-secondary);">
-              <span>方法：${esc(c.methodName)||'—'}</span>
-              <span>规格：${specRange}</span>
-              ${c.samplingPlanName ? `<span>取样：${esc(c.samplingPlanName)}</span>` : ''}
-            </div>
-          </div>`;
-        }).join('');
-        detailHtml = `<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">🔍 检测特性 · ${op.chars.length} 项</div>
-          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;">${charCards}</div>`;
-      }
-
-      const expandIcon = hasDetail
-        ? `<span id="${iconId}" style="display:inline-block;width:16px;text-align:center;color:var(--text-muted);font-size:10px;transition:transform .2s;">▸</span>`
-        : '';
-
-      const mainRow = `<tr class="op-main-row" style="cursor:${hasDetail?'pointer':'default'};" ${hasDetail ? `onclick="InspectionBatch._toggleOpDetail('${detailId}','${iconId}')"` : ''}>
-        <td style="font-family:monospace;font-weight:600;white-space:nowrap;">${expandIcon} ${esc(op.opNum)}</td>
-        <td>${typeBadge}</td>
-        <td>${esc(op.workCenterName)}</td>
-        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(op.description||'')}">${esc(op.description||'—')}</td>
-        <td>${opStatus}</td>
-      </tr>`;
-
-      const detailRow = hasDetail ? `<tr class="op-detail-row" id="${detailId}" style="display:none;">
-        <td colspan="5" style="background:#f8fafc;border-bottom:2px solid #e5e7eb;padding:12px 16px 12px 36px;">${detailHtml}</td>
-      </tr>` : '';
-
-      return mainRow + detailRow;
-    }).join('');
-
-    // 新增展开/收起行详情的静态方法
-    InspectionBatch._toggleOpDetail = function(detailId, iconId) {
-      const detail = document.getElementById(detailId);
-      const icon = document.getElementById(iconId);
-      if (!detail || !icon) return;
-      if (detail.style.display === 'none' || detail.style.display === '') {
-        detail.style.display = 'table-row';
-        icon.textContent = '▾';
-      } else {
-        detail.style.display = 'none';
-        icon.textContent = '▸';
-      }
-    };
-
-    // 时间线
-    const timelineHtml = `<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0;"></div>
-        <div><span style="color:var(--text-muted);">${b.createTime}</span> — 创建检验批（${esc(b.createBy)}）</div>
-      </div>
-      ${b.status!=='CRTD'?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:#eab308;margin-top:6px;flex-shrink:0;"></div>
-        <div><span style="color:var(--text-muted);">${b.updateTime}</span> — 状态更新为"${b.statusName}"</div>
-      </div>`:''}
-      ${b.decisionTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:${(b.decision||'').startsWith('A')?'#22c55e':'#dc2626'};margin-top:6px;flex-shrink:0;"></div>
-        <div><span style="color:var(--text-muted);">${b.decisionTime}</span> — 决策：<strong>${esc(b.decision||'')} ${esc(b.decisionDesc||'')}</strong>（${esc(b.decisionBy||'')}）${b.qualityScore!=null?` — 得分：${b.qualityScore}分`:''}${b.decisionRemarks?`<br><span style="font-size:12px;color:var(--text-muted);">备注：${esc(b.decisionRemarks)}</span>`:''}</div>
-      </div>`:''}
-      ${b.closeTime?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:#6b7280;margin-top:6px;flex-shrink:0;"></div>
-        <div><span style="color:var(--text-muted);">${b.closeTime}</span> — 已关闭归档</div>
-      </div>`:''}
-      ${b.cancelReason?`<div style="display:flex;gap:12px;padding:6px 0;align-items:flex-start;">
-        <div style="width:8px;height:8px;border-radius:50%;background:#dc2626;margin-top:6px;flex-shrink:0;"></div>
-        <div><span style="color:var(--text-muted);">${b.updateTime}</span> — ${esc(b.cancelReason)}</div>
-      </div>`:''}`;
 
     const bodyHtml = `<div style="padding:4px 0;">
-      <!-- 基本信息（紧凑两行） -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <!-- 头部信息条 -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
         <span style="font-size:18px;font-weight:700;color:var(--text);">${esc(b.batchNo)}</span>
         <div>${statusBadge}</div>
         <span style="color:#d1d5db;">|</span>
@@ -1248,43 +1138,20 @@ const InspectionBatch = {
         <span style="font-size:13px;color:var(--text-secondary);">${esc(b.plantName)}</span>
       </div>
 
-      <!-- 物料与批次（网格） -->
-      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
-          <div><span style="color:var(--text-muted);">物料编码：</span><span style="font-family:monospace;">${esc(b.materialCode)}</span></div>
-          <div><span style="color:var(--text-muted);">物料名称：</span><strong>${esc(b.materialName)}</strong></div>
-          <div><span style="color:var(--text-muted);">数量：</span>${b.quantity} ${esc(b.unit)}</div>
-          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
-          <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
-          <div><span style="color:var(--text-muted);">凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
-        </div>
+      <!-- 顶部标签页（方案A：基本信息 / 取样记录 / 结果录入 / 使用决策 / 操作流水） -->
+      <div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px;">
+        <div class="form-tab active" data-ibtab="base" onclick="InspectionBatch._switchIbTab(this)">基本信息</div>
+        <div class="form-tab" data-ibtab="sample" onclick="InspectionBatch._switchIbTab(this)">取样记录</div>
+        <div class="form-tab" data-ibtab="result" onclick="InspectionBatch._switchIbTab(this)">结果录入</div>
+        <div class="form-tab" data-ibtab="decision" onclick="InspectionBatch._switchIbTab(this)">使用决策</div>
+        <div class="form-tab" data-ibtab="flow" onclick="InspectionBatch._switchIbTab(this)">操作流水</div>
       </div>
 
-      <!-- 跨工厂协同信息 -->
-      ${b.crossPlantRef ? `<div style="background:#fefce8;border:1px solid #eab308;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;">
-        <strong>📋 跨工厂协同记录：</strong>此检验批从 <span style="font-weight:600;color:#2563eb;">${esc(b.crossPlantRef)}</span> 复制了检验实测值（${b.crossPlantResults?.length||0} 项），请在录入结果时逐项核对确认。
-      </div>` : ''}
-
-      <!-- 检验工序表格 -->
-      <div style="margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">🔬 检验任务 · ${ops.length} 道工序</div>
-        <table class="data-table" style="min-width:100%;">
-          <thead><tr>
-            <th style="width:72px;">工序号</th>
-            <th style="width:60px;">类型</th>
-            <th>工作中心</th>
-            <th>工序描述</th>
-            <th style="width:80px;">状态</th>
-          </tr></thead>
-          <tbody>${opRows}</tbody>
-        </table>
-      </div>
-
-      <!-- 时间线 -->
-      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">📅 操作记录</div>
-        <div style="font-size:13px;">${timelineHtml}</div>
-      </div>
+      <div class="ib-tab-panel active" data-ibpanel="base">${this._renderBaseTab(b, ops)}</div>
+      <div class="ib-tab-panel" data-ibpanel="sample">${this._renderSamplingTab(b)}</div>
+      <div class="ib-tab-panel" data-ibpanel="result">${this._renderResultTab(b)}</div>
+      <div class="ib-tab-panel" data-ibpanel="decision">${this._renderDecisionTab(b)}</div>
+      <div class="ib-tab-panel" data-ibpanel="flow">${this._renderFlowTab(b)}</div>
     </div>`;
 
     // 底部全局操作按钮
@@ -1302,6 +1169,268 @@ const InspectionBatch = {
     }
 
     showModal(`检验批详情 — ${b.batchNo}`, bodyHtml, footerBtns, 'modal-xl');
+  },
+
+  // ==================== 方案A：查看弹窗标签页内容 ====================
+
+  _switchIbTab(el) {
+    const wrap = el.closest('.modal-body') || document;
+    const tabs = wrap.querySelectorAll('.form-tab');
+    const panels = wrap.querySelectorAll('.ib-tab-panel');
+    tabs.forEach(t => t.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    const panel = wrap.querySelector('.ib-tab-panel[data-ibpanel="' + el.dataset.ibtab + '"]');
+    if (panel) panel.classList.add('active');
+  },
+
+  _now() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  },
+
+  // 提取取样记录（统一从 crossPlantOps 或状态推导）
+  _getSamplingRecords(b) {
+    const recs = [];
+    (b.crossPlantOps || []).filter(o => o.opType === 'sampling').forEach((o, i) => {
+      recs.push({ id: 'samp_' + i, qty: o.sampleQty, by: o.sampledBy, time: o.sampleTime, plan: o.samplingPlanName, status: o.status === 'done' ? 'valid' : 'pending' });
+    });
+    if (recs.length === 0 && ['SAMP', 'INSP', 'DONE', 'DEC', 'CLSD'].includes(b.status)) {
+      recs.push({ id: 'samp_0', qty: (parseFloat(b.quantity || '0') * 0.01).toFixed(3), by: b.createBy || '质检员', time: b.createTime, plan: '默认取样方案', status: 'valid' });
+    }
+    return recs;
+  },
+
+  // 提取结果录入（检验特性逐行）
+  _getResultRecords(b) {
+    const recs = [];
+    (b.inspectionResults || []).forEach((r, i) => {
+      const isQuant = r.micType === 'quantitative';
+      const spec = isQuant ? (r.lowerSpec + ' ~ ' + r.upperSpec + ' ' + (r.unit || '')) : (r.defaultCode || '—');
+      recs.push({ id: 'res_' + i, name: r.micName, spec: spec, value: r.value, by: b.createBy || '质检员', time: b.updateTime, status: 'valid' });
+    });
+    (b.crossPlantOps || []).filter(o => o.opType === 'inspection').forEach((o, oi) => {
+      (o.results || []).forEach((r, ri) => {
+        const isQuant = r.micType === 'quantitative';
+        const spec = isQuant ? (r.lowerSpec + ' ~ ' + r.upperSpec + ' ' + (r.unit || '')) : (r.defaultCode || '—');
+        recs.push({ id: 'res_c' + oi + '_' + ri, name: r.micName, spec: spec, value: r.value || '待录入', by: o.doneBy || '—', time: o.doneTime || '—', status: r.value ? 'valid' : 'pending' });
+      });
+    });
+    return recs;
+  },
+
+  _getDecision(b) {
+    return { decision: b.decision, by: b.decisionBy, time: b.decisionTime, remarks: b.decisionRemarks, score: b.qualityScore };
+  },
+
+  _renderBaseTab(b, ops) {
+    ops = ops || [];
+    const samplingOps = ops.filter(o => o.opType === 'sampling');
+    const inspectionOps = ops.filter(o => o.opType === 'inspection');
+    const totalChars = inspectionOps.reduce((s, o) => s + (o.chars ? o.chars.length : 0), 0);
+    const quantChars = inspectionOps.reduce((s, o) => s + (o.chars || []).filter(c => c.micType === 'quantitative').length, 0);
+    const qualChars = totalChars - quantChars;
+
+    // 单个工序卡片
+    const opHtml = ops.map((op, i) => {
+      const isSampling = op.opType === 'sampling';
+      const typeBadge = isSampling
+        ? '<span class="badge badge-yellow badge-sm">取样</span>'
+        : '<span class="badge badge-purple badge-sm">检验</span>';
+      const head = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="font-family:monospace;font-weight:700;color:var(--text);">${esc(op.opNum)}</span>
+        ${typeBadge}
+        <span style="font-weight:600;color:var(--text);">${esc(op.opTypeName || (isSampling ? '取样' : '检验'))}</span>
+        <span style="color:#d1d5db;">|</span>
+        <span style="font-size:13px;color:var(--text-secondary);">工作中心：<strong>${esc(op.workCenterName || '—')}</strong></span>
+      </div>`;
+
+      let body;
+      if (isSampling) {
+        body = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
+          <div><span style="color:var(--text-muted);">取样方案：</span><strong style="color:#2563eb;font-family:monospace;">${esc(op.samplingPlanName || '—')}</strong></div>
+          <div><span style="color:var(--text-muted);">工作中心：</span>${esc(op.workCenterName || '—')}</div>
+          <div><span style="color:var(--text-muted);">工序描述：</span>${esc(op.description || '—')}</div>
+        </div>`;
+      } else {
+        const chars = op.chars || [];
+        const q = chars.filter(c => c.micType === 'quantitative').length;
+        const ql = chars.length - q;
+        const charCards = chars.map(c => {
+          const isQuant = c.micType === 'quantitative';
+          const specLine = isQuant
+            ? `<div><span style="color:var(--text-muted);">规格限：</span><strong style="color:#2563eb;">${esc(c.lowerSpec || '—')} ~ ${esc(c.upperSpec || '—')}</strong> ${esc(c.unit || '')}</div>`
+            : `<div><span style="color:var(--text-muted);">判定标准：</span><strong>${esc(c.defaultCode || '—')}</strong>${c.codeGroup ? ` <span style="color:var(--text-muted);">（${esc(c.codeGroup)}）</span>` : ''}</div>`;
+          return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;font-size:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-family:monospace;font-weight:600;color:#2563eb;">${esc(c.micCode)}</span>
+              <span class="badge ${isQuant ? 'badge-blue' : 'badge-purple'} badge-sm" style="font-size:10px;">${isQuant ? '定量' : '定性'}</span>
+              <span style="font-weight:500;color:var(--text);">${esc(c.micName)}</span>
+            </div>
+            <div style="display:flex;gap:16px;color:var(--text-secondary);flex-wrap:wrap;">
+              <div><span style="color:var(--text-muted);">方法：</span>${esc(c.methodName || '—')}</div>
+              ${specLine}
+            </div>
+          </div>`;
+        }).join('');
+        body = `<div style="margin-bottom:8px;font-size:12px;color:var(--text-secondary);">本工序包含 <strong style="color:var(--text);">${chars.length}</strong> 项检测 ·
+          <span class="badge badge-blue badge-sm" style="font-size:10px;">定量 ${q}</span>
+          <span class="badge badge-purple badge-sm" style="font-size:10px;">定性 ${ql}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;">${charCards}</div>`;
+      }
+
+      return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:10px;background:#fff;">
+        ${head}
+        ${body}
+      </div>`;
+    }).join('');
+
+    const summary = `<div class="sum-cards" style="margin-bottom:14px;">
+      <div class="sum-card"><div class="l">检验工序总数</div><div class="v">${ops.length} <small>道</small></div></div>
+      <div class="sum-card"><div class="l">取样工序</div><div class="v">${samplingOps.length} <small>道</small></div></div>
+      <div class="sum-card"><div class="l">检测工序</div><div class="v">${inspectionOps.length} <small>道</small></div></div>
+      <div class="sum-card"><div class="l">检测特性</div><div class="v">${totalChars} <small>项</small> <span style="color:#2563eb;font-size:13px;">定量${quantChars}</span> <span style="color:#a855f7;font-size:13px;">定性${qualChars}</span></div></div>
+    </div>`;
+
+    return `
+      ${b.crossPlantRef ? `<div style="background:#fefce8;border:1px solid #eab308;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;">
+        <strong>📋 跨工厂协同记录：</strong>此检验批从 <span style="font-weight:600;color:#2563eb;">${esc(b.crossPlantRef)}</span> 复制了检验实测值（${b.crossPlantResults ? b.crossPlantResults.length : 0} 项），请在录入结果时逐项核对确认。
+      </div>` : ''}
+      <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
+          <div><span style="color:var(--text-muted);">物料编码：</span><span style="font-family:monospace;">${esc(b.materialCode)}</span></div>
+          <div><span style="color:var(--text-muted);">物料名称：</span><strong>${esc(b.materialName)}</strong></div>
+          <div><span style="color:var(--text-muted);">数量：</span>${b.quantity} ${esc(b.unit)}</div>
+          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
+          <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
+          <div><span style="color:var(--text-muted);">凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
+        </div>
+      </div>
+      ${summary}
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">🔬 检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)}）</span></div>
+      ${ops.length ? opHtml : '<div style="color:var(--text-muted);font-size:13px;">暂无工序数据</div>'}
+    `;
+  },
+
+  _renderSamplingTab(b) {
+    const recs = this._getSamplingRecords(b);
+    const rev = (b._reversed && b._reversed.sampling) || [];
+    const valid = recs.filter(r => !rev.includes(r.id));
+    const validQty = valid.reduce((s, r) => s + parseFloat(r.qty || 0), 0);
+    const sum = `<div class="sum-cards" style="margin-bottom:14px;">
+      <div class="sum-card"><div class="l">取样次数（有效）</div><div class="v">${valid.length} <small>次</small></div></div>
+      <div class="sum-card"><div class="l">累计取样量（有效）</div><div class="v">${validQty.toFixed(3)} <small>${esc(b.unit || '')}</small></div></div>
+      <div class="sum-card"><div class="l">已冲销次数</div><div class="v">${rev.length} <small>次</small></div></div>
+    </div>`;
+    const rows = recs.map((r, i) => {
+      const isRev = rev.includes(r.id);
+      const btn = isRev
+        ? `<button class="btn btn-danger btn-sm" disabled>冲销</button>`
+        : `<button class="btn btn-danger btn-sm" onclick="InspectionBatch._reverseRecord('${b.id}','sampling','${r.id}',this)">冲销</button>`;
+      return `<tr class="${isRev ? 'reversed' : ''}">
+        <td>${i + 1}</td>
+        <td>${esc(r.qty)} ${esc(b.unit || '')}</td>
+        <td>${esc(r.by)}</td>
+        <td>${esc(r.time) || '—'}</td>
+        <td><span class="badge ${isRev ? 'badge-gray' : 'badge-green'}">${isRev ? '已冲销' : '有效'}</span></td>
+        <td class="table-actions">${btn}</td>
+      </tr>`;
+    }).join('');
+    return sum + `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>取样人</th><th>取样时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  },
+
+  _renderResultTab(b) {
+    const recs = this._getResultRecords(b);
+    const rev = (b._reversed && b._reversed.result) || [];
+    const valid = recs.filter(r => !rev.includes(r.id));
+    const sum = `<div class="sum-cards" style="margin-bottom:14px;">
+      <div class="sum-card"><div class="l">已录入特性</div><div class="v">${valid.length} <small>项</small></div></div>
+      <div class="sum-card"><div class="l">已冲销特性</div><div class="v">${rev.length} <small>项</small></div></div>
+    </div>`;
+    const rows = recs.map(r => {
+      const isRev = rev.includes(r.id);
+      const btn = isRev
+        ? `<button class="btn btn-danger btn-sm" disabled>冲销</button>`
+        : `<button class="btn btn-danger btn-sm" onclick="InspectionBatch._reverseRecord('${b.id}','result','${r.id}',this)">冲销</button>`;
+      return `<tr class="${isRev ? 'reversed' : ''}">
+        <td>${esc(r.name)}</td>
+        <td>${esc(r.spec)}</td>
+        <td>${esc(r.value)}</td>
+        <td>${esc(r.by)}</td>
+        <td>${esc(r.time) || '—'}</td>
+        <td><span class="badge ${isRev ? 'badge-gray' : 'badge-green'}">${isRev ? '已冲销' : '有效'}</span></td>
+        <td class="table-actions">${btn}</td>
+      </tr>`;
+    }).join('');
+    return sum + `<table class="data-table"><thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+  },
+
+  _renderDecisionTab(b) {
+    const d = this._getDecision(b);
+    const decRev = b._decisionReversed;
+    const statusBadge = decRev ? '<span class="badge badge-gray">已冲销</span>' : (d.time ? '<span class="badge badge-green">已决策</span>' : '<span class="badge badge-gray">尚未决策</span>');
+    let html = `<div class="clean-info-card card-active"><h5>使用决策 ${statusBadge}</h5>
+      <div class="ro-info-grid">
+        <div class="ro-info-field"><span class="ro-info-label">决策结果</span><span class="ro-info-value">${d.decision ? esc(d.decision) : '<span class="empty">— 待录入 —</span>'}</span></div>
+        <div class="ro-info-field"><span class="ro-info-label">决策人</span><span class="ro-info-value">${d.by ? esc(d.by) : '—'}</span></div>
+        <div class="ro-info-field"><span class="ro-info-label">决策时间</span><span class="ro-info-value">${d.time ? esc(d.time) : '—'}</span></div>
+        <div class="ro-info-field"><span class="ro-info-label">说明</span><span class="ro-info-value">${d.remarks ? esc(d.remarks) : '—'}</span></div>
+      </div></div>`;
+    if (d.time && !decRev) {
+      html += `<button class="btn btn-danger btn-sm" onclick="InspectionBatch._reverseRecord('${b.id}','decision',null,this)">冲销决策</button>`;
+    }
+    return html;
+  },
+
+  _renderFlowTab(b) {
+    let html = `<div style="background:#f8fafc;border-radius:8px;padding:14px 16px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">📅 操作流水（审计轨迹）</div>
+      <div style="font-size:13px;">`;
+    html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.createTime)}</span> — 创建检验批（${esc(b.createBy)}）</div></div>`;
+    if (b.status !== 'CRTD') html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#eab308;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.updateTime)}</span> — 状态更新为"${esc(b.statusName)}"</div></div>`;
+    if (b.decisionTime) html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:${(b.decision || '').startsWith('A') ? '#22c55e' : '#dc2626'};margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.decisionTime)}</span> — 决策：<strong>${esc(b.decision || '')} ${esc(b.decisionDesc || '')}</strong>（${esc(b.decisionBy || '')}）${b.qualityScore != null ? ` — 得分：${b.qualityScore}分` : ''}</div></div>`;
+    if (b.closeTime) html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#6b7280;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.closeTime)}</span> — 已关闭归档</div></div>`;
+    if (b.cancelReason) html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#dc2626;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.updateTime)}</span> — ${esc(b.cancelReason)}</div></div>`;
+    (b._auditLog || []).forEach(l => {
+      const label = l.kind === 'sampling' ? '取样' : l.kind === 'result' ? '检验特性' : l.kind === 'decision' ? '使用决策' : '记录';
+      html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#dc2626;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(l.time)}</span> — <span style="color:#dc2626;">冲销${label}（原因：${esc(l.reason)}）</span></div></div>`;
+    });
+    html += `</div></div>`;
+    return html;
+  },
+
+  // 单行/单条冲销：弹原因确认框 → 标记已冲销 + 生成反向流水 → 重绘弹窗
+  _reverseRecord(batchId, kind, recId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return;
+    const kindLabel = kind === 'sampling' ? '本次取样记录' : kind === 'result' ? '该检验特性' : '使用决策';
+    showModal('冲销确认',
+      `<div style="padding:4px 0;">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">确认冲销${kindLabel}？冲销后将保留原记录并标记「已冲销」，同时生成反向流水。</p>
+        <div class="form-group"><label>冲销原因 <span class="req">*</span></label>
+          <select id="ibRevReason"><option>录入错误</option><option>取样器具污染</option><option>重复录入</option><option>其他原因</option></select>
+        </div>
+        <div class="form-group"><label>备注说明</label><textarea id="ibRevRemark" placeholder="可选，补充说明冲销背景"></textarea></div>
+      </div>`,
+      [
+        { text: '取消', cls: 'btn-secondary', action: closeModal },
+        { text: '确认冲销', cls: 'btn-danger', action: () => {
+            const reason = (document.getElementById('ibRevReason') && document.getElementById('ibRevReason').value) || '录入错误';
+            b._reversed = b._reversed || { sampling: [], result: [] };
+            b._auditLog = b._auditLog || [];
+            if (kind === 'sampling') b._reversed.sampling.push(recId);
+            else if (kind === 'result') b._reversed.result.push(recId);
+            else if (kind === 'decision') b._decisionReversed = true;
+            b._auditLog.push({ time: this._now(), kind: kind, recId: recId, reason: reason });
+            closeModal();
+            this.openDetail(batchId);
+            toast('已冲销并生成反向流水');
+          }
+        }
+      ]
+    );
   },
 
   // ==================== 取样表单弹窗 ====================

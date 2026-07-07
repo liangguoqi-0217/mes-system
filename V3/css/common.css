@@ -221,6 +221,12 @@ body {
 .form-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
 .form-container { padding: 20px; }
 
+/* ===== 检验批查看弹窗：方案A 标签页面板 ===== */
+.ib-tab-panel { display: none; }
+.ib-tab-panel.active { display: block; }
+.data-table tr.reversed td { background: #fafafa; color: var(--text-muted); }
+.data-table tr.reversed td .btn-danger[disabled] { opacity: .4; cursor: not-allowed; }
+
 /* ===== Section Title ===== */
 .section-title {
   font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 12px;
