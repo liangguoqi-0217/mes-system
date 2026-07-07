@@ -433,6 +433,317 @@ const InspectionBatch = {
     this._executeGenerate(docId);
   },
 
+  renderPendingTable() {
+    this.pendingFiltered = [...this.pendingDocs];
+    this.pendingPage = 1;
+    this.doRenderPendingTable();
+  },
+
+  doRenderPendingTable() {
+    const start = (this.pendingPage-1)*this.pageSize;
+    const page = this.pendingFiltered.slice(start, start+this.pageSize);
+    const el = document.getElementById('ibTableWrapper');
+    if (!el) return;
+
+    el.innerHTML = `<table class="data-table" style="min-width:1200px;">
+      <thead><tr>
+        <th style="width:50px;">序号</th>
+        <th style="width:140px;">物料凭证号</th>
+        <th style="width:150px;">供应商批次号</th>
+        <th style="width:120px;">物料编码</th>
+        <th style="width:140px;">物料名称</th>
+        <th style="width:100px;">数量</th>
+        <th style="width:80px;">移动类型</th>
+        <th style="width:100px;">工厂</th>
+        <th style="width:80px;">库存地点</th>
+        <th style="width:100px;">收货日期</th>
+        <th style="width:120px;">操作</th>
+      </tr></thead>
+      <tbody>${page.map((d,i) => this.renderPendingRow(d, start+i+1)).join('')}</tbody>
+    </table>`;
+
+    this.renderPendingPagination();
+  },
+
+  renderPendingRow(d, idx) {
+    return `<tr>
+      <td>${idx}</td>
+      <td style="color:#2563eb;font-weight:600;font-family:monospace;">${esc(d.docNo)}</td>
+      <td style="font-weight:700;font-size:13px;">${esc(d.supplierBatch)}</td>
+      <td style="font-family:monospace;font-size:12px;">${esc(d.materialCode)}</td>
+      <td>${esc(d.materialName)}</td>
+      <td>${d.quantity} ${esc(d.unit)}</td>
+      <td><span class="badge badge-blue">${esc(d.movementName)}</span></td>
+      <td>${esc(d.plantName)}</td>
+      <td>${esc(d.storageName)}</td>
+      <td>${d.receiptDate}</td>
+      <td><button class="btn btn-sm btn-blue" onclick="InspectionBatch.openGenerateModal('${d.id}')">生成检验批</button></td>
+    </tr>`;
+  },
+
+  // ==================== 待生成 - 筛选 ====================
+
+  pendingFiltered: [],
+  pendingPage: 1,
+
+  searchPending() {
+    const factory = document.getElementById('ibPendFactory')?.value||'';
+    const material = (document.getElementById('ibPendMaterial')?.value||'').trim();
+    const suppBatch = (document.getElementById('ibPendSuppBatch')?.value||'').trim();
+    const sapBatch = (document.getElementById('ibPendSapBatch')?.value||'').trim();
+    const receiptDate = document.getElementById('ibPendReceiptDate')?.value||'';
+
+    this.pendingFiltered = this.pendingDocs.filter(d => {
+      if (factory && d.plant !== factory) return false;
+      if (material && !d.materialCode.includes(material) && !d.materialName.includes(material)) return false;
+      if (suppBatch && !d.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
+      if (sapBatch && !d.sapBatch.toLowerCase().includes(sapBatch.toLowerCase())) return false;
+      if (receiptDate && d.receiptDate !== receiptDate) return false;
+      return true;
+    });
+    this.pendingPage = 1;
+    this.doRenderPendingTable();
+  },
+
+  resetPendingFilter() {
+    ['ibPendMaterial','ibPendSuppBatch','ibPendSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const f = document.getElementById('ibPendFactory'); if (f) f.value = '';
+    const r = document.getElementById('ibPendReceiptDate'); if (r) r.value = '';
+    this.pendingFiltered = [...this.pendingDocs];
+    this.pendingPage = 1;
+    this.doRenderPendingTable();
+  },
+
+  // ==================== 分页 ====================
+
+  renderPagination() {
+    const total = this.filtered.length;
+    const totalPages = Math.ceil(total/this.pageSize)||1;
+    const el = document.getElementById('ibPagination');
+    if (!el) return;
+
+    el.innerHTML = `<div class="list-toolbar">
+      <div class="list-info"><span class="list-count">共 ${total} 条</span></div>
+      <div class="pagination">
+        <button class="pagination-btn" ${this.page<=1?'disabled':''} onclick="InspectionBatch.prevPage()">‹</button>
+        <span class="pagination-info">第 ${this.page} / ${totalPages} 页</span>
+        <button class="pagination-btn" ${this.page>=totalPages?'disabled':''} onclick="InspectionBatch.nextPage()">›</button>
+        <select class="page-size-select" onchange="InspectionBatch.changePageSize()">
+          <option value="10" ${this.pageSize===10?'selected':''}>10条</option>
+          <option value="20" ${this.pageSize===20?'selected':''}>20条</option>
+          <option value="50" ${this.pageSize===50?'selected':''}>50条</option>
+        </select>
+      </div>
+    </div>`;
+  },
+
+  renderPendingPagination() {
+    const total = this.pendingFiltered.length;
+    const totalPages = Math.ceil(total/this.pageSize)||1;
+
+    document.getElementById('ibPagination').innerHTML = `<div class="list-toolbar">
+      <div class="list-info"><span class="list-count">共 ${total} 条待处理凭证</span></div>
+      <div class="pagination">
+        <button class="pagination-btn" ${this.pendingPage<=1?'disabled':''} onclick="InspectionBatch.prevPendingPage()">‹</button>
+        <span class="pagination-info">第 ${this.pendingPage} / ${totalPages} 页</span>
+        <button class="pagination-btn" ${this.pendingPage>=totalPages?'disabled':''} onclick="InspectionBatch.nextPendingPage()">›</button>
+        <select class="page-size-select" onchange="InspectionBatch.changePendingPageSize()">
+          <option value="10" ${this.pageSize===10?'selected':''}>10条</option>
+          <option value="20" ${this.pageSize===20?'selected':''}>20条</option>
+          <option value="50" ${this.pageSize===50?'selected':''}>50条</option>
+        </select>
+      </div>
+    </div>`;
+  },
+
+  prevPage() { if (this.page>1) { this.page--; this.renderBatchTable(); this.renderPagination(); } },
+  nextPage() { if (this.page<Math.ceil(this.filtered.length/this.pageSize)) { this.page++; this.renderBatchTable(); this.renderPagination(); } },
+  changePageSize() {
+    const sel = document.querySelector('#ibPagination .page-size-select');
+    if (sel) { this.pageSize = parseInt(sel.value); this.page = 1; this.renderBatchTable(); this.renderPagination(); }
+  },
+
+  prevPendingPage() { if (this.pendingPage>1) { this.pendingPage--; this.doRenderPendingTable(); } },
+  nextPendingPage() { if (this.pendingPage<Math.ceil(this.pendingFiltered.length/this.pageSize)) { this.pendingPage++; this.doRenderPendingTable(); } },
+  changePendingPageSize() {
+    const sel = document.querySelector('#ibPagination .page-size-select');
+    if (sel) { this.pageSize = parseInt(sel.value); this.pendingPage = 1; this.doRenderPendingTable(); }
+  },
+
+  // ==================== 生成检验批弹窗 ====================
+
+  openGenerateModal(docId) {
+    const doc = this.pendingDocs.find(d => d.id === docId);
+    if (!doc) return toast('凭证未找到');
+
+    // 获取该物料可用的检验计划
+    const planOptions = this.getPlanOptions(doc.materialCode);
+    const planSelectOpts = planOptions.map(p => `<option value="${p.no}">${p.no} — ${p.name}</option>`).join('');
+
+    // 历史检验批检测
+    const histBatches = this.batchData.filter(b =>
+      b.supplierBatch === doc.supplierBatch && b.status === 'CANC'
+    );
+    const histNote = histBatches.length > 0
+      ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
+          <strong>⚠️ 发现历史记录：</strong>该供应商批次号 <em style="font-weight:700;">${esc(doc.supplierBatch)}</em> 在近期存在已取消的检验批 <strong>${esc(histBatches[0].batchNo)}</strong>，是否引用其检验结果？
+          <div style="margin-top:8px;">
+            <label style="cursor:pointer;"><input type="checkbox" id="ibRefHist"> 引用历史检验结果（需逐项核对确认）</label>
+          </div>
+        </div>`
+      : '';
+
+    showModal(
+      '生成检验批',
+      `<div style="padding:4px 0;">
+        ${histNote}
+        <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">物料凭证信息</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
+            <div><span style="color:var(--text-muted);">凭证号：</span><strong>${esc(doc.docNo)}</strong></div>
+            <div><span style="color:var(--text-muted);">移动类型：</span>${esc(doc.movementName)}</div>
+            <div><span style="color:var(--text-muted);">数量：</span>${doc.quantity} ${esc(doc.unit)}</div>
+            <div><span style="color:var(--text-muted);">物料编码：</span><strong>${esc(doc.materialCode)}</strong></div>
+            <div><span style="color:var(--text-muted);">物料名称：</span>${esc(doc.materialName)}</div>
+            <div><span style="color:var(--text-muted);">工厂：</span>${esc(doc.plantName)}</div>
+            <div><span style="color:var(--text-muted);">供应商批次号：</span><strong style="color:#2563eb;">${esc(doc.supplierBatch)}</strong></div>
+            <div><span style="color:var(--text-muted);">SAP批次号：</span><span style="font-family:monospace;">${esc(doc.sapBatch)}</span></div>
+            <div></div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label>用途代码<span class="req">*</span></label><select id="ibGenPurpose">
+            ${this.purposeOptions.map(p => `<option value="${p.code}">${p.code} - ${p.name}</option>`).join('')}
+          </select></div>
+          <div class="form-group"><label>检验计划<span class="req">*</span></label><select id="ibGenPlan" onchange="InspectionBatch.onPlanChange()">
+            <option value="">请选择</option>
+            ${planSelectOpts || '<option value="" disabled>暂无匹配的检验计划</option>'}
+          </select></div>
+        </div>
+        <!-- 检验计划详情预览 -->
+        <div id="ibPlanPreview" style="margin-top:16px;"></div>
+        <div class="form-group full" style="margin-top:12px;">
+          <label>备注</label>
+          <textarea id="ibGenRemark" placeholder="可选填写备注信息" rows="2" style="width:100%;"></textarea>
+        </div>
+      </div>`,
+      [
+        { text:'取消', cls:'btn-secondary', action: closeModal },
+        { text:'确认生成', cls:'btn-primary', action: ()=>{ InspectionBatch.doGenerate(docId); } }
+      ],
+      'modal-xl'
+    );
+
+    // 存储当前 docId 和 planOptions 引用，供 onPlanChange 使用
+    this._genDocId = docId;
+    this._genPlanOptions = planOptions;
+  },
+
+  // 检验计划选择变更 → 展示计划详情
+  onPlanChange() {
+    const selVal = document.getElementById('ibGenPlan')?.value;
+    const previewEl = document.getElementById('ibPlanPreview');
+    if (!previewEl) return;
+
+    if (!selVal) {
+      previewEl.innerHTML = '';
+      return;
+    }
+
+    const plan = (typeof ipData !== 'undefined' ? ipData : []).find(p => p.code === selVal);
+    if (!plan) {
+      previewEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:12px;background:#f8fafc;border-radius:8px;">未找到该计划的详细数据</div>';
+      return;
+    }
+
+    previewEl.innerHTML = this.renderPlanPreview(plan);
+  },
+
+  // 渲染检验计划详情预览 — 折叠式卡片布局
+  renderPlanPreview(plan) {
+    // 工序卡片（折叠式）
+    const opCards = plan.operations.map((op, i) => {
+      const isSampling = op.opType === 'sampling';
+      const uid = 'opp' + i + '_' + Date.now();
+      const hasChars = !isSampling && op.chars && op.chars.length > 0;
+
+      // MIC 详情（默认折叠）
+      let charsPanel = '';
+      if (hasChars) {
+        const maxCols = Math.min(op.chars.length, 2);
+        charsPanel = `<div id="${uid}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #d1d5db;">
+          <div style="display:grid;grid-template-columns:repeat(${maxCols},1fr);gap:8px 16px;">
+            ${op.chars.map(c => {
+              const specRange = c.micType === 'quantitative'
+                ? `${c.lowerSpec||'—'} ~ ${c.upperSpec||'—'} ${c.unit||''}`
+                : (c.defaultCode||'—');
+              const isQuant = c.micType === 'quantitative';
+              return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;font-size:13px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                  <span style="font-family:monospace;font-size:11px;color:#2563eb;font-weight:600;">${esc(c.micCode)}</span>
+                  <span class="badge ${isQuant?'badge-blue':'badge-purple'} badge-sm" style="font-size:10px;">${isQuant?'定量':'定性'}</span>
+                </div>
+                <div style="font-weight:500;color:var(--text);margin-bottom:4px;">${esc(c.micName)}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--text-secondary);">
+                  <span>方法：${esc(c.methodName)||'—'}</span>
+                  <span style="font-weight:500;color:var(--text);">规格：${specRange}</span>
+                  ${c.samplingPlanName ? `<span>取样：${esc(c.samplingPlanName)}</span>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }
+
+      const typeCls = isSampling ? 'badge-blue' : 'badge-green';
+      const typeLabel = isSampling ? '取样' : '检验';
+      const icon = isSampling ? '🔬' : '🧪';
+      const stepNum = i + 1;
+
+      return `<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;background:#fff;${i > 0 ? 'margin-top:8px;' : ''}">
+        <div style="display:flex;align-items:center;gap:10px;min-height:32px;">
+          <div style="background:${isSampling?'#dbeafe':'#dcfce7'};color:${isSampling?'#1d4ed8':'#15803d'};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${stepNum}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="font-size:14px;font-weight:600;color:var(--text);">${esc(op.opNum)}</span>
+              <span class="badge ${typeCls} badge-sm">${typeLabel}</span>
+              <span style="color:var(--text-muted);font-size:13px;">· ${esc(op.workCenterName)}</span>
+              ${op.description ? `<span style="color:var(--text-secondary);font-size:13px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">— ${esc(op.description)}</span>` : ''}
+            </div>
+            ${isSampling ? `<div style="font-size:12px;color:var(--text-muted);margin-top:3px;">取样方案：${esc(op.samplingPlanName) || '—'}</div>` : ''}
+          </div>
+          ${hasChars ? `<button onclick="InspectionBatch._toggleOpChars('${uid}',this)" style="background:none;border:1px solid #d1d5db;border-radius:6px;padding:4px 10px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap;flex-shrink:0;" onmouseover="this.style.background='#f3f4f6'" onmouseout="this.style.background='none'">
+            <span class="_expandLabel">展开</span> ${op.chars.length} 项特性 ▾
+          </button>` : ''}
+        </div>
+        ${charsPanel}
+      </div>`;
+    }).join('');
+
+    // 工序间箭头连接
+    const flowHtml = `<div style="display:flex;align-items:center;gap:0;font-size:12px;color:#9ca3af;padding:0 14px;margin-bottom:4px;">
+      ${plan.operations.map((_,i) => {
+        if (i === 0) return `<span style="flex-shrink:0;width:48px;text-align:center;">开始</span>`;
+        return `<span style="flex-shrink:0;width:48px;text-align:center;">↓</span>`;
+      }).join('')}
+    </div>`;
+
+    return `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:16px 18px;">
+      <!-- 计划基本信息（紧凑） -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-size:15px;font-weight:700;color:var(--text);">📋 ${esc(plan.code)}</span>
+        <span class="badge badge-green">已启用</span>
+        <span style="color:#d1d5db;">|</span>
+        <span style="font-size:13px;color:var(--text-secondary);"><strong>${esc(plan.materialCode)}</strong> ${esc(plan.materialName)}</span>
+        <span style="font-size:13px;color:var(--text-muted);">· ${esc(plan.purposeName)}</span>
+        <span style="font-size:13px;color:var(--text-muted);">· ${esc(plan.factoryName)}</span>
+        <span style="font-size:13px;color:var(--text-muted);">· ${plan.operations.length} 道工序</span>
+      </div>
+      <!-- 工序卡片列表 -->
+      ${opCards}
+    </div>`;
+  },
+
   // ==================== 检验批详情（弹窗模式） ====================
 
   // 根据 planNo 解析计划数据（含 fallback）
@@ -1335,6 +1646,22 @@ const InspectionBatch = {
 
     toast(`检验批 ${b.batchNo} 已取消：${reason}`);
     this.init();
+  },
+
+  // 折叠/展开工序的 MIC 特性
+  _toggleOpChars(uid, btn) {
+    const panel = document.getElementById(uid);
+    const label = btn.querySelector('._expandLabel');
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+      panel.style.display = 'block';
+      if (label) label.textContent = '收起';
+      btn.innerHTML = btn.innerHTML.replace('▾', '▴');
+    } else {
+      panel.style.display = 'none';
+      if (label) label.textContent = '展开';
+      btn.innerHTML = btn.innerHTML.replace('▴', '▾');
+    }
   }
 
 };
