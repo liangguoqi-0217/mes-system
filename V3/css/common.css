@@ -131,6 +131,7 @@ body {
 .modal-md  { max-width: 900px; }
 .modal-lg  { max-width: 1400px; }
 .modal-xl  { max-width: 1700px; }
+.modal-decision { max-width: 1150px; }
 .modal-xxl { max-width: 96vw; }
 .mp-modal  { max-width: 1500px; max-height: 94vh; }
 .mp-modal .modal-body { padding: 28px 32px !important; }
