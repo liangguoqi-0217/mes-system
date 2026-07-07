@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>检验批查看 - 方案C（主从+状态机+时间轴，无框架约束）</title>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    body { overflow: hidden; }
+    .app-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: linear-gradient(180deg,#1e3a5f,#0f1b2d); color: rgba(255,255,255,.7); flex-shrink:0; display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; }
+    .sidebar-header { padding:16px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .sidebar-logo { width:36px; height:36px; background:linear-gradient(135deg,#1890ff,#096dd9); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; }
+    .sidebar-title { font-size:15px; font-weight:700; color:#fff; letter-spacing:1px; }
+    .sidebar-subtitle { font-size:10px; color:rgba(255,255,255,.4); letter-spacing:2px; }
+    .sidebar-nav { flex:1; overflow-y:auto; padding:8px 0; }
+    .g-left-item { display:flex; align-items:center; gap:10px; padding:12px 20px; font-size:14px; color:#fff; cursor:pointer; margin:0 8px; border-radius:4px; }
+    .g-left-item:hover { background:rgba(24,144,255,.15); }
+    .g-left-item.active { background:rgba(24,144,255,.25); font-weight:500; }
+    .g-left-icon { font-size:16px; width:20px; text-align:center; }
+    .main-area { flex:1; margin-left:260px; display:flex; flex-direction:column; min-height:100vh; }
+
+    .topbar { background:white; box-shadow:var(--shadow); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar-title { font-size:17px; font-weight:700; }
+
+    /* 主从布局 */
+    .master-detail { display:flex; flex:1; min-height:0; }
+    .master { width:420px; flex-shrink:0; border-right:1px solid var(--border); overflow-y:auto; background:#fff; }
+    .master-head { padding:14px 18px; border-bottom:1px solid var(--border); font-size:14px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+    .master-list { list-style:none; }
+    .master-row { padding:12px 18px; border-bottom:1px solid #f3f4f6; cursor:pointer; transition:.15s; }
+    .master-row:hover { background:#f8fafc; }
+    .master-row.active { background:#eff6ff; border-left:3px solid var(--primary-lighter); padding-left:15px; }
+    .mr-no { font-size:13px; font-weight:700; color:var(--text); }
+    .mr-sub { font-size:12px; color:var(--text-secondary); margin-top:3px; }
+
+    .detail { flex:1; overflow-y:auto; padding:20px 24px; }
+    .detail-head { display:flex; align-items:flex-start; gap:16px; margin-bottom:8px; }
+    .detail-head .batch-no { font-size:18px; font-weight:700; }
+    .detail-head .material { font-size:13px; color:var(--text-secondary); margin-top:2px; }
+
+    /* 状态机条 */
+    .state-machine { display:flex; align-items:flex-start; gap:0; margin:14px 0 20px; padding:14px 16px; background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius); }
+    .sm-node { flex:1; display:flex; flex-direction:column; align-items:center; position:relative; text-align:center; }
+    .sm-dot { width:30px; height:30px; border-radius:50%; background:#e5e7eb; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#fff; z-index:2; transition:.2s; }
+    .sm-node.done .sm-dot { background:var(--success); }
+    .sm-node.current .sm-dot { background:var(--primary-lighter); box-shadow:0 0 0 4px rgba(59,130,246,.18); }
+    .sm-label { font-size:12px; margin-top:6px; color:var(--text-secondary); font-weight:600; }
+    .sm-node.current .sm-label { color:var(--primary-lighter); }
+    .sm-line { position:absolute; top:15px; left:50%; width:100%; height:3px; background:#e5e7eb; z-index:1; }
+    .sm-node.done .sm-line, .sm-node.current .sm-line { background:var(--success); }
+    .sm-reverse { margin-top:6px; }
+    .sm-reverse .btn { font-size:11px; padding:3px 9px; }
+
+    /* Tab */
+    .tabs { display:flex; border-bottom:2px solid var(--border); margin-bottom:16px; }
+    .tab { padding:10px 20px; font-size:13px; font-weight:600; color:var(--text-secondary); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; }
+    .tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    .sum-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:16px; }
+    .sum-card { background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+    .sum-card .l { font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
+    .sum-card .v { font-size:22px; font-weight:800; color:var(--text); }
+    .sum-card .v small { font-size:13px; font-weight:600; color:var(--text-secondary); }
+
+    .timeline { position:relative; padding-left:20px; }
+    .timeline::before { content:''; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background:var(--border); }
+    .tl-item { position:relative; padding:0 0 16px 6px; }
+    .tl-item::before { content:''; position:absolute; left:-18px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--primary-lighter); border:2px solid #fff; box-shadow:0 0 0 2px var(--primary-lighter); }
+    .tl-item.reverse::before { background:var(--danger); box-shadow:0 0 0 2px var(--danger); }
+    .tl-time { font-size:12px; color:var(--text-muted); font-family:'SF Mono','Consolas',monospace; }
+    .tl-text { font-size:13px; color:var(--text); margin-top:2px; }
+    .tl-text .who { font-weight:600; }
+    .tl-text.reverse { color:var(--danger); }
+    .tl-group { border-left:2px dashed #fca5a5; margin-left:2px; padding-left:14px; }
+
+    tr.reversed td { background:#fafafa; color:var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">MES</div>
+        <div><div class="sidebar-title">MES系统</div><div class="sidebar-subtitle">MANUFACTURING</div></div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="g-left-item"><span class="g-left-icon">🏠</span>工作台</div>
+        <div class="g-left-item"><span class="g-left-icon">📦</span>生产管理</div>
+        <div class="g-left-item active"><span class="g-left-icon">✅</span>质量管理</div>
+        <div class="g-left-item"><span class="g-left-icon">🔧</span>设备维保</div>
+        <div class="g-left-item"><span class="g-left-icon">📊</span>报表中心</div>
+      </nav>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-title">质量管理 / 检验批</div>
+        <div style="font-size:13px;color:var(--text-secondary)">张三 · 质检员</div>
+      </header>
+
+      <div class="master-detail">
+        <!-- 主：列表常驻 -->
+        <div class="master">
+          <div class="master-head"><span>检验批列表</span><span style="font-size:12px;color:var(--text-secondary);font-weight:400">点选查看过程数据</span></div>
+          <ul class="master-list">
+            <li class="master-row active" data-no="IL-2026-000123" data-mat="A-100 工业级树脂 · 2000kg · 来料检验" data-status="sampled">
+              <div class="mr-no">IL-2026-000123</div><div class="mr-sub">A-100 工业级树脂 · <span class="badge badge-blue badge-sm">已取样</span></div>
+            </li>
+            <li class="master-row" data-no="IL-2026-000124" data-mat="B-205 包装膜 · 50000m · 过程检验" data-status="inspecting">
+              <div class="mr-no">IL-2026-000124</div><div class="mr-sub">B-205 包装膜 · <span class="badge badge-purple badge-sm">结果录入中</span></div>
+            </li>
+            <li class="master-row" data-no="IL-2026-000125" data-mat="C-310 成品 · 1200箱 · 出厂检验" data-status="decided">
+              <div class="mr-no">IL-2026-000125</div><div class="mr-sub">C-310 成品 · <span class="badge badge-green badge-sm">已决策</span></div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 从：详情常驻（无需弹窗） -->
+        <div class="detail">
+          <div class="detail-head">
+            <div>
+              <div class="batch-no" id="dNo">检验批 IL-2026-000123</div>
+              <div class="material" id="dMat">A-100 工业级树脂 · 2000kg · 来料检验</div>
+            </div>
+          </div>
+
+          <!-- 状态机条：逆向操作直接挂在节点上 -->
+          <div class="state-machine" id="sm">
+            <div class="sm-node" data-st="created"><div class="sm-dot">1</div><div class="sm-label">新建</div></div>
+            <div class="sm-node" data-st="sampled"><div class="sm-dot">2</div><div class="sm-label">已取样</div><div class="sm-line"></div><div class="sm-reverse"></div></div>
+            <div class="sm-node" data-st="inspecting"><div class="sm-dot">3</div><div class="sm-label">结果录入中</div><div class="sm-line"></div><div class="sm-reverse"></div></div>
+            <div class="sm-node" data-st="decided"><div class="sm-dot">4</div><div class="sm-label">已决策</div><div class="sm-line"></div><div class="sm-reverse"></div></div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active" data-tab="sample">取样记录</div>
+            <div class="tab" data-tab="result">结果录入</div>
+            <div class="tab" data-tab="decision">使用决策</div>
+            <div class="tab" data-tab="flow">操作流水（时间轴）</div>
+          </div>
+
+          <div class="tab-panel active" data-panel="sample">
+            <div class="sum-cards">
+              <div class="sum-card"><div class="l">取样次数（有效）</div><div class="v">2 <small>次</small></div></div>
+              <div class="sum-card"><div class="l">累计取样量（有效）</div><div class="v">100 <small>kg</small></div></div>
+              <div class="sum-card"><div class="l">已冲销次数</div><div class="v">1 <small>次</small></div></div>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>序号</th><th>取样量(kg)</th><th>取样人</th><th>取样时间</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>50</td><td>张三</td><td>2026-07-01 10:20</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="alert('演示：冲销本次取样')">冲销</button></td></tr>
+                <tr><td>2</td><td>50</td><td>李四</td><td>2026-07-03 14:08</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="alert('演示：冲销本次取样')">冲销</button></td></tr>
+                <tr class="reversed"><td>3</td><td>50</td><td>王五</td><td>2026-07-05 09:40</td><td><span class="badge badge-gray">已冲销</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" disabled style="opacity:.4">冲销</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="tab-panel" data-panel="result">
+            <div class="sum-cards">
+              <div class="sum-card"><div class="l">已录入特性</div><div class="v">2 <small>项</small></div></div>
+              <div class="sum-card"><div class="l">已冲销特性</div><div class="v">1 <small>项</small></div></div>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>外观</td><td>无明显杂质</td><td>合格</td><td>张三</td><td>2026-07-01 11:00</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="alert('演示：冲销该特性')">冲销</button></td></tr>
+                <tr><td>含量(%)</td><td>≥98.0</td><td>98.3</td><td>张三</td><td>2026-07-01 11:05</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="alert('演示：冲销该特性')">冲销</button></td></tr>
+                <tr class="reversed"><td>水分(%)</td><td>≤0.5</td><td>0.3</td><td>李四</td><td>2026-07-03 15:20</td><td><span class="badge badge-gray">已冲销</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" disabled style="opacity:.4">冲销</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="tab-panel" data-panel="decision">
+            <div class="clean-info-card card-active">
+              <h5>使用决策 <span class="badge badge-gray">尚未决策</span></h5>
+              <div class="ro-info-grid">
+                <div class="ro-info-field"><span class="ro-info-label">决策结果</span><span class="ro-info-value empty">— 待录入 —</span></div>
+                <div class="ro-info-field"><span class="ro-info-label">决策人</span><span class="ro-info-value empty">—</span></div>
+                <div class="ro-info-field"><span class="ro-info-label">决策时间</span><span class="ro-info-value empty">—</span></div>
+                <div class="ro-info-field"><span class="ro-info-label">说明</span><span class="ro-info-value empty">—</span></div>
+              </div>
+            </div>
+            <button class="btn btn-blue btn-sm">录入使用决策</button>
+          </div>
+
+          <div class="tab-panel" data-panel="flow">
+            <div class="clean-section"><h4>操作流水（时间轴 · 正向蓝 / 冲销红）</h4></div>
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-time">2026-07-01 09:12</div><div class="tl-text"><span class="who">系统</span> 创建检验批</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-01 10:20</div><div class="tl-text"><span class="who">张三</span> 取样 +50kg</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-01 11:00</div><div class="tl-text"><span class="who">张三</span> 结果录入【外观=合格】</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-01 11:05</div><div class="tl-text"><span class="who">张三</span> 结果录入【含量=98.3%】</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-03 14:08</div><div class="tl-text"><span class="who">李四</span> 取样 +50kg</div></div>
+              <div class="tl-item reverse"><div class="tl-time">2026-07-05 16:10</div><div class="tl-text reverse"><span class="who">王五</span> 冲销取样 +50kg（取样器具污染）</div></div>
+              <div class="tl-item reverse"><div class="tl-time">2026-07-06 09:30</div><div class="tl-text reverse"><span class="who">李四</span> 冲销特性【水分=0.3%】（录入错误）</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 列表点选切换详情
+    const order = ['created','sampled','inspecting','decided'];
+    const labelMap = {created:'新建',sampled:'已取样',inspecting:'结果录入中',decided:'已决策'};
+    function renderSM(current){
+      document.querySelectorAll('#sm .sm-node').forEach(n=>{
+        const st=n.dataset.st, idx=order.indexOf(st), cur=order.indexOf(current);
+        n.classList.remove('done','current');
+        const rev=n.querySelector('.sm-reverse'); rev.innerHTML='';
+        if(idx<cur){ n.classList.add('done'); }
+        else if(idx===cur){ n.classList.add('current'); }
+        // 已完成且非起点：挂冲销回退按钮
+        if(idx<=cur && st!=='created'){
+          const b=document.createElement('button');
+          b.className='btn btn-danger btn-sm';
+          b.textContent='↩ 冲销'+labelMap[st];
+          b.onclick=()=>{ if(confirm('确认冲销「'+labelMap[st]+'」并回退到上一状态？')){ const prev=order[idx-1]; renderSM(prev); alert('已回退至：'+labelMap[prev]); } };
+          rev.appendChild(b);
+        }
+      });
+    }
+    document.querySelectorAll('.master-row').forEach(r=>{
+      r.addEventListener('click',()=>{
+        document.querySelectorAll('.master-row').forEach(x=>x.classList.remove('active'));
+        r.classList.add('active');
+        document.getElementById('dNo').textContent='检验批 '+r.dataset.no;
+        document.getElementById('dMat').textContent=r.dataset.mat;
+        renderSM(r.dataset.status);
+      });
+    });
+    // Tab 切换
+    document.querySelectorAll('.tab').forEach(t=>{
+      t.addEventListener('click',()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        document.querySelector('.tab-panel[data-panel="'+t.dataset.tab+'"]').classList.add('active');
+      });
+    });
+    renderSM('sampled');
+  </script>
+</body>
+</html>

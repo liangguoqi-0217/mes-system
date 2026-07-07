@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>检验批查看 - 方案B（左侧分栏）</title>
+  <link rel="stylesheet" href="../css/common.css">
+  <style>
+    body { overflow: hidden; }
+    .app-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 260px; background: linear-gradient(180deg,#1e3a5f,#0f1b2d); color: rgba(255,255,255,.7); flex-shrink:0; display:flex; flex-direction:column; position:fixed; left:0; top:0; bottom:0; }
+    .sidebar-header { padding:16px 20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .sidebar-logo { width:36px; height:36px; background:linear-gradient(135deg,#1890ff,#096dd9); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; }
+    .sidebar-title { font-size:15px; font-weight:700; color:#fff; letter-spacing:1px; }
+    .sidebar-subtitle { font-size:10px; color:rgba(255,255,255,.4); letter-spacing:2px; }
+    .sidebar-nav { flex:1; overflow-y:auto; padding:8px 0; }
+    .g-left-item { display:flex; align-items:center; gap:10px; padding:12px 20px; font-size:14px; color:#fff; cursor:pointer; margin:0 8px; border-radius:4px; }
+    .g-left-item:hover { background:rgba(24,144,255,.15); }
+    .g-left-item.active { background:rgba(24,144,255,.25); font-weight:500; }
+    .g-left-icon { font-size:16px; width:20px; text-align:center; }
+    .main-area { flex:1; margin-left:260px; display:flex; flex-direction:column; min-height:100vh; }
+    .topbar { background:white; box-shadow:var(--shadow); padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
+    .topbar-title { font-size:17px; font-weight:700; }
+    .content { padding:20px 24px; }
+    .page-title { font-size:18px; font-weight:700; margin-bottom:4px; }
+    .page-sub { font-size:13px; color:var(--text-secondary); margin-bottom:16px; }
+
+    .modal-head-info { display:flex; align-items:center; gap:14px; }
+    .modal-head-info .batch-no { font-size:17px; font-weight:700; color:var(--text); }
+    .modal-head-info .material { font-size:13px; color:var(--text-secondary); }
+
+    .sum-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:16px; }
+    .sum-card { background:#f8fafc; border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; }
+    .sum-card .l { font-size:12px; color:var(--text-secondary); margin-bottom:4px; }
+    .sum-card .v { font-size:22px; font-weight:800; color:var(--text); }
+    .sum-card .v small { font-size:13px; font-weight:600; color:var(--text-secondary); }
+
+    .timeline { position:relative; padding-left:20px; }
+    .timeline::before { content:''; position:absolute; left:6px; top:4px; bottom:4px; width:2px; background:var(--border); }
+    .tl-item { position:relative; padding:0 0 16px 6px; }
+    .tl-item::before { content:''; position:absolute; left:-18px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--primary-lighter); border:2px solid #fff; box-shadow:0 0 0 2px var(--primary-lighter); }
+    .tl-item.reverse::before { background:var(--danger); box-shadow:0 0 0 2px var(--danger); }
+    .tl-time { font-size:12px; color:var(--text-muted); font-family:'SF Mono','Consolas',monospace; }
+    .tl-text { font-size:13px; color:var(--text); margin-top:2px; }
+    .tl-text .who { font-weight:600; }
+    .tl-text.reverse { color:var(--danger); }
+
+    tr.reversed td { background:#fafafa; color:var(--text-muted); }
+
+    /* 方案B：左侧分栏铺满弹窗 */
+    .split-wrap { min-height: 520px; border-radius:0; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">MES</div>
+        <div>
+          <div class="sidebar-title">MES系统</div>
+          <div class="sidebar-subtitle">MANUFACTURING</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="g-left-item"><span class="g-left-icon">🏠</span>工作台</div>
+        <div class="g-left-item"><span class="g-left-icon">📦</span>生产管理</div>
+        <div class="g-left-item active"><span class="g-left-icon">✅</span>质量管理</div>
+        <div class="g-left-item"><span class="g-left-icon">🔧</span>设备维保</div>
+        <div class="g-left-item"><span class="g-left-icon">📊</span>报表中心</div>
+      </nav>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-title">质量管理 / 检验批列表</div>
+        <div style="font-size:13px;color:var(--text-secondary)">张三 · 质检员</div>
+      </header>
+      <main class="content">
+        <div class="page-title">检验批列表</div>
+        <div class="page-sub">一行一个检验批（单据）。正向操作（取样/结果录入/使用决策）与逆向冲销均在「查看」弹窗内完成。</div>
+        <div class="list-toolbar"><div class="list-info"><span class="list-count">共 3 条检验批</span></div></div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>检验批号</th><th>物料</th><th>批量</th><th>检验类型</th><th>当前状态</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>IL-2026-000123</td><td>A-100 工业级树脂</td><td>2000 kg</td><td>来料检验</td><td><span class="badge badge-blue">已取样</span></td><td>2026-07-01 09:12</td><td class="table-actions"><button class="btn btn-blue btn-sm" onclick="openModal()">查看</button></td></tr>
+              <tr><td>IL-2026-000124</td><td>B-205 包装膜</td><td>50000 m</td><td>过程检验</td><td><span class="badge badge-purple">结果录入中</span></td><td>2026-07-02 10:30</td><td class="table-actions"><button class="btn btn-blue btn-sm" onclick="openModal()">查看</button></td></tr>
+              <tr><td>IL-2026-000125</td><td>C-310 成品</td><td>1200 箱</td><td>出厂检验</td><td><span class="badge badge-green">已决策</span></td><td>2026-07-03 14:05</td><td class="table-actions"><button class="btn btn-blue btn-sm" onclick="openModal()">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ============ 查看大弹窗（方案B：左侧分栏） ============ -->
+  <div class="modal-backdrop" id="viewModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-head-info">
+          <span class="batch-no">检验批 IL-2026-000123</span>
+          <span class="material">物料 A-100 工业级树脂 · 批量 2000kg · 来料检验</span>
+          <span class="badge badge-blue">已取样</span>
+        </div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <!-- 左侧分栏 + 右侧详情 -->
+      <div class="split-wrap">
+        <div class="split-left">
+          <div class="split-nav-label">检验批详情</div>
+          <div class="split-nav-item active" data-nav="base">基本信息</div>
+          <div class="split-nav-item" data-nav="sample">取样记录 <span class="sn-badge samp">3</span></div>
+          <div class="split-nav-item" data-nav="result">结果录入 <span class="sn-badge insp">3</span></div>
+          <div class="split-nav-item" data-nav="decision">使用决策</div>
+          <div class="split-nav-item" data-nav="flow">操作流水</div>
+        </div>
+        <div class="split-right">
+          <!-- 基本信息 -->
+          <div class="split-panel active" data-spanel="base">
+            <div class="detail-grid">
+              <div class="detail-item"><dt>检验批号</dt><dd>IL-2026-000123</dd></div>
+              <div class="detail-item"><dt>物料编码</dt><dd>A-100</dd></div>
+              <div class="detail-item"><dt>物料名称</dt><dd>工业级树脂</dd></div>
+              <div class="detail-item"><dt>检验类型</dt><dd>来料检验</dd></div>
+              <div class="detail-item"><dt>批数量</dt><dd>2000 kg</dd></div>
+              <div class="detail-item"><dt>当前状态</dt><dd>已取样</dd></div>
+              <div class="detail-item"><dt>供应商</dt><dd>华东新材料有限公司</dd></div>
+              <div class="detail-item"><dt>创建时间</dt><dd>2026-07-01 09:12</dd></div>
+            </div>
+          </div>
+
+          <!-- 取样记录 -->
+          <div class="split-panel" data-spanel="sample">
+            <div class="sum-cards">
+              <div class="sum-card"><div class="l">取样次数（有效）</div><div class="v" id="sampCount">2 <small>次</small></div></div>
+              <div class="sum-card"><div class="l">累计取样量（有效）</div><div class="v" id="sampQty">100 <small>kg</small></div></div>
+              <div class="sum-card"><div class="l">已冲销次数</div><div class="v">1 <small>次</small></div></div>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>序号</th><th>取样量(kg)</th><th>取样人</th><th>取样时间</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="sampBody">
+                <tr><td>1</td><td>50</td><td>张三</td><td>2026-07-01 10:20</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="reverseRow(this,'sample',50)">冲销</button></td></tr>
+                <tr><td>2</td><td>50</td><td>李四</td><td>2026-07-03 14:08</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="reverseRow(this,'sample',50)">冲销</button></td></tr>
+                <tr class="reversed"><td>3</td><td>50</td><td>王五</td><td>2026-07-05 09:40</td><td><span class="badge badge-gray">已冲销</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" disabled style="opacity:.4">冲销</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 结果录入 -->
+          <div class="split-panel" data-spanel="result">
+            <div class="sum-cards">
+              <div class="sum-card"><div class="l">已录入特性</div><div class="v">2 <small>项</small></div></div>
+              <div class="sum-card"><div class="l">已冲销特性</div><div class="v">1 <small>项</small></div></div>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="resBody">
+                <tr><td>外观</td><td>无明显杂质</td><td>合格</td><td>张三</td><td>2026-07-01 11:00</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="reverseRow(this,'result',0)">冲销</button></td></tr>
+                <tr><td>含量(%)</td><td>≥98.0</td><td>98.3</td><td>张三</td><td>2026-07-01 11:05</td><td><span class="badge badge-green">有效</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" onclick="reverseRow(this,'result',0)">冲销</button></td></tr>
+                <tr class="reversed"><td>水分(%)</td><td>≤0.5</td><td>0.3</td><td>李四</td><td>2026-07-03 15:20</td><td><span class="badge badge-gray">已冲销</span></td><td class="table-actions"><button class="btn btn-danger btn-sm" disabled style="opacity:.4">冲销</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 使用决策 -->
+          <div class="split-panel" data-spanel="decision">
+            <div class="clean-info-card card-active">
+              <h5>使用决策 <span class="badge badge-gray">尚未决策</span></h5>
+              <div class="ro-info-grid">
+                <div class="ro-info-field"><span class="ro-info-label">决策结果</span><span class="ro-info-value empty">— 待录入 —</span></div>
+                <div class="ro-info-field"><span class="ro-info-label">决策人</span><span class="ro-info-value empty">—</span></div>
+                <div class="ro-info-field"><span class="ro-info-label">决策时间</span><span class="ro-info-value empty">—</span></div>
+                <div class="ro-info-field"><span class="ro-info-label">说明</span><span class="ro-info-value empty">—</span></div>
+              </div>
+            </div>
+            <button class="btn btn-blue btn-sm">录入使用决策</button>
+          </div>
+
+          <!-- 操作流水 -->
+          <div class="split-panel" data-spanel="flow">
+            <div class="clean-section"><h4>操作流水（审计轨迹）</h4></div>
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-time">2026-07-01 09:12</div><div class="tl-text"><span class="who">系统</span> 创建检验批 IL-2026-000123</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-01 10:20</div><div class="tl-text"><span class="who">张三</span> 取样 +50kg</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-01 11:00</div><div class="tl-text"><span class="who">张三</span> 结果录入【外观=合格】</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-01 11:05</div><div class="tl-text"><span class="who">张三</span> 结果录入【含量=98.3%】</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-03 14:08</div><div class="tl-text"><span class="who">李四</span> 取样 +50kg</div></div>
+              <div class="tl-item"><div class="tl-time">2026-07-03 15:20</div><div class="tl-text"><span class="who">李四</span> 结果录入【水分=0.3%】</div></div>
+              <div class="tl-item reverse"><div class="tl-time">2026-07-05 16:10</div><div class="tl-text reverse"><span class="who">王五</span> 冲销取样 +50kg（原因：取样器具污染）</div></div>
+              <div class="tl-item reverse"><div class="tl-time">2026-07-06 09:30</div><div class="tl-text reverse"><span class="who">李四</span> 冲销特性【水分=0.3%】（原因：录入错误）</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+        <button class="btn btn-blue">打印检验记录</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 冲销原因小确认框 -->
+  <div class="modal-backdrop hidden" id="reverseModal" style="background:rgba(0,0,0,.35); padding:20px;">
+    <div class="modal modal-sm">
+      <div class="modal-header"><div class="modal-title">冲销确认</div><button class="modal-close" onclick="closeReverse()">✕</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;" id="revDesc">确认冲销该记录？</p>
+        <div class="form-group"><label>冲销原因 <span class="req">*</span></label>
+          <select id="revReason"><option>录入错误</option><option>取样器具污染</option><option>重复录入</option><option>其他原因</option></select>
+        </div>
+        <div class="form-group"><label>备注说明</label><textarea placeholder="可选，补充说明冲销背景"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeReverse()">取消</button>
+        <button class="btn btn-danger" onclick="confirmReverse()">确认冲销</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openModal(){ document.getElementById('viewModal').classList.remove('hidden'); }
+    function closeModal(){ document.getElementById('viewModal').classList.add('hidden'); }
+
+    // 左侧分栏切换
+    document.querySelectorAll('.split-nav-item').forEach(n=>{
+      n.addEventListener('click',()=>{
+        document.querySelectorAll('.split-nav-item').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.split-panel').forEach(x=>x.classList.remove('active'));
+        n.classList.add('active');
+        document.querySelector('.split-panel[data-spanel="'+n.dataset.nav+'"]').classList.add('active');
+      });
+    });
+
+    let pendingBtn=null, pendingType='', pendingQty=0;
+    function reverseRow(btn,type,qty){
+      pendingBtn=btn; pendingType=type; pendingQty=qty;
+      const kind = type==='sample'?'本次取样记录':'该检验特性';
+      document.getElementById('revDesc').textContent='确认冲销'+kind+'？冲销后将保留原记录并标记「已冲销」，同时生成反向流水。';
+      document.getElementById('reverseModal').classList.remove('hidden');
+    }
+    function closeReverse(){ document.getElementById('reverseModal').classList.add('hidden'); }
+    function confirmReverse(){
+      if(pendingBtn){
+        const tr=pendingBtn.closest('tr');
+        tr.classList.add('reversed');
+        const st=tr.querySelector('.badge'); st.className='badge badge-gray'; st.textContent='已冲销';
+        pendingBtn.disabled=true; pendingBtn.style.opacity='.4';
+        if(pendingType==='sample'){
+          const c=document.getElementById('sampCount'), q=document.getElementById('sampQty');
+          c.innerHTML=(parseInt(c.textContent)-1)+' <small>次</small>';
+          q.innerHTML=(parseInt(q.textContent)-pendingQty)+' <small>kg</small>';
+        }
+      }
+      closeReverse();
+    }
+
+    document.getElementById('viewModal').addEventListener('click',e=>{ if(e.target.id==='viewModal') closeModal(); });
+    document.getElementById('reverseModal').addEventListener('click',e=>{ if(e.target.id==='reverseModal') closeReverse(); });
+  </script>
+</body>
+</html>

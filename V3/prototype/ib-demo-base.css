@@ -1,0 +1,37 @@
+/* ===== 检验批基本信息 demo 共享外壳（性冷淡/商务基底） ===== */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f4f5f7; color: #1f2937; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 13px; line-height: 1.6; }
+
+/* 顶栏 */
+.demo-topbar { height: 52px; background: #1e293b; color: #fff; display: flex; align-items: center; padding: 0 24px; font-size: 15px; font-weight: 600; letter-spacing: .3px; }
+.demo-topbar .sub { font-weight: 400; font-size: 12px; color: #94a3b8; margin-left: 12px; }
+
+/* 内容容器 */
+.demo-wrap { max-width: 1180px; margin: 24px auto; background: #fff; border: 1px solid #e8eaed; border-radius: 10px; padding: 24px 28px; }
+
+/* 头部信息条 */
+.demo-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid #eef0f2; padding-bottom: 16px; margin-bottom: 18px; }
+.demo-head .bn { font-size: 19px; font-weight: 700; letter-spacing: .5px; }
+.demo-head .meta { font-size: 12px; color: #6b7280; }
+.demo-head .meta b { color: #374151; font-weight: 600; }
+
+/* 标签页（仅示意，基本信息 active） */
+.demo-tabs { display: flex; gap: 2px; border-bottom: 1px solid #e8eaed; margin-bottom: 20px; }
+.demo-tabs .t { padding: 9px 16px; font-size: 13px; color: #6b7280; cursor: default; border-bottom: 2px solid transparent; }
+.demo-tabs .t.on { color: #1e3a5f; font-weight: 600; border-bottom-color: #1e3a5f; }
+.demo-tabs .t.off { color: #9ca3af; }
+
+/* 区块标题 */
+.sec-title { font-size: 13px; font-weight: 600; color: #374151; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.sec-title::before { content: ""; width: 3px; height: 13px; background: #1e3a5f; border-radius: 2px; }
+
+/* 单一深蓝强调色点缀 */
+.accent { color: #1e3a5f; }
+.mono { font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; }
+.muted { color: #9ca3af; }
+.kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 24px; font-size: 12.5px; }
+.kv > div { padding: 3px 0; }
+.kv .k { color: #9ca3af; margin-right: 6px; }
+.kv .v { color: #374151; }
+
+.opshell { background: #f4f5f7; border-radius: 8px; padding: 16px 20px; }

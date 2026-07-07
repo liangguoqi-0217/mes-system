@@ -1371,7 +1371,7 @@ const InspectionBatch = {
     const bodyHtml = `<div style="padding:4px 0;max-height:72vh;overflow-y:auto;">
       <!-- 区域1：上下文信息区（PRD 4.2.1） -->
       <div style="background:#f0f9ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:10px;">📋 上下文信息</div>
+        <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:10px;">上下文信息</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
           <div><span style="color:var(--text-muted);">检验批号：</span><strong style="font-family:monospace;color:#2563eb;">${esc(b.batchNo)}</strong></div>
           <div><span style="color:var(--text-muted);">物料号：</span><strong style="font-family:monospace;">${esc(b.materialCode)}</strong></div>
@@ -1388,7 +1388,7 @@ const InspectionBatch = {
       <!-- 区域2：决策依据概览区（PRD 4.2.2） -->
       <div style="background:${failCount>0?'#fff5f5':'#f0fdf4'};border:1px solid ${failCount>0?'#fecaca':'#bbf7d0'};border-radius:10px;padding:14px 18px;margin-bottom:16px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:13px;font-weight:700;color:${failCount>0?'#dc2626':'#15803d'};">🔍 决策依据概览 — 检验结果汇总</div>
+          <div style="font-size:13px;font-weight:700;color:${failCount>0?'#dc2626':'#15803d'};">决策依据概览 — 检验结果汇总</div>
           <div style="font-size:12px;">
             <span class="badge ${failCount>0?'badge-red':'badge-green'}">综合判定：${verdictText}</span>
             <span style="margin-left:8px;color:var(--text-muted);">${passCount}/${results.length} 项合格</span>
@@ -1400,7 +1400,7 @@ const InspectionBatch = {
 
       <!-- 区域3：决策录入区（PRD 4.2.3 — 核心操作区） -->
       <div style="background:#fff;border:2px solid #6366f1;border-radius:10px;padding:18px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:#4338ca;margin-bottom:14px;">✍️ 决策录入</div>
+        <div style="font-size:13px;font-weight:700;color:#4338ca;margin-bottom:14px;">决策录入</div>
 
         <!-- 字段1：决策代码（必填） -->
         <div class="form-group" style="margin-bottom:14px;">
@@ -1428,7 +1428,7 @@ const InspectionBatch = {
 
         <!-- 字段3：库存过账（条件必填） -->
         <div style="background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:14px;">
-          <div style="font-weight:600;font-size:13px;margin-bottom:10px;">📦 库存过账 <span style="font-size:12px;color:var(--text-muted);">（条件必填）</span></div>
+          <div style="font-weight:600;font-size:13px;margin-bottom:10px;">库存过账 <span style="font-size:12px;color:var(--text-muted);">（条件必填）</span></div>
           <table class="data-table" style="width:100%;font-size:13px;">
             <thead><tr>
               <th>库存类型</th><th style="width:100px;">当前数量</th><th style="width:120px;">合格品数量</th><th style="width:120px;">不合格品数量</th>

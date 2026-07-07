@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>检验批·基本信息 - 风格1 极简规格表</title>
+<link rel="stylesheet" href="ib-demo-base.css">
+<style>
+  /* 风格1：工序=带细分隔线的定义区块；特性=无边框 hairline 行 */
+  .op1 { border-top: 1px solid #eef0f2; padding: 16px 0; }
+  .op1:first-child { border-top: 0; padding-top: 4px; }
+  .op1 .h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .op1 .h .num { font-family: Consolas, monospace; color: #1e3a5f; font-weight: 600; font-size: 13px; }
+  .op1 .h .typ { color: #9ca3af; font-size: 11px; letter-spacing: .8px; text-transform: uppercase; }
+  .op1 .kv2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px 24px; font-size: 12.5px; }
+  .op1 .kv2 .k { color: #9ca3af; margin-right: 6px; }
+  .chars1 { margin-top: 12px; }
+  .chars1 .ch { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 0 18px; padding: 8px 0; border-top: 1px solid #f1f2f4; font-size: 12px; }
+  .chars1 .ch .nm { font-weight: 500; color: #374151; }
+  .chars1 .ch .nm .code { font-family: Consolas, monospace; color: #1e3a5f; font-size: 11px; margin-right: 6px; }
+  .chars1 .ch .mt { color: #9ca3af; }
+  .chars1 .ch .vt { color: #374151; }
+</style>
+</head>
+<body>
+  <div class="demo-topbar">检验批详情 — IL-2026-001234 <span class="sub">质量管理 / 检验批管理</span></div>
+  <div class="demo-wrap">
+    <div class="demo-head">
+      <span class="bn">IL-2026-001234</span>
+      <span class="meta">计划 <b class="mono">IP-2001</b></span>
+      <span class="meta">进货检验</span>
+      <span class="meta">上海工厂</span>
+    </div>
+    <div class="demo-tabs">
+      <div class="t on">基本信息</div>
+      <div class="t off">取样记录</div>
+      <div class="t off">结果录入</div>
+      <div class="t off">使用决策</div>
+      <div class="t off">操作流水</div>
+    </div>
+
+    <div class="kv" id="baseKv"></div>
+
+    <h3 class="sec-title" style="margin-top:22px;">检验工序清单 <span class="muted" style="font-weight:400;font-size:12px;">（来源：检验计划 IP-2001）</span></h3>
+    <div id="ops1"></div>
+  </div>
+
+<script src="ib-demo-data.js"></script>
+<script>
+  const D = window.IB_DEMO, b = D.batch, ops = D.ops, esc = s => (s==null?'':String(s));
+  document.getElementById('baseKv').innerHTML = `
+    <div><span class="k">物料编码</span><span class="v mono">${esc(b.materialCode)}</span></div>
+    <div><span class="k">物料名称</span><span class="v">${esc(b.materialName)}</span></div>
+    <div><span class="k">数量</span><span class="v">${b.quantity} ${esc(b.unit)}</span></div>
+    <div><span class="k">供应商批次</span><span class="v accent">${esc(b.supplierBatch)}</span></div>
+    <div><span class="k">SAP批次</span><span class="v mono">${esc(b.sapBatch)}</span></div>
+    <div><span class="k">凭证号</span><span class="v mono">${esc(b.docNo)}</span></div>`;
+
+  document.getElementById('ops1').innerHTML = ops.map(op => {
+    const isSamp = op.opType === 'sampling';
+    const info = isSamp
+      ? `<div class="kv2">
+           <div><span class="k">取样方案</span><span class="v mono accent">${esc(op.samplingPlanName || '—')}</span></div>
+           <div><span class="k">工作中心</span><span class="v">${esc(op.workCenterName)}</span></div>
+           <div><span class="k">工序描述</span><span class="v">${esc(op.description)}</span></div>
+         </div>`
+      : `<div class="kv2">
+           <div><span class="k">工作中心</span><span class="v">${esc(op.workCenterName)}</span></div>
+           <div><span class="k">工序描述</span><span class="v">${esc(op.description)}</span></div>
+           <div><span class="k">检测项</span><span class="v">${op.chars.length} 项（定量 ${op.chars.filter(c=>c.micType==='quantitative').length} / 定性 ${op.chars.filter(c=>c.micType==='qualitative').length}）</span></div>
+         </div>
+         <div class="chars1">${op.chars.map(c => {
+           const isQ = c.micType==='quantitative';
+           const right = isQ
+             ? `规格 <span class="accent">${esc(c.lowerSpec)} ~ ${esc(c.upperSpec)}</span> ${esc(c.unit)}`
+             : `判定 <span class="accent">${esc(c.defaultCode||'—')}</span>${c.codeGroup?` · ${esc(c.codeGroup)}`:''}`;
+           return `<div class="ch">
+             <div class="nm"><span class="code">${esc(c.micCode)}</span>${esc(c.micName)}</div>
+             <div class="mt">方法 · ${esc(c.methodName||'—')}</div>
+             <div class="vt">${right}</div>
+           </div>`;
+         }).join('')}</div>`;
+    return `<div class="op1">
+      <div class="h"><span class="num">${esc(op.opNum)}</span><span class="typ">${esc(op.opTypeName)}</span></div>
+      ${info}
+    </div>`;
+  }).join('');
+</script>
+</body>
+</html>

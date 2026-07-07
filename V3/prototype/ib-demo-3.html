@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>检验批·基本信息 - 风格3 文档式大纲</title>
+<link rel="stylesheet" href="ib-demo-base.css">
+<style>
+  /* 风格3：左侧引导线 + 缩进层级，纯文本感 */
+  .outline { border-left: 1px solid #e3e6ea; margin-left: 6px; padding-left: 0; }
+  .lv1 { padding: 10px 0 10px 18px; position: relative; }
+  .lv1::before { content: ""; position: absolute; left: -1px; top: 18px; width: 12px; height: 1px; background: #e3e6ea; }
+  .lv1 .t { font-size: 13.5px; font-weight: 600; color: #1f2937; }
+  .lv1 .t .num { font-family: Consolas, monospace; color: #1e3a5f; margin-right: 8px; }
+  .lv1 .t .badge { font-size: 11px; font-weight: 400; color: #9ca3af; margin-left: 8px; letter-spacing: .5px; }
+  .lv1 .line { font-size: 12.5px; color: #6b7280; margin-top: 4px; }
+  .lv1 .line b { color: #374151; font-weight: 500; }
+  .lv2 { margin: 6px 0 4px 22px; padding: 7px 0 7px 16px; border-left: 1px solid #eef0f2; font-size: 12px; }
+  .lv2 .nm { font-weight: 500; color: #374151; }
+  .lv2 .nm .code { font-family: Consolas, monospace; color: #1e3a5f; font-size: 11px; margin-right: 6px; }
+  .lv2 .d { color: #9ca3af; margin-top: 2px; }
+  .lv2 .d .accent { color: #1e3a5f; }
+</style>
+</head>
+<body>
+  <div class="demo-topbar">检验批详情 — IL-2026-001234 <span class="sub">质量管理 / 检验批管理</span></div>
+  <div class="demo-wrap">
+    <div class="demo-head">
+      <span class="bn">IL-2026-001234</span>
+      <span class="meta">计划 <b class="mono">IP-2001</b></span>
+      <span class="meta">进货检验</span>
+      <span class="meta">上海工厂</span>
+    </div>
+    <div class="demo-tabs">
+      <div class="t on">基本信息</div>
+      <div class="t off">取样记录</div>
+      <div class="t off">结果录入</div>
+      <div class="t off">使用决策</div>
+      <div class="t off">操作流水</div>
+    </div>
+
+    <div class="kv" id="baseKv"></div>
+
+    <h3 class="sec-title" style="margin-top:22px;">检验工序清单 <span class="muted" style="font-weight:400;font-size:12px;">（来源：检验计划 IP-2001）</span></h3>
+    <div class="outline" id="ops3"></div>
+  </div>
+
+<script src="ib-demo-data.js"></script>
+<script>
+  const D = window.IB_DEMO, b = D.batch, ops = D.ops, esc = s => (s==null?'':String(s));
+  document.getElementById('baseKv').innerHTML = `
+    <div><span class="k">物料编码</span><span class="v mono">${esc(b.materialCode)}</span></div>
+    <div><span class="k">物料名称</span><span class="v">${esc(b.materialName)}</span></div>
+    <div><span class="k">数量</span><span class="v">${b.quantity} ${esc(b.unit)}</span></div>
+    <div><span class="k">供应商批次</span><span class="v accent">${esc(b.supplierBatch)}</span></div>
+    <div><span class="k">SAP批次</span><span class="v mono">${esc(b.sapBatch)}</span></div>
+    <div><span class="k">凭证号</span><span class="v mono">${esc(b.docNo)}</span></div>`;
+
+  document.getElementById('ops3').innerHTML = ops.map(op => {
+    const isSamp = op.opType === 'sampling';
+    const head = `<div class="t"><span class="num">${esc(op.opNum)}</span>${esc(op.opTypeName)}<span class="badge">${esc(op.workCenterName)}</span></div>`;
+    const line = isSamp
+      ? `<div class="line">取样方案：<b class="mono">${esc(op.samplingPlanName||'—')}</b> ｜ ${esc(op.description)}</div>`
+      : `<div class="line">检测项 <b>${op.chars.length}</b> 项（定量 ${op.chars.filter(c=>c.micType==='quantitative').length} / 定性 ${op.chars.filter(c=>c.micType==='qualitative').length}）｜ ${esc(op.description)}</div>
+         ${op.chars.map(c => {
+           const isQ = c.micType==='quantitative';
+           const right = isQ ? `规格 <span class="accent">${esc(c.lowerSpec)} ~ ${esc(c.upperSpec)}</span> ${esc(c.unit)}` : `判定 <span class="accent">${esc(c.defaultCode||'—')}</span>${c.codeGroup?` · ${esc(c.codeGroup)}`:''}`;
+           return `<div class="lv2"><div class="nm"><span class="code">${esc(c.micCode)}</span>${esc(c.micName)}</div>
+             <div class="d">方法 · ${esc(c.methodName||'—')} ｜ ${right}</div></div>`;
+         }).join('')}`;
+    return `<div class="lv1">${head}${line}</div>`;
+  }).join('');
+</script>
+</body>
+</html>
