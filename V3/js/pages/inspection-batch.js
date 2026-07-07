@@ -1227,59 +1227,37 @@ const InspectionBatch = {
   _renderBaseTab(b, ops) {
     ops = ops || [];
 
-    // 单个工序卡片
-    const opHtml = ops.map((op, i) => {
-      const isSampling = op.opType === 'sampling';
-      const typeBadge = isSampling
-        ? '<span class="badge badge-yellow badge-sm">取样</span>'
-        : '<span class="badge badge-purple badge-sm">检验</span>';
-      const head = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
-        <span style="font-family:monospace;font-weight:700;color:var(--text);">${esc(op.opNum)}</span>
-        ${typeBadge}
-        <span style="font-weight:600;color:var(--text);">${esc(op.opTypeName || (isSampling ? '取样' : '检验'))}</span>
-        <span style="color:#d1d5db;">|</span>
-        <span style="font-size:13px;color:var(--text-secondary);">工作中心：<strong>${esc(op.workCenterName || '—')}</strong></span>
-      </div>`;
-
-      let body;
-      if (isSampling) {
-        body = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
-          <div><span style="color:var(--text-muted);">取样方案：</span><strong style="color:#2563eb;font-family:monospace;">${esc(op.samplingPlanName || '—')}</strong></div>
-          <div><span style="color:var(--text-muted);">工作中心：</span>${esc(op.workCenterName || '—')}</div>
-          <div><span style="color:var(--text-muted);">工序描述：</span>${esc(op.description || '—')}</div>
-        </div>`;
+    // 工序清单：商务层级表（风格2）—— 工序主行可展开，检验类展开特性子行
+    const opRows = ops.map((op, i) => {
+      const isSamp = op.opType === 'sampling';
+      const typeName = esc(op.opTypeName || (isSamp ? '取样' : '检验'));
+      const chars = op.chars || [];
+      const key = isSamp
+        ? `取样方案：${esc(op.samplingPlanName || '—')}`
+        : `检测项：${chars.length}（定量 ${chars.filter(c => c.micType === 'quantitative').length} / 定性 ${chars.filter(c => c.micType === 'qualitative').length}）`;
+      const grp = 'chgrp_' + i;
+      let detail;
+      if (isSamp) {
+        detail = `<tr class="ch-row hide ${grp}"><td colspan="4" class="muted">工序描述：${esc(op.description || '—')}</td></tr>`;
       } else {
-        const chars = op.chars || [];
-        const q = chars.filter(c => c.micType === 'quantitative').length;
-        const ql = chars.length - q;
-        const charCards = chars.map(c => {
-          const isQuant = c.micType === 'quantitative';
-          const specLine = isQuant
-            ? `<div><span style="color:var(--text-muted);">规格限：</span><strong style="color:#2563eb;">${esc(c.lowerSpec || '—')} ~ ${esc(c.upperSpec || '—')}</strong> ${esc(c.unit || '')}</div>`
-            : `<div><span style="color:var(--text-muted);">判定标准：</span><strong>${esc(c.defaultCode || '—')}</strong>${c.codeGroup ? ` <span style="color:var(--text-muted);">（${esc(c.codeGroup)}）</span>` : ''}</div>`;
-          return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;font-size:12px;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-              <span style="font-family:monospace;font-weight:600;color:#2563eb;">${esc(c.micCode)}</span>
-              <span class="badge ${isQuant ? 'badge-blue' : 'badge-purple'} badge-sm" style="font-size:10px;">${isQuant ? '定量' : '定性'}</span>
-              <span style="font-weight:500;color:var(--text);">${esc(c.micName)}</span>
-            </div>
-            <div style="display:flex;gap:16px;color:var(--text-secondary);flex-wrap:wrap;">
-              <div><span style="color:var(--text-muted);">方法：</span>${esc(c.methodName || '—')}</div>
-              ${specLine}
-            </div>
-          </div>`;
+        detail = chars.map(c => {
+          const isQ = c.micType === 'quantitative';
+          const spec = isQ
+            ? `规格 <span class="accent">${esc(c.lowerSpec || '—')} ~ ${esc(c.upperSpec || '—')}</span> ${esc(c.unit || '')}`
+            : `判定 <span class="accent">${esc(c.defaultCode || '—')}</span>${c.codeGroup ? ` · ${esc(c.codeGroup)}` : ''}`;
+          return `<tr class="ch-row hide ${grp}">
+            <td colspan="2"><span class="code">${esc(c.micCode)}</span>${esc(c.micName)}</td>
+            <td class="muted">${esc(c.methodName || '—')}</td>
+            <td>${spec}</td>
+          </tr>`;
         }).join('');
-        body = `<div style="margin-bottom:8px;font-size:12px;color:var(--text-secondary);">本工序包含 <strong style="color:var(--text);">${chars.length}</strong> 项检测 ·
-          <span class="badge badge-blue badge-sm" style="font-size:10px;">定量 ${q}</span>
-          <span class="badge badge-purple badge-sm" style="font-size:10px;">定性 ${ql}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 12px;">${charCards}</div>`;
       }
-
-      return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:10px;background:#fff;">
-        ${head}
-        ${body}
-      </div>`;
+      return `<tr class="op-row" onclick="this.classList.toggle('open');document.querySelectorAll('.${grp}').forEach(r=>r.classList.toggle('hide'))">
+        <td><span class="caret">▸</span><span class="opn">${esc(op.opNum)}</span></td>
+        <td><span class="tw">${typeName}</span></td>
+        <td>${esc(op.workCenterName || '—')}</td>
+        <td>${key}</td>
+      </tr>${detail}`;
     }).join('');
 
     return `
@@ -1296,8 +1274,8 @@ const InspectionBatch = {
           <div><span style="color:var(--text-muted);">凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
         </div>
       </div>
-      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">🔬 检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)}）</span></div>
-      ${ops.length ? opHtml : '<div style="color:var(--text-muted);font-size:13px;">暂无工序数据</div>'}
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)} · 点击工序展开特性）</span></div>
+      ${ops.length ? `<table class="ib-ops-table"><thead><tr><th style="width:230px;">工序</th><th style="width:160px;">类型</th><th>工作中心</th><th>关键信息</th></tr></thead><tbody>${opRows}</tbody></table>` : '<div style="color:var(--text-muted);font-size:13px;">暂无工序数据</div>'}
     `;
   },
 
