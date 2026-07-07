@@ -1292,11 +1292,10 @@ const InspectionBatch = {
         <td>${esc(r.qty)} ${esc(b.unit || '')}</td>
         <td>${esc(r.by)}</td>
         <td>${esc(r.time) || '—'}</td>
-        <td><span class="badge ${isRev ? 'badge-gray' : 'badge-green'}">${isRev ? '已冲销' : '有效'}</span></td>
         <td class="table-actions">${btn}</td>
       </tr>`;
     }).join('');
-    return `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>取样人</th><th>取样时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>取样人</th><th>取样时间</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
 
   _renderResultTab(b) {
@@ -1313,11 +1312,10 @@ const InspectionBatch = {
         <td>${esc(r.value)}</td>
         <td>${esc(r.by)}</td>
         <td>${esc(r.time) || '—'}</td>
-        <td><span class="badge ${isRev ? 'badge-gray' : 'badge-green'}">${isRev ? '已冲销' : '有效'}</span></td>
         <td class="table-actions">${btn}</td>
       </tr>`;
     }).join('');
-    return `<table class="data-table"><thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table class="data-table"><thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
 
   _renderDecisionTab(b) {
