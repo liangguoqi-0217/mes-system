@@ -1368,93 +1368,90 @@ const InspectionBatch = {
     ).join('');
 
     // ============ 完整弹窗 HTML ============
-    const bodyHtml = `<div style="padding:2px 0;max-height:78vh;overflow-y:auto;font-size:13px;">
-      <!-- 区域1：上下文信息 -->
-      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:600;color:#1f2937;margin-bottom:8px;">上下文信息</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 16px;">
-          <div><span style="color:var(--text-muted);">检验批号：</span><strong style="font-family:monospace;">${esc(b.batchNo)}</strong></div>
-          <div><span style="color:var(--text-muted);">物料号：</span><strong style="font-family:monospace;">${esc(b.materialCode)}</strong></div>
-          <div><span style="color:var(--text-muted);">物料描述：</span><strong>${esc(b.materialName)}</strong></div>
-          <div><span style="color:var(--text-muted);">供应商批次：</span><strong>${esc(b.supplierBatch)}</strong></div>
-          <div><span style="color:var(--text-muted);">工厂：</span>${esc(b.plantName)}</div>
-          <div><span style="color:var(--text-muted);">检验类型：</span>${esc(b.purposeName)}</div>
-          <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
-          <div><span style="color:var(--text-muted);">数量：</span><strong>${b.quantity} ${esc(b.unit)}</strong></div>
-        </div>
-      </div>
-
-      <!-- 区域2：决策依据概览 -->
-      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="font-size:13px;font-weight:600;color:#1f2937;">决策依据概览 — 检验结果汇总</div>
-          <div style="font-size:12px;">
-            <span class="badge ${failCount>0?'badge-red':'badge-green'}">综合判定：${verdictText}</span>
-            <span style="margin-left:8px;color:var(--text-muted);">${passCount}/${results.length} 项合格</span>
-            ${failCount>0 ? `<span style="margin-left:4px;color:#dc2626;font-weight:600;">${failCount} 项不合格</span>` : ''}
+    const bodyHtml = `<div style="padding:2px 0;max-height:78vh;overflow-y:auto;font-size:13px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;">
+      <div style="flex:1 1 320px;min-width:280px;">
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;">
+          <div style="font-size:13px;font-weight:600;color:#1f2937;margin-bottom:8px;">上下文信息</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;">
+            <div><span style="color:var(--text-muted);">检验批号：</span><strong style="font-family:monospace;">${esc(b.batchNo)}</strong></div>
+            <div><span style="color:var(--text-muted);">物料号：</span><strong style="font-family:monospace;">${esc(b.materialCode)}</strong></div>
+            <div><span style="color:var(--text-muted);">物料描述：</span><strong>${esc(b.materialName)}</strong></div>
+            <div><span style="color:var(--text-muted);">供应商批次：</span><strong>${esc(b.supplierBatch)}</strong></div>
+            <div><span style="color:var(--text-muted);">工厂：</span>${esc(b.plantName)}</div>
+            <div><span style="color:var(--text-muted);">检验类型：</span>${esc(b.purposeName)}</div>
+            <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
+            <div><span style="color:var(--text-muted);">数量：</span><strong>${b.quantity} ${esc(b.unit)}</strong></div>
           </div>
         </div>
-        ${resultsTableHtml}
       </div>
-
-      <!-- 区域3：决策录入 -->
-      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:600;color:#1f2937;margin-bottom:10px;">决策录入</div>
-
-        <div class="form-group" style="margin-bottom:10px;">
-          <label style="font-weight:600;">决策代码 <span style="color:#dc2626;">*</span></label>
-          <select id="dcCode" onchange="InspectionBatch._onDecisionCodeChange('${batchId}')" style="width:100%;font-size:14px;padding:9px;">
-            <option value="">— 请选择决策代码 —</option>
-            ${codeOptions}
-          </select>
-          <div id="dcSuggestedAction" style="font-size:12px;color:var(--text-muted);margin-top:5px;min-height:16px;"></div>
-        </div>
-
-        <div class="form-group" style="margin-bottom:10px;">
-          <label style="font-weight:600;">质量得分 <span style="font-size:12px;color:var(--text-muted);">（0-100，可选）</span></label>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <input type="range" id="dcScoreRange" min="0" max="100" value="${autoScore}" style="flex:1;"
-              oninput="document.getElementById('dcScore').value=this.value">
-            <input type="number" id="dcScore" value="${autoScore}" min="0" max="100" style="width:70px;text-align:center;font-weight:600;font-size:16px;"
-              oninput="var v=parseInt(this.value)||0; if(v>100)v=100; if(v<0)v=0; this.value=v; document.getElementById('dcScoreRange').value=v;">
+      <div style="flex:2 1 420px;min-width:320px;display:flex;flex-direction:column;gap:12px;">
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:13px;font-weight:600;color:#1f2937;">决策依据概览 — 检验结果汇总</div>
+            <div style="font-size:12px;">
+              <span class="badge ${failCount>0?'badge-red':'badge-green'}">综合判定：${verdictText}</span>
+              <span style="margin-left:8px;color:var(--text-muted);">${passCount}/${results.length} 项合格</span>
+              ${failCount>0 ? `<span style="margin-left:4px;color:#dc2626;font-weight:600;">${failCount} 项不合格</span>` : ''}
+            </div>
           </div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-            系统建议：<strong>${autoScore}</strong> 分（基于 ${passCount}/${results.length} 合格率）
+          ${resultsTableHtml}
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;">
+          <div style="font-size:13px;font-weight:600;color:#1f2937;margin-bottom:10px;">决策录入</div>
+
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-weight:600;">决策代码 <span style="color:#dc2626;">*</span></label>
+            <select id="dcCode" onchange="InspectionBatch._onDecisionCodeChange('${batchId}')" style="width:100%;font-size:14px;padding:9px;">
+              <option value="">— 请选择决策代码 —</option>
+              ${codeOptions}
+            </select>
+            <div id="dcSuggestedAction" style="font-size:12px;color:var(--text-muted);margin-top:5px;min-height:16px;"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:10px;">
+            <label style="font-weight:600;">质量得分 <span style="font-size:12px;color:var(--text-muted);">（0-100，可选）</span></label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="range" id="dcScoreRange" min="0" max="100" value="${autoScore}" style="flex:1;"
+                oninput="document.getElementById('dcScore').value=this.value">
+              <input type="number" id="dcScore" value="${autoScore}" min="0" max="100" style="width:70px;text-align:center;font-weight:600;font-size:16px;"
+                oninput="var v=parseInt(this.value)||0; if(v>100)v=100; if(v<0)v=0; this.value=v; document.getElementById('dcScoreRange').value=v;">
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+              系统建议：<strong>${autoScore}</strong> 分（基于 ${passCount}/${results.length} 合格率）
+            </div>
+          </div>
+
+          <div style="background:#f8fafc;border-radius:6px;padding:10px;margin-bottom:10px;">
+            <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:#1f2937;">库存过账 <span style="font-size:12px;color:var(--text-muted);font-weight:400;">（条件必填）</span></div>
+            <table class="data-table" style="width:100%;font-size:13px;">
+              <thead><tr>
+                <th>库存类型</th><th style="width:100px;">当前数量</th><th style="width:120px;">合格品数量</th><th style="width:120px;">不合格品数量</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-yellow badge-sm">待检库存</span></td>
+                  <td style="font-weight:600;">${b.quantity} ${esc(b.unit)}</td>
+                  <td><input type="number" id="dcQtyOk" step="any" min="0" max="${totalQty}" value="0" style="width:100px;"
+                    onchange="InspectionBatch._onQtyChange('${batchId}')"></td>
+                  <td><input type="number" id="dcQtyNg" step="any" min="0" max="${totalQty}" value="0" style="width:100px;"
+                    onchange="InspectionBatch._onQtyChange('${batchId}')"></td>
+                </tr>
+              </tbody>
+            </table>
+            <div id="dcStockInfo" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label style="font-weight:600;">备注 / 决策原因 <span style="font-size:12px;color:var(--text-muted);">（可选）</span></label>
+            <textarea id="dcRemarks" rows="3" style="width:100%;resize:vertical;" placeholder="请输入决策原因或补充说明..."></textarea>
           </div>
         </div>
-
-        <div style="background:#f8fafc;border-radius:6px;padding:10px;margin-bottom:10px;">
-          <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:#1f2937;">库存过账 <span style="font-size:12px;color:var(--text-muted);font-weight:400;">（条件必填）</span></div>
-          <table class="data-table" style="width:100%;font-size:13px;">
-            <thead><tr>
-              <th>库存类型</th><th style="width:100px;">当前数量</th><th style="width:120px;">合格品数量</th><th style="width:120px;">不合格品数量</th>
-            </tr></thead>
-            <tbody>
-              <tr>
-                <td><span class="badge badge-yellow badge-sm">待检库存</span></td>
-                <td style="font-weight:600;">${b.quantity} ${esc(b.unit)}</td>
-                <td><input type="number" id="dcQtyOk" step="any" min="0" max="${totalQty}" value="0" style="width:100px;"
-                  onchange="InspectionBatch._onQtyChange('${batchId}')"></td>
-                <td><input type="number" id="dcQtyNg" step="any" min="0" max="${totalQty}" value="0" style="width:100px;"
-                  onchange="InspectionBatch._onQtyChange('${batchId}')"></td>
-              </tr>
-            </tbody>
-          </table>
-          <div id="dcStockInfo" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding:2px 0 0;">
+          <button class="btn btn-secondary" onclick="closeModal()" style="padding:9px 24px;">取消</button>
+          <button class="btn btn-primary" onclick="InspectionBatch._doDecisionSave('${batchId}')" style="padding:9px 24px;font-size:14px;">
+            保存决策
+          </button>
         </div>
-
-        <div class="form-group" style="margin-bottom:0;">
-          <label style="font-weight:600;">备注 / 决策原因 <span style="font-size:12px;color:var(--text-muted);">（可选）</span></label>
-          <textarea id="dcRemarks" rows="3" style="width:100%;resize:vertical;" placeholder="请输入决策原因或补充说明..."></textarea>
-        </div>
-      </div>
-
-      <!-- 区域4：操作 -->
-      <div style="display:flex;gap:10px;justify-content:flex-end;padding:4px 0 0;">
-        <button class="btn btn-secondary" onclick="closeModal()" style="padding:9px 24px;">取消</button>
-        <button class="btn btn-primary" onclick="InspectionBatch._doDecisionSave('${batchId}')" style="padding:9px 24px;font-size:14px;">
-          保存决策
-        </button>
       </div>
     </div>`;
 
