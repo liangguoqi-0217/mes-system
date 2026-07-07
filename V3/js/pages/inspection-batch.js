@@ -1343,11 +1343,11 @@ const InspectionBatch = {
           ? `${r.lowerSpec||'—'} ~ ${r.upperSpec||'—'} ${r.unit||''}`
           : (r.upperSpec || r.defaultCode || '—');
         const valueCell = r.value || '—';
-        return `<tr class="${isPass ? '' : 'dc-fail-row'}" style="${isPass ? '' : 'background:#fef2f2;'}">
+        return `<tr class="${isPass ? '' : 'dc-fail-row'}" style="${isPass ? '' : 'background:#f8fafc;'}">
           <td style="font-size:12px;">${i + 1}</td>
           <td style="font-weight:500;font-size:13px;">${esc(r.micName)}</td>
           <td style="font-family:monospace;font-size:11px;color:var(--text-secondary);">${specRange}</td>
-          <td style="font-family:monospace;font-weight:600;font-size:13px;${isPass?'color:#15803d;':'color:#dc2626;'}">${esc(valueCell)} ${isQuant?esc(r.unit||''):''}</td>
+          <td style="font-family:monospace;font-weight:600;font-size:13px;color:#1e293b;">${esc(valueCell)} ${isQuant?esc(r.unit||''):''}</td>
           <td><span class="badge ${isPass?'badge-green':'badge-red'} badge-sm">${esc(r.verdict)}</span></td>
         </tr>`;
       }).join('');
@@ -1368,27 +1368,26 @@ const InspectionBatch = {
     ).join('');
 
     // ============ 完整弹窗 HTML ============
-    const bodyHtml = `<div style="padding:4px 0;max-height:72vh;overflow-y:auto;">
-      <!-- 区域1：上下文信息区（PRD 4.2.1） -->
-      <div style="background:#f0f9ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:10px;">上下文信息</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
-          <div><span style="color:var(--text-muted);">检验批号：</span><strong style="font-family:monospace;color:#2563eb;">${esc(b.batchNo)}</strong></div>
+    const bodyHtml = `<div style="padding:2px 0;max-height:78vh;overflow-y:auto;font-size:13px;">
+      <!-- 区域1：上下文信息 -->
+      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:600;color:#1f2937;margin-bottom:8px;">上下文信息</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 16px;">
+          <div><span style="color:var(--text-muted);">检验批号：</span><strong style="font-family:monospace;">${esc(b.batchNo)}</strong></div>
           <div><span style="color:var(--text-muted);">物料号：</span><strong style="font-family:monospace;">${esc(b.materialCode)}</strong></div>
           <div><span style="color:var(--text-muted);">物料描述：</span><strong>${esc(b.materialName)}</strong></div>
-          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
+          <div><span style="color:var(--text-muted);">供应商批次：</span><strong>${esc(b.supplierBatch)}</strong></div>
           <div><span style="color:var(--text-muted);">工厂：</span>${esc(b.plantName)}</div>
           <div><span style="color:var(--text-muted);">检验类型：</span>${esc(b.purposeName)}</div>
           <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
           <div><span style="color:var(--text-muted);">数量：</span><strong>${b.quantity} ${esc(b.unit)}</strong></div>
-          <div></div>
         </div>
       </div>
 
-      <!-- 区域2：决策依据概览区（PRD 4.2.2） -->
-      <div style="background:${failCount>0?'#fff5f5':'#f0fdf4'};border:1px solid ${failCount>0?'#fecaca':'#bbf7d0'};border-radius:10px;padding:14px 18px;margin-bottom:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-size:13px;font-weight:700;color:${failCount>0?'#dc2626':'#15803d'};">决策依据概览 — 检验结果汇总</div>
+      <!-- 区域2：决策依据概览 -->
+      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600;color:#1f2937;">决策依据概览 — 检验结果汇总</div>
           <div style="font-size:12px;">
             <span class="badge ${failCount>0?'badge-red':'badge-green'}">综合判定：${verdictText}</span>
             <span style="margin-left:8px;color:var(--text-muted);">${passCount}/${results.length} 项合格</span>
@@ -1398,22 +1397,20 @@ const InspectionBatch = {
         ${resultsTableHtml}
       </div>
 
-      <!-- 区域3：决策录入区（PRD 4.2.3 — 核心操作区） -->
-      <div style="background:#fff;border:2px solid #6366f1;border-radius:10px;padding:18px;margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:#4338ca;margin-bottom:14px;">决策录入</div>
+      <!-- 区域3：决策录入 -->
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:600;color:#1f2937;margin-bottom:10px;">决策录入</div>
 
-        <!-- 字段1：决策代码（必填） -->
-        <div class="form-group" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:10px;">
           <label style="font-weight:600;">决策代码 <span style="color:#dc2626;">*</span></label>
-          <select id="dcCode" onchange="InspectionBatch._onDecisionCodeChange('${batchId}')" style="width:100%;font-size:14px;padding:10px;">
+          <select id="dcCode" onchange="InspectionBatch._onDecisionCodeChange('${batchId}')" style="width:100%;font-size:14px;padding:9px;">
             <option value="">— 请选择决策代码 —</option>
             ${codeOptions}
           </select>
-          <div id="dcSuggestedAction" style="font-size:12px;color:var(--text-muted);margin-top:6px;min-height:18px;"></div>
+          <div id="dcSuggestedAction" style="font-size:12px;color:var(--text-muted);margin-top:5px;min-height:16px;"></div>
         </div>
 
-        <!-- 字段2：质量得分（可选，自动计算 + 可手动调整） -->
-        <div class="form-group" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:10px;">
           <label style="font-weight:600;">质量得分 <span style="font-size:12px;color:var(--text-muted);">（0-100，可选）</span></label>
           <div style="display:flex;align-items:center;gap:10px;">
             <input type="range" id="dcScoreRange" min="0" max="100" value="${autoScore}" style="flex:1;"
@@ -1426,9 +1423,8 @@ const InspectionBatch = {
           </div>
         </div>
 
-        <!-- 字段3：库存过账（条件必填） -->
-        <div style="background:#f8fafc;border-radius:8px;padding:14px;margin-bottom:14px;">
-          <div style="font-weight:600;font-size:13px;margin-bottom:10px;">库存过账 <span style="font-size:12px;color:var(--text-muted);">（条件必填）</span></div>
+        <div style="background:#f8fafc;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:#1f2937;">库存过账 <span style="font-size:12px;color:var(--text-muted);font-weight:400;">（条件必填）</span></div>
           <table class="data-table" style="width:100%;font-size:13px;">
             <thead><tr>
               <th>库存类型</th><th style="width:100px;">当前数量</th><th style="width:120px;">合格品数量</th><th style="width:120px;">不合格品数量</th>
@@ -1444,20 +1440,19 @@ const InspectionBatch = {
               </tr>
             </tbody>
           </table>
-          <div id="dcStockInfo" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
+          <div id="dcStockInfo" style="font-size:12px;color:var(--text-muted);margin-top:6px;"></div>
         </div>
 
-        <!-- 字段4：备注/决策原因（可选） -->
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom:0;">
           <label style="font-weight:600;">备注 / 决策原因 <span style="font-size:12px;color:var(--text-muted);">（可选）</span></label>
           <textarea id="dcRemarks" rows="3" style="width:100%;resize:vertical;" placeholder="请输入决策原因或补充说明..."></textarea>
         </div>
       </div>
 
-      <!-- 区域4：操作与提交区（PRD 4.2.4） -->
-      <div style="display:flex;gap:12px;justify-content:flex-end;padding:8px 0 0;">
-        <button class="btn btn-secondary" onclick="closeModal()" style="padding:10px 28px;">取消</button>
-        <button class="btn btn-primary" onclick="InspectionBatch._doDecisionSave('${batchId}')" style="padding:10px 28px;font-size:15px;">
+      <!-- 区域4：操作 -->
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding:4px 0 0;">
+        <button class="btn btn-secondary" onclick="closeModal()" style="padding:9px 24px;">取消</button>
+        <button class="btn btn-primary" onclick="InspectionBatch._doDecisionSave('${batchId}')" style="padding:9px 24px;font-size:14px;">
           保存决策
         </button>
       </div>
@@ -1492,7 +1487,7 @@ const InspectionBatch = {
     const totalQty = parseFloat(b?.quantity) || 0;
 
     if (actionEl) {
-      actionEl.innerHTML = `<span style="color:#2563eb;">📌 建议跟进动作：<strong>${esc(dc.suggestedAction)}</strong></span>`;
+      actionEl.innerHTML = `<span style="color:#1E3A5F;">建议跟进动作：<strong>${esc(dc.suggestedAction)}</strong></span>`;
     }
 
     // 根据决策代码自动填充库存过账
@@ -1500,12 +1495,12 @@ const InspectionBatch = {
       // 接收类：全部 → 可用库存
       if (qtyOkEl) qtyOkEl.value = totalQty;
       if (qtyNgEl) qtyNgEl.value = 0;
-      if (stockInfoEl) stockInfoEl.innerHTML = `<span style="color:#059669;">✅ 建议：将全部 <strong>${totalQty} ${esc(b?.unit||'')}</strong> 从「待检库存」转移至「<strong>${esc(dc.targetStock)}</strong>」${dc.code==='A2'?'（需记录偏差）':''}</span>`;
+      if (stockInfoEl) stockInfoEl.innerHTML = `<span style="color:#1E3A5F;">建议：将全部 <strong>${totalQty} ${esc(b?.unit||'')}</strong> 从「待检库存」转移至「<strong>${esc(dc.targetStock)}</strong>」${dc.code==='A2'?'（需记录偏差）':''}</span>`;
     } else {
       // 拒绝类：全部 → 冻结库存
       if (qtyOkEl) qtyOkEl.value = 0;
       if (qtyNgEl) qtyNgEl.value = totalQty;
-      if (stockInfoEl) stockInfoEl.innerHTML = `<span style="color:#dc2626;">🚫 建议：将全部 <strong>${totalQty} ${esc(b?.unit||'')}</strong> 从「待检库存」转移至「<strong>${esc(dc.targetStock)}</strong>」</span>`;
+      if (stockInfoEl) stockInfoEl.innerHTML = `<span style="color:#dc2626;">建议：将全部 <strong>${totalQty} ${esc(b?.unit||'')}</strong> 从「待检库存」转移至「<strong>${esc(dc.targetStock)}</strong>」</span>`;
     }
   },
 
@@ -1519,9 +1514,9 @@ const InspectionBatch = {
     const stockInfoEl = document.getElementById('dcStockInfo');
     if (stockInfoEl) {
       if (sum > totalQty) {
-        stockInfoEl.innerHTML = `<span style="color:#dc2626;">⚠️ 合格品 + 不合格品数量超过总量 ${totalQty} ${esc(b?.unit||'')}，请调整</span>`;
+        stockInfoEl.innerHTML = `<span style="color:#dc2626;">合格品 + 不合格品数量超过总量 ${totalQty} ${esc(b?.unit||'')}，请调整</span>`;
       } else {
-        stockInfoEl.innerHTML = `<span style="color:var(--text-muted);">已分配：${ok} 合格 + ${ng} 不合格 = ${sum} ${esc(b?.unit||'')}${sum < totalQty ? `（剩余 ${(totalQty - sum).toFixed(3)} 未分配）` : ' ✓'}</span>`;
+        stockInfoEl.innerHTML = `<span style="color:var(--text-muted);">已分配：${ok} 合格 + ${ng} 不合格 = ${sum} ${esc(b?.unit||'')}${sum < totalQty ? `（剩余 ${(totalQty - sum).toFixed(3)} 未分配）` : ''}</span>`;
       }
     }
   },
@@ -1549,18 +1544,17 @@ const InspectionBatch = {
     // ========== 二次确认对话框 ==========
     const actionText = code.startsWith('A') ? '接收' : '拒绝';
     const confirmHtml = `<div style="padding:8px 0;">
-      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
-        <div style="font-size:32px;margin-bottom:8px;">⚠️</div>
-        <div style="font-size:16px;font-weight:700;color:#92400e;">确认执行使用决策</div>
-        <div style="font-size:13px;color:#a16207;margin-top:6px;">此操作将完成检验批并触发后续动作，是否确认？</div>
-      </div>
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:14px;text-align:center;">
+          <div style="font-size:15px;font-weight:700;color:#1f2937;">确认执行使用决策</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">此操作将完成检验批并触发后续动作，是否确认？</div>
+        </div>
       <table style="width:100%;font-size:13px;border-collapse:collapse;">
-        <tr><td style="padding:6px 12px;color:var(--text-muted);width:90px;">检验批号</td><td style="padding:6px 12px;font-weight:600;font-family:monospace;color:#2563eb;">${esc(b.batchNo)}</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);width:90px;">检验批号</td><td style="padding:6px 12px;font-weight:600;font-family:monospace;color:#1e293b;">${esc(b.batchNo)}</td></tr>
         <tr><td style="padding:6px 12px;color:var(--text-muted);">决策代码</td><td style="padding:6px 12px;"><span class="badge ${code.startsWith('A')?'badge-green':'badge-red'}">${esc(code)} — ${esc(dc?.description||'')}</span></td></tr>
-        <tr><td style="padding:6px 12px;color:var(--text-muted);">跟进动作</td><td style="padding:6px 12px;color:#2563eb;font-weight:500;">${esc(dc?.suggestedAction||'')}</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">跟进动作</td><td style="padding:6px 12px;color:#1e293b;font-weight:500;">${esc(dc?.suggestedAction||'')}</td></tr>
         <tr><td style="padding:6px 12px;color:var(--text-muted);">质量得分</td><td style="padding:6px 12px;font-weight:600;">${score} 分</td></tr>
-        <tr><td style="padding:6px 12px;color:var(--text-muted);">合格品数量</td><td style="padding:6px 12px;color:#059669;font-weight:600;">${qtyOk} ${esc(b.unit)} → 可用库存</td></tr>
-        <tr><td style="padding:6px 12px;color:var(--text-muted);">不合格品数量</td><td style="padding:6px 12px;color:#dc2626;font-weight:600;">${qtyNg > 0 ? qtyNg + ' ' + esc(b.unit) + ' → 冻结库存' : '—'}</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">合格品数量</td><td style="padding:6px 12px;color:#1e293b;font-weight:600;">${qtyOk} ${esc(b.unit)} → 可用库存</td></tr>
+        <tr><td style="padding:6px 12px;color:var(--text-muted);">不合格品数量</td><td style="padding:6px 12px;color:#1e293b;font-weight:600;">${qtyNg > 0 ? qtyNg + ' ' + esc(b.unit) + ' → 冻结库存' : '—'}</td></tr>
         ${remarks ? `<tr><td style="padding:6px 12px;color:var(--text-muted);">备注</td><td style="padding:6px 12px;">${esc(remarks)}</td></tr>` : ''}
         <tr><td style="padding:6px 12px;color:var(--text-muted);">决策人</td><td style="padding:6px 12px;">质量工程师（当前用户）</td></tr>
       </table>
@@ -1571,7 +1565,7 @@ const InspectionBatch = {
       confirmHtml,
       [
         { text:'取消', cls:'btn-secondary', action: closeModal },
-        { text:'✅ 确认执行', cls:'btn-primary', action: function() {
+        { text:'确认执行', cls:'btn-primary', action: function() {
           closeModal();
           InspectionBatch._doDecisionConfirm(batchId, code, dc, qtyOk, qtyNg, score, remarks);
         }}
