@@ -1226,11 +1226,6 @@ const InspectionBatch = {
 
   _renderBaseTab(b, ops) {
     ops = ops || [];
-    const samplingOps = ops.filter(o => o.opType === 'sampling');
-    const inspectionOps = ops.filter(o => o.opType === 'inspection');
-    const totalChars = inspectionOps.reduce((s, o) => s + (o.chars ? o.chars.length : 0), 0);
-    const quantChars = inspectionOps.reduce((s, o) => s + (o.chars || []).filter(c => c.micType === 'quantitative').length, 0);
-    const qualChars = totalChars - quantChars;
 
     // 单个工序卡片
     const opHtml = ops.map((op, i) => {
@@ -1287,13 +1282,6 @@ const InspectionBatch = {
       </div>`;
     }).join('');
 
-    const summary = `<div class="sum-cards" style="margin-bottom:14px;">
-      <div class="sum-card"><div class="l">检验工序总数</div><div class="v">${ops.length} <small>道</small></div></div>
-      <div class="sum-card"><div class="l">取样工序</div><div class="v">${samplingOps.length} <small>道</small></div></div>
-      <div class="sum-card"><div class="l">检测工序</div><div class="v">${inspectionOps.length} <small>道</small></div></div>
-      <div class="sum-card"><div class="l">检测特性</div><div class="v">${totalChars} <small>项</small> <span style="color:#2563eb;font-size:13px;">定量${quantChars}</span> <span style="color:#a855f7;font-size:13px;">定性${qualChars}</span></div></div>
-    </div>`;
-
     return `
       ${b.crossPlantRef ? `<div style="background:#fefce8;border:1px solid #eab308;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;">
         <strong>📋 跨工厂协同记录：</strong>此检验批从 <span style="font-weight:600;color:#2563eb;">${esc(b.crossPlantRef)}</span> 复制了检验实测值（${b.crossPlantResults ? b.crossPlantResults.length : 0} 项），请在录入结果时逐项核对确认。
@@ -1308,7 +1296,6 @@ const InspectionBatch = {
           <div><span style="color:var(--text-muted);">凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
         </div>
       </div>
-      ${summary}
       <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">🔬 检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)}）</span></div>
       ${ops.length ? opHtml : '<div style="color:var(--text-muted);font-size:13px;">暂无工序数据</div>'}
     `;
@@ -1317,13 +1304,6 @@ const InspectionBatch = {
   _renderSamplingTab(b) {
     const recs = this._getSamplingRecords(b);
     const rev = (b._reversed && b._reversed.sampling) || [];
-    const valid = recs.filter(r => !rev.includes(r.id));
-    const validQty = valid.reduce((s, r) => s + parseFloat(r.qty || 0), 0);
-    const sum = `<div class="sum-cards" style="margin-bottom:14px;">
-      <div class="sum-card"><div class="l">取样次数（有效）</div><div class="v">${valid.length} <small>次</small></div></div>
-      <div class="sum-card"><div class="l">累计取样量（有效）</div><div class="v">${validQty.toFixed(3)} <small>${esc(b.unit || '')}</small></div></div>
-      <div class="sum-card"><div class="l">已冲销次数</div><div class="v">${rev.length} <small>次</small></div></div>
-    </div>`;
     const rows = recs.map((r, i) => {
       const isRev = rev.includes(r.id);
       const btn = isRev
@@ -1338,17 +1318,12 @@ const InspectionBatch = {
         <td class="table-actions">${btn}</td>
       </tr>`;
     }).join('');
-    return sum + `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>取样人</th><th>取样时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>取样人</th><th>取样时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
 
   _renderResultTab(b) {
     const recs = this._getResultRecords(b);
     const rev = (b._reversed && b._reversed.result) || [];
-    const valid = recs.filter(r => !rev.includes(r.id));
-    const sum = `<div class="sum-cards" style="margin-bottom:14px;">
-      <div class="sum-card"><div class="l">已录入特性</div><div class="v">${valid.length} <small>项</small></div></div>
-      <div class="sum-card"><div class="l">已冲销特性</div><div class="v">${rev.length} <small>项</small></div></div>
-    </div>`;
     const rows = recs.map(r => {
       const isRev = rev.includes(r.id);
       const btn = isRev
@@ -1364,7 +1339,7 @@ const InspectionBatch = {
         <td class="table-actions">${btn}</td>
       </tr>`;
     }).join('');
-    return sum + `<table class="data-table"><thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table class="data-table"><thead><tr><th>检验特性</th><th>标准值</th><th>录入值</th><th>录入人</th><th>录入时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
 
   _renderDecisionTab(b) {
