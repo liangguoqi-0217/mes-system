@@ -908,11 +908,12 @@ const InspectionBatch = {
       </div>
       <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)} · 点击工序展开特性）</span></div>
       ${ops.length ? `<table class="ib-ops-table"><thead><tr><th style="width:230px;">工序</th><th style="width:160px;">类型</th><th>工作中心</th><th>关键信息</th></tr></thead><tbody>${opRows}</tbody></table>` : '<div style="color:var(--text-muted);font-size:13px;">暂无工序数据</div>'}
-      <div style="margin-top:18px;padding:12px 16px;border:1px dashed #d1d5db;border-radius:8px;background:#fffbfb;">
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer;">
-          <input type="checkbox" id="ibDelFlag_${b.id}" ${b._deleteFlag ? 'checked' : ''} onchange="InspectionBatch._toggleDeleteFlag('${b.id}', this.checked)" />
-          <span>🗑️ 删除标记（勾选后，系统将依据此标记处理该检验批）</span>
+      <div style="margin-top:18px;padding:10px 16px;border:1px dashed #d1d5db;border-radius:8px;background:#fffbfb;display:flex;align-items:center;justify-content:space-between;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);">
+          <input type="checkbox" id="ibDelFlag_${b.id}" ${b._deleteFlag ? 'checked' : ''} disabled onchange="InspectionBatch._toggleDeleteFlag('${b.id}', this.checked)" />
+          <span>删除标记</span>
         </label>
+        <button class="btn btn-ghost btn-sm" id="ibEditDel_${b.id}" onclick="InspectionBatch._toggleDelFlagEdit('${b.id}')">编辑</button>
       </div>
     `;
   },
@@ -922,6 +923,23 @@ const InspectionBatch = {
     if (!b) return;
     b._deleteFlag = checked;
     toast(checked ? '已勾选删除标记' : '已取消删除标记');
+  },
+
+  // 基本信息页签：删除标记需先点「编辑」才能勾选，再点「完成」锁回
+  _toggleDelFlagEdit(batchId) {
+    const cb = document.getElementById('ibDelFlag_' + batchId);
+    const btn = document.getElementById('ibEditDel_' + batchId);
+    if (!cb || !btn) return;
+    if (cb.disabled) {
+      cb.disabled = false;
+      btn.textContent = '完成';
+      cb.focus();
+      toast('已开启编辑，可修改删除标记');
+    } else {
+      cb.disabled = true;
+      btn.textContent = '编辑';
+      toast('已锁定删除标记');
+    }
   },
 
 

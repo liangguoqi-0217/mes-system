@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>取样弹窗 Demo（仅演示，不改动原设计）</title>
+<style>
+  :root{
+    --navy:#1E3A5F;
+    --gray-bg:#f8fafc;
+    --gray-line:#e5e7eb;
+    --gray-text:#6b7280;
+    --ink:#1f2937;
+    --danger:#dc2626;
+    --ok:#16a34a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    margin:0;padding:40px;background:var(--gray-bg);color:var(--ink);
+  }
+  /* 仅用于演示的触发区 */
+  .demo-bar{display:flex;align-items:center;gap:16px;margin-bottom:24px;color:var(--gray-text);font-size:14px;}
+  .role-pick{display:flex;gap:8px;align-items:center;}
+  .role-pick select{padding:6px 10px;border:1px solid var(--gray-line);border-radius:6px;background:#fff;color:var(--ink);}
+
+  /* 按钮 */
+  .btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;transition:.15s;}
+  .btn-blue{background:var(--navy);color:#fff;}
+  .btn-blue:hover{opacity:.9;}
+  .btn-ghost{background:#fff;border-color:var(--gray-line);color:var(--ink);}
+  .btn-ghost:hover{background:var(--gray-bg);}
+  .btn-sm{padding:5px 12px;font-size:13px;}
+  .btn-danger{background:#fff;border-color:var(--danger);color:var(--danger);}
+  .btn-danger:hover{background:#fef2f2;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* 遮罩 + 大弹窗 */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:24px;z-index:50;}
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:10px;width:92vw;max-width:1040px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+  .modal-head{padding:18px 24px;border-bottom:1px solid var(--gray-line);display:flex;align-items:baseline;gap:10px;}
+  .modal-head h3{margin:0;font-size:17px;color:var(--ink);font-weight:600;}
+  .modal-head .sub{font-size:13px;color:var(--gray-text);}
+  .modal-body{padding:20px 24px;overflow:auto;}
+
+  /* 上下文条：中性浅灰，去掉蓝色块 */
+  .ctx{background:var(--gray-bg);border:1px solid var(--gray-line);border-radius:8px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--gray-text);margin-bottom:22px;}
+  .ctx b{color:var(--ink);font-weight:600;}
+
+  /* 区块标题：navy 左边线 */
+  .sec{margin-bottom:22px;}
+  .sec-title{border-left:3px solid var(--navy);padding-left:10px;font-size:14px;font-weight:600;color:var(--ink);margin-bottom:14px;}
+
+  /* 表单 */
+  .form-row{display:flex;flex-wrap:wrap;gap:18px;}
+  .field{flex:1;min-width:200px;display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;color:var(--gray-text);}
+  .field label .req{color:var(--danger);margin-left:2px;}
+  .field input,.field select{padding:9px 12px;border:1px solid var(--gray-line);border-radius:6px;font-size:14px;color:var(--ink);background:#fff;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--navy);}
+
+  /* 历史表 */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{text-align:left;color:var(--gray-text);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--gray-line);background:var(--gray-bg);}
+  tbody td{padding:11px 12px;border-bottom:1px solid var(--gray-line);color:var(--ink);}
+  .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:4px;}
+  .tag-ok{background:#f0fdf4;color:var(--ok);border:1px solid #bbf7d0;}
+  .tag-rev{background:#f3f4f6;color:var(--gray-text);border:1px solid var(--gray-line);}
+  tr.reversed td{color:var(--gray-text);text-decoration:line-through;}
+  .empty{padding:24px;text-align:center;color:var(--gray-text);font-size:13px;}
+
+  .modal-foot{padding:16px 24px;border-top:1px solid var(--gray-line);display:flex;justify-content:flex-end;gap:12px;}
+
+  /* 冲销原因二级弹窗 */
+  .sub-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:60;}
+  .sub-overlay.show{display:flex;}
+  .sub-modal{background:#fff;border-radius:10px;width:440px;max-width:90vw;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+  .sub-modal h4{margin:0 0 14px;font-size:15px;color:var(--ink);}
+  .sub-modal textarea{width:100%;min-height:84px;border:1px solid var(--gray-line);border-radius:6px;padding:10px;font-size:14px;resize:vertical;color:var(--ink);}
+  .sub-modal textarea:focus{outline:none;border-color:var(--navy);}
+  .sub-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+</style>
+</head>
+<body>
+
+  <!-- 演示用触发区 -->
+  <div class="demo-bar">
+    <span>当前角色（用于演示权限）：</span>
+    <div class="role-pick">
+      <select id="roleSel">
+        <option value="sampler">取样员（有取样+冲销）</option>
+        <option value="viewer">查看岗（仅查看，无冲销）</option>
+      </select>
+    </div>
+    <button class="btn btn-blue btn-sm" id="openBtn">取样</button>
+  </div>
+
+  <!-- 取样弹窗 -->
+  <div class="overlay" id="samplingModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>取样</h3>
+        <span class="sub">检验批 2002-2606-001</span>
+      </div>
+      <div class="modal-body">
+
+        <!-- 上下文条（中性浅灰） -->
+        <div class="ctx">
+          <span>工序 <b>0010·取样</b></span>
+          <span>物料 <b>MAT-2207</b></span>
+          <span>报工数量 <b>1,200 L</b></span>
+          <span>状态 <b>新建</b></span>
+        </div>
+
+        <!-- 录入新取样（正向） -->
+        <div class="sec">
+          <div class="sec-title">录入新取样</div>
+          <div class="form-row">
+            <div class="field">
+              <label>取样量<span class="req">*</span></label>
+              <input type="number" id="qty" placeholder="请输入取样量" />
+            </div>
+            <div class="field">
+              <label>单位</label>
+              <select id="unit"><option>L</option><option>kg</option><option>件</option></select>
+            </div>
+            <div class="field">
+              <label>过账日期<span class="req">*</span></label>
+              <input type="date" id="pdate" value="2026-07-07" />
+            </div>
+            <div class="field">
+              <label>备注</label>
+              <input type="text" id="remark" placeholder="选填" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 历史取样记录 -->
+        <div class="sec">
+          <div class="sec-title">历史取样记录</div>
+          <table>
+            <thead>
+              <tr><th>序号</th><th>取样量</th><th>单位</th><th>过账日期</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody id="histBody"><!-- JS 渲染 --></tbody>
+          </table>
+        </div>
+
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" id="cancelBtn">取消</button>
+        <button class="btn btn-blue" id="confirmBtn">确认取样</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 冲销原因弹窗 -->
+  <div class="sub-overlay" id="reverseModal">
+    <div class="sub-modal">
+      <h4>冲销取样记录</h4>
+      <textarea id="revReason" placeholder="请填写冲销原因（必填）"></textarea>
+      <div class="sub-foot">
+        <button class="btn btn-ghost btn-sm" id="revCancel">取消</button>
+        <button class="btn btn-danger btn-sm" id="revConfirm">确认冲销</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---- 权限模拟：取样员有冲销，查看岗无 ----
+  const ROLE_PERM = {
+    sampler:{ '检验批-取样':true, '检验批-冲销':true, '检验批-查看':true },
+    viewer :{ '检验批-取样':false,'检验批-冲销':false,'检验批-查看':true },
+  };
+  function hasPerm(a){ return !!ROLE_PERM[currentRole][a]; }
+  let currentRole = 'sampler';
+
+  // ---- 模拟历史数据 ----
+  let history = [
+    { id:1, qty:50, unit:'L', date:'2026-07-05', reversed:true,  reason:'取样量录入错误' },
+    { id:2, qty:80, unit:'L', date:'2026-07-07', reversed:false, reason:'' },
+  ];
+  let pendingReverseId = null;
+
+  const $ = s => document.querySelector(s);
+
+  function renderHistory(){
+    const body = $('#histBody');
+    if(history.length === 0){
+      body.innerHTML = '<tr><td colspan="6" class="empty">暂无取样记录</td></tr>';
+      return;
+    }
+    body.innerHTML = history.map((r,i)=>{
+      const showRevBtn = hasPerm('检验批-冲销') && !r.reversed;
+      return `<tr class="${r.reversed?'reversed':''}">
+        <td>${i+1}</td>
+        <td>${r.qty}</td>
+        <td>${r.unit}</td>
+        <td>${r.date}</td>
+        <td>${r.reversed?`<span class="tag tag-rev">已冲销</span>`:`<span class="tag tag-ok">正常</span>`}</td>
+        <td>${ showRevBtn ? `<button class="btn btn-danger btn-sm" onclick="askReverse(${r.id})">冲销</button>` : (r.reversed?'<span style="color:var(--gray-text);font-size:12px">—</span>':'') }</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function askReverse(id){
+    pendingReverseId = id;
+    $('#revReason').value = '';
+    $('#reverseModal').classList.add('show');
+  }
+  function doReverse(){
+    const reason = $('#revReason').value.trim();
+    if(!reason){ alert('请填写冲销原因'); return; }
+    const r = history.find(x=>x.id===pendingReverseId);
+    if(r){ r.reversed = true; r.reason = reason; }
+    $('#reverseModal').classList.remove('show');
+    renderHistory(); // 原地刷新
+  }
+
+  // 事件绑定
+  $('#openBtn').onclick = ()=>{ renderHistory(); $('#samplingModal').classList.add('show'); };
+  $('#cancelBtn').onclick = ()=> $('#samplingModal').classList.remove('show');
+  $('#confirmBtn').onclick = ()=>{
+    const qty = $('#qty').value;
+    if(!qty){ alert('请输入取样量'); return; }
+    const newRec = { id:Date.now(), qty:Number(qty), unit:$('#unit').value, date:$('#pdate').value, reversed:false, reason:'' };
+    history.push(newRec);
+    $('#qty').value='';
+    renderHistory();
+    alert('取样已确认（演示）');
+  };
+  $('#revCancel').onclick = ()=> $('#reverseModal').classList.remove('show');
+  $('#revConfirm').onclick = doReverse;
+  $('#roleSel').onchange = e=>{ currentRole = e.target.value; if($('#samplingModal').classList.contains('show')) renderHistory(); };
+
+  // 初始
+  renderHistory();
+</script>
+</body>
+</html>
