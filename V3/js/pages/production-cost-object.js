@@ -4,8 +4,8 @@
 //   内部订单：查看 · 投料
 //   成本中心：查看 · 投料
 //   项目：    查看 · 投料
-//   所有成本对象：可查看「操作记录」，并支持对已完成操作进行「逆向」。
-// 设计遵循 _STANDARD：导航按业务对象收敛、图标克制、查看弹窗内承载操作、删除/逆向采用标记而非物理删除。
+//   所有成本对象：可查看「操作记录」，并支持对已完成操作进行「冲销」。
+// 设计遵循 _STANDARD：导航按业务对象收敛、图标克制、查看弹窗内承载操作、删除/冲销采用标记而非物理删除。
 const CostObject = {
   _version: '1.1-20260714',
   page: 1, pageSize: 12,
@@ -45,7 +45,18 @@ const CostObject = {
     { id:'PJ002', type:'project', no:'R-2026-009', name:'工艺优化验证项目', plant:'2002', plantName:'山东丹红制药工厂', qty:'1.000', unit:'项', status:'CRTD', statusName:'已创建', basic:{ batch:'—', material:'—', workCenter:'WC-RD-02 研发验证', startDate:'2026-06-15', endDate:'2026-10-15', prodVer:'—' }, ops:[] }
   ],
 
-  // 预置一些操作记录，演示"已做操作 + 逆向"
+  // 库存清单（投料时按 工厂+物料+库位 查询可用批次），演示数据
+  inventory: [
+    { plant:'1000', material:'MAT-10001 阿莫西林原料药', batch:'BT-202606-01-01', stockLoc:'1000-A-01', qty:'800.000', unit:'KG', mfgDate:'2026-05-10', expDate:'2027-05-09' },
+    { plant:'1000', material:'MAT-10001 阿莫西林原料药', batch:'BT-202606-15-A', stockLoc:'1000-A-01', qty:'500.000', unit:'KG', mfgDate:'2026-06-01', expDate:'2027-05-30' },
+    { plant:'1000', material:'MAT-10001 阿莫西林原料药', batch:'BT-202607-02-B', stockLoc:'1000-A-02', qty:'300.000', unit:'KG', mfgDate:'2026-06-25', expDate:'2027-06-24' },
+    { plant:'1000', material:'MAT-10002 淀粉辅料', batch:'BT-202606-01-02', stockLoc:'1000-B-01', qty:'600.000', unit:'KG', mfgDate:'2026-05-20', expDate:'2028-05-19' },
+    { plant:'1000', material:'MAT-10002 淀粉辅料', batch:'BT-202607-08-C', stockLoc:'1000-B-01', qty:'250.000', unit:'KG', mfgDate:'2026-06-28', expDate:'2028-06-27' },
+    { plant:'2001', material:'MAT-20001 注射用水', batch:'BT-202606-03', stockLoc:'2001-W-01', qty:'3200.000', unit:'L', mfgDate:'2026-06-24', expDate:'2026-07-24' },
+    { plant:'1000', material:'MAT-30001 校准耗材包', batch:'BT-CAL-06', stockLoc:'1000-T-01', qty:'12.000', unit:'个', mfgDate:'2026-04-15', expDate:'2027-04-14' }
+  ],
+
+  // 预置一些操作记录，演示"已做操作 + 冲销"
   _seedOps() {
     if (this._seeded) return;
     const po1 = this.data.find(d => d.id === 'PO001');
@@ -184,12 +195,7 @@ const CostObject = {
           <div style="font-size:13px;color:var(--text-secondary);">${typeName} · ${esc(d.plantName)}</div>
         </div>
 
-        <!-- 操作入口（按类型显示） -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 0;flex-shrink:0;border-bottom:1px solid var(--border);">
-          ${def.ops.map(op => this._opButtons(d, op)).join('')}
-        </div>
-
-        <!-- Tabs -->
+        <!-- Tabs（行操作列已承载投料/报工等功能入口，查看弹窗内不再重复） -->
         <div style="display:flex;gap:4px;border-bottom:1px solid var(--border);flex-shrink:0;">
           ${this._tabs(d)}
         </div>
@@ -208,15 +214,6 @@ const CostObject = {
         if (bd) bd.innerHTML = CostObject._tabContent(d, t);
       });
     });
-  },
-
-  _opButtons(d, op) {
-    let html = `<div style="font-size:13px;color:var(--text-secondary);align-self:center;margin-right:2px;">${op.name}</div>`;
-    html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">单笔</button>`;
-    if (op.modes.indexOf('batch') >= 0) {
-      html += `<button class="btn btn-ghost btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','batch')">Excel批导</button>`;
-    }
-    return html;
   },
 
   _tabs(d) {
@@ -307,8 +304,8 @@ const CostObject = {
 
   _opsTable(type, rows, d) {
     let head = '', body = '';
-    const reversed = (o) => o.reversed ? `<span class="badge badge-gray">已逆向</span>` : `<span class="badge badge-green">有效</span>`;
-    const revBtn = (o) => o.reversed ? '—' : `<button class="btn btn-ghost btn-sm" onclick="CostObject.reverseOp('${d.id}','${o.id}')">逆向</button>`;
+    const reversed = (o) => o.reversed ? `<span class="badge badge-gray">已冲销</span>` : `<span class="badge badge-green">有效</span>`;
+    const revBtn = (o) => o.reversed ? '—' : `<button class="btn btn-ghost btn-sm" onclick="CostObject.reverseOp('${d.id}','${o.id}')">冲销</button>`;
     const strike = (o) => o.reversed ? 'color:var(--text-muted);text-decoration:line-through;' : '';
 
     if (type === 'issue') {
@@ -374,11 +371,21 @@ const CostObject = {
       <label style="color:var(--text-secondary);">过账日期</label>
       <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
     if (opKey === 'issue') {
+      const mat = d.basic.material && d.basic.material !== '—' ? d.basic.material : '';
+      const plant = d.plant || '';
       extra = `
         <label style="color:var(--text-secondary);">物料</label>
-        <input id="coOpMaterial" class="form-input" placeholder="如 MAT-10001 阿莫西林原料药">
-        <label style="color:var(--text-secondary);">批次</label>
-        <input id="coOpBatch" class="form-input" placeholder="如 BT-202607-01">
+        <input id="coOpMaterial" class="form-input" placeholder="如 MAT-10001 阿莫西林原料药" value="${esc(mat)}">
+        <label style="color:var(--text-secondary);">库位</label>
+        <input id="coOpLoc" class="form-input" placeholder="如 1000-A-01">
+        <label style="color:var(--text-secondary);">选择批次（按 工厂+物料+库位 查询库存）</label>
+        <div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._queryStock('${id}')">查询库存清单</button>
+          <span id="coStockTips" style="margin-left:8px;font-size:12px;color:var(--text-muted);">点击查询后从可用批次中选择</span>
+        </div>
+        <div id="coStockBox" style="margin-top:6px;"></div>
+        <label style="color:var(--text-secondary);">所选批次</label>
+        <input id="coOpBatch" class="form-input" placeholder="选择库存批次后自动带出" readonly>
         <label style="color:var(--text-secondary);">过账日期</label>
         <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
     } else if (opKey === 'confirm') {
@@ -414,6 +421,55 @@ const CostObject = {
     ], 'modal-md');
   },
 
+  // 投料：按 工厂+物料+库位 查询库存清单，用户选择投用哪个批次
+  _queryStock(id) {
+    const d = this.data.find(x => x.id === id);
+    if (!d) return;
+    const material = (document.getElementById('coOpMaterial') || {}).value || '';
+    const loc = (document.getElementById('coOpLoc') || {}).value || '';
+    const tips = document.getElementById('coStockTips');
+    const box = document.getElementById('coStockBox');
+    if (!material.trim()) { toast('请先填写物料'); return; }
+
+    const rows = this.inventory.filter(s =>
+      (!d.plant || s.plant === d.plant) &&
+      (s.material.indexOf(material.replace(/^\S+\s/, '')) >= 0 || s.material.indexOf(material) >= 0) &&
+      (!loc || s.stockLoc === loc)
+    );
+    if (tips) tips.textContent = '共匹配 ' + rows.length + ' 条库存记录';
+    if (!box) return;
+    if (rows.length === 0) {
+      box.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;">未查询到可用库存，请调整物料/库位</div>`;
+      return;
+    }
+    box.innerHTML = `
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:240px;overflow:auto;">
+        <table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
+            <th style="padding:8px 12px;">批次</th><th style="padding:8px 12px;">库位</th>
+            <th style="padding:8px 12px;">可用数量</th><th style="padding:8px 12px;">生产日期</th>
+            <th style="padding:8px 12px;">有效期至</th><th style="padding:8px 12px;text-align:center;">选择</th>
+          </tr></thead>
+          <tbody>${rows.map(s => `<tr style="border-top:1px solid var(--border);">
+            <td style="padding:8px 12px;">${esc(s.batch)}</td><td style="padding:8px 12px;">${esc(s.stockLoc)}</td>
+            <td style="padding:8px 12px;">${s.qty} ${s.unit}</td>
+            <td style="padding:8px 12px;">${esc(s.mfgDate)}</td>
+            <td style="padding:8px 12px;">${esc(s.expDate)}</td>
+            <td style="padding:8px 12px;text-align:center;"><button class="btn btn-primary btn-sm" onclick="CostObject._pickBatch('${esc(s.batch)}','${esc(s.stockLoc)}')">选择</button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  },
+
+  // 选中某个库存批次：带出批次，并回填库位
+  _pickBatch(batch, loc) {
+    const b = document.getElementById('coOpBatch');
+    const l = document.getElementById('coOpLoc');
+    if (b) b.value = batch;
+    if (l && !l.value) l.value = loc;
+    toast('已选择批次：' + batch);
+  },
+
   _onBatchFile(input, id, opKey, opName) {
     if (!input.files || !input.files[0]) return;
     const f = input.files[0];
@@ -441,6 +497,7 @@ const CostObject = {
     if (opKey === 'issue') {
       rec.material = (document.getElementById('coOpMaterial') || {}).value || d.basic.material || '—';
       rec.batch = (document.getElementById('coOpBatch') || {}).value || '—';
+      rec.stockLoc = (document.getElementById('coOpLoc') || {}).value || '—';
     } else if (opKey === 'confirm') {
       rec.op = (document.getElementById('coOpOp') || {}).value || '—';
       rec.hours = (document.getElementById('coOpHours') || {}).value || '—';
@@ -456,7 +513,7 @@ const CostObject = {
   },
 
 
-  // ==================== 逆向操作 ====================
+  // ==================== 冲销操作 ====================
   reverseOp(id, opId) {
     const d = this.data.find(x => x.id === id);
     if (!d) return;
@@ -464,30 +521,30 @@ const CostObject = {
     if (!op || op.reversed) return;
     const body = `
       <div style="font-size:14px;color:var(--text);line-height:1.7;">
-        <p>将对以下操作执行逆向：</p>
+        <p>将对以下操作执行冲销：</p>
         <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0;font-size:13px;">
           <div><strong>操作：</strong>${op.typeName}</div>
           <div><strong>数量：</strong>${op.qty} ${op.unit}</div>
           <div><strong>日期：</strong>${op.postDate || '—'}</div>
         </div>
-        <label style="display:block;color:var(--text-secondary);font-size:13px;margin-bottom:4px;">逆向原因（必填）</label>
-        <textarea id="coRevReason" class="form-input" rows="3" placeholder="请填写逆向原因" style="width:100%;"></textarea>
+        <label style="display:block;color:var(--text-secondary);font-size:13px;margin-bottom:4px;">冲销原因（必填）</label>
+        <textarea id="coRevReason" class="form-input" rows="3" placeholder="请填写冲销原因" style="width:100%;"></textarea>
       </div>`;
-    showModal('逆向确认', body, [
+    showModal('冲销确认', body, [
       { text:'取消', cls:'btn-secondary', action:closeModal },
-      { text:'确认逆向', cls:'btn-danger', action:() => CostObject._confirmReverse(id, opId) }
+      { text:'确认冲销', cls:'btn-danger', action:() => CostObject._confirmReverse(id, opId) }
     ], 'modal-md');
   },
 
   _confirmReverse(id, opId) {
     const reason = (document.getElementById('coRevReason') || {}).value || '';
-    if (!reason.trim()) { toast('请填写逆向原因'); return; }
+    if (!reason.trim()) { toast('请填写冲销原因'); return; }
     const d = this.data.find(x => x.id === id);
     if (!d) return;
     const op = d.ops.find(o => o.id === opId);
     if (op) { op.reversed = true; op.reverseReason = reason; op.reverseTime = '2026-07-14 11:00'; }
     closeModal();
-    toast('已逆向，操作记录已标记');
+    toast('已冲销，操作记录已标记');
     this.openView(id);
   },
 
