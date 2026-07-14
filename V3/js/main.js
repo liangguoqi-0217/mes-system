@@ -660,7 +660,14 @@ const App = {
     var pageObj = this.pageMap[route];
     if (pageObj) {
       try {
-        // 把菜单项携带的 type 透传给页面对象（成本对象按类型分流）
+        // 从菜单项中查找当前点击的 subItem，把携带的 type 透传给页面对象（成本对象按类型分流）
+        var subItem = null;
+        if (menuItem && menuItem.groups) {
+          menuItem.groups.forEach(function(g) {
+            var found = g.items.find(function(i) { return i.id === itemId; });
+            if (found) subItem = found;
+          });
+        }
         if (subItem && subItem.type && typeof pageObj.setType === 'function') {
           pageObj.setType(subItem.type);
         }
