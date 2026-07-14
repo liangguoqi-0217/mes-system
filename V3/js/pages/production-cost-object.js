@@ -196,24 +196,36 @@ const CostObject = {
         </div>
 
         <!-- Tabs（行操作列已承载投料/报工等功能入口，查看弹窗内不再重复） -->
-        <div style="display:flex;gap:4px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div id="coTabsBar" style="display:flex;gap:4px;border-bottom:1px solid var(--border);flex-shrink:0;">
           ${this._tabs(d)}
         </div>
         <div style="flex:1;overflow:auto;padding:16px 4px;" id="coTabBody">${this._tabContent(d, 'basic')}</div>
       </div>`;
 
     showModal('成本对象详情', body, [{ text:'关闭', cls:'btn-secondary', action:closeModal }], 'modal-xl');
-    // 绑定 tab 切换
-    window._coCurrent = d.id;
-    document.querySelectorAll('[data-co-tab]').forEach(el => {
-      el.addEventListener('click', () => {
+    // 用事件委托绑定 tab 切换（避免 showModal 重写 DOM 后丢失监听器）
+    const tabsBar = document.getElementById('coTabsBar');
+    if (tabsBar && !tabsBar._bound) {
+      tabsBar._bound = true;
+      tabsBar.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-co-tab]');
+        if (!el) return;
         const t = el.getAttribute('data-co-tab');
-        document.querySelectorAll('[data-co-tab]').forEach(x => x.classList.remove('active'));
-        el.classList.add('active');
+        const d2 = CostObject.data.find(x => x.id === window._coCurrent);
+        if (!d2) return;
+        tabsBar.querySelectorAll('[data-co-tab]').forEach(x => {
+          const on = x.getAttribute('data-co-tab') === t;
+          x.classList.toggle('active', on);
+          x.style.color = on ? 'var(--primary)' : 'var(--text-secondary)';
+          x.style.borderBottomColor = on ? 'var(--primary)' : 'transparent';
+          x.style.fontWeight = on ? '600' : '400';
+        });
         const bd = document.getElementById('coTabBody');
-        if (bd) bd.innerHTML = CostObject._tabContent(d, t);
+        if (bd) bd.innerHTML = CostObject._tabContent(d2, t);
+        if (t === 'ops') setTimeout(() => CostObject._bindOpsSub(), 0);
       });
-    });
+    }
+    window._coCurrent = d.id;
   },
 
   _tabs(d) {
@@ -284,22 +296,47 @@ const CostObject = {
     </table>`;
   },
 
-  // 操作记录：按操作类型分组，每张表用各自真实的业务字段（投料/报工/收货/技术性完成字段不同）
+  // 操作记录：拆成「投料 / 报工 / 收货 / 技术性完成」四个子页签，各自独立展示，避免信息揉在一起眼花缭乱
   _opsTab(d) {
     if (!d.ops || d.ops.length === 0) {
       return `<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:14px;">该成本对象暂无操作记录</div>`;
     }
     const groups = [ 'issue', 'confirm', 'receipt', 'techcomp' ];
-    const titles = { issue:'投料记录', confirm:'报工记录', receipt:'收货记录', techcomp:'技术性完成' };
-    return groups.map(g => {
-      const rows = d.ops.filter(o => o.type === g);
-      if (rows.length === 0) return '';
-      return `
-        <div style="font-size:14px;font-weight:600;color:var(--text);margin:18px 0 8px;">${titles[g]}（${rows.length}）</div>
-        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-          ${this._opsTable(g, rows, d)}
-        </div>`;
-    }).join('');
+    const titles = { issue:'投料', confirm:'报工', receipt:'收货', techcomp:'技术性完成' };
+    const counts = {};
+    groups.forEach(g => counts[g] = d.ops.filter(o => o.type === g).length);
+    const subBar = groups.map((g, i) => `
+      <div data-co-ops="${g}" class="co-ops-tab ${i===0?'active':''}" style="padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid ${i===0?'var(--primary)':'transparent'};color:${i===0?'var(--primary)':'var(--text-secondary)'};font-weight:${i===0?'600':'400'};">
+        ${titles[g]} <span class="badge ${counts[g]?'badge-blue':'badge-gray'}" style="margin-left:4px;">${counts[g]}</span>
+      </div>`).join('');
+    const first = groups[0];
+    return `
+      <div id="coOpsSub" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:12px;">
+        ${subBar}
+      </div>
+      <div id="coOpsBody">${this._opsTable(first, d.ops.filter(o => o.type === first), d)}</div>`;
+  },
+
+  // 操作记录子页签切换（事件委托）
+  _bindOpsSub() {
+    const bar = document.getElementById('coOpsSub');
+    if (!bar || bar._bound) return;
+    bar._bound = true;
+    bar.addEventListener('click', (e) => {
+      const el = e.target.closest('[data-co-ops]');
+      if (!el) return;
+      const g = el.getAttribute('data-co-ops');
+      const d = CostObject.data.find(x => x.id === window._coCurrent);
+      if (!d) return;
+      bar.querySelectorAll('[data-co-ops]').forEach(x => {
+        const on = x.getAttribute('data-co-ops') === g;
+        x.style.color = on ? 'var(--primary)' : 'var(--text-secondary)';
+        x.style.borderBottomColor = on ? 'var(--primary)' : 'transparent';
+        x.style.fontWeight = on ? '600' : '400';
+      });
+      const bd = document.getElementById('coOpsBody');
+      if (bd) bd.innerHTML = CostObject._opsTable(g, d.ops.filter(o => o.type === g), d);
+    });
   },
 
   _opsTable(type, rows, d) {
@@ -334,6 +371,9 @@ const CostObject = {
       body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
         <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
         <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+    }
+    if (!rows || rows.length === 0) {
+      return `<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;">暂无该类型操作记录</div>`;
     }
     return `<table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">${head}</tr></thead>
