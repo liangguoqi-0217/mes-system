@@ -51,14 +51,15 @@ const CostObject = {
     const po1 = this.data.find(d => d.id === 'PO001');
     if (po1 && po1.ops.length === 0) {
       po1.ops = [
-        { id:'OP001', type:'issue',   typeName:'投料',  qty:'600.000', unit:'KG', time:'2026-06-20 09:30', by:'车间用户A', reversed:false },
-        { id:'OP002', type:'issue',   typeName:'投料',  qty:'400.000', unit:'KG', time:'2026-06-21 10:15', by:'车间用户A', reversed:false },
-        { id:'OP003', type:'confirm', typeName:'报工',  qty:'1200.000', unit:'KG', time:'2026-06-22 16:40', by:'车间用户B', reversed:false }
+        { id:'OP001', type:'issue', typeName:'投料', qty:'600.000', unit:'KG', material:'MAT-10001 阿莫西林原料药', batch:'BT-202606-01-01', postDate:'2026-06-20', by:'车间用户A', reversed:false },
+        { id:'OP002', type:'issue', typeName:'投料', qty:'400.000', unit:'KG', material:'MAT-10002 淀粉辅料', batch:'BT-202606-01-02', postDate:'2026-06-21', by:'车间用户A', reversed:false },
+        { id:'OP003', type:'confirm', typeName:'报工', qty:'1200.000', unit:'KG', op:'0020 混合制粒', hours:'3.5', worker:'王师傅', postDate:'2026-06-22', by:'车间用户B', reversed:false },
+        { id:'OP004', type:'receipt', typeName:'收货', qty:'1180.000', unit:'KG', stockLoc:'1000-A-01', postDate:'2026-06-28', by:'车间用户C', reversed:false }
       ];
     }
     const io1 = this.data.find(d => d.id === 'IO001');
     if (io1 && io1.ops.length === 0) {
-      io1.ops = [ { id:'OP004', type:'issue', typeName:'投料', qty:'1.000', unit:'次', time:'2026-06-18 13:00', by:'车间用户A', reversed:false } ];
+      io1.ops = [ { id:'OP005', type:'issue', typeName:'投料', qty:'1.000', unit:'次', material:'MAT-30001 校准耗材包', batch:'BT-CAL-06', postDate:'2026-06-18', by:'车间用户A', reversed:false } ];
     }
     this._seeded = true;
   },
@@ -286,34 +287,62 @@ const CostObject = {
     </table>`;
   },
 
-  // 操作记录：列出已做操作 + 逆向入口
+  // 操作记录：按操作类型分组，每张表用各自真实的业务字段（投料/报工/收货/技术性完成字段不同）
   _opsTab(d) {
     if (!d.ops || d.ops.length === 0) {
       return `<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:14px;">该成本对象暂无操作记录</div>`;
     }
-    return `<table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
-        <th style="padding:10px 14px;">操作</th><th style="padding:10px 14px;">数量</th>
-        <th style="padding:10px 14px;">操作时间</th><th style="padding:10px 14px;">操作人</th>
-        <th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th></tr></thead>
-      <tbody>${d.ops.map(op => this._opRow(d, op)).join('')}</tbody>
-    </table>`;
+    const groups = [ 'issue', 'confirm', 'receipt', 'techcomp' ];
+    const titles = { issue:'投料记录', confirm:'报工记录', receipt:'收货记录', techcomp:'技术性完成' };
+    return groups.map(g => {
+      const rows = d.ops.filter(o => o.type === g);
+      if (rows.length === 0) return '';
+      return `
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin:18px 0 8px;">${titles[g]}（${rows.length}）</div>
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          ${this._opsTable(g, rows, d)}
+        </div>`;
+    }).join('');
   },
 
-  _opRow(d, op) {
-    if (op.reversed) {
-      return `<tr style="border-top:1px solid var(--border);color:var(--text-muted);text-decoration:line-through;">
-        <td style="padding:10px 14px;">${op.typeName}</td><td style="padding:10px 14px;">${op.qty} ${op.unit}</td>
-        <td style="padding:10px 14px;">${op.time}</td><td style="padding:10px 14px;">${esc(op.by)}</td>
-        <td style="padding:10px 14px;"><span class="badge badge-gray">已逆向</span></td>
-        <td style="padding:10px 14px;text-align:center;">—</td></tr>`;
+  _opsTable(type, rows, d) {
+    let head = '', body = '';
+    const reversed = (o) => o.reversed ? `<span class="badge badge-gray">已逆向</span>` : `<span class="badge badge-green">有效</span>`;
+    const revBtn = (o) => o.reversed ? '—' : `<button class="btn btn-ghost btn-sm" onclick="CostObject.reverseOp('${d.id}','${o.id}')">逆向</button>`;
+    const strike = (o) => o.reversed ? 'color:var(--text-muted);text-decoration:line-through;' : '';
+
+    if (type === 'issue') {
+      head = `<th style="padding:10px 14px;">物料</th><th style="padding:10px 14px;">批次</th><th style="padding:10px 14px;">投料数量</th><th style="padding:10px 14px;">单位</th><th style="padding:10px 14px;">过账日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
+        <td style="padding:10px 14px;">${esc(o.material||'—')}</td><td style="padding:10px 14px;">${esc(o.batch||'—')}</td>
+        <td style="padding:10px 14px;">${o.qty}</td><td style="padding:10px 14px;">${o.unit}</td>
+        <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
+        <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+    } else if (type === 'confirm') {
+      head = `<th style="padding:10px 14px;">工序</th><th style="padding:10px 14px;">报工数量</th><th style="padding:10px 14px;">单位</th><th style="padding:10px 14px;">工时(h)</th><th style="padding:10px 14px;">人工</th><th style="padding:10px 14px;">过账日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
+        <td style="padding:10px 14px;">${esc(o.op||'—')}</td><td style="padding:10px 14px;">${o.qty}</td><td style="padding:10px 14px;">${o.unit}</td>
+        <td style="padding:10px 14px;">${o.hours||'—'}</td><td style="padding:10px 14px;">${esc(o.worker||'—')}</td>
+        <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
+        <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+    } else if (type === 'receipt') {
+      head = `<th style="padding:10px 14px;">收货数量</th><th style="padding:10px 14px;">单位</th><th style="padding:10px 14px;">库位</th><th style="padding:10px 14px;">过账日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
+        <td style="padding:10px 14px;">${o.qty}</td><td style="padding:10px 14px;">${o.unit}</td>
+        <td style="padding:10px 14px;">${esc(o.stockLoc||'—')}</td><td style="padding:10px 14px;">${esc(o.postDate||'—')}</td>
+        <td style="padding:10px 14px;">${esc(o.by)}</td><td style="padding:10px 14px;">${reversed(o)}</td>
+        <td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+    } else if (type === 'techcomp') {
+      head = `<th style="padding:10px 14px;">完成日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
+        <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
+        <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
     }
-    return `<tr style="border-top:1px solid var(--border);">
-      <td style="padding:10px 14px;">${op.typeName}</td><td style="padding:10px 14px;">${op.qty} ${op.unit}</td>
-      <td style="padding:10px 14px;">${op.time}</td><td style="padding:10px 14px;">${esc(op.by)}</td>
-      <td style="padding:10px 14px;"><span class="badge badge-green">有效</span></td>
-      <td style="padding:10px 14px;text-align:center;"><button class="btn btn-ghost btn-sm" onclick="CostObject.reverseOp('${d.id}','${op.id}')">逆向</button></td></tr>`;
+    return `<table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">${head}</tr></thead>
+      <tbody>${body}</tbody></table>`;
   },
+
 
   // ==================== 操作执行（单笔 / 批导） ====================
   doOp(id, opKey, mode) {
@@ -340,7 +369,35 @@ const CostObject = {
       return;
     }
 
-    // 单笔：录入表单
+    // 单笔：录入表单（不同操作类型，字段不同）
+    let extra = `
+      <label style="color:var(--text-secondary);">过账日期</label>
+      <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+    if (opKey === 'issue') {
+      extra = `
+        <label style="color:var(--text-secondary);">物料</label>
+        <input id="coOpMaterial" class="form-input" placeholder="如 MAT-10001 阿莫西林原料药">
+        <label style="color:var(--text-secondary);">批次</label>
+        <input id="coOpBatch" class="form-input" placeholder="如 BT-202607-01">
+        <label style="color:var(--text-secondary);">过账日期</label>
+        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+    } else if (opKey === 'confirm') {
+      extra = `
+        <label style="color:var(--text-secondary);">工序</label>
+        <input id="coOpOp" class="form-input" placeholder="如 0020 混合制粒">
+        <label style="color:var(--text-secondary);">工时(h)</label>
+        <input id="coOpHours" class="form-input" placeholder="如 3.5">
+        <label style="color:var(--text-secondary);">人工</label>
+        <input id="coOpWorker" class="form-input" placeholder="如 王师傅">
+        <label style="color:var(--text-secondary);">过账日期</label>
+        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+    } else if (opKey === 'receipt') {
+      extra = `
+        <label style="color:var(--text-secondary);">库位</label>
+        <input id="coOpLoc" class="form-input" placeholder="如 1000-A-01">
+        <label style="color:var(--text-secondary);">过账日期</label>
+        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+    }
     const body = `
       <div style="font-size:14px;color:var(--text);">
         <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-bottom:14px;">
@@ -348,11 +405,7 @@ const CostObject = {
           <input id="coOpQty" class="form-input" placeholder="请输入数量" value="${d.qty}">
           <label style="color:var(--text-secondary);">单位</label>
           <input id="coOpUnit" class="form-input" value="${d.unit}" readonly>
-          ${opKey==='techcomp' ? '' : `
-          <label style="color:var(--text-secondary);">过账日期</label>
-          <input id="coOpDate" class="form-input" type="date" value="2026-07-14">
-          <label style="color:var(--text-secondary);">备注</label>
-          <input id="coOpRemark" class="form-input" placeholder="可选">`}
+          ${extra}
         </div>
       </div>`;
     showModal(opName + ' - 单笔录入', body, [
@@ -367,10 +420,14 @@ const CostObject = {
     const hint = document.getElementById('coBatchHint');
     if (hint) hint.textContent = '已选择文件：' + f.name + '，解析后共 0 行（演示）。点击确认后将批量生成操作记录。';
     toast('已读取文件：' + f.name + '（演示环境，未真正解析）');
-    // 演示：直接生成一条批导记录
+    // 演示：直接生成一条批导记录（带该操作类型的差异化字段）
     const d = this.data.find(x => x.id === id);
     if (d) {
-      d.ops.push({ id:'OP'+Date.now(), type:opKey, typeName:opName, qty:d.qty, unit:d.unit, time:'2026-07-14 10:00', by:'车间用户A', reversed:false });
+      const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:d.qty, unit:d.unit, postDate:'2026-07-14', by:'车间用户A', reversed:false };
+      if (opKey === 'issue') { rec.material = d.basic.material; rec.batch = 'BT-202607-01'; }
+      if (opKey === 'confirm') { rec.op = '0010'; rec.hours = '2.0'; rec.worker = '王师傅'; }
+      if (opKey === 'receipt') { rec.stockLoc = '1000-A-01'; }
+      d.ops.push(rec);
     }
   },
 
@@ -379,12 +436,25 @@ const CostObject = {
     if (!d) return;
     const qty = (document.getElementById('coOpQty') || {}).value || d.qty;
     const unit = (document.getElementById('coOpUnit') || {}).value || d.unit;
-    d.ops.push({ id:'OP'+Date.now(), type:opKey, typeName:opName, qty:qty, unit:unit, time:'2026-07-14 10:00', by:'车间用户A', reversed:false });
+    const postDate = (document.getElementById('coOpDate') || {}).value || '2026-07-14';
+    const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:qty, unit:unit, postDate:postDate, by:'车间用户A', reversed:false };
+    if (opKey === 'issue') {
+      rec.material = (document.getElementById('coOpMaterial') || {}).value || d.basic.material || '—';
+      rec.batch = (document.getElementById('coOpBatch') || {}).value || '—';
+    } else if (opKey === 'confirm') {
+      rec.op = (document.getElementById('coOpOp') || {}).value || '—';
+      rec.hours = (document.getElementById('coOpHours') || {}).value || '—';
+      rec.worker = (document.getElementById('coOpWorker') || {}).value || '—';
+    } else if (opKey === 'receipt') {
+      rec.stockLoc = (document.getElementById('coOpLoc') || {}).value || '—';
+    }
+    d.ops.push(rec);
     if (opKey === 'techcomp') { d.status = 'TECO'; d.statusName = '技术性完成'; }
     closeModal();
     toast(opName + '已提交');
     this.openView(id); // 重新打开查看弹窗，刷新操作记录
   },
+
 
   // ==================== 逆向操作 ====================
   reverseOp(id, opId) {
@@ -398,7 +468,7 @@ const CostObject = {
         <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0;font-size:13px;">
           <div><strong>操作：</strong>${op.typeName}</div>
           <div><strong>数量：</strong>${op.qty} ${op.unit}</div>
-          <div><strong>时间：</strong>${op.time}</div>
+          <div><strong>日期：</strong>${op.postDate || '—'}</div>
         </div>
         <label style="display:block;color:var(--text-secondary);font-size:13px;margin-bottom:4px;">逆向原因（必填）</label>
         <textarea id="coRevReason" class="form-input" rows="3" placeholder="请填写逆向原因" style="width:100%;"></textarea>
