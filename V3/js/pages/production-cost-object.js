@@ -391,9 +391,17 @@ const CostObject = {
 
     if (mode === 'batch') {
       // Excel 批导：演示弹窗（下载模板 + 上传占位）
+      let tpl = '每行一条记录；通用列：过账日期、操作人。';
+      if (opKey === 'issue') tpl = '投料模板列（每行一个批次）：批次号、库位、投用数量、单位。可包含多行表示多批次投料。';
+      else if (opKey === 'confirm') tpl = '报工模板列：工序、报工数量、工时(h)、人工。';
+      else if (opKey === 'receipt') tpl = '收货模板列：收货数量、单位、库位。';
+      else if (opKey === 'techcomp') tpl = '技术性完成模板列：完成日期、操作人。';
       const body = `
         <div style="font-size:14px;color:var(--text);line-height:1.8;">
           <p>通过 Excel 批量导入「${opName}」数据。请先下载模板，按格式填写后上传。</p>
+          <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0;font-size:13px;color:var(--text-secondary);">
+            <strong>模板格式：</strong>${tpl}
+          </div>
           <div style="display:flex;gap:10px;margin-top:16px;">
             <button class="btn btn-ghost btn-sm" onclick="toast('模板下载中（演示）')">下载模板</button>
             <label class="btn btn-primary btn-sm" style="cursor:pointer;">
@@ -412,22 +420,20 @@ const CostObject = {
       <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
     if (opKey === 'issue') {
       const mat = d.basic.material && d.basic.material !== '—' ? d.basic.material : '';
-      const plant = d.plant || '';
       extra = `
         <label style="color:var(--text-secondary);">物料</label>
         <input id="coOpMaterial" class="form-input" placeholder="如 MAT-10001 阿莫西林原料药" value="${esc(mat)}">
-        <label style="color:var(--text-secondary);">库位</label>
-        <input id="coOpLoc" class="form-input" placeholder="如 1000-A-01">
-        <label style="color:var(--text-secondary);">选择批次（按 工厂+物料+库位 查询库存）</label>
-        <div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._queryStock('${id}')">查询库存清单</button>
-          <span id="coStockTips" style="margin-left:8px;font-size:12px;color:var(--text-muted);">点击查询后从可用批次中选择</span>
-        </div>
-        <div id="coStockBox" style="margin-top:6px;"></div>
-        <label style="color:var(--text-secondary);">所选批次</label>
-        <input id="coOpBatch" class="form-input" placeholder="选择库存批次后自动带出" readonly>
         <label style="color:var(--text-secondary);">过账日期</label>
-        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">
+        <div style="grid-column:1 / -1;margin:6px 0 2px;display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:13px;color:var(--text);font-weight:600;">投料行项目（可多个批次）</span>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._openStockPicker('${id}')">从库存选择批次</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._addIssueRow()">手动新增行</button>
+          </div>
+        </div>
+        <div id="coIssueRows" style="grid-column:1 / -1;border:1px solid var(--border);border-radius:8px;overflow:hidden;"></div>
+        <input type="hidden" id="coIssueData">`;
     } else if (opKey === 'confirm') {
       extra = `
         <label style="color:var(--text-secondary);">工序</label>
@@ -459,55 +465,130 @@ const CostObject = {
       { text:'取消', cls:'btn-secondary', action:closeModal },
       { text:'确认提交', cls:'btn-primary', action:() => CostObject._submitSingle(id, opKey, opName) }
     ], 'modal-md');
+    if (opKey === 'issue') {
+      // 默认预填一行空白行项目，方便直接录入
+      window._coIssueRows = [];
+      CostObject._renderIssueRows();
+    }
   },
 
-  // 投料：按 工厂+物料+库位 查询库存清单，用户选择投用哪个批次
-  _queryStock(id) {
+  // 投料 - 从库存选择批次：弹窗列出可用库存，每行可填「本次投用数量」，可多选多行
+  _openStockPicker(id) {
     const d = this.data.find(x => x.id === id);
     if (!d) return;
     const material = (document.getElementById('coOpMaterial') || {}).value || '';
-    const loc = (document.getElementById('coOpLoc') || {}).value || '';
-    const tips = document.getElementById('coStockTips');
-    const box = document.getElementById('coStockBox');
-    if (!material.trim()) { toast('请先填写物料'); return; }
+    if (!material.trim()) { toast('请先在投料表单填写物料'); return; }
 
+    // 按 工厂+物料 过滤库存（库位作为清单内可见列，不强制过滤）
+    const kw = material.replace(/^\S+\s/, '').trim();
     const rows = this.inventory.filter(s =>
       (!d.plant || s.plant === d.plant) &&
-      (s.material.indexOf(material.replace(/^\S+\s/, '')) >= 0 || s.material.indexOf(material) >= 0) &&
-      (!loc || s.stockLoc === loc)
+      (s.material.indexOf(kw) >= 0 || s.material.indexOf(material) >= 0)
     );
-    if (tips) tips.textContent = '共匹配 ' + rows.length + ' 条库存记录';
-    if (!box) return;
-    if (rows.length === 0) {
-      box.innerHTML = `<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;">未查询到可用库存，请调整物料/库位</div>`;
-      return;
-    }
-    box.innerHTML = `
-      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:240px;overflow:auto;">
+    const list = rows.length ? rows : this.inventory;
+
+    const body = `
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">筛选条件：工厂 ${esc(d.plant||'—')} ＋ 物料「${esc(material)}」。勾选批次并在「本次投用数量」填写数量，可同时选择多个批次。</div>
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:340px;overflow:auto;">
         <table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
-            <th style="padding:8px 12px;">批次</th><th style="padding:8px 12px;">库位</th>
-            <th style="padding:8px 12px;">可用数量</th><th style="padding:8px 12px;">生产日期</th>
-            <th style="padding:8px 12px;">有效期至</th><th style="padding:8px 12px;text-align:center;">选择</th>
+          <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);position:sticky;top:0;">
+            <th style="padding:9px 12px;width:42px;text-align:center;">选</th>
+            <th style="padding:9px 12px;">批次</th><th style="padding:9px 12px;">库位</th>
+            <th style="padding:9px 12px;">可用数量</th><th style="padding:9px 12px;">生产日期</th>
+            <th style="padding:9px 12px;">有效期至</th>
+            <th style="padding:9px 12px;">本次投用数量</th>
           </tr></thead>
-          <tbody>${rows.map(s => `<tr style="border-top:1px solid var(--border);">
-            <td style="padding:8px 12px;">${esc(s.batch)}</td><td style="padding:8px 12px;">${esc(s.stockLoc)}</td>
-            <td style="padding:8px 12px;">${s.qty} ${s.unit}</td>
-            <td style="padding:8px 12px;">${esc(s.mfgDate)}</td>
-            <td style="padding:8px 12px;">${esc(s.expDate)}</td>
-            <td style="padding:8px 12px;text-align:center;"><button class="btn btn-primary btn-sm" onclick="CostObject._pickBatch('${esc(s.batch)}','${esc(s.stockLoc)}')">选择</button></td>
+          <tbody>${list.map((s, i) => `<tr style="border-top:1px solid var(--border);">
+            <td style="padding:9px 12px;text-align:center;"><input type="checkbox" class="co-stk-chk" data-i="${i}"></td>
+            <td style="padding:9px 12px;">${esc(s.batch)}</td>
+            <td style="padding:9px 12px;">${esc(s.stockLoc)}</td>
+            <td style="padding:9px 12px;">${s.qty} ${s.unit}</td>
+            <td style="padding:9px 12px;">${esc(s.mfgDate)}</td>
+            <td style="padding:9px 12px;">${esc(s.expDate)}</td>
+            <td style="padding:9px 12px;"><input type="number" class="form-input co-stk-qty" data-i="${i}" placeholder="投用数量" style="width:110px;"></td>
           </tr>`).join('')}</tbody>
         </table>
       </div>`;
+    showModal('库存清单 - 选择投料批次', body, [
+      { text:'取消', cls:'btn-secondary', action:closeModal },
+      { text:'确认选择', cls:'btn-primary', action:() => CostObject._confirmStockPick(id, list) }
+    ], 'modal-lg');
   },
 
-  // 选中某个库存批次：带出批次，并回填库位
-  _pickBatch(batch, loc) {
-    const b = document.getElementById('coOpBatch');
-    const l = document.getElementById('coOpLoc');
-    if (b) b.value = batch;
-    if (l && !l.value) l.value = loc;
-    toast('已选择批次：' + batch);
+  // 从库存清单确认选择：把勾选批次+数量作为行项目带入投料
+  _confirmStockPick(id, list) {
+    const box = document.getElementById('coIssueRows');
+    if (!box) { closeModal(); return; }
+    const chkEls = document.querySelectorAll('.co-stk-chk');
+    const qtyEls = document.querySelectorAll('.co-stk-qty');
+    const qtyMap = {};
+    qtyEls.forEach(el => { qtyMap[el.getAttribute('data-i')] = el.value; });
+    let added = 0;
+    chkEls.forEach(el => {
+      if (!el.checked) return;
+      const i = +el.getAttribute('data-i');
+      const s = list[i];
+      if (!s) return;
+      const qty = (qtyMap[i] || '').trim();
+      if (!qty) { toast('批次 ' + s.batch + ' 未填写投用数量，已跳过'); return; }
+      window._coIssueRows.push({ batch:s.batch, stockLoc:s.stockLoc, qty:qty, unit:s.unit });
+      added++;
+    });
+    closeModal();
+    if (added === 0) { toast('未选择任何批次'); return; }
+    CostObject._renderIssueRows();
+    toast('已带入 ' + added + ' 个批次行项目');
+  },
+
+  // 手动新增一个空白投料行
+  _addIssueRow() {
+    window._coIssueRows = window._coIssueRows || [];
+    window._coIssueRows.push({ batch:'', stockLoc:'', qty:'', unit:'' });
+    CostObject._renderIssueRows();
+  },
+
+  // 删除某一行
+  _removeIssueRow(idx) {
+    window._coIssueRows = window._coIssueRows || [];
+    window._coIssueRows.splice(idx, 1);
+    CostObject._renderIssueRows();
+  },
+
+  // 渲染投料行项目表格
+  _renderIssueRows() {
+    const box = document.getElementById('coIssueRows');
+    if (!box) return;
+    const rows = window._coIssueRows || [];
+    if (rows.length === 0) {
+      box.innerHTML = `<div style="padding:18px;text-align:center;color:var(--text-muted);font-size:13px;">暂无投料行项目，可「从库存选择批次」或「手动新增行」</div>`;
+      return;
+    }
+    box.innerHTML = `
+      <table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
+          <th style="padding:9px 12px;">批次</th><th style="padding:9px 12px;">库位</th>
+          <th style="padding:9px 12px;">投用数量</th><th style="padding:9px 12px;">单位</th>
+          <th style="padding:9px 12px;width:60px;text-align:center;">操作</th>
+        </tr></thead>
+        <tbody>${rows.map((r, i) => `<tr style="border-top:1px solid var(--border);">
+          <td style="padding:6px 12px;"><input class="form-input co-iss-batch" data-i="${i}" value="${esc(r.batch)}" style="width:160px;"></td>
+          <td style="padding:6px 12px;"><input class="form-input co-iss-loc" data-i="${i}" value="${esc(r.stockLoc)}" style="width:110px;"></td>
+          <td style="padding:6px 12px;"><input class="form-input co-iss-qty" data-i="${i}" value="${esc(r.qty)}" style="width:100px;"></td>
+          <td style="padding:6px 12px;"><input class="form-input co-iss-unit" data-i="${i}" value="${esc(r.unit||'')}" style="width:70px;"></td>
+          <td style="padding:6px 12px;text-align:center;"><button class="btn btn-ghost btn-sm" onclick="CostObject._removeIssueRow(${i})">删除</button></td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    // 行内输入即时回写
+    box.querySelectorAll('input').forEach(el => {
+      el.addEventListener('input', () => {
+        const i = +el.getAttribute('data-i');
+        const cls = el.className;
+        if (cls.indexOf('co-iss-batch') >= 0) rows[i].batch = el.value;
+        else if (cls.indexOf('co-iss-loc') >= 0) rows[i].stockLoc = el.value;
+        else if (cls.indexOf('co-iss-qty') >= 0) rows[i].qty = el.value;
+        else if (cls.indexOf('co-iss-unit') >= 0) rows[i].unit = el.value;
+      });
+    });
   },
 
   _onBatchFile(input, id, opKey, opName) {
@@ -516,14 +597,27 @@ const CostObject = {
     const hint = document.getElementById('coBatchHint');
     if (hint) hint.textContent = '已选择文件：' + f.name + '，解析后共 0 行（演示）。点击确认后将批量生成操作记录。';
     toast('已读取文件：' + f.name + '（演示环境，未真正解析）');
-    // 演示：直接生成一条批导记录（带该操作类型的差异化字段）
+    // 演示：直接生成批导记录（带该操作类型的差异化字段）。投料按多批次行生成多条。
     const d = this.data.find(x => x.id === id);
     if (d) {
-      const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:d.qty, unit:d.unit, postDate:'2026-07-14', by:'车间用户A', reversed:false };
-      if (opKey === 'issue') { rec.material = d.basic.material; rec.batch = 'BT-202607-01'; }
-      if (opKey === 'confirm') { rec.op = '0010'; rec.hours = '2.0'; rec.worker = '王师傅'; }
-      if (opKey === 'receipt') { rec.stockLoc = '1000-A-01'; }
-      d.ops.push(rec);
+      if (opKey === 'issue') {
+        // 模拟 Excel 中两行不同批次的投料
+        const demoRows = [
+          { batch:'BT-202606-01-01', stockLoc:'1000-A-01', qty:'120.000', unit:'KG' },
+          { batch:'BT-202606-15-A', stockLoc:'1000-A-01', qty:'80.000', unit:'KG' }
+        ];
+        demoRows.forEach(r => d.ops.push({
+          id:'OP'+Date.now()+'_'+Math.floor(Math.random()*1000),
+          type:opKey, typeName:opName, material:d.basic.material,
+          batch:r.batch, stockLoc:r.stockLoc, qty:r.qty, unit:r.unit,
+          postDate:'2026-07-14', by:'车间用户A', reversed:false
+        }));
+      } else {
+        const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:d.qty, unit:d.unit, postDate:'2026-07-14', by:'车间用户A', reversed:false };
+        if (opKey === 'confirm') { rec.op = '0010'; rec.hours = '2.0'; rec.worker = '王师傅'; }
+        if (opKey === 'receipt') { rec.stockLoc = '1000-A-01'; }
+        d.ops.push(rec);
+      }
     }
   },
 
@@ -535,9 +629,25 @@ const CostObject = {
     const postDate = (document.getElementById('coOpDate') || {}).value || '2026-07-14';
     const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:qty, unit:unit, postDate:postDate, by:'车间用户A', reversed:false };
     if (opKey === 'issue') {
-      rec.material = (document.getElementById('coOpMaterial') || {}).value || d.basic.material || '—';
-      rec.batch = (document.getElementById('coOpBatch') || {}).value || '—';
-      rec.stockLoc = (document.getElementById('coOpLoc') || {}).value || '—';
+      const material = (document.getElementById('coOpMaterial') || {}).value || d.basic.material || '—';
+      const rows = window._coIssueRows || [];
+      if (rows.length === 0) { toast('请至少添加一个投料行项目'); return; }
+      const valid = rows.filter(r => r.batch && r.qty);
+      if (valid.length === 0) { toast('投料行项目需填写批次与数量'); return; }
+      valid.forEach(r => {
+        d.ops.push({
+          id:'OP'+Date.now()+'_'+Math.floor(Math.random()*1000),
+          type:opKey, typeName:opName,
+          material:material, batch:r.batch, stockLoc:r.stockLoc || '—',
+          qty:r.qty, unit:r.unit || d.unit, postDate:postDate, by:'车间用户A', reversed:false
+        });
+      });
+      if (valid.length < rows.length) toast('已忽略 ' + (rows.length - valid.length) + ' 行未填完整的投料');
+      closeModal();
+      toast(opName + '已提交（' + valid.length + ' 个批次）');
+      window._coIssueRows = [];
+      this.openView(id);
+      return;
     } else if (opKey === 'confirm') {
       rec.op = (document.getElementById('coOpOp') || {}).value || '—';
       rec.hours = (document.getElementById('coOpHours') || {}).value || '—';
