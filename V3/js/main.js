@@ -12,43 +12,7 @@ const App = {
       groups: [
         {
           title:'成本对象', items: [
-            { id:'process-order', label:'流程订单', route:'process-order' },
-            { id:'internal-order', label:'内部订单', route:'internal-order' },
-            { id:'cost-center', label:'成本中心', route:'cost-center' },
-            { id:'project-info', label:'项目信息', route:'project-info' }
-          ]
-        },
-        {
-          title:'投料', items: [
-            { id:'issue-order', label:'流程订单投料', route:'issue-order' },
-            { id:'issue-order-batch', label:'流程订单投料-批导', route:'issue-order-batch' },
-            { id:'issue-project', label:'项目投料', route:'issue-project' }
-          ]
-        },
-        {
-          title:'报工', items: [
-            { id:'confirm', label:'报工', route:'confirm' },
-            { id:'confirm-reverse', label:'报工冲销', route:'confirm-reverse' },
-            { id:'confirm-batch', label:'报工-批导', route:'confirm-batch' },
-            { id:'confirm-record', label:'报工记录', route:'confirm-record' }
-          ]
-        },
-        {
-          title:'收货', items: [
-            { id:'goods-receipt', label:'收货', route:'goods-receipt' },
-            { id:'goods-receipt-batch', label:'收货-批导', route:'goods-receipt-batch' }
-          ]
-        },
-        {
-          title:'合箱', items: [
-            { id:'packing', label:'合箱', route:'packing' },
-            { id:'packing-record', label:'合箱记录', route:'packing-record' }
-          ]
-        },
-        {
-          title:'技术性完成', items: [
-            { id:'tech-complete', label:'订单技术性完成', route:'tech-complete' },
-            { id:'tech-complete-record', label:'技术性完成记录', route:'tech-complete-record' }
+            { id:'cost-object', label:'成本对象', route:'cost-object' }
           ]
         }
       ]
@@ -167,6 +131,7 @@ const App = {
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
+    'cost-object': CostObject,
     'safety-stock-alert': SafetyStockAlert
   },
 
