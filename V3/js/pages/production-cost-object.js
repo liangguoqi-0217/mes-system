@@ -120,23 +120,40 @@ const CostObject = {
       </div>`;
   },
 
-  // 行操作：查看在左，其右侧依次放出该成本对象支持的功能按钮
+  // 行操作：每个操作类型只保留一个主按钮，点击后按需弹出「方式选择」（单笔/批导）
   _rowOps(d) {
     const def = this.opDef[d.type] || {};
     let html = `<button class="btn btn-blue btn-sm" onclick="CostObject.openView('${d.id}')">查看</button>`;
     (def.ops || []).forEach(op => {
-      if (op.key === 'issue') {
-        html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">投料</button>`;
-        if (op.modes.indexOf('batch') >= 0) html += `<button class="btn btn-ghost btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','batch')">投料批导</button>`;
-      }
-      if (op.key === 'confirm') {
-        html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">报工</button>`;
-        if (op.modes.indexOf('batch') >= 0) html += `<button class="btn btn-ghost btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','batch')">报工批导</button>`;
-      }
-      if (op.key === 'receipt') html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">收货</button>`;
-      if (op.key === 'techcomp')html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">技术性完成</button>`;
+      html += `<button class="btn btn-primary btn-sm" onclick="CostObject.startOp('${d.id}','${op.key}')">${op.name}</button>`;
     });
     return html;
+  },
+
+  // 点击操作主按钮：若该操作支持多种方式（单笔/批导），先弹出方式选择弹窗；否则直接进单笔
+  startOp(id, opKey) {
+    const d = this.data.find(x => x.id === id);
+    if (!d) return;
+    const def = this.opDef[d.type] || {};
+    const op = (def.ops || []).find(o => o.key === opKey);
+    if (!op) return;
+    const opName = op.name;
+    // 仅单笔：直接进入
+    if (!op.modes || op.modes.indexOf('batch') < 0) { this.doOp(id, opKey, 'single'); return; }
+    // 多方式：弹出选择
+    const body = `
+      <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
+        <div style="font-size:13px;color:var(--text-secondary);">请选择「${opName}」的录入方式：</div>
+        <div role="button" onclick="closeModal();CostObject.doOp('${id}','${opKey}','single')" style="cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <div style="font-weight:600;color:var(--text);">单笔录入</div>
+          <div style="font-size:12px;color:var(--text-muted);">逐条填写表单提交${opKey==='issue'?'（支持多批次行项目）':''}</div>
+        </div>
+        <div role="button" onclick="closeModal();CostObject.doOp('${id}','${opKey}','batch')" style="cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <div style="font-weight:600;color:var(--text);">Excel 批导</div>
+          <div style="font-size:12px;color:var(--text-muted);">下载模板批量填写后导入${opKey==='issue'?'（可含多批次多行）':''}</div>
+        </div>
+      </div>`;
+    showModal(opName + ' - 选择方式', body, [{ text:'取消', cls:'btn-secondary', action:closeModal }], 'modal-sm');
   },
 
   _rows() {
