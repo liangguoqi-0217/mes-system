@@ -20,6 +20,8 @@ const CostObject = {
   opDef: {
     process: {
       name: '流程订单',
+      noLabel: '流程订单编号',
+      noPh: '如 3000000123',
       ops: [
         { key:'issue',    name:'投料', modes:['single','batch'] },
         { key:'confirm',  name:'报工', modes:['single','batch'] },
@@ -27,9 +29,9 @@ const CostObject = {
         { key:'techcomp', name:'技术性完成', modes:['single'] }
       ]
     },
-    internal: { name: '内部订单', ops: [ { key:'issue', name:'投料', modes:['single','batch'] } ] },
-    costc:    { name: '成本中心', ops: [ { key:'issue', name:'投料', modes:['single','batch'] } ] },
-    project:  { name: '项目',     ops: [ { key:'issue', name:'投料', modes:['single','batch'] } ] }
+    internal: { name: '内部订单', noLabel: '内部订单编号', noPh: '如 5000000008', ops: [ { key:'issue', name:'投料', modes:['single','batch'] } ] },
+    costc:    { name: '成本中心', noLabel: '成本中心编号', noPh: '如 9000-1000-01', ops: [ { key:'issue', name:'投料', modes:['single','batch'] } ] },
+    project:  { name: '项目',     noLabel: '项目编号', noPh: '如 R-2026-007', ops: [ { key:'issue', name:'投料', modes:['single','batch'] } ] }
   },
 
   // 模拟成本对象数据
@@ -79,8 +81,11 @@ const CostObject = {
   render() {
     this._seedOps();
     this._applyFilter();
-    const typeName = (this.opDef[this.activeType] || {}).name || '成本对象';
-    return `
+    const def = this.opDef[this.activeType] || {};
+    const typeName = def.name || '成本对象';
+    const noLabel = def.noLabel || '对象编号';
+    const noPh = def.noPh || '如 3000000123';
+    let html = `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:var(--bg);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div>
@@ -92,8 +97,9 @@ const CostObject = {
         <!-- 查询区 -->
         <div style="background:#fff;padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;">
           <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">对象编号</label><input id="coNo" class="form-input" style="width:160px;" placeholder="如 3000000123"></div>
             <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">工厂</label><select id="coPlant" class="form-input" style="width:180px;"><option value="">全部</option><option>1000 山东步长制药工厂</option><option>2001 陕西步长制药工厂</option><option>2002 山东丹红制药工厂</option></select></div>
+            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">{{NO_LABEL}}</label><input id="coNo" class="form-input" style="width:170px;" placeholder="{{NO_PH}}"></div>
+            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">名称</label><input id="coName" class="form-input" style="width:170px;" placeholder="如 阿莫西林颗粒制剂"></div>
             <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">状态</label><select id="coStatus" class="form-input" style="width:140px;"><option value="">全部</option><option value="REL">已下达</option><option value="CRTD">已创建</option><option value="TECO">技术性完成</option></select></div>
             <button class="btn btn-primary btn-sm" onclick="CostObject.search()">查询</button>
             <button class="btn btn-ghost btn-sm" onclick="CostObject.reset()">重置</button>
@@ -106,7 +112,7 @@ const CostObject = {
             <table class="data-table" style="width:100%;border-collapse:collapse;">
               <thead>
                 <tr style="background:#f8fafc;text-align:left;font-size:13px;color:var(--text-secondary);">
-                  <th style="padding:10px 14px;">成本对象编号</th>
+                  <th style="padding:10px 14px;">{{NO_LABEL}}</th>
                   <th style="padding:10px 14px;">名称</th><th style="padding:10px 14px;">工厂</th>
                   <th style="padding:10px 14px;">数量</th><th style="padding:10px 14px;">状态</th>
                   <th style="padding:10px 14px;text-align:center;">操作</th>
@@ -118,6 +124,7 @@ const CostObject = {
           </div>
         </div>
       </div>`;
+    return html.replace(/{{NO_LABEL}}/g, noLabel).replace(/{{NO_PH}}/g, noPh);
   },
 
   // 行操作：每个操作类型只保留一个主按钮，点击后按需弹出「方式选择」（单笔/批导）
@@ -182,11 +189,13 @@ const CostObject = {
   search() {
     const no = (document.getElementById('coNo') || {}).value || '';
     const plant = (document.getElementById('coPlant') || {}).value || '';
+    const name = (document.getElementById('coName') || {}).value || '';
     const status = (document.getElementById('coStatus') || {}).value || '';
     this._applyFilter();
     this.filtered = this.filtered.filter(d =>
       (!no || d.no.indexOf(no) >= 0) &&
       (!plant || d.plantName.indexOf(plant.replace(/^\d+\s*/,'')) >= 0) &&
+      (!name || d.name.indexOf(name) >= 0) &&
       (!status || d.status === status)
     );
     this.refresh();
@@ -194,6 +203,7 @@ const CostObject = {
   reset() {
     const n = document.getElementById('coNo'); if (n) n.value = '';
     const p = document.getElementById('coPlant'); if (p) p.value = '';
+    const nm = document.getElementById('coName'); if (nm) nm.value = '';
     const s = document.getElementById('coStatus'); if (s) s.value = '';
     this.search();
   },
