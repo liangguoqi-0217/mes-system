@@ -125,8 +125,14 @@ const CostObject = {
     const def = this.opDef[d.type] || {};
     let html = `<button class="btn btn-blue btn-sm" onclick="CostObject.openView('${d.id}')">查看</button>`;
     (def.ops || []).forEach(op => {
-      if (op.key === 'issue')   html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">投料</button>`;
-      if (op.key === 'confirm') html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">报工</button>`;
+      if (op.key === 'issue') {
+        html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">投料</button>`;
+        if (op.modes.indexOf('batch') >= 0) html += `<button class="btn btn-ghost btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','batch')">投料批导</button>`;
+      }
+      if (op.key === 'confirm') {
+        html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">报工</button>`;
+        if (op.modes.indexOf('batch') >= 0) html += `<button class="btn btn-ghost btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','batch')">报工批导</button>`;
+      }
       if (op.key === 'receipt') html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">收货</button>`;
       if (op.key === 'techcomp')html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">技术性完成</button>`;
     });
@@ -410,7 +416,10 @@ const CostObject = {
           </div>
           <div id="coBatchHint" style="margin-top:14px;font-size:13px;color:var(--text-secondary);"></div>
         </div>`;
-      showModal(opName + ' - Excel批导', body, [{ text:'关闭', cls:'btn-secondary', action:closeModal }], 'modal-md');
+      showModal(opName + ' - Excel批导', body, [
+        { text:'关闭', cls:'btn-secondary', action:closeModal },
+        { text:'确认导入', cls:'btn-primary', action:() => CostObject._confirmBatch(id, opKey, opName) }
+      ], 'modal-md');
       return;
     }
 
@@ -594,31 +603,43 @@ const CostObject = {
   _onBatchFile(input, id, opKey, opName) {
     if (!input.files || !input.files[0]) return;
     const f = input.files[0];
+    window._coBatchFile = f;
     const hint = document.getElementById('coBatchHint');
-    if (hint) hint.textContent = '已选择文件：' + f.name + '，解析后共 0 行（演示）。点击确认后将批量生成操作记录。';
+    if (hint) hint.textContent = '已选择文件：' + f.name + '（演示环境按模板解析为示例数据）。点击「确认导入」生成操作记录。';
     toast('已读取文件：' + f.name + '（演示环境，未真正解析）');
-    // 演示：直接生成批导记录（带该操作类型的差异化字段）。投料按多批次行生成多条。
+  },
+
+  // 确认导入：演示环境下按模板生成示例记录（投料为多批次多行）
+  _confirmBatch(id, opKey, opName) {
+    const f = window._coBatchFile;
+    if (!f) { toast('请先选择 Excel 文件'); return; }
     const d = this.data.find(x => x.id === id);
-    if (d) {
-      if (opKey === 'issue') {
-        // 模拟 Excel 中两行不同批次的投料
-        const demoRows = [
-          { batch:'BT-202606-01-01', stockLoc:'1000-A-01', qty:'120.000', unit:'KG' },
-          { batch:'BT-202606-15-A', stockLoc:'1000-A-01', qty:'80.000', unit:'KG' }
-        ];
-        demoRows.forEach(r => d.ops.push({
-          id:'OP'+Date.now()+'_'+Math.floor(Math.random()*1000),
-          type:opKey, typeName:opName, material:d.basic.material,
-          batch:r.batch, stockLoc:r.stockLoc, qty:r.qty, unit:r.unit,
-          postDate:'2026-07-14', by:'车间用户A', reversed:false
-        }));
-      } else {
-        const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:d.qty, unit:d.unit, postDate:'2026-07-14', by:'车间用户A', reversed:false };
-        if (opKey === 'confirm') { rec.op = '0010'; rec.hours = '2.0'; rec.worker = '王师傅'; }
-        if (opKey === 'receipt') { rec.stockLoc = '1000-A-01'; }
-        d.ops.push(rec);
-      }
+    if (!d) { closeModal(); return; }
+    let n = 0;
+    if (opKey === 'issue') {
+      // 模拟 Excel 中两行不同批次的投料
+      const demoRows = [
+        { batch:'BT-202606-01-01', stockLoc:'1000-A-01', qty:'120.000', unit:'KG' },
+        { batch:'BT-202606-15-A', stockLoc:'1000-A-01', qty:'80.000', unit:'KG' }
+      ];
+      demoRows.forEach(r => d.ops.push({
+        id:'OP'+Date.now()+'_'+Math.floor(Math.random()*1000),
+        type:opKey, typeName:opName, material:d.basic.material,
+        batch:r.batch, stockLoc:r.stockLoc, qty:r.qty, unit:r.unit,
+        postDate:'2026-07-14', by:'车间用户A', reversed:false
+      }));
+      n = demoRows.length;
+    } else {
+      const rec = { id:'OP'+Date.now(), type:opKey, typeName:opName, qty:d.qty, unit:d.unit, postDate:'2026-07-14', by:'车间用户A', reversed:false };
+      if (opKey === 'confirm') { rec.op = '0010'; rec.hours = '2.0'; rec.worker = '王师傅'; }
+      if (opKey === 'receipt') { rec.stockLoc = '1000-A-01'; }
+      d.ops.push(rec);
+      n = 1;
     }
+    window._coBatchFile = null;
+    closeModal();
+    this.render();
+    toast(opName + '批导完成，共生成 ' + n + ' 条记录');
   },
 
   _submitSingle(id, opKey, opName) {
