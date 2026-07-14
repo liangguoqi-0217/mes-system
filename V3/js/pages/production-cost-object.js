@@ -7,10 +7,14 @@
 //   所有成本对象：可查看「操作记录」，并支持对已完成操作进行「逆向」。
 // 设计遵循 _STANDARD：导航按业务对象收敛、图标克制、查看弹窗内承载操作、删除/逆向采用标记而非物理删除。
 const CostObject = {
-  _version: '1.0-20260714',
+  _version: '1.1-20260714',
   page: 1, pageSize: 12,
   filtered: [],
-  activeType: 'all',
+  activeType: 'process',
+  defaultType: 'process',
+
+  setType(t) { if (t) { this.activeType = t; } },
+
 
   // 各成本对象支持的操作定义
   opDef: {
@@ -63,18 +67,14 @@ const CostObject = {
   render() {
     this._seedOps();
     this._applyFilter();
+    const typeName = (this.opDef[this.activeType] || {}).name || '成本对象';
     return `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:var(--bg);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div>
-            <div style="font-size:18px;font-weight:700;color:var(--text);">成本对象</div>
-            <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">生产管理 → 成本对象</div>
+            <div style="font-size:18px;font-weight:700;color:var(--text);">${typeName}</div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">生产管理 → 成本对象 → ${typeName}</div>
           </div>
-        </div>
-
-        <!-- 类型筛选条 -->
-        <div style="background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:8px;flex-shrink:0;">
-          ${this._typeTabs()}
         </div>
 
         <!-- 查询区 -->
@@ -94,7 +94,7 @@ const CostObject = {
             <table class="data-table" style="width:100%;border-collapse:collapse;">
               <thead>
                 <tr style="background:#f8fafc;text-align:left;font-size:13px;color:var(--text-secondary);">
-                  <th style="padding:10px 14px;">成本对象</th><th style="padding:10px 14px;">类型</th>
+                  <th style="padding:10px 14px;">成本对象编号</th>
                   <th style="padding:10px 14px;">名称</th><th style="padding:10px 14px;">工厂</th>
                   <th style="padding:10px 14px;">数量</th><th style="padding:10px 14px;">状态</th>
                   <th style="padding:10px 14px;text-align:center;">操作</th>
@@ -108,32 +108,35 @@ const CostObject = {
       </div>`;
   },
 
-  _typeTabs() {
-    const tabs = [ {k:'all',n:'全部'}, {k:'process',n:'流程订单'}, {k:'internal',n:'内部订单'}, {k:'costc',n:'成本中心'}, {k:'project',n:'项目'} ];
-    return tabs.map(t => {
-      const active = this.activeType === t.k;
-      const cls = active ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
-      return `<button class="${cls}" onclick="CostObject.switchType('${t.k}')">${t.n}</button>`;
-    }).join('');
+  // 行操作：查看在左，其右侧依次放出该成本对象支持的功能按钮
+  _rowOps(d) {
+    const def = this.opDef[d.type] || {};
+    let html = `<button class="btn btn-blue btn-sm" onclick="CostObject.openView('${d.id}')">查看</button>`;
+    (def.ops || []).forEach(op => {
+      if (op.key === 'issue')   html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">投料</button>`;
+      if (op.key === 'confirm') html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">报工</button>`;
+      if (op.key === 'receipt') html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">收货</button>`;
+      if (op.key === 'techcomp')html += `<button class="btn btn-primary btn-sm" onclick="CostObject.doOp('${d.id}','${op.key}','single')">技术性完成</button>`;
+    });
+    return html;
   },
 
   _rows() {
     return this.filtered.map(d => {
-      const typeName = (this.opDef[d.type] || {}).name || d.type;
       const st = { REL:'badge-blue', CRTD:'badge-yellow', TECO:'badge-green' }[d.status] || 'badge-gray';
       return `<tr style="border-top:1px solid var(--border);font-size:13px;">
         <td style="padding:10px 14px;font-weight:600;color:var(--text);">${esc(d.no)}</td>
-        <td style="padding:10px 14px;color:var(--text-secondary);">${typeName}</td>
         <td style="padding:10px 14px;color:var(--text);">${esc(d.name)}</td>
         <td style="padding:10px 14px;color:var(--text-secondary);">${esc(d.plantName)}</td>
         <td style="padding:10px 14px;color:var(--text);">${d.qty} ${d.unit}</td>
         <td style="padding:10px 14px;"><span class="badge ${st}">${d.statusName}</span></td>
-        <td style="padding:10px 14px;text-align:center;">
-          <button class="btn btn-blue btn-sm" onclick="CostObject.openView('${d.id}')">查看</button>
+        <td style="padding:10px 14px;text-align:center;white-space:nowrap;">
+          <div style="display:inline-flex;gap:6px;">${this._rowOps(d)}</div>
         </td>
       </tr>`;
     }).join('');
   },
+
 
   _applyFilter() {
     let list = this.data.slice();
@@ -141,7 +144,6 @@ const CostObject = {
     this.filtered = list;
   },
 
-  switchType(t) { this.activeType = t; this._applyFilter(); this.refresh(); },
   search() {
     const no = (document.getElementById('coNo') || {}).value || '';
     const plant = (document.getElementById('coPlant') || {}).value || '';

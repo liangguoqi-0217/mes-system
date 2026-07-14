@@ -12,7 +12,10 @@ const App = {
       groups: [
         {
           title:'成本对象', items: [
-            { id:'cost-object', label:'成本对象', route:'cost-object' }
+            { id:'cost-object-process', label:'流程订单', route:'cost-object', pageObj:'CostObject', type:'process' },
+            { id:'cost-object-internal', label:'内部订单', route:'cost-object', pageObj:'CostObject', type:'internal' },
+            { id:'cost-object-costc', label:'成本中心', route:'cost-object', pageObj:'CostObject', type:'costc' },
+            { id:'cost-object-project', label:'项目', route:'cost-object', pageObj:'CostObject', type:'project' }
           ]
         }
       ]
@@ -657,6 +660,10 @@ const App = {
     var pageObj = this.pageMap[route];
     if (pageObj) {
       try {
+        // 把菜单项携带的 type 透传给页面对象（成本对象按类型分流）
+        if (subItem && subItem.type && typeof pageObj.setType === 'function') {
+          pageObj.setType(subItem.type);
+        }
         contentArea.className = 'content-area full-width';
         contentArea.innerHTML = pageObj.render();
         // Special handling: measurement record tabs
