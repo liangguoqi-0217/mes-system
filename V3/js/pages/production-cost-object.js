@@ -114,7 +114,7 @@ const CostObject = {
               <th>工厂</th>
               <th>数量</th>
               <th>状态</th>
-              <th style="width:240px;text-align:center;">操作</th>
+              <th style="width:300px;text-align:center;">操作</th>
             </tr></thead>
             <tbody id="coTableBody"></tbody>
           </table>
@@ -144,7 +144,7 @@ const CostObject = {
     (def.ops || []).forEach(op => {
       html += `<button class="btn btn-primary btn-sm" onclick="CostObject.startOp('${d.id}','${op.key}')">${op.name}</button>`;
     });
-    return html;
+    return `<div class="table-actions">${html}</div>`;
   },
 
   // 点击操作主按钮：若该操作支持多种方式（单笔/批导），先弹出方式选择弹窗；否则直接进单笔
