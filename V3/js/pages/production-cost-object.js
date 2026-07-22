@@ -7,8 +7,8 @@
 //   所有成本对象：可查看「操作记录」，并支持对已完成操作进行「冲销」。
 // 设计遵循 _STANDARD：导航按业务对象收敛、图标克制、查看弹窗内承载操作、删除/冲销采用标记而非物理删除。
 const CostObject = {
-  _version: '1.1-20260714',
-  page: 1, pageSize: 12,
+  _version: '2.0-20260722',
+  page: 1, pageSize: 10,
   filtered: [],
   activeType: 'process',
   defaultType: 'process',
@@ -85,46 +85,56 @@ const CostObject = {
     const typeName = def.name || '成本对象';
     const noLabel = def.noLabel || '对象编号';
     const noPh = def.noPh || '如 3000000123';
+    const total = this.filtered.length;
+    const totalPages = Math.ceil(total / this.pageSize) || 1;
     let html = `
-      <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
-        <div style="background:var(--bg);border-bottom:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div class="co-master" style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
+        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div>
-            <div style="font-size:18px;font-weight:700;color:var(--text);">${typeName}</div>
-            <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">生产管理 → 成本对象 → ${typeName}</div>
+            <div style="font-size:18px;font-weight:700;">{{TYPE_NAME}}</div>
+            <div style="font-size:13px;opacity:0.8;">生产管理 · 成本对象 · {{TYPE_NAME}}</div>
           </div>
         </div>
-
-        <!-- 查询区 -->
-        <div style="background:#fff;padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;">
-          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
-            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">工厂</label><select id="coPlant" class="form-input" style="width:180px;"><option value="">全部</option><option>1000 山东步长制药工厂</option><option>2001 陕西步长制药工厂</option><option>2002 山东丹红制药工厂</option></select></div>
-            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">{{NO_LABEL}}</label><input id="coNo" class="form-input" style="width:170px;" placeholder="{{NO_PH}}"></div>
-            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">名称</label><input id="coName" class="form-input" style="width:170px;" placeholder="如 阿莫西林颗粒制剂"></div>
-            <div><label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;">状态</label><select id="coStatus" class="form-input" style="width:140px;"><option value="">全部</option><option value="REL">已下达</option><option value="CRTD">已创建</option><option value="TECO">技术性完成</option></select></div>
+        <div class="filter-bar" style="flex-shrink:0;">
+          <div class="filter-group"><label>工厂</label><select id="coPlant"><option value="">全部</option><option>1000 山东步长制药工厂</option><option>2001 陕西步长制药工厂</option><option>2002 山东丹红制药工厂</option></select></div>
+          <div class="filter-group"><label>{{NO_LABEL}}</label><input type="text" id="coNo" placeholder="{{NO_PH}}"></div>
+          <div class="filter-group"><label>名称</label><input type="text" id="coName" placeholder="模糊查询"></div>
+          <div class="filter-group"><label>状态</label><select id="coStatus"><option value="">全部</option><option value="REL">已下达</option><option value="CRTD">已创建</option><option value="TECO">技术性完成</option></select></div>
+          <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="CostObject.search()">查询</button>
-            <button class="btn btn-ghost btn-sm" onclick="CostObject.reset()">重置</button>
+            <button class="btn btn-secondary btn-sm" onclick="CostObject.reset()">重置</button>
           </div>
         </div>
-
-        <!-- 列表 -->
-        <div style="flex:1;overflow:auto;padding:16px 24px;background:var(--bg);">
-          <div style="background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-            <table class="data-table" style="width:100%;border-collapse:collapse;">
-              <thead>
-                <tr style="background:#f8fafc;text-align:left;font-size:13px;color:var(--text-secondary);">
-                  <th style="padding:10px 14px;">{{NO_LABEL}}</th>
-                  <th style="padding:10px 14px;">名称</th><th style="padding:10px 14px;">工厂</th>
-                  <th style="padding:10px 14px;">数量</th><th style="padding:10px 14px;">状态</th>
-                  <th style="padding:10px 14px;text-align:center;">操作</th>
-                </tr>
-              </thead>
-              <tbody>${this._rows()}</tbody>
-            </table>
-            ${this.filtered.length === 0 ? '<div style="padding:40px;text-align:center;color:var(--text-muted);font-size:14px;">暂无符合条件的成本对象</div>' : ''}
+        <div class="table-wrapper" style="flex:1;overflow-x:auto;">
+          <table class="data-table" style="min-width:1000px;">
+            <thead><tr>
+              <th style="width:56px;">序号</th>
+              <th>{{NO_LABEL}}</th>
+              <th>名称</th>
+              <th>工厂</th>
+              <th>数量</th>
+              <th>状态</th>
+              <th style="width:240px;text-align:center;">操作</th>
+            </tr></thead>
+            <tbody id="coTableBody"></tbody>
+          </table>
+        </div>
+        <div class="list-toolbar" style="flex-shrink:0;">
+          <div class="list-info"><span class="list-count" id="coCount">共 {{TOTAL}} 条</span></div>
+          <div class="pagination">
+            <button class="pagination-btn" id="coPrev" disabled onclick="CostObject.prevPage()">‹</button>
+            <span class="pagination-info" id="coPageInfo">第 1 / {{TOTALPAGES}} 页</span>
+            <button class="pagination-btn" id="coNext" onclick="CostObject.nextPage()">›</button>
+            <select class="page-size-select" id="coPageSizeSel" onchange="CostObject.changePageSize()"><option value="10">10条</option><option value="20">20条</option><option value="50">50条</option></select>
           </div>
         </div>
       </div>`;
-    return html.replace(/{{NO_LABEL}}/g, noLabel).replace(/{{NO_PH}}/g, noPh);
+    return html
+      .replace(/{{TYPE_NAME}}/g, typeName)
+      .replace(/{{NO_LABEL}}/g, noLabel)
+      .replace(/{{NO_PH}}/g, noPh)
+      .replace(/{{TOTAL}}/g, total)
+      .replace(/{{TOTALPAGES}}/g, totalPages);
   },
 
   // 行操作：每个操作类型只保留一个主按钮，点击后按需弹出「方式选择」（单笔/批导）
@@ -163,22 +173,34 @@ const CostObject = {
     showModal(opName + ' - 选择方式', body, [{ text:'取消', cls:'btn-secondary', action:closeModal }], 'modal-sm');
   },
 
-  _rows() {
-    return this.filtered.map(d => {
+  renderTable() {
+    const start = (this.page - 1) * this.pageSize;
+    const pageRows = this.filtered.slice(start, start + this.pageSize);
+    const totalPages = Math.ceil(this.filtered.length / this.pageSize) || 1;
+    const cnt = document.getElementById('coCount'); if (cnt) cnt.textContent = '共 ' + this.filtered.length + ' 条';
+    const info = document.getElementById('coPageInfo'); if (info) info.textContent = '第 ' + this.page + ' / ' + totalPages + ' 页';
+    const prev = document.getElementById('coPrev'); if (prev) prev.disabled = this.page <= 1;
+    const next = document.getElementById('coNext'); if (next) next.disabled = this.page >= totalPages;
+    const sel = document.getElementById('coPageSizeSel'); if (sel) sel.value = this.pageSize;
+    const body = document.getElementById('coTableBody');
+    if (!body) return;
+    if (pageRows.length === 0) {
+      body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">暂无符合条件的数据</td></tr>`;
+      return;
+    }
+    body.innerHTML = pageRows.map((d, i) => {
       const st = { REL:'badge-blue', CRTD:'badge-yellow', TECO:'badge-green' }[d.status] || 'badge-gray';
-      return `<tr style="border-top:1px solid var(--border);font-size:13px;">
-        <td style="padding:10px 14px;font-weight:600;color:var(--text);">${esc(d.no)}</td>
-        <td style="padding:10px 14px;color:var(--text);">${esc(d.name)}</td>
-        <td style="padding:10px 14px;color:var(--text-secondary);">${esc(d.plantName)}</td>
-        <td style="padding:10px 14px;color:var(--text);">${d.qty} ${d.unit}</td>
-        <td style="padding:10px 14px;"><span class="badge ${st}">${d.statusName}</span></td>
-        <td style="padding:10px 14px;text-align:center;white-space:nowrap;">
-          <div style="display:inline-flex;gap:6px;">${this._rowOps(d)}</div>
-        </td>
+      return `<tr>
+        <td>${start + i + 1}</td>
+        <td style="color:var(--primary-lighter);font-weight:600;">${esc(d.no)}</td>
+        <td>${esc(d.name)}</td>
+        <td>${esc(d.plantName)}</td>
+        <td>${d.qty} ${d.unit}</td>
+        <td><span class="badge ${st}">${d.statusName}</span></td>
+        <td style="text-align:center;white-space:nowrap;"><div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:center;">${this._rowOps(d)}</div></td>
       </tr>`;
     }).join('');
   },
-
 
   _applyFilter() {
     let list = this.data.slice();
@@ -198,20 +220,24 @@ const CostObject = {
       (!name || d.name.indexOf(name) >= 0) &&
       (!status || d.status === status)
     );
-    this.refresh();
+    this.page = 1;
+    this.renderTable();
   },
   reset() {
     const n = document.getElementById('coNo'); if (n) n.value = '';
     const p = document.getElementById('coPlant'); if (p) p.value = '';
     const nm = document.getElementById('coName'); if (nm) nm.value = '';
     const s = document.getElementById('coStatus'); if (s) s.value = '';
-    this.search();
+    this._applyFilter();
+    this.page = 1;
+    this.renderTable();
   },
 
-  refresh() {
-    const ca = document.getElementById('contentArea');
-    if (ca) { ca.innerHTML = this.render(); }
-  },
+  prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
+  nextPage() { if (this.page < Math.ceil(this.filtered.length / this.pageSize)) { this.page++; this.renderTable(); } },
+  changePageSize() { this.pageSize = parseInt(document.getElementById('coPageSizeSel').value); this.page = 1; this.renderTable(); },
+
+  refresh() { this.renderTable(); },
 
   // ==================== 查看弹窗（大） ====================
   openView(id) {
@@ -279,17 +305,19 @@ const CostObject = {
 
   _basicTab(d) {
     const b = d.basic || {};
+    const typeName = (this.opDef[d.type]||{}).name || d.type;
+    const noLabel = (this.opDef[d.type]||{}).noLabel || '对象编号';
     const rows = [
-      ['成本对象编号', d.no], ['成本对象类型', (this.opDef[d.type]||{}).name || d.type],
-      ['对象名称', d.name], ['工厂', d.plantName],
+      [noLabel, d.no], ['成本对象类型', typeName],
+      ['名称', d.name], ['工厂', d.plantName],
       ['批次', b.batch], ['关联物料', b.material],
       ['工作中心', b.workCenter], ['生产版本', b.prodVer],
       ['开始日期', b.startDate], ['结束日期', b.endDate],
       ['数量', d.qty + ' ' + d.unit], ['状态', d.statusName]
     ];
-    return `<div style="display:grid;grid-template-columns:140px 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:13px;">
-      ${rows.map(r => `<div style="background:#f8fafc;padding:10px 14px;color:var(--text-secondary);">${r[0]}</div><div style="background:#fff;padding:10px 14px;color:var(--text);">${esc(r[1]||'—')}</div>`).join('')}
-    </div>`;
+    return `<dl class="detail-grid">
+      ${rows.map(r => `<div class="detail-item"><dt>${r[0]}</dt><dd>${esc(r[1]||'—')}</dd></div>`).join('')}
+    </dl>`;
   },
 
   _routingTab(d) {
@@ -665,7 +693,7 @@ const CostObject = {
     }
     window._coBatchFile = null;
     closeModal();
-    this.render();
+    this.renderTable();
     toast(opName + '批导完成，共生成 ' + n + ' 条记录');
   },
 
@@ -746,5 +774,5 @@ const CostObject = {
     this.openView(id);
   },
 
-  init() {}
+  init() { this.page = 1; this.renderTable(); }
 };
