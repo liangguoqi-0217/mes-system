@@ -159,18 +159,18 @@ const CostObject = {
     if (!op.modes || op.modes.indexOf('batch') < 0) { this.doOp(id, opKey, 'single'); return; }
     // 多方式：弹出选择
     const body = `
-      <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
-        <div style="font-size:13px;color:var(--text-secondary);">请选择「${opName}」的录入方式：</div>
-        <div role="button" onclick="closeModal();CostObject.doOp('${id}','${opKey}','single')" style="cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
-          <div style="font-weight:600;color:var(--text);">单笔录入</div>
-          <div style="font-size:12px;color:var(--text-muted);">逐条填写表单提交${opKey==='issue'?'（支持多批次行项目）':''}</div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">请选择「${opName}」的录入方式：</div>
+      <div class="choice-list">
+        <div class="choice-item" onclick="closeModal();CostObject.doOp('${id}','${opKey}','single')">
+          <div class="ci-title">单笔录入</div>
+          <div class="ci-desc">逐条填写表单提交${opKey==='issue'?'（支持多批次行项目）':''}</div>
         </div>
-        <div role="button" onclick="closeModal();CostObject.doOp('${id}','${opKey}','batch')" style="cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
-          <div style="font-weight:600;color:var(--text);">Excel 批导</div>
-          <div style="font-size:12px;color:var(--text-muted);">下载模板批量填写后导入${opKey==='issue'?'（可含多批次多行）':''}</div>
+        <div class="choice-item" onclick="closeModal();CostObject.doOp('${id}','${opKey}','batch')">
+          <div class="ci-title">Excel 批导</div>
+          <div class="ci-desc">下载模板批量填写后导入${opKey==='issue'?'（可含多批次多行）':''}</div>
         </div>
       </div>`;
-    showModal(opName + ' - 选择方式', body, [{ text:'取消', cls:'btn-secondary', action:closeModal }], 'modal-sm');
+    showModal(opName + ' - 选择方式', body, [{ text:'取消', cls:'btn-secondary', action:closeModal }], 'modal-md');
   },
 
   renderTable() {
@@ -255,9 +255,7 @@ const CostObject = {
         </div>
 
         <!-- Tabs（行操作列已承载投料/报工等功能入口，查看弹窗内不再重复） -->
-        <div id="coTabsBar" style="display:flex;gap:4px;border-bottom:1px solid var(--border);flex-shrink:0;">
-          ${this._tabs(d)}
-        </div>
+        ${this._tabs(d)}
         <div style="flex:1;overflow:auto;padding:16px 4px;" id="coTabBody">${this._tabContent(d, 'basic')}</div>
       </div>`;
 
@@ -272,13 +270,7 @@ const CostObject = {
         const t = el.getAttribute('data-co-tab');
         const d2 = CostObject.data.find(x => x.id === window._coCurrent);
         if (!d2) return;
-        tabsBar.querySelectorAll('[data-co-tab]').forEach(x => {
-          const on = x.getAttribute('data-co-tab') === t;
-          x.classList.toggle('active', on);
-          x.style.color = on ? 'var(--primary)' : 'var(--text-secondary)';
-          x.style.borderBottomColor = on ? 'var(--primary)' : 'transparent';
-          x.style.fontWeight = on ? '600' : '400';
-        });
+        tabsBar.querySelectorAll('[data-co-tab]').forEach(x => x.classList.toggle('active', x.getAttribute('data-co-tab') === t));
         const bd = document.getElementById('coTabBody');
         if (bd) bd.innerHTML = CostObject._tabContent(d2, t);
         if (t === 'ops') setTimeout(() => CostObject._bindOpsSub(), 0);
@@ -292,7 +284,7 @@ const CostObject = {
     if (d.type === 'process') {
       tabs.splice(1, 0, {k:'routing',n:'工序信息'}, {k:'bom',n:'物料清单'});
     }
-    return tabs.map((t, i) => `<div data-co-tab="${t.k}" class="co-tab ${i===0?'active':''}" style="padding:10px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;${i===0?'color:var(--primary);border-bottom-color:var(--primary);font-weight:600;':'color:var(--text-secondary);'}">${t.n}</div>`).join('');
+    return `<div class="tabs" id="coTabsBar">` + tabs.map((t, i) => `<div data-co-tab="${t.k}" class="tab ${i===0?'active':''}">${t.n}</div>`).join('') + `</div>`;
   },
 
   _tabContent(d, tab) {
@@ -328,15 +320,15 @@ const CostObject = {
       { op:'0040', name:'总混', wc:'WC-PROD-01', std:'1.5 h', status:'未确认' },
       { op:'0050', name:'压片', wc:'WC-PROD-02', std:'5.0 h', status:'未确认' }
     ];
-    return `<table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
-        <th style="padding:10px 14px;">工序</th><th style="padding:10px 14px;">工序名称</th>
-        <th style="padding:10px 14px;">工作中心</th><th style="padding:10px 14px;">标准工时</th>
-        <th style="padding:10px 14px;">报工状态</th></tr></thead>
-      <tbody>${ops.map(o => `<tr style="border-top:1px solid var(--border);">
-        <td style="padding:10px 14px;">${o.op}</td><td style="padding:10px 14px;">${o.name}</td>
-        <td style="padding:10px 14px;">${o.wc}</td><td style="padding:10px 14px;">${o.std}</td>
-        <td style="padding:10px 14px;">${o.status}</td></tr>`).join('')}</tbody>
+    return `<table class="data-table">
+      <thead><tr>
+        <th>工序</th><th>工序名称</th>
+        <th>工作中心</th><th>标准工时</th>
+        <th>报工状态</th></tr></thead>
+      <tbody>${ops.map(o => `<tr>
+        <td>${o.op}</td><td>${o.name}</td>
+        <td>${o.wc}</td><td>${o.std}</td>
+        <td>${o.status}</td></tr>`).join('')}</tbody>
     </table>`;
   },
 
@@ -347,13 +339,13 @@ const CostObject = {
       { mat:'MAT-10003', name:'硬脂酸镁', qty:'5.000', unit:'KG', pos:'0030' },
       { mat:'MAT-20001', name:'胶囊壳#0', qty:'500000.000', unit:'EA', pos:'0040' }
     ];
-    return `<table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
-        <th style="padding:10px 14px;">项次</th><th style="padding:10px 14px;">物料编码</th>
-        <th style="padding:10px 14px;">物料名称</th><th style="padding:10px 14px;">需求数量</th></tr></thead>
-      <tbody>${items.map(i => `<tr style="border-top:1px solid var(--border);">
-        <td style="padding:10px 14px;">${i.pos}</td><td style="padding:10px 14px;">${i.mat}</td>
-        <td style="padding:10px 14px;">${i.name}</td><td style="padding:10px 14px;">${i.qty} ${i.unit}</td></tr>`).join('')}</tbody>
+    return `<table class="data-table">
+      <thead><tr>
+        <th>项次</th><th>物料编码</th>
+        <th>物料名称</th><th>需求数量</th></tr></thead>
+      <tbody>${items.map(i => `<tr>
+        <td>${i.pos}</td><td>${i.mat}</td>
+        <td>${i.name}</td><td>${i.qty} ${i.unit}</td></tr>`).join('')}</tbody>
     </table>`;
   },
 
@@ -366,13 +358,10 @@ const CostObject = {
     const titles = { issue:'投料', confirm:'报工', receipt:'收货', techcomp:'技术性完成' };
     const counts = {};
     groups.forEach(g => counts[g] = d.ops.filter(o => o.type === g).length);
-    const subBar = groups.map((g, i) => `
-      <div data-co-ops="${g}" class="co-ops-tab ${i===0?'active':''}" style="padding:8px 16px;font-size:13px;cursor:pointer;border-bottom:2px solid ${i===0?'var(--primary)':'transparent'};color:${i===0?'var(--primary)':'var(--text-secondary)'};font-weight:${i===0?'600':'400'};">
-        ${titles[g]} <span class="badge ${counts[g]?'badge-blue':'badge-gray'}" style="margin-left:4px;">${counts[g]}</span>
-      </div>`).join('');
+    const subBar = groups.map((g, i) => `<div data-co-ops="${g}" class="tab ${i===0?'active':''}">${titles[g]} <span class="badge ${counts[g]?'badge-blue':'badge-gray'}" style="margin-left:4px;">${counts[g]}</span></div>`).join('');
     const first = groups[0];
     return `
-      <div id="coOpsSub" style="display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:12px;">
+      <div class="tabs" id="coOpsSub">
         ${subBar}
       </div>
       <div id="coOpsBody">${this._opsTable(first, d.ops.filter(o => o.type === first), d)}</div>`;
@@ -389,12 +378,7 @@ const CostObject = {
       const g = el.getAttribute('data-co-ops');
       const d = CostObject.data.find(x => x.id === window._coCurrent);
       if (!d) return;
-      bar.querySelectorAll('[data-co-ops]').forEach(x => {
-        const on = x.getAttribute('data-co-ops') === g;
-        x.style.color = on ? 'var(--primary)' : 'var(--text-secondary)';
-        x.style.borderBottomColor = on ? 'var(--primary)' : 'transparent';
-        x.style.fontWeight = on ? '600' : '400';
-      });
+      bar.querySelectorAll('[data-co-ops]').forEach(x => x.classList.toggle('active', x.getAttribute('data-co-ops') === g));
       const bd = document.getElementById('coOpsBody');
       if (bd) bd.innerHTML = CostObject._opsTable(g, d.ops.filter(o => o.type === g), d);
     });
@@ -407,37 +391,37 @@ const CostObject = {
     const strike = (o) => o.reversed ? 'color:var(--text-muted);text-decoration:line-through;' : '';
 
     if (type === 'issue') {
-      head = `<th style="padding:10px 14px;">物料</th><th style="padding:10px 14px;">批次</th><th style="padding:10px 14px;">投料数量</th><th style="padding:10px 14px;">单位</th><th style="padding:10px 14px;">过账日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
-      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
-        <td style="padding:10px 14px;">${esc(o.material||'—')}</td><td style="padding:10px 14px;">${esc(o.batch||'—')}</td>
-        <td style="padding:10px 14px;">${o.qty}</td><td style="padding:10px 14px;">${o.unit}</td>
-        <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
-        <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+      head = `<th>物料</th><th>批次</th><th>投料数量</th><th>单位</th><th>过账日期</th><th>操作人</th><th>状态</th><th style="text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="${strike(o)}">
+        <td>${esc(o.material||'—')}</td><td>${esc(o.batch||'—')}</td>
+        <td>${o.qty}</td><td>${o.unit}</td>
+        <td>${esc(o.postDate||'—')}</td><td>${esc(o.by)}</td>
+        <td>${reversed(o)}</td><td style="text-align:center;">${revBtn(o)}</td></tr>`).join('');
     } else if (type === 'confirm') {
-      head = `<th style="padding:10px 14px;">工序</th><th style="padding:10px 14px;">报工数量</th><th style="padding:10px 14px;">单位</th><th style="padding:10px 14px;">工时(h)</th><th style="padding:10px 14px;">人工</th><th style="padding:10px 14px;">过账日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
-      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
-        <td style="padding:10px 14px;">${esc(o.op||'—')}</td><td style="padding:10px 14px;">${o.qty}</td><td style="padding:10px 14px;">${o.unit}</td>
-        <td style="padding:10px 14px;">${o.hours||'—'}</td><td style="padding:10px 14px;">${esc(o.worker||'—')}</td>
-        <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
-        <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+      head = `<th>工序</th><th>报工数量</th><th>单位</th><th>工时(h)</th><th>人工</th><th>过账日期</th><th>操作人</th><th>状态</th><th style="text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="${strike(o)}">
+        <td>${esc(o.op||'—')}</td><td>${o.qty}</td><td>${o.unit}</td>
+        <td>${o.hours||'—'}</td><td>${esc(o.worker||'—')}</td>
+        <td>${esc(o.postDate||'—')}</td><td>${esc(o.by)}</td>
+        <td>${reversed(o)}</td><td style="text-align:center;">${revBtn(o)}</td></tr>`).join('');
     } else if (type === 'receipt') {
-      head = `<th style="padding:10px 14px;">收货数量</th><th style="padding:10px 14px;">单位</th><th style="padding:10px 14px;">库位</th><th style="padding:10px 14px;">过账日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
-      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
-        <td style="padding:10px 14px;">${o.qty}</td><td style="padding:10px 14px;">${o.unit}</td>
-        <td style="padding:10px 14px;">${esc(o.stockLoc||'—')}</td><td style="padding:10px 14px;">${esc(o.postDate||'—')}</td>
-        <td style="padding:10px 14px;">${esc(o.by)}</td><td style="padding:10px 14px;">${reversed(o)}</td>
-        <td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+      head = `<th>收货数量</th><th>单位</th><th>库位</th><th>过账日期</th><th>操作人</th><th>状态</th><th style="text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="${strike(o)}">
+        <td>${o.qty}</td><td>${o.unit}</td>
+        <td>${esc(o.stockLoc||'—')}</td><td>${esc(o.postDate||'—')}</td>
+        <td>${esc(o.by)}</td><td>${reversed(o)}</td>
+        <td style="text-align:center;">${revBtn(o)}</td></tr>`).join('');
     } else if (type === 'techcomp') {
-      head = `<th style="padding:10px 14px;">完成日期</th><th style="padding:10px 14px;">操作人</th><th style="padding:10px 14px;">状态</th><th style="padding:10px 14px;text-align:center;">操作</th>`;
-      body = rows.map(o => `<tr style="border-top:1px solid var(--border);${strike(o)}">
-        <td style="padding:10px 14px;">${esc(o.postDate||'—')}</td><td style="padding:10px 14px;">${esc(o.by)}</td>
-        <td style="padding:10px 14px;">${reversed(o)}</td><td style="padding:10px 14px;text-align:center;">${revBtn(o)}</td></tr>`).join('');
+      head = `<th>完成日期</th><th>操作人</th><th>状态</th><th style="text-align:center;">操作</th>`;
+      body = rows.map(o => `<tr style="${strike(o)}">
+        <td>${esc(o.postDate||'—')}</td><td>${esc(o.by)}</td>
+        <td>${reversed(o)}</td><td style="text-align:center;">${revBtn(o)}</td></tr>`).join('');
     }
     if (!rows || rows.length === 0) {
       return `<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;">暂无该类型操作记录</div>`;
     }
-    return `<table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">${head}</tr></thead>
+    return `<table class="data-table">
+      <thead><tr>${head}</tr></thead>
       <tbody>${body}</tbody></table>`;
   },
 
@@ -474,61 +458,44 @@ const CostObject = {
       showModal(opName + ' - Excel批导', body, [
         { text:'关闭', cls:'btn-secondary', action:closeModal },
         { text:'确认导入', cls:'btn-primary', action:() => CostObject._confirmBatch(id, opKey, opName) }
-      ], 'modal-md');
+      ], 'modal-lg');
       return;
     }
 
     // 单笔：录入表单（不同操作类型，字段不同）
-    let extra = `
-      <label style="color:var(--text-secondary);">过账日期</label>
-      <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+    let extra = `<div class="form-group"><label>过账日期</label><input id="coOpDate" type="date" value="2026-07-14"></div>`;
     if (opKey === 'issue') {
       const mat = d.basic.material && d.basic.material !== '—' ? d.basic.material : '';
       extra = `
-        <label style="color:var(--text-secondary);">物料</label>
-        <input id="coOpMaterial" class="form-input" placeholder="如 MAT-10001 阿莫西林原料药" value="${esc(mat)}">
-        <label style="color:var(--text-secondary);">过账日期</label>
-        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">
-        <div style="grid-column:1 / -1;margin:6px 0 2px;display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:13px;color:var(--text);font-weight:600;">投料行项目（可多个批次）</span>
-          <div style="display:flex;gap:8px;">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._openStockPicker('${id}')">从库存选择批次</button>
-            <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._addIssueRow()">手动新增行</button>
-          </div>
+        <div class="form-group"><label>物料</label><input id="coOpMaterial" placeholder="如 MAT-10001 阿莫西林原料药" value="${esc(mat)}"></div>
+        <div class="form-group"><label>过账日期</label><input id="coOpDate" type="date" value="2026-07-14"></div>
+        <div class="form-section-title" style="grid-column:1 / -1;">投料行项目（可多个批次）</div>
+        <div style="grid-column:1 / -1;display:flex;gap:8px;margin-bottom:4px;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._openStockPicker('${id}')">从库存选择批次</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="CostObject._addIssueRow()">手动新增行</button>
         </div>
-        <div id="coIssueRows" style="grid-column:1 / -1;border:1px solid var(--border);border-radius:8px;overflow:hidden;"></div>
-        <input type="hidden" id="coIssueData">`;
+        <div id="coIssueRows" style="grid-column:1 / -1;border:1px solid var(--border);border-radius:8px;overflow:hidden;"></div>`;
     } else if (opKey === 'confirm') {
       extra = `
-        <label style="color:var(--text-secondary);">工序</label>
-        <input id="coOpOp" class="form-input" placeholder="如 0020 混合制粒">
-        <label style="color:var(--text-secondary);">工时(h)</label>
-        <input id="coOpHours" class="form-input" placeholder="如 3.5">
-        <label style="color:var(--text-secondary);">人工</label>
-        <input id="coOpWorker" class="form-input" placeholder="如 王师傅">
-        <label style="color:var(--text-secondary);">过账日期</label>
-        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+        <div class="form-group"><label>工序</label><input id="coOpOp" placeholder="如 0020 混合制粒"></div>
+        <div class="form-group"><label>工时(h)</label><input id="coOpHours" placeholder="如 3.5"></div>
+        <div class="form-group"><label>人工</label><input id="coOpWorker" placeholder="如 王师傅"></div>
+        <div class="form-group"><label>过账日期</label><input id="coOpDate" type="date" value="2026-07-14"></div>`;
     } else if (opKey === 'receipt') {
       extra = `
-        <label style="color:var(--text-secondary);">库位</label>
-        <input id="coOpLoc" class="form-input" placeholder="如 1000-A-01">
-        <label style="color:var(--text-secondary);">过账日期</label>
-        <input id="coOpDate" class="form-input" type="date" value="2026-07-14">`;
+        <div class="form-group"><label>库位</label><input id="coOpLoc" placeholder="如 1000-A-01"></div>
+        <div class="form-group"><label>过账日期</label><input id="coOpDate" type="date" value="2026-07-14"></div>`;
     }
     const body = `
-      <div style="font-size:14px;color:var(--text);">
-        <div style="display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin-bottom:14px;">
-          <label style="color:var(--text-secondary);">${opName}数量</label>
-          <input id="coOpQty" class="form-input" placeholder="请输入数量" value="${d.qty}">
-          <label style="color:var(--text-secondary);">单位</label>
-          <input id="coOpUnit" class="form-input" value="${d.unit}" readonly>
-          ${extra}
-        </div>
+      <div class="form-grid">
+        <div class="form-group"><label>${opName}数量</label><input id="coOpQty" placeholder="请输入数量" value="${d.qty}"></div>
+        <div class="form-group"><label>单位</label><input id="coOpUnit" value="${d.unit}" readonly></div>
+        ${extra}
       </div>`;
     showModal(opName + ' - 单笔录入', body, [
       { text:'取消', cls:'btn-secondary', action:closeModal },
       { text:'确认提交', cls:'btn-primary', action:() => CostObject._submitSingle(id, opKey, opName) }
-    ], 'modal-md');
+    ], 'modal-lg');
     if (opKey === 'issue') {
       // 默认预填一行空白行项目，方便直接录入
       window._coIssueRows = [];
@@ -554,22 +521,22 @@ const CostObject = {
     const body = `
       <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;">筛选条件：工厂 ${esc(d.plant||'—')} ＋ 物料「${esc(material)}」。勾选批次并在「本次投用数量」填写数量，可同时选择多个批次。</div>
       <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:340px;overflow:auto;">
-        <table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);position:sticky;top:0;">
-            <th style="padding:9px 12px;width:42px;text-align:center;">选</th>
-            <th style="padding:9px 12px;">批次</th><th style="padding:9px 12px;">库位</th>
-            <th style="padding:9px 12px;">可用数量</th><th style="padding:9px 12px;">生产日期</th>
-            <th style="padding:9px 12px;">有效期至</th>
-            <th style="padding:9px 12px;">本次投用数量</th>
+        <table class="clean-op-table">
+          <thead><tr>
+            <th style="width:42px;text-align:center;">选</th>
+            <th>批次</th><th>库位</th>
+            <th>可用数量</th><th>生产日期</th>
+            <th>有效期至</th>
+            <th>本次投用数量</th>
           </tr></thead>
-          <tbody>${list.map((s, i) => `<tr style="border-top:1px solid var(--border);">
-            <td style="padding:9px 12px;text-align:center;"><input type="checkbox" class="co-stk-chk" data-i="${i}"></td>
-            <td style="padding:9px 12px;">${esc(s.batch)}</td>
-            <td style="padding:9px 12px;">${esc(s.stockLoc)}</td>
-            <td style="padding:9px 12px;">${s.qty} ${s.unit}</td>
-            <td style="padding:9px 12px;">${esc(s.mfgDate)}</td>
-            <td style="padding:9px 12px;">${esc(s.expDate)}</td>
-            <td style="padding:9px 12px;"><input type="number" class="form-input co-stk-qty" data-i="${i}" placeholder="投用数量" style="width:110px;"></td>
+          <tbody>${list.map((s, i) => `<tr>
+            <td style="text-align:center;"><input type="checkbox" class="co-stk-chk" data-i="${i}"></td>
+            <td>${esc(s.batch)}</td>
+            <td>${esc(s.stockLoc)}</td>
+            <td>${s.qty} ${s.unit}</td>
+            <td>${esc(s.mfgDate)}</td>
+            <td>${esc(s.expDate)}</td>
+            <td><input type="text" class="co-stk-qty" data-i="${i}" placeholder="投用数量"></td>
           </tr>`).join('')}</tbody>
         </table>
       </div>`;
@@ -628,18 +595,18 @@ const CostObject = {
       return;
     }
     box.innerHTML = `
-      <table class="data-table" style="width:100%;border-collapse:collapse;font-size:13px;">
-        <thead><tr style="background:#f8fafc;text-align:left;color:var(--text-secondary);">
-          <th style="padding:9px 12px;">批次</th><th style="padding:9px 12px;">库位</th>
-          <th style="padding:9px 12px;">投用数量</th><th style="padding:9px 12px;">单位</th>
-          <th style="padding:9px 12px;width:60px;text-align:center;">操作</th>
+      <table class="clean-op-table">
+        <thead><tr>
+          <th>批次</th><th>库位</th>
+          <th>投用数量</th><th>单位</th>
+          <th style="width:60px;text-align:center;">操作</th>
         </tr></thead>
-        <tbody>${rows.map((r, i) => `<tr style="border-top:1px solid var(--border);">
-          <td style="padding:6px 12px;"><input class="form-input co-iss-batch" data-i="${i}" value="${esc(r.batch)}" style="width:160px;"></td>
-          <td style="padding:6px 12px;"><input class="form-input co-iss-loc" data-i="${i}" value="${esc(r.stockLoc)}" style="width:110px;"></td>
-          <td style="padding:6px 12px;"><input class="form-input co-iss-qty" data-i="${i}" value="${esc(r.qty)}" style="width:100px;"></td>
-          <td style="padding:6px 12px;"><input class="form-input co-iss-unit" data-i="${i}" value="${esc(r.unit||'')}" style="width:70px;"></td>
-          <td style="padding:6px 12px;text-align:center;"><button class="btn btn-ghost btn-sm" onclick="CostObject._removeIssueRow(${i})">删除</button></td>
+        <tbody>${rows.map((r, i) => `<tr>
+          <td><input class="co-iss-batch" data-i="${i}" value="${esc(r.batch)}"></td>
+          <td><input class="co-iss-loc" data-i="${i}" value="${esc(r.stockLoc)}"></td>
+          <td><input class="co-iss-qty" data-i="${i}" value="${esc(r.qty)}"></td>
+          <td><input class="co-iss-unit" data-i="${i}" value="${esc(r.unit||'')}"></td>
+          <td style="text-align:center;"><button class="btn btn-ghost btn-sm" onclick="CostObject._removeIssueRow(${i})">删除</button></td>
         </tr>`).join('')}</tbody>
       </table>`;
     // 行内输入即时回写
@@ -748,18 +715,22 @@ const CostObject = {
     const body = `
       <div style="font-size:14px;color:var(--text);line-height:1.7;">
         <p>将对以下操作执行冲销：</p>
-        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;margin:12px 0;font-size:13px;">
+        <div class="info-box">
           <div><strong>操作：</strong>${op.typeName}</div>
           <div><strong>数量：</strong>${op.qty} ${op.unit}</div>
           <div><strong>日期：</strong>${op.postDate || '—'}</div>
         </div>
-        <label style="display:block;color:var(--text-secondary);font-size:13px;margin-bottom:4px;">冲销原因（必填）</label>
-        <textarea id="coRevReason" class="form-input" rows="3" placeholder="请填写冲销原因" style="width:100%;"></textarea>
+      </div>
+      <div class="form-grid" style="margin-top:14px;">
+        <div class="form-group" style="grid-column:1 / -1;">
+          <label>冲销原因（必填）</label>
+          <textarea id="coRevReason" rows="3" placeholder="请填写冲销原因"></textarea>
+        </div>
       </div>`;
     showModal('冲销确认', body, [
       { text:'取消', cls:'btn-secondary', action:closeModal },
       { text:'确认冲销', cls:'btn-danger', action:() => CostObject._confirmReverse(id, opId) }
-    ], 'modal-md');
+    ], 'modal-lg');
   },
 
   _confirmReverse(id, opId) {
