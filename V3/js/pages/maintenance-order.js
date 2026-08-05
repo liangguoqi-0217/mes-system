@@ -58,7 +58,6 @@ const MfOrder = {
     if(d.orderStatus==='dispatched')btns+=` <button class="btn btn-sm btn-green" onclick="MfOrder.startExec('${d.id}')">开始执行</button>`;
     if(d.orderStatus==='executing')btns+=` <button class="btn btn-sm btn-purple" onclick="MfOrder.finishExec('${d.id}')">完工报工</button>`;
     if(d.orderStatus==='acceptance')btns+=` <button class="btn btn-sm btn-green" onclick="MfOrder.accept('${d.id}')">验收</button>`;
-    btns+=` <button class="btn btn-sm btn-outline" onclick="MfOrder.print('${d.id}')">打印</button>`;
     return `<div class="table-actions">${btns}</div>`;
   },
 
@@ -175,7 +174,7 @@ const MfOrder = {
     html+=`</div></div>
       <div class="form-bottom-bar" style="background:white;border-top:1px solid var(--border);padding:10px 20px;display:flex;justify-content:space-between;">
         <div>${this._formBtns(d,isView)}</div>
-        <div><button class="btn btn-outline btn-sm" onclick="MfOrder.print('${d.id}')">打印</button><button class="btn btn-outline btn-sm" style="margin-left:6px;" onclick="MfOrder.exportDoc('${d.id}')">导出</button></div>
+        <div><button class="btn btn-outline btn-sm" onclick="MfOrder.exportDoc('${d.id}')">导出</button></div>
       </div></div>`;
     return html;
   },
@@ -228,7 +227,6 @@ const MfOrder = {
 
   viewSource(no){toast('跳转至通知单：'+no+'（演示模式，可穿透查询）');},
 
-  print(id){const d=mfOrderData.find(x=>x.id===id)||{};toast('打印工单：'+(d.docNo||'')+'（演示模式）');},
   exportDoc(id){const d=mfOrderData.find(x=>x.id===id)||{};toast('导出工单：'+(d.docNo||'')+'（演示模式，导出PDF/Excel）');}
 };
 */

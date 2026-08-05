@@ -124,7 +124,6 @@ const EquipmentStatusChange = {
             <button class="btn btn-sm btn-outline" onclick="EquipmentStatusChange.detail('${d.id}')">查看</button>
             ${d.status === 'draft' ? `<button class="btn btn-sm btn-blue" onclick="EquipmentStatusChange.submit('${d.id}')">提交</button>` : ''}
             ${d.status === 'pending' ? `<button class="btn btn-sm btn-success" onclick="EquipmentStatusChange.approve('${d.id}')">审批</button>` : ''}
-            <button class="btn btn-sm btn-outline" onclick="EquipmentStatusChange.print('${d.id}')">打印</button>
           </div>
         </td>
       </tr>`;
@@ -322,9 +321,5 @@ const EquipmentStatusChange = {
     EquipmentStatusChange.init();
   },
 
-  print(id) {
-    const d = eqStatusChangeData.find(item => item.id === id);
-    if (!d) return;
-    toast('打印功能：正在生成「' + d.docNo + '」变更单打印预览...\n\n（当前为演示模式，实际对接打印服务）');
-  }
+  // print removed — see git history
 };

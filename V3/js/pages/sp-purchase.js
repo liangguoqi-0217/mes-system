@@ -160,7 +160,6 @@ const SpPurchase = {
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SpPurchase.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SpPurchase.reset()">重置</button>
-            <button class="btn btn-outline btn-sm" onclick="SpPurchase.printList()">打印</button>
             <button class="btn btn-outline btn-sm" onclick="SpPurchase.exportData()">导出</button>
           </div>
         </div>
@@ -961,7 +960,6 @@ const SpPurchase = {
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">编辑</button>
               <button class="btn btn-danger btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.deleteReq('${pr.docNo}')">删除</button>
-              <button class="btn btn-outline btn-sm" onclick="SpPurchase.printSingle('${pr.docNo}')">打印</button>
               <button class="btn btn-outline btn-sm" onclick="SpPurchase.exportData()">导出</button>
             </div>
           </div>
@@ -1251,8 +1249,6 @@ const SpPurchase = {
     if (gt) gt.textContent = '合计: ¥ ' + grand.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
   },
 
-  printList() { toast('打印功能开发中...'); },
-  printSingle(docNo) { toast('打印申请单 ' + docNo + ' ...'); },
   exportData() { toast('导出功能开发中...'); },
 
   // ---- 第三种创建方式：按安全库存预警创建 ----

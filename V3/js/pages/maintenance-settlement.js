@@ -139,8 +139,7 @@ const MfSettlement = {
         <div>
           ${!isClosed?`<button class="btn btn-purple" onclick="MfSettlement.settleFromDetail()">结算确认</button>
           <button class="btn btn-green" style="margin-left:8px;" onclick="MfSettlement.closeOrder()">结算并关闭工单</button>`:''}
-          ${isClosed?`<button class="btn btn-outline btn-sm" onclick="MfSettlement.print(${d.id})">打印</button>
-          <button class="btn btn-outline btn-sm" style="margin-left:6px;" onclick="MfSettlement.exportReport()">导出</button>`:''}
+          ${isClosed?`<button class="btn btn-outline btn-sm" onclick="MfSettlement.exportReport()">导出</button>`:''}
         </div>
       </div></div>`;
   },
@@ -188,6 +187,5 @@ const MfSettlement = {
 
   settleFromDetail(){this.settle(this.currentId);},
 
-  print(id){const d=mfOrderData.find(x=>x.id===id)||{};toast('打印结算单：'+(d.docNo||'')+'（演示模式）');},
   exportReport(){toast('导出结算报表（演示模式，导出结算数据汇总为Excel）');}
 };

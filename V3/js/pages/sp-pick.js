@@ -45,7 +45,6 @@ const SpPick = {
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SpPick.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SpPick.reset()">重置</button>
-            <button class="btn btn-outline btn-sm" onclick="SpPick.printList()">打印</button>
             <button class="btn btn-outline btn-sm" onclick="SpPick.exportData()">导出</button>
           </div>
         </div>
@@ -333,7 +332,6 @@ const SpPick = {
               <div class="filter-group" style="margin:0;"><label>领料日期</label><input type="text" value="${req.pickDate}" style="padding:5px 8px;width:130px;font-size:12px;background:#f8fafc;" disabled></div>
               <div class="filter-actions" style="margin-left:auto;">
                 <button class="btn btn-primary btn-sm" onclick="SpPick.submitEdit()">保存修改</button>
-                <button class="btn btn-outline btn-sm" onclick="SpPick.printSingle('${req.docNo}')">打印</button>
               </div>
             </div>
 
@@ -460,7 +458,6 @@ const SpPick = {
         </div>
         <div class="modal-footer">
           <button class="btn btn-secondary" onclick="SpPick.closeDetail()">关闭</button>
-          <button class="btn btn-outline btn-sm" onclick="SpPick.printSingle('${req.docNo}')">打印</button>
           <button class="btn btn-outline btn-sm" onclick="SpPick.exportData()">导出</button>
         </div>
       </div>
@@ -477,8 +474,6 @@ const SpPick = {
       this.filteredData=[...spPickData];this.page=1;this.renderTable();toast('已删除');
     }
   },
-  printList(){toast('打印功能开发中...');},
-  printSingle(docNo){toast('打印领料单 '+docNo+' ...');},
   exportData(){toast('导出功能开发中...');}
 };
 
