@@ -86,11 +86,15 @@ const SpPurchase = {
           reqQty: line.reqQty, unit: line.unit || '',
           orderQty: line.orderQty || 0, deliveryDate: line.deliveryDate || '',
           applicant: line.applicant || '', poNo: line.poNo || '',
-          requiredDate: line.requiredDate || '',
-          deliveryDate2: line.deliveryDate2 || '',
-          price: line.price || 0, totalValue: line.totalValue || 0,
+          price: line.price || 0,
           plant: pr.plant, dept: pr.dept, status: line.status || 'N',
-          applyDate: pr.applyDate, notes: pr.notes || ''
+          applyDate: pr.applyDate, notes: pr.notes || '',
+          storageLocation: line.storageLocation || '',
+          acctAssCategory: line.acctAssCategory || '',
+          costCenter: line.costCenter || '',
+          poLineItem: line.poLineItem || (line.poNo ? line.itemNo : ''),
+          isSettled: line.isSettled || (line.poNo ? 'Y' : 'N'),
+          createDate: pr.createDate || pr.applyDate
         });
       });
     });
@@ -111,23 +115,28 @@ const SpPurchase = {
             <button class="btn btn-blue" onclick="SpPurchase.openNewModal()"><span style="font-weight:700;font-size:16px;">+</span> 新建申请</button>
           </div>
         </div>
-        <div class="filter-bar" style="flex-shrink:0;">
-          <div class="filter-group"><label>采购申请</label><input type="text" id="prDocNo" placeholder="申请编号"></div>
-          <div class="filter-group"><label>申请部门</label><select id="prDept">
+        <div class="filter-bar" style="flex-shrink:0;flex-wrap:wrap;">
+          <div class="filter-group"><label>工厂</label><input type="text" id="prPlant" placeholder="工厂"></div>
+          <div class="filter-group"><label>采购申请号</label><input type="text" id="prDocNo" placeholder="申请编号"></div>
+          <div class="filter-group"><label>物料</label><input type="text" id="prMatCode" placeholder="物料号"></div>
+          <div class="filter-group"><label>交货日期</label><input type="date" id="prDelivDateFrom" style="padding:6px 10px;"></div>
+          <div class="filter-group"><label>至</label><input type="date" id="prDelivDateTo" style="padding:6px 10px;"></div>
+          <div class="filter-group"><label>创建日期</label><input type="date" id="prCreateDateFrom" style="padding:6px 10px;"></div>
+          <div class="filter-group"><label>至</label><input type="date" id="prCreateDateTo" style="padding:6px 10px;"></div>
+          <div class="filter-group"><label>成本中心</label><select id="prCostCenter">
             <option value="">全部</option>
-            <option value="生产部">生产部</option>
-            <option value="设备部">设备部</option>
-            <option value="质量部">质量部</option>
-            <option value="仓储物流部">仓储物流部</option>
+            <option value="100101">100101-生产设备成本中心</option>
+            <option value="100201">100201-质量检测成本中心</option>
+            <option value="100301">100301-生产能耗成本中心</option>
+            <option value="100401">100401-维修保养成本中心</option>
+            <option value="100501">100501-行政管理成本中心</option>
+            <option value="100601">100601-研发试制成本中心</option>
           </select></div>
-          <div class="filter-group"><label>状态</label><select id="prStatus">
+          <div class="filter-group"><label>是否结算</label><select id="prIsSettled">
             <option value="">全部</option>
-            <option value="B">B-已创建采购订单</option>
-            <option value="N">N-未编辑</option>
+            <option value="Y">已结算</option>
           </select></div>
-          <div class="filter-group"><label>物料号</label><input type="text" id="prMatCode" placeholder="物料号"></div>
-          <div class="filter-group"><label>申请日期</label><input type="date" id="prDateFrom" style="padding:6px 10px;"></div>
-          <div class="filter-group"><label>至</label><input type="date" id="prDateTo" style="padding:6px 10px;"></div>
+          <div class="filter-group"><label>申请人</label><input type="text" id="prApplicant" placeholder="申请人"></div>
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SpPurchase.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SpPurchase.reset()">重置</button>
@@ -135,12 +144,13 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table" style="min-width:1400px;">
+          <table class="data-table" style="min-width:2000px;">
             <thead><tr>
-              <th>工厂</th><th>采购申请</th><th style="width:55px;text-align:center;">请求<br/>项目</th>
-              <th>物料</th><th>短文本</th><th style="text-align:right;">申请数量</th><th style="width:38px;">单位</th>
-              <th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>申请人</th>
-              <th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
+              <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
+              <th>物料</th><th>短文本</th><th>存储地点</th><th>申请人</th><th>科目分配类别</th>
+              <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
+              <th>采购订单</th><th style="width:65px;">PO行项目</th><th style="text-align:right;">订货数量</th>
+              <th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
               <th style="width:90px;">操作</th>
             </tr></thead>
             <tbody id="prTableBody"></tbody>
@@ -192,12 +202,6 @@ const SpPurchase = {
     const sizeSel = document.getElementById('prPageSizeSel');
     if (sizeSel) sizeSel.value = this.pageSize;
 
-    const statusBadge = s => {
-      const map = { 'B':'badge-green','N':'badge-gray' };
-      const label = { 'B':'B-已创建采购订单','N':'N-未编辑' };
-      return `<span class="badge ${map[s]||'badge-gray'}">${esc(label[s]||s)}</span>`;
-    };
-
     let lastDoc = '';
     document.getElementById('prTableBody').innerHTML = page.map(row => {
       const isNewGroup = row.docNo !== lastDoc;
@@ -212,35 +216,45 @@ const SpPurchase = {
         <td style="text-align:center;font-weight:600;">${row.itemNo}</td>
         <td><strong>${esc(row.matCode)}</strong></td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.shortText)}">${esc(row.shortText)}</td>
+        <td>${esc(row.storageLocation)}</td>
+        <td>${esc(row.applicant)}</td>
+        <td>${esc(row.acctAssCategory)}</td>
+        <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
         <td style="text-align:right;">${Number(row.reqQty).toLocaleString()}</td>
         <td style="text-align:center;">${esc(row.unit)}</td>
-        <td style="text-align:center;white-space:nowrap;">${statusBadge(row.status)}</td>
-        <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
-        <td>${esc(row.applicant)}</td>
-        <td style="white-space:nowrap;">${esc(row.requiredDate)}</td>
-        <td style="white-space:nowrap;">${esc(row.deliveryDate2)}</td>
+        <td>${esc(row.poNo)}</td>
+        <td style="text-align:center;">${esc(row.poLineItem)}</td>
+        <td style="text-align:right;">${Number(row.orderQty).toLocaleString()}</td>
+        <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
         <td style="text-align:right;">${Number(row.price).toFixed(2)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--danger);">${Number(row.totalValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
         <td>${actions}</td>
       </tr>`;
     }).join('');
   },
 
   search() {
+    const plant = document.getElementById('prPlant')?.value.trim() || '';
     const docNo = document.getElementById('prDocNo').value.trim();
-    const dept = document.getElementById('prDept').value;
-    const status = document.getElementById('prStatus').value;
-    const matCode = document.getElementById('prMatCode') ? document.getElementById('prMatCode').value.trim() : '';
-    const dateFrom = document.getElementById('prDateFrom').value;
-    const dateTo = document.getElementById('prDateTo').value;
+    const matCode = document.getElementById('prMatCode')?.value.trim() || '';
+    const delivFrom = document.getElementById('prDelivDateFrom')?.value || '';
+    const delivTo = document.getElementById('prDelivDateTo')?.value || '';
+    const createFrom = document.getElementById('prCreateDateFrom')?.value || '';
+    const createTo = document.getElementById('prCreateDateTo')?.value || '';
+    const costCenter = document.getElementById('prCostCenter')?.value || '';
+    const isSettled = document.getElementById('prIsSettled')?.value || '';
+    const applicant = document.getElementById('prApplicant')?.value.trim() || '';
 
     this.filteredFlat = this.flatRows.filter(row => {
+      if (plant && !row.plant.includes(plant)) return false;
       if (docNo && !row.docNo.includes(docNo)) return false;
-      if (dept && row.dept !== dept) return false;
-      if (status && row.status !== status) return false;
       if (matCode && !(row.matCode||'').includes(matCode)) return false;
-      if (dateFrom && row.applyDate < dateFrom) return false;
-      if (dateTo && row.applyDate > dateTo) return false;
+      if (delivFrom && row.deliveryDate < delivFrom) return false;
+      if (delivTo && row.deliveryDate > delivTo) return false;
+      if (createFrom && row.createDate < createFrom) return false;
+      if (createTo && row.createDate > createTo) return false;
+      if (costCenter && row.costCenter !== costCenter) return false;
+      if (isSettled && row.isSettled !== isSettled) return false;
+      if (applicant && row.applicant !== applicant) return false;
       return true;
     });
     this.page = 1;
@@ -248,12 +262,10 @@ const SpPurchase = {
   },
 
   reset() {
-    document.getElementById('prDocNo').value = '';
-    document.getElementById('prDept').value = '';
-    document.getElementById('prStatus').value = '';
-    if (document.getElementById('prMatCode')) document.getElementById('prMatCode').value = '';
-    document.getElementById('prDateFrom').value = '';
-    document.getElementById('prDateTo').value = '';
+    const ids = ['prPlant','prDocNo','prMatCode','prDelivDateFrom','prDelivDateTo','prCreateDateFrom','prCreateDateTo','prApplicant'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const selIds = ['prCostCenter','prIsSettled'];
+    selIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filteredFlat = [...this.flatRows];
     this.page = 1;
     this.renderTable();
@@ -379,6 +391,7 @@ const SpPurchase = {
         shortText: line.shortText || '',
         applicant: window.currentUserId || 'admin',
         poNo: '',
+        poLineItem: '', isSettled: 'N',
         reqQty: line.reqQty || 0,
         unit: line.unit || '个',
         orderQty: line.reqQty || 0,
@@ -1015,7 +1028,7 @@ const SpPurchase = {
     const idx = tbody.rows.length;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, acctAssCategory:'K', matGroup:'', storageLocation:'', costCenter:'' }, idx, purchaseType);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', poLineItem:'', isSettled:'N', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, acctAssCategory:'K', matGroup:'', storageLocation:'', costCenter:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
   },
