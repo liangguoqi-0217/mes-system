@@ -119,8 +119,6 @@ const SpPurchase = {
           <div class="filter-group"><label>工厂</label><input type="text" id="prPlant" placeholder="工厂"></div>
           <div class="filter-group"><label>采购申请号</label><input type="text" id="prDocNo" placeholder="申请编号"></div>
           <div class="filter-group"><label>物料</label><input type="text" id="prMatCode" placeholder="物料号"></div>
-          <div class="filter-group"><label>交货日期</label><input type="date" id="prDelivDateFrom" style="padding:6px 10px;"></div>
-          <div class="filter-group"><label>至</label><input type="date" id="prDelivDateTo" style="padding:6px 10px;"></div>
           <div class="filter-group"><label>创建日期</label><input type="date" id="prCreateDateFrom" style="padding:6px 10px;"></div>
           <div class="filter-group"><label>至</label><input type="date" id="prCreateDateTo" style="padding:6px 10px;"></div>
           <div class="filter-group"><label>成本中心</label><select id="prCostCenter">
@@ -234,8 +232,6 @@ const SpPurchase = {
     const plant = document.getElementById('prPlant')?.value.trim() || '';
     const docNo = document.getElementById('prDocNo').value.trim();
     const matCode = document.getElementById('prMatCode')?.value.trim() || '';
-    const delivFrom = document.getElementById('prDelivDateFrom')?.value || '';
-    const delivTo = document.getElementById('prDelivDateTo')?.value || '';
     const createFrom = document.getElementById('prCreateDateFrom')?.value || '';
     const createTo = document.getElementById('prCreateDateTo')?.value || '';
     const costCenter = document.getElementById('prCostCenter')?.value || '';
@@ -246,8 +242,6 @@ const SpPurchase = {
       if (plant && !row.plant.includes(plant)) return false;
       if (docNo && !row.docNo.includes(docNo)) return false;
       if (matCode && !(row.matCode||'').includes(matCode)) return false;
-      if (delivFrom && row.deliveryDate < delivFrom) return false;
-      if (delivTo && row.deliveryDate > delivTo) return false;
       if (createFrom && row.createDate < createFrom) return false;
       if (createTo && row.createDate > createTo) return false;
       if (costCenter && row.costCenter !== costCenter) return false;
@@ -260,7 +254,7 @@ const SpPurchase = {
   },
 
   reset() {
-    const ids = ['prPlant','prDocNo','prMatCode','prDelivDateFrom','prDelivDateTo','prCreateDateFrom','prCreateDateTo','prApplicant'];
+    const ids = ['prPlant','prDocNo','prMatCode','prCreateDateFrom','prCreateDateTo','prApplicant'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const selIds = ['prCostCenter','prIsSettled'];
     selIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
