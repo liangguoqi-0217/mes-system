@@ -889,7 +889,7 @@ const SpPurchase = {
             </div>
           </div>
           <div class="modal-footer" style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;">
-            <button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">编辑</button>
+            <button class="btn btn-primary btn-sm" onclick="SpPurchase.openEditModal('${pr.docNo}')">编辑</button>
           </div>
         </div>
       </div>`;
@@ -913,7 +913,7 @@ const SpPurchase = {
     const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType)).join('');
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
-        <div class="modal modal-lg" style="max-width:${purchaseType==='Z02'?'1300px':'1400px'};" onclick="event.stopPropagation()">
+        <div class="modal modal-lg" style="max-width:${purchaseType==='Z02'?'1400px':'1600px'};" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">${this.editMode?'修改':'新建'}采购申请 ${this.editMode?('-'+pr.docNo):''}</div>
             <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
