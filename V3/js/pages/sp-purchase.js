@@ -144,10 +144,10 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table" style="min-width:2000px;">
+          <table class="data-table" style="min-width:1850px;">
             <thead><tr>
               <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
-              <th>物料</th><th>短文本</th><th>存储地点</th><th>申请人</th><th>科目分配类别</th>
+              <th>物料</th><th>短文本</th><th>申请人</th><th>科目分配类别</th>
               <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th>采购订单</th><th style="width:65px;">PO行项目</th><th style="text-align:right;">订货数量</th>
               <th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
@@ -216,7 +216,6 @@ const SpPurchase = {
         <td style="text-align:center;font-weight:600;">${row.itemNo}</td>
         <td><strong>${esc(row.matCode)}</strong></td>
         <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.shortText)}">${esc(row.shortText)}</td>
-        <td>${esc(row.storageLocation)}</td>
         <td>${esc(row.applicant)}</td>
         <td>${esc(row.acctAssCategory)}</td>
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
