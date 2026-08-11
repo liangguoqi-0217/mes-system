@@ -121,14 +121,12 @@ const SpPurchase = {
           <div class="filter-group"><label>物料</label><input type="text" id="prMatCode" placeholder="物料号"></div>
           <div class="filter-group"><label>创建日期</label><input type="date" id="prCreateDateFrom" style="padding:6px 10px;"></div>
           <div class="filter-group"><label>至</label><input type="date" id="prCreateDateTo" style="padding:6px 10px;"></div>
-          <div class="filter-group"><label>成本中心</label><select id="prCostCenter">
+          <div class="filter-group"><label>部门</label><select id="prDept">
             <option value="">全部</option>
-            <option value="100101">100101-生产设备成本中心</option>
-            <option value="100201">100201-质量检测成本中心</option>
-            <option value="100301">100301-生产能耗成本中心</option>
-            <option value="100401">100401-维修保养成本中心</option>
-            <option value="100501">100501-行政管理成本中心</option>
-            <option value="100601">100601-研发试制成本中心</option>
+            <option value="设备部">设备部</option>
+            <option value="生产部">生产部</option>
+            <option value="质量部">质量部</option>
+            <option value="仓储物流部">仓储物流部</option>
           </select></div>
           <div class="filter-group"><label>是否结算</label><select id="prIsSettled">
             <option value="">全部</option>
@@ -234,7 +232,7 @@ const SpPurchase = {
     const matCode = document.getElementById('prMatCode')?.value.trim() || '';
     const createFrom = document.getElementById('prCreateDateFrom')?.value || '';
     const createTo = document.getElementById('prCreateDateTo')?.value || '';
-    const costCenter = document.getElementById('prCostCenter')?.value || '';
+    const dept = document.getElementById('prDept')?.value || '';
     const isSettled = document.getElementById('prIsSettled')?.value || '';
     const applicant = document.getElementById('prApplicant')?.value.trim() || '';
 
@@ -244,7 +242,7 @@ const SpPurchase = {
       if (matCode && !(row.matCode||'').includes(matCode)) return false;
       if (createFrom && row.createDate < createFrom) return false;
       if (createTo && row.createDate > createTo) return false;
-      if (costCenter && row.costCenter !== costCenter) return false;
+      if (dept && row.dept !== dept) return false;
       if (isSettled && row.isSettled !== isSettled) return false;
       if (applicant && row.applicant !== applicant) return false;
       return true;
@@ -256,7 +254,7 @@ const SpPurchase = {
   reset() {
     const ids = ['prPlant','prDocNo','prMatCode','prCreateDateFrom','prCreateDateTo','prApplicant'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const selIds = ['prCostCenter','prIsSettled'];
+    const selIds = ['prDept','prIsSettled'];
     selIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filteredFlat = [...this.flatRows];
     this.page = 1;
