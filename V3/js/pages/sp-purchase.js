@@ -821,7 +821,7 @@ const SpPurchase = {
             <!-- 行项目 -->
             <div class="form-section" style="margin-top:16px;">
               <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
-              <table class="data-table data-table-compact" style="min-width:${isZ02?'1200px':'1550px'};">
+              <table class="data-table data-table-compact" style="min-width:${isZ02?'1250px':'1600px'};">
                 <thead><tr>
                   <th style="width:60px;text-align:center;">行项目</th>
                   <th>科目分配类别</th>
@@ -835,6 +835,7 @@ const SpPurchase = {
                   <th>建议供应商</th>
                   <th>供应商物料编号</th>
                   <th>成本中心</th>
+                  <th style="width:100px;text-align:center;">处理状态</th>
                   <th style="width:60px;text-align:center;">已结算</th>
                   <th>备注</th>
                 </tr></thead>
@@ -856,11 +857,12 @@ const SpPurchase = {
                   <td>${esc(l.supplier||'-')}</td>
                   <td>${esc(l.supplierMatCode||'-')}</td>
                   <td>${esc(l.costCenter||'-')}</td>
+                  <td style="text-align:center;"><span class="badge ${hasPO?'badge-blue':'badge-gray'}">${hasPO?'B-已创建采购订单':'N-未编辑'}</span></td>
                   <td style="text-align:center;"><span class="badge ${settled==='Y'?'badge-green':'badge-gray'}">${settled==='Y'?'是':'否'}</span></td>
                   <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.notes||'')}">${esc(l.notes||'-')}</td>
                 </tr>
                 ${hasPO ? `<tr class="po-detail-row" id="po_${pr.docNo}_${l.itemNo}" style="display:none;">
-                  <td colspan="14" style="padding:4px 0;">
+                  <td colspan="15" style="padding:4px 0;">
                     <div style="margin:4px 10px;">
                       <table style="width:100%;border-collapse:collapse;font-size:12px;background:#f0f4f8;border-radius:6px;overflow:hidden;">
                         <thead><tr style="background:#e2e8f0;">
