@@ -215,7 +215,7 @@ const SpPurchase = {
         <td><strong style="color:var(--primary);">${isNewGroup ? esc(row.docNo) : ''}</strong></td>
         <td style="text-align:center;font-weight:600;">${row.itemNo}</td>
         <td><strong>${esc(row.matCode)}</strong></td>
-        <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.shortText)}">${esc(row.shortText)}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.shortText)}">${esc(row.shortText)}</td>
         <td>${esc(row.applicant)}</td>
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
         <td style="text-align:right;">${Number(row.reqQty).toLocaleString()}</td>
