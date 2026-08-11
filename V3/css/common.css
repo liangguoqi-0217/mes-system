@@ -70,6 +70,16 @@ body {
 }
 .data-table td { padding: 11px 14px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
 .data-table tbody tr:hover { background: #f8fafc; }
+/* Locked row: fields disabled when line has been converted to PO */
+.data-table tr.locked input:not([type="checkbox"]),
+.data-table tr.locked select,
+.data-table tr.locked textarea {
+  pointer-events: none;
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border-color: #e2e8f0 !important;
+}
+tr.locked td { background: #fafbfc; }
 .data-table-compact th { padding: 8px 10px; font-size: 11px; letter-spacing: 0.3px; }
 .data-table-compact td { padding: 7px 10px; font-size: 12px; }
 .table-wrapper { overflow-x: auto; overflow-y: auto; }

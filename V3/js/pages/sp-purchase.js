@@ -500,8 +500,9 @@ const SpPurchase = {
     if (!pr) return;
     this.editMode = true;
     this.editId = docNo;
-    document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(JSON.parse(JSON.stringify(pr)));
-    // Trigger type change to set proper field state
+    const prClone = JSON.parse(JSON.stringify(pr));
+    prClone.lines = prClone.lines.map(l => { l._hasPO = !!(l.poNo); return l; });
+    document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(prClone);
     setTimeout(() => this.onPurchaseTypeChange(), 50);
   },
 
@@ -732,16 +733,35 @@ const SpPurchase = {
         if (!st) { toast(`第 ${i+1} 行：短文本缺失，请先输入物料号`); return; }
       }
 
+      const isSettled = row.querySelector('[data-field="isSettled"]')?.checked ? 'Y' : 'N';
+
+      // In edit mode, preserve existing line status and PO data
+      let lineStatus = 'N';
+      let existingPoData = null;
+      if (this.editMode) {
+        const existing = spPurchaseData.find(r => r.docNo === this.editId);
+        if (existing && existing.lines[i]) {
+          lineStatus = existing.lines[i].status || 'N';
+          existingPoData = { poNo: existing.lines[i].poNo, poLineItem: existing.lines[i].poLineItem,
+            orderQty: existing.lines[i].orderQty, supplier: existing.lines[i].supplier,
+            _pos: existing.lines[i]._pos };
+        }
+      }
+
       hasValidLine = true;
       prData.lines.push({
         itemNo: (i + 1) * 10,
-        matCode: mc, shortText: st, applicant, poNo, reqQty: q, unit: u || '个',
-        orderQty: parseFloat(getVal('orderQty')) || 0,
+        matCode: mc, shortText: st, applicant, poNo: poNo || (existingPoData?.poNo || ''),
+        poLineItem: existingPoData?.poLineItem || '',
+        supplier: existingPoData?.supplier || '',
+        reqQty: q, unit: u || '个',
+        orderQty: existingPoData?.orderQty || parseFloat(getVal('orderQty')) || 0,
         deliveryDate: row.querySelector('input[placeholder="YYYYMMDD"]')?.value || '',
         requiredDate: row.querySelector('input[placeholder="YYYY.MM.DD"]')?.value || '',
         deliveryDate2: row.querySelectorAll('input[placeholder="YYYY.MM.DD"]')[1]?.value || '',
-        price: p, totalValue: q * p, status: 'N',
-        acctAssCategory: acct, matGroup: mg, storageLocation: '', costCenter: costCtr
+        price: p, totalValue: q * p, status: lineStatus, isSettled,
+        acctAssCategory: acct, matGroup: mg, storageLocation: '', costCenter: costCtr,
+        _pos: existingPoData?._pos || []
       });
     }
     if (!hasValidLine) { toast('请至少添加一行有效物料信息'); return; }
@@ -923,11 +943,11 @@ const SpPurchase = {
             <div class="form-section">
               <div class="form-section-title">表头信息</div>
               <div class="form-grid">
-                <div class="form-group"><label><span class="req">*</span> 采购申请类型</label><select id="prFPurchaseType" onchange="SpPurchase.onPurchaseTypeChange()">${PURCHASE_TYPE_OPTIONS.map(o=>`<option value="${o.value}"${pr.purchaseType===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></div>
-                <div class="form-group"><label>采购申请编号</label><input type="text" value="${esc(pr.docNo||'(自动生成)')}" disabled style="background:#f8fafc;"></div>
-                <div class="form-group"><label><span class="req">*</span> 部门</label><select id="prFDept"><option value="">请选择</option><option value="设备部"${pr.dept==='设备部'?' selected':''}>设备部</option><option value="生产部"${pr.dept==='生产部'?' selected':''}>生产部</option><option value="质量部"${pr.dept==='质量部'?' selected':''}>质量部</option><option value="仓储物流部"${pr.dept==='仓储物流部'?' selected':''}>仓储物流部</option></select></div>
-                <div class="form-group"><label><span class="req">*</span> 采购组</label><select id="prFPurchaseGroup"><option value="">请选择</option>${PURCHASE_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${pr.purchaseGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></div>
-                <div class="form-group"><label>工厂</label><select id="prFPlant">
+                <div class="form-group"><label><span class="req">*</span> 采购申请类型</label><select id="prFPurchaseType" onchange="SpPurchase.onPurchaseTypeChange()"${this.editMode?' disabled style="background:#f1f5f9;color:#94a3b8;cursor:not-allowed;"':''}>${PURCHASE_TYPE_OPTIONS.map(o=>`<option value="${o.value}"${pr.purchaseType===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></div>
+                <div class="form-group"><label>采购申请编号</label><input type="text" value="${esc(pr.docNo||'(自动生成)')}" disabled style="${this.editMode?'background:#f1f5f9;':''}color:#94a3b8;"></div>
+                <div class="form-group"><label><span class="req">*</span> 部门</label><select id="prFDept"${this.editMode?' disabled style="background:#f1f5f9;color:#94a3b8;cursor:not-allowed;"':''}><option value="">请选择</option><option value="设备部"${pr.dept==='设备部'?' selected':''}>设备部</option><option value="生产部"${pr.dept==='生产部'?' selected':''}>生产部</option><option value="质量部"${pr.dept==='质量部'?' selected':''}>质量部</option><option value="仓储物流部"${pr.dept==='仓储物流部'?' selected':''}>仓储物流部</option></select></div>
+                <div class="form-group"><label><span class="req">*</span> 采购组</label><select id="prFPurchaseGroup"${this.editMode?' disabled style="background:#f1f5f9;color:#94a3b8;cursor:not-allowed;"':''}><option value="">请选择</option>${PURCHASE_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${pr.purchaseGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></div>
+                <div class="form-group"><label>工厂</label><select id="prFPlant"${this.editMode?' disabled style="background:#f1f5f9;color:#94a3b8;cursor:not-allowed;"':''}>
                   <option value="1000"${pr.plant==='1000'?' selected':''}>1000 - 山东步长制药工厂</option>
                   <option value="2001"${pr.plant==='2001'?' selected':''}>2001 - 陕西步长制药工厂</option>
                   <option value="2002"${pr.plant==='2002'?' selected':''}>2002 - 山东丹红制药工厂</option>
@@ -944,9 +964,9 @@ const SpPurchase = {
                   <option value="2014"${pr.plant==='2014'?' selected':''}>2014 - 重庆市医济堂生物制品工厂</option>
                   <option value="3001"${pr.plant==='3001'?' selected':''}>3001 - 泸州步长生物工厂</option>
                 </select></div>
-                <div class="form-group"><label>申请日期</label><input type="date" id="prFApplyDate" value="${esc(pr.applyDate)}"></div>
+                <div class="form-group"><label>申请日期</label><input type="date" id="prFApplyDate" value="${esc(pr.applyDate)}"${this.editMode?' disabled style="background:#f1f5f9;color:#94a3b8;"':''}></div>
 
-                <div class="form-group full"><label>备注</label><textarea id="prFNotes" rows="2" placeholder="补充说明">${esc(pr.notes||'')}</textarea></div>
+                <div class="form-group full"><label>备注</label><textarea id="prFNotes" rows="2" placeholder="${this.editMode?'':'补充说明'}"${this.editMode?' disabled style="background:#f1f5f9;color:#94a3b8;cursor:not-allowed;"':''}>${esc(pr.notes||'')}</textarea></div>
               </div>
             </div>
 
@@ -976,6 +996,7 @@ const SpPurchase = {
                     <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:70px;text-align:right;" id="prThPrice">评价价格</th>
                     <th style="min-width:90px;text-align:right;font-weight:700;color:var(--danger);">总价值</th>
+                    <th style="width:60px;text-align:center;">已结算</th>
                     <th style="width:42px;"></th>
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
@@ -998,6 +1019,8 @@ const SpPurchase = {
   renderLineRow(line, idx, purchaseType) {
     const pt = purchaseType || 'Z01';
     const isZ01 = pt === 'Z01';
+    const hasPO = !!(line._hasPO || line.poNo);
+    const rowClass = hasPO ? ' class="locked"' : '';
     const isZ02 = pt === 'Z02';
 
     // MatCode cell
@@ -1034,7 +1057,7 @@ const SpPurchase = {
       ? `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01" readonly style="width:68px;text-align:right;padding:5px 6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;background:#f1f5f9;color:#64748b;" oninput="SpPurchase.recalcTotal()"></td>`
       : `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01" style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()" required></td>`;
 
-    return `<tr data-row="${idx}">
+    return `<tr${rowClass} data-row="${idx}">
       <td style="text-align:center;color:var(--text-muted);font-weight:600;">${idx+1}</td>
       ${matCodeCell}
       ${shortTextCell}
@@ -1052,7 +1075,8 @@ const SpPurchase = {
       <td style="padding:5px;"><input type="text" value="${esc(line.deliveryDate2||'')}" placeholder="YYYY.MM.DD" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${priceCell}
       <td style="text-align:right;font-weight:700;color:var(--danger);padding:6px 4px;" class="line-total">${(Number(line.totalValue||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-      <td style="padding:4px;"><button class="btn btn-sm" style="padding:3px 8px;font-size:18px;line-height:1;color:var(--danger);background:none;border:1px solid transparent;" onclick="SpPurchase.removeLineRow(this)" title="删除此行">&times;</button></td>
+      <td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ${line.isSettled==='Y'?'checked':''} ${hasPO?'':'disabled'} style="width:16px;height:16px;cursor:${hasPO?'pointer':'not-allowed'};" title="${hasPO?'勾选表示此行已结算':'仅采购订单行可结算'}"></td>
+      <td style="padding:4px;">${hasPO ? '' : `<button class="btn btn-sm" style="padding:3px 8px;font-size:18px;line-height:1;color:var(--danger);background:none;border:1px solid transparent;" onclick="SpPurchase.removeLineRow(this)" title="删除此行">&times;</button>`}</td>
     </tr>`;
   },
 
@@ -1123,11 +1147,12 @@ const SpPurchase = {
     rows.forEach((tr, i) => {
       // Collect existing data via data-field
       const getEl = field => tr.querySelector(`[data-field="${field}"]`);
-      const opts = { matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, price:0, acctAssCategory:'K', matGroup:'', costCenter:'' };
-      ['matCode','shortText','applicant','poNo','reqQty','unit','orderQty','price','acctAssCategory','matGroup','costCenter'].forEach(f => {
+      const opts = { matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, price:0, isSettled:'N', acctAssCategory:'K', matGroup:'', costCenter:'' };
+      ['matCode','shortText','applicant','poNo','reqQty','unit','orderQty','price','isSettled','acctAssCategory','matGroup','costCenter'].forEach(f => {
         const el = getEl(f);
-        if (el) opts[f] = el.value || el.textContent || opts[f];
+        if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value || el.textContent || opts[f]));
       });
+      opts._hasPO = tr.classList.contains('locked');
       opts.totalValue = (parseFloat(opts.reqQty)||0) * (parseFloat(opts.price)||0);
       tr.outerHTML = this.renderLineRow(opts, i, purchaseType);
     });
