@@ -888,15 +888,8 @@ const SpPurchase = {
               </table>
             </div>
           </div>
-          <div class="modal-footer" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-            <div style="display:flex;gap:8px;align-items:center;">
-              <button class="btn btn-secondary" onclick="SpPurchase.closeDetail()">关闭</button>
-            </div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">编辑</button>
-              <button class="btn btn-danger btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.deleteReq('${pr.docNo}')">删除</button>
-              <button class="btn btn-outline btn-sm" onclick="SpPurchase.exportData()">导出</button>
-            </div>
+          <div class="modal-footer" style="display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="SpPurchase.closeDetail();SpPurchase.openEditModal('${pr.docNo}')">编辑</button>
           </div>
         </div>
       </div>`;
