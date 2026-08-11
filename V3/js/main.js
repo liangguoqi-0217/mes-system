@@ -94,11 +94,6 @@ const App = {
             { id:'safety-stock-alert', label:'安全库存预警', route:'safety-stock-alert', pageObj:'SafetyStockAlert' }
           ]
         },
-        {
-          title:'采购申请管理', items: [
-            { id:'sp-purchase', label:'采购申请管理', route:'sp-purchase' }
-          ]
-        }
       ]
     },
     {
