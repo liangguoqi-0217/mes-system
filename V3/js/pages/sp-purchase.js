@@ -796,12 +796,12 @@ const SpPurchase = {
     const grandTotal = pr.lines.reduce((s,l)=>s+(l.totalValue||0),0);
     const html = `
       <div class="modal-backdrop" id="prDetailBackdrop" onclick="SpPurchase.closeDetail()">
-        <div class="modal" style="max-width:96vw;width:${isZ02?'1200px':'1400px'};" onclick="event.stopPropagation()">
+        <div class="modal" style="max-width:98vw;width:${isZ02?'1400px':'1600px'};" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">采购申请详情 - ${esc(pr.docNo)} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(ptLabel?ptLabel.label:'')}</span></div>
             <button class="modal-close" onclick="SpPurchase.closeDetail()">✕</button>
           </div>
-          <div class="modal-body" style="max-height:calc(92vh-100px);">
+          <div class="modal-body" style="max-height:calc(95vh-90px);">
             <div class="form-section">
               <div class="form-section-title">表头信息</div>
               <div class="detail-grid">
@@ -820,7 +820,7 @@ const SpPurchase = {
             </div>
             <div class="form-section" style="margin-top:16px;">
               <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
-              <table class="data-table" style="min-width:${isZ02?'1000px':'1280px'};">
+              <table class="data-table" style="min-width:${isZ02?'1100px':'1400px'};">
                 <thead><tr>
                   <th>项次</th>${isZ01?'<th>物料</th>':''}<th>短文本</th><th>科目分配类别</th><th>成本中心</th><th>物料组</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>单位</th>
                   <th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
