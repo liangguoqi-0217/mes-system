@@ -702,14 +702,16 @@ const SpPurchase = {
 
       const mc = getVal('matCode');
       const st = getVal('shortText');
-      const applicant = getVal('applicant');
-      const poNo = getVal('poNo');
       const q = parseFloat(getVal('reqQty')) || 0;
       const u = getSel('unit');
       const p = parseFloat(getVal('price')) || 0;
       const acct = getSel('acctAssCategory');
       const costCtr = getSel('costCenter');
       const mg = isZ01 ? row.querySelector('[data-field="matGroup"]')?.textContent?.trim() || '' : getSel('matGroup');
+      const supplier = getVal('supplier');
+      const supplierMatCode = getVal('supplierMatCode');
+      const notes = getVal('notes');
+      const deliveryDate = getVal('deliveryDate');
 
       // Skip empty rows
       if (!mc && !st && !q) continue;
@@ -751,16 +753,16 @@ const SpPurchase = {
       hasValidLine = true;
       prData.lines.push({
         itemNo: (i + 1) * 10,
-        matCode: mc, shortText: st, applicant, poNo: poNo || (existingPoData?.poNo || ''),
+        matCode: mc, shortText: st,
+        poNo: existingPoData?.poNo || '',
         poLineItem: existingPoData?.poLineItem || '',
-        supplier: existingPoData?.supplier || '',
+        supplier: supplier || (existingPoData?.supplier || ''),
+        supplierMatCode: supplierMatCode,
         reqQty: q, unit: u || '个',
         orderQty: existingPoData?.orderQty || parseFloat(getVal('orderQty')) || 0,
-        deliveryDate: row.querySelector('input[placeholder="YYYYMMDD"]')?.value || '',
-        requiredDate: row.querySelector('input[placeholder="YYYY.MM.DD"]')?.value || '',
-        deliveryDate2: row.querySelectorAll('input[placeholder="YYYY.MM.DD"]')[1]?.value || '',
+        deliveryDate: deliveryDate,
         price: p, totalValue: q * p, status: lineStatus, isSettled,
-        acctAssCategory: acct, matGroup: mg, storageLocation: '', costCenter: costCtr,
+        acctAssCategory: acct, matGroup: mg, costCenter: costCtr, notes: notes,
         _pos: existingPoData?._pos || []
       });
     }
@@ -979,24 +981,23 @@ const SpPurchase = {
                 </div>
               </div>
               <div style="overflow-x:auto;">
-                <table class="data-table" id="prLinesTable" style="min-width:1480px;">
+                <table class="data-table" id="prLinesTable" style="min-width:1600px;">
                   <thead><tr>
                     <th style="width:36px;text-align:center;">#</th>
-                    <th style="min-width:100px;" id="prThMatCode"><span class="req">*</span> 物料</th>
-                    <th style="min-width:200px;" id="prThShortText"><span class="req">*</span> 短文本</th>
-                    <th style="min-width:70px;">申请人</th>
-                    <th style="min-width:90px;display:none;" id="prThPoNo">采购订单</th>
                     <th style="min-width:80px;" id="prThAcctAss">科目分配类别</th>
-                    <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
-                    <th style="min-width:80px;" id="prThMatGroup">物料组</th>
-                    <th style="min-width:75px;text-align:right;"><span class="req">*</span> 申请数量</th>
+                    <th style="min-width:100px;" id="prThMatCode"><span class="req">*</span> 物料编号</th>
+                    <th style="min-width:180px;" id="prThShortText"><span class="req">*</span> 短文本</th>
+                    <th style="min-width:75px;text-align:right;"><span class="req">*</span> 数量</th>
                     <th style="width:52px;">单位</th>
+                    <th style="min-width:85px;" id="prThMatGroup">物料组</th>
                     <th style="min-width:95px;">交货日期</th>
-                    <th style="min-width:95px;">需求日期</th>
-                    <th style="min-width:95px;">交货日期</th>
-                    <th style="min-width:70px;text-align:right;" id="prThPrice">评价价格</th>
-                    <th style="min-width:90px;text-align:right;font-weight:700;color:var(--danger);">总价值</th>
+                    <th style="min-width:80px;text-align:right;" id="prThPrice">评价价格</th>
+                    <th style="min-width:105px;">建议供应商</th>
+                    <th style="min-width:105px;">供应商物料编号</th>
+                    <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
+                    <th style="width:90px;text-align:center;">处理状态</th>
                     <th style="width:60px;text-align:center;">已结算</th>
+                    <th style="min-width:70px;">备注</th>
                     <th style="width:42px;"></th>
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
@@ -1059,23 +1060,22 @@ const SpPurchase = {
 
     return `<tr${rowClass} data-row="${idx}">
       <td style="text-align:center;color:var(--text-muted);font-weight:600;">${idx+1}</td>
+      ${acctAssCell}
       ${matCodeCell}
       ${shortTextCell}
-      <td style="padding:5px;"><input type="text" data-field="applicant" value="${esc(line.applicant||'')}" placeholder="申请人" style="width:66px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:5px;display:none;"><input type="text" data-field="poNo" value="${esc(line.poNo||'')}" placeholder="采购订单号" style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      ${acctAssCell}
-      ${costCenterCell}
-      ${matGroupCell}
       <td style="padding:5px;"><input type="number" data-field="reqQty" value="${line.reqQty||''}" min="0" step="any" style="width:72px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;" oninput="SpPurchase.recalcTotal()" required></td>
       <td style="padding:5px;"><select data-field="unit" style="width:48px;padding:4px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;" onchange="SpPurchase.recalcTotal()">
         <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
       </select></td>
-      <td style="padding:5px;"><input type="text" value="${esc(line.deliveryDate||'')}" placeholder="YYYYMMDD" style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:5px;"><input type="text" value="${esc(line.requiredDate||'')}" placeholder="YYYY.MM.DD" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:5px;"><input type="text" value="${esc(line.deliveryDate2||'')}" placeholder="YYYY.MM.DD" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      ${matGroupCell}
+      <td style="padding:5px;"><input type="text" data-field="deliveryDate" value="${esc(line.deliveryDate||'')}" placeholder="YYYYMMDD" style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${priceCell}
-      <td style="text-align:right;font-weight:700;color:var(--danger);padding:6px 4px;" class="line-total">${(Number(line.totalValue||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td style="padding:5px;"><input type="text" data-field="supplier" value="${esc(line.supplier||'')}" placeholder="建议供应商" style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><input type="text" data-field="supplierMatCode" value="${esc(line.supplierMatCode||'')}" placeholder="供应商物料号" style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      ${costCenterCell}
+      <td style="text-align:center;padding:5px;"><span class="badge ${hasPO?'badge-blue':'badge-gray'}" style="font-size:11px;">${hasPO?'B-已创建':'N-未编辑'}</span></td>
       <td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ${line.isSettled==='Y'?'checked':''} ${hasPO?'':'disabled'} style="width:16px;height:16px;cursor:${hasPO?'pointer':'not-allowed'};" title="${hasPO?'勾选表示此行已结算':'仅采购订单行可结算'}"></td>
+      <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注" style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:4px;">${hasPO ? '' : `<button class="btn btn-sm" style="padding:3px 8px;font-size:18px;line-height:1;color:var(--danger);background:none;border:1px solid transparent;" onclick="SpPurchase.removeLineRow(this)" title="删除此行">&times;</button>`}</td>
     </tr>`;
   },
@@ -1085,7 +1085,7 @@ const SpPurchase = {
     const idx = tbody.rows.length;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', poLineItem:'', isSettled:'N', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, acctAssCategory:'K', matGroup:'', storageLocation:'', costCenter:'' }, idx, purchaseType);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory:'K', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
   },
@@ -1127,7 +1127,7 @@ const SpPurchase = {
 
     const thCostCenter = document.getElementById('prThCostCenter');
     if (purchaseType === 'Z01') {
-      if (thMatCode) thMatCode.innerHTML = '<span class="req">*</span> 物料';
+      if (thMatCode) thMatCode.innerHTML = '<span class="req">*</span> 物料编号';
       if (thShortText) thShortText.innerHTML = '短文本';
       if (thAcctAss) { thAcctAss.style.display = ''; thAcctAss.innerHTML = '科目分配类别'; }
       if (thMatGroup) thMatGroup.innerHTML = '物料组';
@@ -1147,8 +1147,8 @@ const SpPurchase = {
     rows.forEach((tr, i) => {
       // Collect existing data via data-field
       const getEl = field => tr.querySelector(`[data-field="${field}"]`);
-      const opts = { matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, price:0, isSettled:'N', acctAssCategory:'K', matGroup:'', costCenter:'' };
-      ['matCode','shortText','applicant','poNo','reqQty','unit','orderQty','price','isSettled','acctAssCategory','matGroup','costCenter'].forEach(f => {
+      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'K', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
+      ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
         const el = getEl(f);
         if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value || el.textContent || opts[f]));
       });
