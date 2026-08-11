@@ -128,7 +128,7 @@ const SpPurchase = {
             <option value="质量部">质量部</option>
             <option value="仓储物流部">仓储物流部</option>
           </select></div>
-          <div class="filter-group"><label>创建人</label><input type="text" id="prApplicant" placeholder="创建人"></div>
+          <div class="filter-group"><label>申请人</label><input type="text" id="prApplicant" placeholder="申请人"></div>
           <div class="filter-group"><label>是否结算</label><select id="prIsSettled">
             <option value="">全部</option>
             <option value="Y">已结算</option>
