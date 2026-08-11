@@ -776,16 +776,27 @@ const SpPurchase = {
 
   viewDetail(docNo) {
     const pr = spPurchaseData.find(r => r.docNo === docNo); if (!pr) return;
-    const sb = s => {
-      const m = { 'B':'badge-green','N':'badge-gray' };
-      const label = { 'B':'B-已创建采购订单','N':'N-未编辑' };
-      return `<span class="badge ${m[s]||'badge-gray'}">${esc(label[s]||s)}</span>`;
-    };
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o=>o.value===pr.purchaseType);
-    const pgLabel = PURCHASE_GROUP_OPTIONS.find(o=>o.value===pr.purchaseGroup);
     const isZ01 = pr.purchaseType === 'Z01';
     const isZ02 = pr.purchaseType === 'Z02';
     const grandTotal = pr.lines.reduce((s,l)=>s+(l.totalValue||0),0);
+    // build PO sub-records from line data
+    const linesWithPO = pr.lines.map(l => {
+      const pos = [];
+      if (l.poNo) {
+        pos.push({ poNo:l.poNo, poLineItem:l.poLineItem||(l.poNo?l.itemNo:''), poDate:l.applyDate||pr.applyDate, orderQty:l.orderQty||0, poDeliveryDate:l.deliveryDate||'' });
+        // simulate multiple POs for first item of first doc as demo
+        if (pr.docNo==='2100002651' && l.itemNo<=20 && l.poNo==='4100014248') {
+          pos.push({ poNo:'4100014290', poLineItem:l.itemNo, poDate:'20260520', orderQty:Math.round(l.orderQty/2), poDeliveryDate:l.deliveryDate });
+        }
+      }
+      return { ...l, _pos:pos };
+    });
+
+    const applicant = pr.applicant || (pr.lines.length ? pr.lines[0].applicant : '-');
+    const createDate = pr.createDate || pr.applyDate;
+    const createTime = pr.createTime || '';
+
     const html = `
       <div class="modal-backdrop" id="prDetailBackdrop" onclick="SpPurchase.closeDetail()">
         <div class="modal" style="max-width:98vw;width:${isZ02?'1400px':'1600px'};" onclick="event.stopPropagation()">
@@ -794,56 +805,84 @@ const SpPurchase = {
             <button class="modal-close" onclick="SpPurchase.closeDetail()">✕</button>
           </div>
           <div class="modal-body" style="max-height:calc(95vh-90px);">
+            <!-- 抬头信息 -->
             <div class="form-section">
-              <div class="form-section-title">表头信息</div>
+              <div class="form-section-title">抬头信息</div>
               <div class="detail-grid">
-                <div class="detail-item"><dt>采购申请类型</dt><dd><strong>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}</strong></dd></div>
-                <div class="detail-item"><dt>申请编号</dt><dd><strong>${esc(pr.docNo)}</strong></dd></div>
-                <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
-                <div class="detail-item"><dt>采购组</dt><dd>${esc(pgLabel?pgLabel.label:pr.purchaseGroup||'-')}</dd></div>
                 <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}</dd></div>
-                <div class="detail-item"><dt>申请日期</dt><dd>${esc(pr.applyDate)}</dd></div>
-
-              </div>
-              <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:6px;display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;">
-
-                <dt style="color:var(--text-secondary);">备注</dt><dd>${esc(pr.notes||'-')}</dd>
+                <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong></dd></div>
+                <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}</dd></div>
+                <div class="detail-item"><dt>申请人姓名</dt><dd>${esc(applicant)}</dd></div>
+                <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}</dd></div>
+                <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}</dd></div>
+                <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
               </div>
             </div>
+            <!-- 行项目 -->
             <div class="form-section" style="margin-top:16px;">
-              <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
-              <table class="data-table" style="min-width:${isZ02?'1100px':'1400px'};">
+              <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
+              <table class="data-table data-table-compact" style="min-width:${isZ02?'1200px':'1550px'};">
                 <thead><tr>
-                  <th>项次</th>${isZ01?'<th>物料</th>':''}<th>短文本</th><th>科目分配类别</th><th>成本中心</th><th>物料组</th><th>申请人</th><th>采购订单</th><th style="text-align:right;">申请数量</th><th>单位</th>
-                  <th style="width:72px;text-align:center;">状态</th><th>交货日期</th><th>需求日期</th><th>交货日期</th><th style="text-align:right;">评价价格</th><th style="text-align:right;font-weight:800;color:var(--danger);">总价值</th>
+                  <th style="width:60px;text-align:center;">行项目</th>
+                  <th>科目分配类别</th>
+                  <th>物料编号</th>
+                  <th>短文本</th>
+                  <th style="text-align:right;">数量</th>
+                  <th style="width:42px;">单位</th>
+                  <th>物料组</th>
+                  <th>交货日期</th>
+                  <th style="text-align:right;">评价价格</th>
+                  <th>建议供应商</th>
+                  <th>供应商物料编号</th>
+                  <th>成本中心</th>
+                  <th style="width:60px;text-align:center;">已结算</th>
+                  <th>备注</th>
                 </tr></thead>
-                <tbody>${pr.lines.map((l,i)=>{
+                <tbody>${linesWithPO.map((l, i) => {
                   const acctLabel = ACCT_ASS_CATEGORY_OPTIONS.find(o=>o.value===l.acctAssCategory);
                   const mgLabel = MAT_GROUP_OPTIONS.find(o=>o.value===l.matGroup);
-                  return `<tr>
-                  <td style="text-align:center;">${l.itemNo}</td>
-                  ${isZ01?`<td><strong>${esc(l.matCode)}</strong></td>`:''}
-                  <td>${esc(l.shortText)}</td>
+                  const settled = l.isSettled || (l.poNo ? 'Y' : 'N');
+                  const hasPO = l._pos && l._pos.length > 0;
+                  return `<tr class="pr-line-row" onclick="SpPurchase.togglePOLine(this,'po_${pr.docNo}_${l.itemNo}')" style="cursor:pointer;" title="点击展开/收起采购订单详情">
+                  <td style="text-align:center;">${l.itemNo}${hasPO?' <span style="font-size:10px;color:var(--primary);">▼</span>':''}</td>
                   <td>${esc(acctLabel?acctLabel.label:l.acctAssCategory||'-')}</td>
-                  <td>${esc(l.costCenter||'-')}</td>
-                  <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
-                  <td>${esc(l.applicant||'-')}</td>
-                  <td>${esc(l.poNo||'-')}</td>
+                  <td><strong>${esc(l.matCode)}</strong></td>
+                  <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.shortText)}">${esc(l.shortText)}</td>
                   <td style="text-align:right;">${Number(l.reqQty).toLocaleString()}</td>
                   <td style="text-align:center;">${esc(l.unit)}</td>
-                  <td style="text-align:center;">${sb(l.status||'N')}</td>
+                  <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
                   <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
-                  <td style="white-space:nowrap;">${esc(l.requiredDate||'-')}</td>
-                  <td style="white-space:nowrap;">${esc(l.deliveryDate2||'-')}</td>
                   <td style="text-align:right;">${Number(l.price).toFixed(2)}</td>
-                  <td style="text-align:right;font-weight:700;color:var(--danger);">${Number(l.totalValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-                </tr>`;
+                  <td>${esc(l.supplier||'-')}</td>
+                  <td>${esc(l.supplierMatCode||'-')}</td>
+                  <td>${esc(l.costCenter||'-')}</td>
+                  <td style="text-align:center;"><span class="badge ${settled==='Y'?'badge-green':'badge-gray'}">${settled==='Y'?'是':'否'}</span></td>
+                  <td style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.notes||'')}">${esc(l.notes||'-')}</td>
+                </tr>
+                ${hasPO ? `<tr class="po-detail-row" id="po_${pr.docNo}_${l.itemNo}" style="display:none;">
+                  <td colspan="14" style="padding:4px 0;">
+                    <div style="margin:4px 10px;">
+                      <table style="width:100%;border-collapse:collapse;font-size:12px;background:#f0f4f8;border-radius:6px;overflow:hidden;">
+                        <thead><tr style="background:#e2e8f0;">
+                          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">采购订单号</th>
+                          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">PO行项目</th>
+                          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">采购订单日期</th>
+                          <th style="padding:6px 10px;text-align:right;font-size:11px;color:#475569;">订货数量</th>
+                          <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">PO交货日期</th>
+                        </tr></thead>
+                        <tbody>${l._pos.map(po=>`<tr>
+                          <td style="padding:5px 10px;font-weight:600;">${esc(po.poNo)}</td>
+                          <td style="padding:5px 10px;">${po.poLineItem}</td>
+                          <td style="padding:5px 10px;">${esc(po.poDate||'-')}</td>
+                          <td style="padding:5px 10px;text-align:right;">${Number(po.orderQty||0).toLocaleString()}</td>
+                          <td style="padding:5px 10px;">${esc(po.poDeliveryDate||'-')}</td>
+                        </tr>`).join('')}</tbody>
+                      </table>
+                    </div>
+                  </td>
+                </tr>` : ''}`;
                 }).join('')}
                 </tbody>
-                <tfoot><tr style="background:#fef3f2;border-top:3px solid var(--border);">
-                  <td colspan="${isZ02?'15':'16'}" style="text-align:right;font-weight:700;">合计：</td>
-                  <td style="text-align:right;font-weight:800;color:var(--danger);font-size:15px;">¥ ${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-                </tr></tfoot>
               </table>
             </div>
           </div>
@@ -860,6 +899,15 @@ const SpPurchase = {
         </div>
       </div>`;
     document.getElementById('prModalContainer').innerHTML = html;
+  },
+
+  togglePOLine(rowEl, targetId) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    const isHidden = target.style.display === 'none';
+    target.style.display = isHidden ? '' : 'none';
+    const arrow = rowEl.querySelector('span');
+    if (arrow) arrow.textContent = isHidden ? '▲' : '▼';
   },
 
   closeDetail() { document.getElementById('prModalContainer').innerHTML = ''; },
@@ -1364,23 +1412,24 @@ const SpPurchase = {
 // ===== Demo Data for Purchase Requisition (real factory codes & material codes) =====
 const spPurchaseData = [
   {
-    docNo:'2100002651', applyDate:'2026-05-06', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'原厂康斐尔/AAF品牌',
+    docNo:'2100002651', applyDate:'2026-05-06', createDate:'2026-05-06', createTime:'09:15:30', applicant:'李君',
+    plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'原厂康斐尔/AAF品牌',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
-      {itemNo:10,matCode:'60001018',shortText:'高效过滤器-MIIPDF-635*520*93-27-AAF', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:850.00,totalValue:40800,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:20,matCode:'60001019',shortText:'高效过滤器-MIIPDF-635*762*93-27-AAF', reqQty:36,unit:'个',orderQty:36,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:920.00,totalValue:33120,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:30,matCode:'60001020',shortText:'高效过滤器-MIIPDF-416*416*93-27-AAF', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:680.00,totalValue:16320,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:40,matCode:'60001021',shortText:'高效过滤器-MIIPDF-635*1030*93-27-AAF', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:1050.00,totalValue:21000,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:50,matCode:'60001022',shortText:'高效过滤器-GSF-LS-631*516*95-01/22-康斐尔', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:750.00,totalValue:24000,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:60,matCode:'60001023',shortText:'高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:820.00,totalValue:19680,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:70,matCode:'60001024',shortText:'高效过滤器-GSF-LS-412*412*95-01/22-康斐尔', reqQty:16,unit:'个',orderQty:16,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:620.00,totalValue:9920,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:80,matCode:'60001025',shortText:'高效过滤器-GSF-LS-1026*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:1100.00,totalValue:13200,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:90,matCode:'60001026',shortText:'高效过滤器-GSF-LS-762*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:960.00,totalValue:11520,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
-      {itemNo:100,matCode:'60001012',shortText:'耐湿高效过滤器-GKYS-305*30*150', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:580.00,totalValue:4640,applicant:'李君',poNo:'4100014248',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''}
+      {itemNo:10,matCode:'60001018',shortText:'高效过滤器-MIIPDF-635*520*93-27-AAF', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:850.00,totalValue:40800,applicant:'李君',poNo:'4100014248',poLineItem:10,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-MIIPDF-635'},
+      {itemNo:20,matCode:'60001019',shortText:'高效过滤器-MIIPDF-635*762*93-27-AAF', reqQty:36,unit:'个',orderQty:36,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:920.00,totalValue:33120,applicant:'李君',poNo:'4100014248',poLineItem:20,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-MIIPDF-762'},
+      {itemNo:30,matCode:'60001020',shortText:'高效过滤器-MIIPDF-416*416*93-27-AAF', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:680.00,totalValue:16320,applicant:'李君',poNo:'4100014248',poLineItem:30,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-MIIPDF-416'},
+      {itemNo:40,matCode:'60001021',shortText:'高效过滤器-MIIPDF-635*1030*93-27-AAF', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:1050.00,totalValue:21000,applicant:'李君',poNo:'4100014248',poLineItem:40,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-MIIPDF-1030'},
+      {itemNo:50,matCode:'60001022',shortText:'高效过滤器-GSF-LS-631*516*95-01/22-康斐尔', reqQty:32,unit:'个',orderQty:32,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:750.00,totalValue:24000,applicant:'李君',poNo:'4100014248',poLineItem:50,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'AAF国际公司',supplierMatCode:'AAF-GSF-516'},
+      {itemNo:60,matCode:'60001023',shortText:'高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:820.00,totalValue:19680,applicant:'李君',poNo:'4100014248',poLineItem:60,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'AAF国际公司',supplierMatCode:'AAF-GSF-758'},
+      {itemNo:70,matCode:'60001024',shortText:'高效过滤器-GSF-LS-412*412*95-01/22-康斐尔', reqQty:16,unit:'个',orderQty:16,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:620.00,totalValue:9920,applicant:'李君',poNo:'4100014248',poLineItem:70,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'AAF国际公司',supplierMatCode:'AAF-GSF-412'},
+      {itemNo:80,matCode:'60001025',shortText:'高效过滤器-GSF-LS-1026*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:1100.00,totalValue:13200,applicant:'李君',poNo:'4100014248',poLineItem:80,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'AAF国际公司',supplierMatCode:'AAF-GSF-1026'},
+      {itemNo:90,matCode:'60001026',shortText:'高效过滤器-GSF-LS-762*631*95-01/22-康斐尔', reqQty:12,unit:'个',orderQty:12,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:960.00,totalValue:11520,applicant:'李君',poNo:'4100014248',poLineItem:90,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'AAF国际公司',supplierMatCode:'AAF-GSF-762'},
+      {itemNo:100,matCode:'60001012',shortText:'耐湿高效过滤器-GKYS-305*30*150', reqQty:8,unit:'个',orderQty:8,deliveryDate:'20260720',requiredDate:'20260625',deliveryDate2:'20260720',price:580.00,totalValue:4640,applicant:'李君',poNo:'4100014248',poLineItem:100,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-GKYS-305'}
     ]
   },
   {
-    docNo:'2100002752', applyDate:'2026-05-07', plant:'2001 - 陕西步长制药工厂', dept:'设备部',notes:'要求氟橡胶材质，需提供材质证明',
+    docNo:'2100002752', applyDate:'2026-05-07', createDate:'2026-05-07', createTime:'10:30:00', applicant:'王海涛', plant:'2001 - 陕西步长制药工厂', dept:'设备部',notes:'要求氟橡胶材质，需提供材质证明',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60001086',shortText:'O型圈-Φ360*5.7-材质:氟橡胶', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:65.00,totalValue:1300,applicant:'王海涛',poNo:'4100015321',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1396,7 +1445,7 @@ const spPurchaseData = [
     ]
   },
   {
-    docNo:'2100002873', applyDate:'2026-05-09', plant:'2002 - 山东丹红制药工厂', dept:'设备部',notes:'宝帝原厂膜片，需随货附合格证',
+    docNo:'2100002873', applyDate:'2026-05-09', createDate:'2026-05-09', createTime:'14:20:00', applicant:'张建国', plant:'2002 - 山东丹红制药工厂', dept:'设备部',notes:'宝帝原厂膜片，需随货附合格证',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60001146',shortText:'隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:180.00,totalValue:5400,applicant:'张建国',poNo:'4100014655',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1410,7 +1459,7 @@ const spPurchaseData = [
     ]
   },
   {
-    docNo:'2100002984', applyDate:'2026-05-12', plant:'2003 - 山东神州制药工厂', dept:'生产部',notes:'',
+    docNo:'2100002984', applyDate:'2026-05-12', createDate:'2026-05-12', createTime:'08:45:00', applicant:'陈永刚', plant:'2003 - 山东神州制药工厂', dept:'生产部',notes:'',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60000655',shortText:'LED灯泡-30W', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:25.00,totalValue:1250,applicant:'陈永刚',poNo:'4100014901',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1424,7 +1473,7 @@ const spPurchaseData = [
     ]
   },
   {
-    docNo:'2100003105', applyDate:'2026-05-14', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'含安装服务',
+    docNo:'2100003105', applyDate:'2026-05-14', createDate:'2026-05-14', createTime:'11:00:00', applicant:'李君', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'含安装服务',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60001128',shortText:'初效过滤器-592*592*360-G4-袋式', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:95.00,totalValue:5700,applicant:'李君',poNo:'4100016742',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1438,7 +1487,7 @@ const spPurchaseData = [
     ]
   },
   {
-    docNo:'2100003206', applyDate:'2026-05-16', plant:'2006 - 吉林天成制药工厂', dept:'设备部',notes:'需重新确认规格型号',
+    docNo:'2100003206', applyDate:'2026-05-16', createDate:'2026-05-16', createTime:'09:20:00', applicant:'刘志强', plant:'2006 - 吉林天成制药工厂', dept:'设备部',notes:'需重新确认规格型号',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60001238',shortText:'宝塔式气路接头-管子直径10mm-螺纹口1/4', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:8.00,totalValue:400,applicant:'刘志强',poNo:'4100015200',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1452,7 +1501,7 @@ const spPurchaseData = [
     ]
   },
   {
-    docNo:'2100003307', applyDate:'2026-05-18', plant:'2010 - 保定天浩制药工厂', dept:'质量部',notes:'补充设备使用年限说明后重新提交',
+    docNo:'2100003307', applyDate:'2026-05-18', createDate:'2026-05-18', createTime:'15:10:00', applicant:'赵雪梅', plant:'2010 - 保定天浩制药工厂', dept:'质量部',notes:'补充设备使用年限说明后重新提交',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60001271',shortText:'304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', reqQty:6,unit:'个',orderQty:6,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:380.00,totalValue:2280,applicant:'赵雪梅',poNo:'4100015300',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1462,7 +1511,7 @@ const spPurchaseData = [
     ]
   },
   {
-    docNo:'2100003408', applyDate:'2026-05-20', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'需304不锈钢材质',
+    docNo:'2100003408', applyDate:'2026-05-20', createDate:'2026-05-20', createTime:'16:05:00', applicant:'王海涛', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'需304不锈钢材质',
     purchaseType:'Z01', purchaseGroup:'Z001',
     lines:[
       {itemNo:10,matCode:'60001249',shortText:'宝塔头-外径25mm-内径9.6mm-30700-60', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:18.00,totalValue:360,applicant:'王海涛',poNo:'4100017356',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
