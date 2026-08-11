@@ -144,7 +144,7 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table" style="min-width:1700px;">
+          <table class="data-table data-table-compact" style="min-width:1500px;">
             <thead><tr>
               <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>短文本</th><th>申请人</th>

@@ -70,6 +70,8 @@ body {
 }
 .data-table td { padding: 11px 14px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
 .data-table tbody tr:hover { background: #f8fafc; }
+.data-table-compact th { padding: 8px 10px; font-size: 11px; letter-spacing: 0.3px; }
+.data-table-compact td { padding: 7px 10px; font-size: 12px; }
 .table-wrapper { overflow-x: auto; overflow-y: auto; }
 .table-actions { display: flex; gap: 4px; }
 .table-actions .btn { padding: 4px 10px; font-size: 11px; }
