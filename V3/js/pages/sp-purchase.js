@@ -1228,12 +1228,15 @@ const SpPurchase = {
     const idx = Array.prototype.indexOf.call(tbody.rows, tr);
     if (idx < 0) return;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
+    const newAcct = selectEl.value;
     const getEl = f => tr.querySelector(`[data-field="${f}"]`);
     const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
     ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
       const el = getEl(f);
       if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent))) || opts[f];
     });
+    // KNTTP 为 K/F（费用化/订单采购）时物料编号默认为空
+    if (newAcct === 'K' || newAcct === 'F') opts.matCode = '';
     opts.status = tr.classList.contains('locked') ? 'B' : 'N';
     opts.totalValue = (parseFloat(opts.reqQty)||0) * (parseFloat(opts.price)||0);
     const itemNoCell = tr.querySelector('td:first-child');
@@ -1314,6 +1317,8 @@ const SpPurchase = {
         const el = getEl(f);
         if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent))) || opts[f];
       });
+      // 科目分配类别为 K/F 时物料编号默认为空
+      if (opts.acctAssCategory === 'K' || opts.acctAssCategory === 'F') opts.matCode = '';
       opts.status = tr.classList.contains('locked') ? 'B' : 'N';
       opts.totalValue = (parseFloat(opts.reqQty)||0) * (parseFloat(opts.price)||0);
       const itemNoCell = tr.querySelector('td:first-child');
