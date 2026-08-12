@@ -18,11 +18,6 @@ const COST_CENTER_OPTIONS = [
   { value: '100501', label: '100501-行政管理成本中心' },
   { value: '100601', label: '100601-研发试制成本中心' }
 ];
-const PURCHASE_GROUP_OPTIONS = [
-  { value: 'PG001', label: '原辅包采购组' },
-  { value: 'PG002', label: '非生产型采购组' },
-  { value: 'PG003', label: '费用化采购组' }
-];
 const MAT_GROUP_OPTIONS = [
   { value: '60401', label: '60401-备品备件-五金' },
   { value: '60402', label: '60402-备品备件-电料' },
@@ -430,7 +425,7 @@ const SpPurchase = {
       docNo: '', applyDate: new Date().toISOString().slice(0,10),
       plant: '1000', dept: '',
       notes: '',
-      purchaseType: 'Z01', purchaseGroup: '',
+      purchaseType: 'Z01',
       lines: [{ itemNo:10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N', acctAssCategory:'', matGroup:'', storageLocation:'', costCenter:'' }]
     };
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(emptyPr);
@@ -725,7 +720,6 @@ const SpPurchase = {
       dept,
       notes: '',
       purchaseType: 'Z01',
-      purchaseGroup: 'Z001',
       lines: this._batchRawData.map((r, i) => ({
         itemNo: (i + 1) * 10,
         matCode: r.matCode,
@@ -762,7 +756,6 @@ const SpPurchase = {
   submitForm() {
     const f = id => document.getElementById(id)?.value ?? '';
     const purchaseType = f('prFPurchaseType') || 'Z01';
-    const purchaseGroup = f('prFPurchaseGroup');
     const isZ01 = purchaseType === 'Z01';
     const isZ02 = purchaseType === 'Z02';
 
@@ -777,12 +770,10 @@ const SpPurchase = {
       dept: f('prFDept'),
       notes: '',
       purchaseType,
-      purchaseGroup,
       lines: []
     };
 
     if (!prData.dept) { toast('请填写必填字段：申请部门'); return; }
-    if (!prData.purchaseGroup) { toast('请选择采购组'); return; }
 
     // Collect lines using data-field attributes
     const tbody = document.getElementById('prLinesBody');
@@ -925,7 +916,6 @@ const SpPurchase = {
   viewDetail(docNo) {
     const pr = spPurchaseData.find(r => r.docNo === docNo); if (!pr) return;
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o=>o.value===pr.purchaseType);
-    const pgLabel = PURCHASE_GROUP_OPTIONS.find(o=>o.value===pr.purchaseGroup);
     const isZ01 = pr.purchaseType === 'Z01';
     const isZ02 = pr.purchaseType === 'Z02';
     const grandTotal = pr.lines.reduce((s,l)=>s+(l.totalValue||0),0);
@@ -967,7 +957,6 @@ const SpPurchase = {
                 <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}</dd></div>
                 <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}</dd></div>
                 <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
-                <div class="detail-item"><dt>采购组</dt><dd>${esc(pgLabel?pgLabel.label:pr.purchaseGroup||'-')}</dd></div>
               </div>
             </div>
             <!-- 行项目 -->
@@ -1068,7 +1057,6 @@ const SpPurchase = {
     const purchaseType = pr.purchaseType || 'Z01';
     const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType)).join('');
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o => o.value === purchaseType);
-    const pgLabel = PURCHASE_GROUP_OPTIONS.find(o => o.value === pr.purchaseGroup);
     const applicant = pr.applicant || (pr.lines[0] && pr.lines[0].applicant) || window.currentUserId || 'admin';
     const createDate = pr.createDate || pr.applyDate || new Date().toISOString().slice(0,10);
     const createTime = pr.createTime || (this.editMode ? '' : new Date().toTimeString().slice(0,5));
@@ -1099,7 +1087,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}<input type="hidden" id="prFCreateDate" value="${esc(createDate)}"></dd></div>
         <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}<input type="hidden" id="prFCreateTime" value="${esc(createTime)}"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}<input type="hidden" id="prFDept" value="${esc(pr.dept)}"></dd></div>
-        <div class="detail-item"><dt>采购组</dt><dd>${esc(pgLabel?pgLabel.label:pr.purchaseGroup||'-')}<input type="hidden" id="prFPurchaseGroup" value="${esc(pr.purchaseGroup||'')}"></dd></div>
       </div>` : `
       <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
         <div class="detail-item"><dt>工厂</dt><dd><select id="prFPlant" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${plantOptions}</select></dd></div>
@@ -1109,7 +1096,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>创建日期</dt><dd><input type="date" id="prFCreateDate" value="${esc(createDate)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>创建时间</dt><dd><input type="text" id="prFCreateTime" value="${esc(createTime)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd><select id="prFDept" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${deptOptions}</select></dd></div>
-        <div class="detail-item"><dt><span class="req">*</span> 采购组</dt><dd><select id="prFPurchaseGroup" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"><option value="">请选择</option>${PURCHASE_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${pr.purchaseGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></dd></div>
       </div>`;
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
@@ -1622,7 +1608,7 @@ const spPurchaseData = [
   {
     docNo:'2100002651', applyDate:'2026-05-06', createDate:'2026-05-06', createTime:'09:15:30', applicant:'李君',
     plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'原厂康斐尔/AAF品牌',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001018',shortText:'高效过滤器-MIIPDF-635*520*93-27-AAF', reqQty:48,unit:'个',orderQty:48,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:850.00,totalValue:40800,applicant:'李君',poNo:'4100014248',poLineItem:10,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-MIIPDF-635'},
       {itemNo:20,matCode:'60001019',shortText:'高效过滤器-MIIPDF-635*762*93-27-AAF', reqQty:36,unit:'个',orderQty:36,deliveryDate:'20260715',requiredDate:'20260620',deliveryDate2:'20260715',price:920.00,totalValue:33120,applicant:'李君',poNo:'4100014248',poLineItem:20,isSettled:'Y',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:'',supplier:'康斐尔贸易(上海)有限公司',supplierMatCode:'CAM-MIIPDF-762'},
@@ -1638,7 +1624,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100002752', applyDate:'2026-05-07', createDate:'2026-05-07', createTime:'10:30:00', applicant:'王海涛', plant:'2001 - 陕西步长制药工厂', dept:'设备部',notes:'要求氟橡胶材质，需提供材质证明',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001086',shortText:'O型圈-Φ360*5.7-材质:氟橡胶', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:65.00,totalValue:1300,applicant:'王海涛',poNo:'4100015321',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001087',shortText:'O型圈-Φ506*6.99-材质:氟橡胶', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260701',requiredDate:'20260610',deliveryDate2:'20260701',price:85.00,totalValue:1275,applicant:'王海涛',poNo:'4100015321',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1654,7 +1640,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100002873', applyDate:'2026-05-09', createDate:'2026-05-09', createTime:'14:20:00', applicant:'张建国', plant:'2002 - 山东丹红制药工厂', dept:'设备部',notes:'宝帝原厂膜片，需随货附合格证',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001146',shortText:'隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:180.00,totalValue:5400,applicant:'张建国',poNo:'4100014655',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001147',shortText:'隔膜阀膜片-尺寸:DN25-材质:PTFE/EPDM-宝帝', reqQty:24,unit:'个',orderQty:24,deliveryDate:'20260620',requiredDate:'20260528',deliveryDate2:'20260620',price:220.00,totalValue:5280,applicant:'张建国',poNo:'4100014655',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1668,7 +1654,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100002984', applyDate:'2026-05-12', createDate:'2026-05-12', createTime:'08:45:00', applicant:'陈永刚', plant:'2003 - 山东神州制药工厂', dept:'生产部',notes:'',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60000655',shortText:'LED灯泡-30W', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:25.00,totalValue:1250,applicant:'陈永刚',poNo:'4100014901',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60000656',shortText:'LED灯泡-60W', reqQty:30,unit:'个',orderQty:30,deliveryDate:'20260615',requiredDate:'20260601',deliveryDate2:'20260615',price:35.00,totalValue:1050,applicant:'陈永刚',poNo:'4100014901',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1682,7 +1668,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003105', applyDate:'2026-05-14', createDate:'2026-05-14', createTime:'11:00:00', applicant:'李君', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'含安装服务',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001128',shortText:'初效过滤器-592*592*360-G4-袋式', reqQty:60,unit:'个',orderQty:60,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:95.00,totalValue:5700,applicant:'李君',poNo:'4100016742',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001129',shortText:'初效过滤器-286*592*360-G4-袋式', reqQty:40,unit:'个',orderQty:40,deliveryDate:'20260630',requiredDate:'20260610',deliveryDate2:'20260630',price:75.00,totalValue:3000,applicant:'李君',poNo:'4100016742',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1696,7 +1682,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003206', applyDate:'2026-05-16', createDate:'2026-05-16', createTime:'09:20:00', applicant:'刘志强', plant:'2006 - 吉林天成制药工厂', dept:'设备部',notes:'需重新确认规格型号',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001238',shortText:'宝塔式气路接头-管子直径10mm-螺纹口1/4', reqQty:50,unit:'个',orderQty:50,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:8.00,totalValue:400,applicant:'刘志强',poNo:'4100015200',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001242',shortText:'T型接头-3/8"-10个/包-ZD-30703-77 PVDF', reqQty:10,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260605',deliveryDate2:'20260620',price:15.00,totalValue:150,applicant:'刘志强',poNo:'4100015200',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1710,7 +1696,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003307', applyDate:'2026-05-18', createDate:'2026-05-18', createTime:'15:10:00', applicant:'赵雪梅', plant:'2010 - 保定天浩制药工厂', dept:'质量部',notes:'补充设备使用年限说明后重新提交',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001271',shortText:'304不锈钢培养皿架-90mm培养皿-放40个-带可翻转提手', reqQty:6,unit:'个',orderQty:6,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:380.00,totalValue:2280,applicant:'赵雪梅',poNo:'4100015300',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001272',shortText:'304不锈钢培养皿架-90mm培养皿-放80个-带可翻转提手', reqQty:4,unit:'个',orderQty:4,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:520.00,totalValue:2080,applicant:'赵雪梅',poNo:'4100015300',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1720,7 +1706,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003408', applyDate:'2026-05-20', createDate:'2026-05-20', createTime:'16:05:00', applicant:'王海涛', plant:'1000 - 山东步长制药工厂', dept:'设备部',notes:'需304不锈钢材质',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001249',shortText:'宝塔头-外径25mm-内径9.6mm-30700-60', reqQty:20,unit:'个',orderQty:20,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:18.00,totalValue:360,applicant:'王海涛',poNo:'4100017356',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001250',shortText:'宝塔头-外径50mm-内径9.6mm-30700-49', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260705',requiredDate:'20260615',deliveryDate2:'20260705',price:25.00,totalValue:375,applicant:'王海涛',poNo:'4100017356',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1734,7 +1720,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003509', applyDate:'2026-05-22', plant:'2013 - 杨凌步长制药工厂', dept:'质量部',notes:'需提供第三方检定证书',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001207',shortText:'砝码-F1等级 1000g', reqQty:2,unit:'个',orderQty:2,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:680.00,totalValue:1360,applicant:'赵雪梅',poNo:'4100015400',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001202',shortText:'温湿度计-GJWS-A1', reqQty:5,unit:'个',orderQty:5,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:85.00,totalValue:425,applicant:'赵雪梅',poNo:'4100015400',status:'N',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1745,7 +1731,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003600', applyDate:'2026-05-24', plant:'2005 - 通化谷红制药工厂', dept:'生产部',notes:'需食品级硅胶/PTFE材质',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001154',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径25*内径9', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:3.50,totalValue:350,applicant:'陈永刚',poNo:'4100017892',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001155',shortText:'硅胶垫圈EPDM-材质:硅胶-尺寸:外径25*内径16', reqQty:100,unit:'个',orderQty:100,deliveryDate:'20260620',requiredDate:'20260601',deliveryDate2:'20260620',price:4.00,totalValue:400,applicant:'陈永刚',poNo:'4100017892',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1761,7 +1747,7 @@ const spPurchaseData = [
   },
   {
     docNo:'2100003701', applyDate:'2026-05-26', plant:'2012 - 陕西步长高新制药工厂', dept:'设备部',notes:'部分压力表损坏需更换',
-    purchaseType:'Z01', purchaseGroup:'Z001',
+    purchaseType:'Z01',
     lines:[
       {itemNo:10,matCode:'60001281',shortText:'压力表-0-2.5MPa', reqQty:15,unit:'个',orderQty:15,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:85.00,totalValue:1275,applicant:'刘志强',poNo:'4100018125',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
       {itemNo:20,matCode:'60001282',shortText:'压力表-0-40', reqQty:10,unit:'个',orderQty:10,deliveryDate:'20260625',requiredDate:'20260610',deliveryDate2:'20260625',price:75.00,totalValue:750,applicant:'刘志强',poNo:'4100018125',status:'B',acctAssCategory:'',matGroup:'',storageLocation:'',costCenter:''},
@@ -1773,7 +1759,7 @@ const spPurchaseData = [
   {
     docNo:'2100003802', applyDate:'2026-05-28', plant:'1000 - 山东步长制药工厂', dept:'设备部',
     notes:'需提供节能方案报告',
-    purchaseType:'Z02', purchaseGroup:'Z003',
+    purchaseType:'Z02',
     lines:[
       {itemNo:10,matCode:'',shortText:'空调节能改造技术方案咨询-现场勘查与方案设计', reqQty:1,unit:'个',orderQty:1,deliveryDate:'20260715',requiredDate:'20260630',deliveryDate2:'20260715',price:28000.00,totalValue:28000,applicant:'李君',poNo:'4100019001',status:'N',acctAssCategory:'K',matGroup:'608',storageLocation:'',costCenter:'100401'},
       {itemNo:20,matCode:'',shortText:'节能方案实施监理服务-全过程监理', reqQty:1,unit:'个',orderQty:1,deliveryDate:'20260801',requiredDate:'20260715',deliveryDate2:'20260801',price:15000.00,totalValue:15000,applicant:'李君',poNo:'4100019001',status:'N',acctAssCategory:'K',matGroup:'608',storageLocation:'',costCenter:'100401'}
@@ -1782,7 +1768,7 @@ const spPurchaseData = [
   {
     docNo:'2100003903', applyDate:'2026-06-02', plant:'2001 - 陕西步长制药工厂', dept:'质量部',
     notes:'需具备CMA/CNAS资质',
-    purchaseType:'Z02', purchaseGroup:'Z003',
+    purchaseType:'Z02',
     lines:[
       {itemNo:10,matCode:'',shortText:'高效液相色谱柱清洗与维护服务-安捷伦1260系列全年维护', reqQty:1,unit:'套',orderQty:1,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:12000.00,totalValue:12000,applicant:'赵雪梅',poNo:'4100019002',status:'N',acctAssCategory:'K',matGroup:'606',storageLocation:'',costCenter:'100601'},
       {itemNo:20,matCode:'',shortText:'实验室废弃物处理服务-化学废液/废试剂瓶合规处置', reqQty:12,unit:'次',orderQty:12,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:3500.00,totalValue:42000,applicant:'赵雪梅',poNo:'4100019002',status:'N',acctAssCategory:'K',matGroup:'606',storageLocation:'',costCenter:'100601'},
@@ -1792,7 +1778,7 @@ const spPurchaseData = [
   {
     docNo:'2100004004', applyDate:'2026-06-05', plant:'2010 - 保定天浩制药工厂', dept:'生产部',
     notes:'需有制药企业服务经验',
-    purchaseType:'Z02', purchaseGroup:'Z002',
+    purchaseType:'Z02',
     lines:[
       {itemNo:10,matCode:'',shortText:'洁净区专业保洁服务-洁净区2000㎡月度保洁', reqQty:6,unit:'次',orderQty:6,deliveryDate:'20260701',requiredDate:'20260615',deliveryDate2:'20260701',price:8600.00,totalValue:51600,applicant:'陈永刚',poNo:'4100019003',status:'N',acctAssCategory:'K',matGroup:'608',storageLocation:'',costCenter:'100401'},
       {itemNo:20,matCode:'',shortText:'GMP安全生产培训-全员培训含考核认证', reqQty:1,unit:'批',orderQty:1,deliveryDate:'20260715',requiredDate:'20260630',deliveryDate2:'20260715',price:18000.00,totalValue:18000,applicant:'陈永刚',poNo:'4100019003',status:'N',acctAssCategory:'K',matGroup:'608',storageLocation:'',costCenter:'100501'}
