@@ -1334,13 +1334,19 @@ const SpPurchase = {
       const stEl = row.querySelector('[data-field="shortText"]');
       if (stEl) { stEl.value = master.shortText; stEl.style.background = '#dcfce7'; setTimeout(() => { stEl.style.background = '#f1f5f9'; }, 800); }
 
-      // Auto-fill matGroup
+      // Auto-fill matGroup（物料号有值时，物料组始终带出：下拉选中 / 只读展示）
       const mgEl = row.querySelector('[data-field="matGroup"]');
-      if (mgEl && mgEl.tagName === 'SPAN') {
+      if (mgEl) {
         const label = MAT_GROUP_OPTIONS.find(o => o.value === master.matGroup);
-        mgEl.textContent = label ? label.label : master.matGroup;
-        mgEl.style.color = '#16a34a';
-        setTimeout(() => { mgEl.style.color = '#64748b'; }, 800);
+        if (mgEl.tagName === 'SELECT') {
+          mgEl.value = master.matGroup;
+          mgEl.style.background = '#dcfce7';
+          setTimeout(() => { mgEl.style.background = '#fffbe6'; }, 800);
+        } else if (mgEl.tagName === 'SPAN') {
+          mgEl.textContent = label ? label.label : master.matGroup;
+          mgEl.style.color = '#16a34a';
+          setTimeout(() => { mgEl.style.color = '#64748b'; }, 800);
+        }
       }
 
       // Auto-fill price
