@@ -920,7 +920,7 @@ const SpPurchase = {
     const linesWithPO = pr.lines.map(l => {
       const pos = [];
       if (l.poNo) {
-        // 已发货数量：优先取行数据 deliveredQty，缺省时 B(已创建采购订单)=orderQty、N=0
+        // 已收货数量：优先取行数据 deliveredQty，缺省时 B(已创建采购订单)=orderQty、N=0
         const dQty = (l.deliveredQty !== undefined && l.deliveredQty !== null) ? l.deliveredQty : (l.status === 'B' ? (l.orderQty||0) : 0);
         pos.push({ poNo:l.poNo, poLineItem:l.poLineItem||(l.poNo?l.itemNo:''), poDate:l.applyDate||pr.applyDate, orderQty:l.orderQty||0, deliveredQty:dQty, poDeliveryDate:l.deliveryDate||'' });
         // simulate multiple POs for first item of first doc as demo
@@ -1011,7 +1011,7 @@ const SpPurchase = {
                           <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">PO行项目</th>
                           <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">采购订单日期</th>
                           <th style="padding:6px 10px;text-align:right;font-size:11px;color:#475569;">订货数量</th>
-                          <th style="padding:6px 10px;text-align:right;font-size:11px;color:#475569;">已发货数量</th>
+                          <th style="padding:6px 10px;text-align:right;font-size:11px;color:#475569;">已收货数量</th>
                           <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">PO交货日期</th>
                         </tr></thead>
                         <tbody>${l._pos.map(po=>`<tr>
