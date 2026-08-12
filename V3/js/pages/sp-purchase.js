@@ -115,19 +115,12 @@ const SpPurchase = {
             <button class="btn btn-blue" onclick="SpPurchase.openNewModal()"><span style="font-weight:700;font-size:16px;">+</span> 新建申请</button>
           </div>
         </div>
-        <div class="filter-bar" style="flex-shrink:0;flex-wrap:wrap;">
+        <div class="filter-bar filter-bar-nowrap" style="flex-shrink:0;">
           <div class="filter-group"><label>工厂</label><input type="text" id="prPlant" placeholder="工厂"></div>
           <div class="filter-group"><label>采购申请号</label><input type="text" id="prDocNo" placeholder="申请编号"></div>
           <div class="filter-group"><label>物料</label><input type="text" id="prMatCode" placeholder="物料号"></div>
-          <div class="filter-group"><label>创建日期</label><input type="date" id="prCreateDateFrom" style="padding:6px 10px;"></div>
-          <div class="filter-group"><label>至</label><input type="date" id="prCreateDateTo" style="padding:6px 10px;"></div>
-          <div class="filter-group"><label>部门</label><select id="prDept">
-            <option value="">全部</option>
-            <option value="设备部">设备部</option>
-            <option value="生产部">生产部</option>
-            <option value="质量部">质量部</option>
-            <option value="仓储物流部">仓储物流部</option>
-          </select></div>
+          <div class="filter-group"><label>创建日期</label><input type="date" id="prCreateDateFrom"></div>
+          <div class="filter-group"><label>至</label><input type="date" id="prCreateDateTo"></div>
           <div class="filter-group"><label>申请人</label><input type="text" id="prApplicant" placeholder="申请人"></div>
           <div class="filter-group"><label>是否结算</label><select id="prIsSettled">
             <option value="">全部</option>
@@ -145,10 +138,10 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table data-table-compact" style="min-width:1380px;">
+          <table class="data-table data-table-compact" style="min-width:1500px;">
             <thead><tr>
               <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
-              <th>物料</th><th>短文本</th><th>申请人</th>
+              <th>物料</th><th>短文本</th><th>申请人</th><th>创建日期</th>
               <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th style="width:100px;text-align:center;">处理状态</th><th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
               <th style="width:190px;">操作</th>
@@ -220,6 +213,7 @@ const SpPurchase = {
         <td><strong>${esc(row.matCode)}</strong></td>
         <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(row.shortText)}">${esc(row.shortText)}</td>
         <td>${esc(row.applicant)}</td>
+        <td style="white-space:nowrap;">${esc(row.createDate)}</td>
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
         <td style="text-align:right;">${Number(row.reqQty).toLocaleString()}</td>
         <td style="text-align:center;">${esc(row.unit)}</td>
@@ -244,7 +238,6 @@ const SpPurchase = {
     const matCode = document.getElementById('prMatCode')?.value.trim() || '';
     const createFrom = document.getElementById('prCreateDateFrom')?.value || '';
     const createTo = document.getElementById('prCreateDateTo')?.value || '';
-    const dept = document.getElementById('prDept')?.value || '';
     const isSettled = document.getElementById('prIsSettled')?.value || '';
     const status = document.getElementById('prStatus')?.value || '';
     const applicant = document.getElementById('prApplicant')?.value.trim() || '';
@@ -255,7 +248,6 @@ const SpPurchase = {
       if (matCode && !(row.matCode||'').includes(matCode)) return false;
       if (createFrom && row.createDate < createFrom) return false;
       if (createTo && row.createDate > createTo) return false;
-      if (dept && row.dept !== dept) return false;
       if (isSettled && row.isSettled !== isSettled) return false;
       if (status && (row.status || 'N') !== status) return false;
       if (applicant && row.applicant !== applicant) return false;
@@ -268,7 +260,7 @@ const SpPurchase = {
   reset() {
     const ids = ['prPlant','prDocNo','prMatCode','prCreateDateFrom','prCreateDateTo','prApplicant'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const selIds = ['prDept','prIsSettled','prStatus'];
+    const selIds = ['prIsSettled','prStatus'];
     selIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filteredFlat = [...this.flatRows];
     this.page = 1;

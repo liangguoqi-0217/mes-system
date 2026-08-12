@@ -108,6 +108,13 @@ tr.locked td { background: #fafbfc; }
 }
 .filter-actions { display: flex; gap: 8px; margin-left: auto; }
 
+/* 单行紧凑筛选栏：字段较多时压缩为一行展示 */
+.filter-bar-nowrap { flex-wrap: nowrap; }
+.filter-bar-nowrap .filter-group { min-width: 0; flex: 1 1 90px; }
+.filter-bar-nowrap .filter-group label { font-size: 11px; white-space: nowrap; }
+.filter-bar-nowrap .filter-group input,
+.filter-bar-nowrap .filter-group select { min-width: 0; width: 100%; padding: 6px 8px; font-size: 12px; }
+
 /* ===== Toolbar ===== */
 .list-toolbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -387,6 +394,10 @@ tr.locked td { background: #fafbfc; }
   .filter-bar { flex-direction: column; }
   .filter-group, .filter-group input, .filter-group select { min-width: 100%; }
   .filter-actions { margin-left: 0; }
+  .filter-bar-nowrap { flex-wrap: wrap; }
+  .filter-bar-nowrap .filter-group { flex: 1 1 100%; }
+  .filter-bar-nowrap .filter-group input,
+  .filter-bar-nowrap .filter-group select { min-width: 100%; }
 
   /* 移动端表格优化 */
   .data-table { min-width: 100%; font-size: 12px; }
