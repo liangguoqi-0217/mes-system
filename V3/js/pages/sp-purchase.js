@@ -925,12 +925,12 @@ const SpPurchase = {
 
     const html = `
       <div class="modal-backdrop" id="prDetailBackdrop" onclick="SpPurchase.closeDetail()">
-        <div class="modal" style="max-width:98vw;width:${isZ02?'1400px':'1600px'};" onclick="event.stopPropagation()">
+        <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">采购申请详情 - ${esc(pr.docNo)} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(ptLabel?ptLabel.label:'')}</span></div>
             <button class="modal-close" onclick="SpPurchase.closeDetail()">✕</button>
           </div>
-          <div class="modal-body" style="max-height:calc(95vh-90px);">
+          <div class="modal-body" style="max-height:none;">
             <!-- 抬头信息 -->
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
@@ -1086,12 +1086,12 @@ const SpPurchase = {
       </div>`;
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
-        <div class="modal modal-lg" style="max-width:${purchaseType==='Z02'?'1400px':'1600px'};" onclick="event.stopPropagation()">
+        <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">${this.editMode?'修改':'新建'}采购申请 - ${esc(pr.docNo||'(自动生成)')} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(ptLabel?ptLabel.label:'')}</span></div>
             <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
           </div>
-          <div class="modal-body" style="max-height:calc(92vh-140px);">
+          <div class="modal-body" style="max-height:none;">
             <${''}!-- Header ${''}-->
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
