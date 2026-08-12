@@ -119,8 +119,7 @@ const SpPurchase = {
           <div class="filter-group"><label>工厂</label><input type="text" id="prPlant" placeholder="工厂"></div>
           <div class="filter-group"><label>采购申请号</label><input type="text" id="prDocNo" placeholder="申请编号"></div>
           <div class="filter-group"><label>物料</label><input type="text" id="prMatCode" placeholder="物料号"></div>
-          <div class="filter-group"><label>创建日期</label><input type="date" id="prCreateDateFrom"></div>
-          <div class="filter-group"><label>至</label><input type="date" id="prCreateDateTo"></div>
+          <div class="filter-group"><label>创建月份</label><input type="month" id="prCreateMonth"></div>
           <div class="filter-group"><label>申请人</label><input type="text" id="prApplicant" placeholder="申请人"></div>
           <div class="filter-group"><label>是否结算</label><select id="prIsSettled">
             <option value="">全部</option>
@@ -236,8 +235,7 @@ const SpPurchase = {
     const plant = document.getElementById('prPlant')?.value.trim() || '';
     const docNo = document.getElementById('prDocNo').value.trim();
     const matCode = document.getElementById('prMatCode')?.value.trim() || '';
-    const createFrom = document.getElementById('prCreateDateFrom')?.value || '';
-    const createTo = document.getElementById('prCreateDateTo')?.value || '';
+    const createMonth = document.getElementById('prCreateMonth')?.value || '';
     const isSettled = document.getElementById('prIsSettled')?.value || '';
     const status = document.getElementById('prStatus')?.value || '';
     const applicant = document.getElementById('prApplicant')?.value.trim() || '';
@@ -246,8 +244,7 @@ const SpPurchase = {
       if (plant && !row.plant.includes(plant)) return false;
       if (docNo && !row.docNo.includes(docNo)) return false;
       if (matCode && !(row.matCode||'').includes(matCode)) return false;
-      if (createFrom && row.createDate < createFrom) return false;
-      if (createTo && row.createDate > createTo) return false;
+      if (createMonth && !(row.createDate || '').replace(/-/g, '').startsWith(createMonth.replace(/-/g, ''))) return false;
       if (isSettled && row.isSettled !== isSettled) return false;
       if (status && (row.status || 'N') !== status) return false;
       if (applicant && row.applicant !== applicant) return false;
@@ -258,7 +255,7 @@ const SpPurchase = {
   },
 
   reset() {
-    const ids = ['prPlant','prDocNo','prMatCode','prCreateDateFrom','prCreateDateTo','prApplicant'];
+    const ids = ['prPlant','prDocNo','prMatCode','prCreateMonth','prApplicant'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const selIds = ['prIsSettled','prStatus'];
     selIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
