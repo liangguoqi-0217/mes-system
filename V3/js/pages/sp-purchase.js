@@ -1221,7 +1221,7 @@ const SpPurchase = {
       <td style="padding:5px;"><input type="text" data-field="supplierMatCode" value="${esc(line.supplierMatCode||'')}" placeholder="供应商物料号"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${costCenterCell}
       <td style="text-align:center;padding:5px;"><span class="badge ${locked?'badge-blue':'badge-gray'}" style="font-size:11px;">${locked?'B-已创建采购订单':'N-未编辑'}</span></td>
-      <td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ${line.isSettled==='Y'?'checked':''} ${locked?'disabled':''} style="width:16px;height:16px;cursor:${locked?'not-allowed':'pointer'};" title="${locked?'已创建采购订单，所有字段不可编辑':'勾选表示此行已结算'}"></td>
+      <td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ${line.isSettled==='Y'?'checked':''} style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>
       <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注"${dis} style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:4px;text-align:center;">${locked ? '<span style="color:var(--text-muted);font-size:11px;">-</span>' : `<button class="btn btn-sm" style="padding:3px 8px;font-size:18px;line-height:1;color:var(--danger);background:none;border:1px solid transparent;" onclick="SpPurchase.removeLineRow(this)" title="删除此行">&times;</button>`}</td>
     </tr>`;
