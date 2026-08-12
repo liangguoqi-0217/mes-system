@@ -135,8 +135,8 @@ const SpPurchase = {
           </select></div>
           <div class="filter-group"><label>处理状态</label><select id="prStatus">
             <option value="">全部</option>
-            <option value="N">未处理</option>
-            <option value="B">已创建订单</option>
+            <option value="N">未编辑</option>
+            <option value="B">已创建采购订单</option>
           </select></div>
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SpPurchase.search()">查询</button>
@@ -233,9 +233,9 @@ const SpPurchase = {
 
   statusBadge(status) {
     const s = status || 'N';
-    if (s === 'B') return '<span class="badge badge-blue">已创建订单</span>';
+    if (s === 'B') return '<span class="badge badge-blue">已创建采购订单</span>';
     if (s === 'Y') return '<span class="badge badge-green">已下达</span>';
-    return '<span class="badge badge-gray">未处理</span>';
+    return '<span class="badge badge-gray">未编辑</span>';
   },
 
   search() {
