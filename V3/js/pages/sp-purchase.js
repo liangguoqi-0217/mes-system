@@ -1199,10 +1199,8 @@ const SpPurchase = {
       ? `<td style="padding:5px;"><span style="color:var(--text-muted);font-size:11px;">-</span></td>`
       : `<td style="padding:5px;"><select data-field="costCenter"${dis}${knttpK?' required':''} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;"><option value="">请选择</option>${COST_CENTER_OPTIONS.map(o=>`<option value="${o.value}"${line.costCenter===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
 
-    // Price cell
-    const priceCell = isZ01
-      ? `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01" readonly${dis} style="width:68px;text-align:right;padding:5px 6px;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;background:#f1f5f9;color:#64748b;" oninput="SpPurchase.recalcTotal()"></td>`
-      : `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01"${dis} style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()" required></td>`;
+    // Price cell (评估价格始终可编辑，不受处理状态锁定)
+    const priceCell = `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01"${isZ01?'':' required'} style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()"></td>`;
 
     return `<tr${rowClass} data-row="${idx}">
       <td style="text-align:center;color:var(--text-muted);font-weight:600;">${line.itemNo || ((idx+1)*10)}</td>
@@ -1347,7 +1345,7 @@ const SpPurchase = {
 
       // Auto-fill price
       const prEl = row.querySelector('[data-field="price"]');
-      if (prEl) { prEl.value = master.price; prEl.style.background = '#dcfce7'; setTimeout(() => { prEl.style.background = '#f1f5f9'; }, 800); }
+      if (prEl) { prEl.value = master.price; prEl.style.background = '#dcfce7'; setTimeout(() => { prEl.style.background = '#fffbe6'; }, 800); }
 
       this.recalcTotal();
     } else {
