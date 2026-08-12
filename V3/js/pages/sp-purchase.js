@@ -36,6 +36,19 @@ const MAT_GROUP_OPTIONS = [
   { value: '502', label: '502-包装材料-外包材' }
 ];
 
+// ---- 日期工具：内部数据格式 YYYYMMDD <-> 日期控件 YYYY-MM-DD ----
+function toDateInputValue(v) {
+  if (!v) return '';
+  const s = String(v).replace(/[-/]/g, '').trim();
+  return /^\d{8}$/.test(s) ? `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}` : '';
+}
+function fromDateInputValue(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.replace(/-/g, '');
+  return /^\d{8}$/.test(s) ? s : '';
+}
+
 // ---- 物料主数据 Mock（供 Z01 自动带出用）----
 const materialMasterMock = [
   { matCode: '60001018', shortText: '高效过滤器-MIIPDF-635*520*93-27-AAF', matGroup: '60405', storageLocation: '5004', price: 850.00 },
@@ -792,7 +805,7 @@ const SpPurchase = {
       const supplier = getVal('supplier');
       const supplierMatCode = getVal('supplierMatCode');
       const notes = getVal('notes');
-      const deliveryDate = getVal('deliveryDate');
+      const deliveryDate = fromDateInputValue(getVal('deliveryDate'));
 
       // Skip empty rows
       if (!mc && !st && !q) continue;
@@ -1212,7 +1225,7 @@ const SpPurchase = {
         <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
       </select></td>
       ${matGroupCell}
-      <td style="padding:5px;"><input type="text" data-field="deliveryDate" value="${esc(line.deliveryDate||'')}" placeholder="YYYYMMDD"${dis} style="width:88px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><input type="date" data-field="deliveryDate" value="${esc(toDateInputValue(line.deliveryDate))}"${dis} style="width:130px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${priceCell}
       <td style="padding:5px;"><input type="text" data-field="supplier" value="${esc(line.supplier||'')}" placeholder="建议供应商"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" data-field="supplierMatCode" value="${esc(line.supplierMatCode||'')}" placeholder="供应商物料号"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
@@ -1236,7 +1249,11 @@ const SpPurchase = {
     const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
     ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
       const el = getEl(f);
-      if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent))) || opts[f];
+      if (el) {
+        let v = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent)));
+        if (f === 'deliveryDate') v = fromDateInputValue(v);
+        opts[f] = v || opts[f];
+      }
     });
     // KNTTP 为 K/F（费用化/订单采购）时物料编号默认为空
     if (newAcct === 'K' || newAcct === 'F') opts.matCode = '';
@@ -1307,7 +1324,11 @@ const SpPurchase = {
       const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
       ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
         const el = getEl(f);
-        if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent))) || opts[f];
+        if (el) {
+          let v = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent)));
+          if (f === 'deliveryDate') v = fromDateInputValue(v);
+          opts[f] = v || opts[f];
+        }
       });
       // 科目分配类别为 K/F 时物料编号默认为空
       if (opts.acctAssCategory === 'K' || opts.acctAssCategory === 'F') opts.matCode = '';
