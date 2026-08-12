@@ -157,7 +157,7 @@ const SpPurchase = {
           docNo: pr.docNo, itemNo: line.itemNo,
           matCode: line.matCode || '', shortText: line.shortText || '',
           reqQty: line.reqQty, unit: line.unit || '',
-          orderQty: line.orderQty || 0, deliveryDate: line.deliveryDate || '',
+          orderQty: line.orderQty || 0, deliveredQty: line.deliveredQty !== undefined && line.deliveredQty !== null ? line.deliveredQty : (line.status === 'B' ? (line.orderQty||0) : 0), deliveryDate: line.deliveryDate || '',
           applicant: line.applicant || '', poNo: line.poNo || '',
           price: line.price || 0,
           plant: pr.plant, dept: pr.dept, status: line.status || 'N',
@@ -833,6 +833,7 @@ const SpPurchase = {
           lineStatus = existing.lines[i].status || 'N';
           existingPoData = { poNo: existing.lines[i].poNo, poLineItem: existing.lines[i].poLineItem,
             orderQty: existing.lines[i].orderQty, supplier: existing.lines[i].supplier,
+            deliveredQty: existing.lines[i].deliveredQty,
             _pos: existing.lines[i]._pos };
         }
       }
@@ -847,6 +848,7 @@ const SpPurchase = {
         supplierMatCode: supplierMatCode,
         reqQty: q, unit: u || '个',
         orderQty: existingPoData?.orderQty || parseFloat(getVal('orderQty')) || 0,
+        deliveredQty: existingPoData?.deliveredQty,
         deliveryDate: deliveryDate,
         price: p, totalValue: q * p, status: lineStatus, isSettled,
         acctAssCategory: acct, matGroup: mg, costCenter: costCtr, notes: notes,
@@ -918,10 +920,12 @@ const SpPurchase = {
     const linesWithPO = pr.lines.map(l => {
       const pos = [];
       if (l.poNo) {
-        pos.push({ poNo:l.poNo, poLineItem:l.poLineItem||(l.poNo?l.itemNo:''), poDate:l.applyDate||pr.applyDate, orderQty:l.orderQty||0, poDeliveryDate:l.deliveryDate||'' });
+        // 已发货数量：优先取行数据 deliveredQty，缺省时 B(已创建采购订单)=orderQty、N=0
+        const dQty = (l.deliveredQty !== undefined && l.deliveredQty !== null) ? l.deliveredQty : (l.status === 'B' ? (l.orderQty||0) : 0);
+        pos.push({ poNo:l.poNo, poLineItem:l.poLineItem||(l.poNo?l.itemNo:''), poDate:l.applyDate||pr.applyDate, orderQty:l.orderQty||0, deliveredQty:dQty, poDeliveryDate:l.deliveryDate||'' });
         // simulate multiple POs for first item of first doc as demo
         if (pr.docNo==='2100002651' && l.itemNo<=20 && l.poNo==='4100014248') {
-          pos.push({ poNo:'4100014290', poLineItem:l.itemNo, poDate:'20260520', orderQty:Math.round(l.orderQty/2), poDeliveryDate:l.deliveryDate });
+          pos.push({ poNo:'4100014290', poLineItem:l.itemNo, poDate:'20260520', orderQty:Math.round(l.orderQty/2), deliveredQty:Math.round(dQty/2), poDeliveryDate:l.deliveryDate });
         }
       }
       return { ...l, _pos:pos };
@@ -1007,6 +1011,7 @@ const SpPurchase = {
                           <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">PO行项目</th>
                           <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">采购订单日期</th>
                           <th style="padding:6px 10px;text-align:right;font-size:11px;color:#475569;">订货数量</th>
+                          <th style="padding:6px 10px;text-align:right;font-size:11px;color:#475569;">已发货数量</th>
                           <th style="padding:6px 10px;text-align:left;font-size:11px;color:#475569;">PO交货日期</th>
                         </tr></thead>
                         <tbody>${l._pos.map(po=>`<tr>
@@ -1014,6 +1019,7 @@ const SpPurchase = {
                           <td style="padding:5px 10px;">${po.poLineItem}</td>
                           <td style="padding:5px 10px;">${esc(po.poDate||'-')}</td>
                           <td style="padding:5px 10px;text-align:right;">${Number(po.orderQty||0).toLocaleString()}</td>
+                          <td style="padding:5px 10px;text-align:right;color:#1e3a5f;font-weight:600;">${Number(po.deliveredQty||0).toLocaleString()}</td>
                           <td style="padding:5px 10px;">${esc(po.poDeliveryDate||'-')}</td>
                         </tr>`).join('')}</tbody>
                       </table>
