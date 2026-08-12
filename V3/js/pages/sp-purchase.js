@@ -206,7 +206,7 @@ const SpPurchase = {
       if (isNewGroup) {
         actions = `<div class="table-actions">
           <button class="btn btn-blue btn-sm" onclick="SpPurchase.viewDetail('${row.docNo}')">查看</button>
-          <button class="btn btn-outline btn-sm" onclick="SpPurchase.refreshPurchaseProgress('${row.docNo}', this)">刷新采购进度</button>
+          <button class="btn btn-teal btn-sm" onclick="SpPurchase.refreshPurchaseProgress('${row.docNo}', this)">刷新采购进度</button>
         </div>`;
       }
       return `<tr>

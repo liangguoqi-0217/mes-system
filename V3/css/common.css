@@ -39,6 +39,12 @@ body {
 .btn-primary:hover { background: var(--primary-light); }
 .btn-blue { background: var(--primary-lighter); color: white; }
 .btn-blue:hover { background: #2563EB; }
+/* 刷新/同步类操作：青绿色，与 btn-blue 明显区分，呼应数据流动语义 */
+.btn-teal { background: #0D9488; color: white; }
+.btn-teal:hover { background: #0F766E; }
+.btn-teal:active { background: #115E59; }
+.btn-teal:focus-visible { outline: 2px solid rgba(13,148,136,.45); outline-offset: 2px; }
+.btn-teal:disabled { background: #9EC9C5; cursor: not-allowed; }
 .btn-success { background: var(--success); color: white; }
 .btn-warning { background: var(--warning); color: white; }
 .btn-secondary { background: var(--bg); color: var(--text); }
