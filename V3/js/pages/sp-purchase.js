@@ -223,7 +223,8 @@ const SpPurchase = {
               <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>短文本</th><th>申请人</th><th>创建日期</th>
               <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
-              <th style="width:100px;text-align:center;">处理状态</th><th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th><th style="text-align:right;">预估总金额</th>
+              <th style="text-align:right;">评估价格</th><th style="text-align:right;">预估总金额</th>
+              <th style="width:100px;text-align:center;">处理状态</th><th style="width:72px;text-align:center;">已结算</th>
               <th style="width:190px;">操作</th>
             </tr></thead>
             <tbody id="prTableBody"></tbody>
@@ -298,10 +299,10 @@ const SpPurchase = {
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
         <td style="text-align:right;">${Number(row.reqQty).toLocaleString()}</td>
         <td style="text-align:center;">${esc(row.unit)}</td>
-        <td style="text-align:center;">${this.statusBadge(row.status)}</td>
-        <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
         <td style="text-align:right;"><span class="price-cell" data-tip="需求部门填写的预估单价，供采购人员参考">${Number(row.price).toFixed(2)}</span></td>
         <td style="text-align:right;color:var(--text-muted);">${((Number(row.reqQty)||0)*(Number(row.price)||0)).toFixed(2)}</td>
+        <td style="text-align:center;">${this.statusBadge(row.status)}</td>
+        <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
         <td style="white-space:nowrap;">${actions}</td>
       </tr>`;
     }).join('');
@@ -971,10 +972,10 @@ const SpPurchase = {
                   <th>短文本</th>
                   <th style="text-align:right;">数量</th>
                   <th style="width:42px;">单位</th>
-                  <th>物料组</th>
-                  <th>交货日期</th>
                   <th style="text-align:right;">评价价格</th>
                   <th style="text-align:right;">预估总金额</th>
+                  <th>物料组</th>
+                  <th>交货日期</th>
                   <th>建议供应商</th>
                   <th>供应商物料编号</th>
                   <th>成本中心</th>
@@ -995,10 +996,10 @@ const SpPurchase = {
                   <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.shortText)}">${esc(l.shortText)}</td>
                   <td style="text-align:right;">${Number(l.reqQty).toLocaleString()}</td>
                   <td style="text-align:center;">${esc(l.unit)}</td>
-                  <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
-                  <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
                   <td style="text-align:right;"><span class="price-cell" data-tip="需求部门填写的预估单价，供采购人员参考">${Number(l.price).toFixed(2)}</span></td>
                   <td style="text-align:right;color:var(--text-muted);">${((Number(l.reqQty)||0)*(Number(l.price)||0)).toFixed(2)}</td>
+                  <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
+                  <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
                   <td>${esc(l.supplier||'-')}</td>
                   <td>${esc(l.supplierMatCode||'-')}</td>
                   <td>${esc(l.costCenter||'-')}</td>
@@ -1132,10 +1133,10 @@ const SpPurchase = {
                     <th style="min-width:180px;" id="prThShortText"><span class="req">*</span> 短文本</th>
                     <th style="min-width:75px;text-align:right;"><span class="req">*</span> 数量</th>
                     <th style="width:52px;">单位</th>
-                    <th style="min-width:85px;" id="prThMatGroup">物料组</th>
-                    <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:80px;text-align:right;" id="prThPrice">评价价格</th>
                     <th style="min-width:110px;text-align:right;">预估总金额</th>
+                    <th style="min-width:85px;" id="prThMatGroup">物料组</th>
+                    <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:105px;">建议供应商</th>
                     <th style="min-width:105px;">供应商物料编号</th>
                     <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
@@ -1216,10 +1217,10 @@ const SpPurchase = {
       <td style="padding:5px;"><select data-field="unit"${dis} style="width:48px;padding:4px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;" onchange="SpPurchase.recalcTotal()">
         <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
       </select></td>
-      ${matGroupCell}
-      <td style="padding:5px;"><input type="date" data-field="deliveryDate" value="${esc(toDateInputValue(line.deliveryDate))}"${dis} style="width:130px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${priceCell}
       <td style="padding:5px;text-align:right;"><span class="line-total" style="color:var(--text-muted);font-size:12px;">${((Number(line.reqQty)||0)*(Number(line.price)||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></td>
+      ${matGroupCell}
+      <td style="padding:5px;"><input type="date" data-field="deliveryDate" value="${esc(toDateInputValue(line.deliveryDate))}"${dis} style="width:130px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" data-field="supplier" value="${esc(line.supplier||'')}" placeholder="建议供应商"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" data-field="supplierMatCode" value="${esc(line.supplierMatCode||'')}" placeholder="供应商物料号"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${costCenterCell}
