@@ -1055,7 +1055,8 @@ const SpPurchase = {
   // ---- Modal Form ----
   getFormModalHTML(pr) {
     const purchaseType = pr.purchaseType || 'Z01';
-    const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType)).join('');
+    const isNew = !this.editMode;
+    const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew)).join('');
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o => o.value === purchaseType);
     const applicant = pr.applicant || (pr.lines[0] && pr.lines[0].applicant) || window.currentUserId || 'admin';
     const createDate = pr.createDate || pr.applyDate || new Date().toISOString().slice(0,10);
@@ -1134,8 +1135,7 @@ const SpPurchase = {
                     <th style="min-width:105px;">建议供应商</th>
                     <th style="min-width:105px;">供应商物料编号</th>
                     <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
-                    <th style="width:100px;text-align:center;">处理状态</th>
-                    <th style="width:60px;text-align:center;">已结算</th>
+                    ${isNew ? '' : '<th style="width:100px;text-align:center;">处理状态</th><th style="width:60px;text-align:center;">已结算</th>'}
                     <th style="min-width:70px;">备注</th>
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
@@ -1155,10 +1155,12 @@ const SpPurchase = {
       </div>`;
   },
 
-  renderLineRow(line, idx, purchaseType) {
+  renderLineRow(line, idx, purchaseType, isNew) {
     const pt = purchaseType || 'Z01';
     const isZ01 = pt === 'Z01';
     const isZ02 = pt === 'Z02';
+    // 新建模式不显示「处理状态」「已结算」两列
+    if (isNew === undefined) isNew = !this.editMode;
     // 处理状态：B=已创建采购订单（整行锁定，所有字段不可编辑）；N=未编辑（所有字段可编辑）
     const lineStatus = line.status || (line.poNo ? 'B' : 'N');
     const locked = this.editMode && lineStatus === 'B';
@@ -1216,8 +1218,8 @@ const SpPurchase = {
       <td style="padding:5px;"><input type="text" data-field="supplier" value="${esc(line.supplier||'')}" placeholder="建议供应商"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       <td style="padding:5px;"><input type="text" data-field="supplierMatCode" value="${esc(line.supplierMatCode||'')}" placeholder="供应商物料号"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${costCenterCell}
-      <td style="text-align:center;padding:5px;"><span class="badge ${locked?'badge-blue':'badge-gray'}" style="font-size:11px;">${locked?'B-已创建采购订单':'N-未编辑'}</span></td>
-      <td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ${line.isSettled==='Y'?'checked':''} style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>
+      ${isNew ? '' : '<td style="text-align:center;padding:5px;"><span class="badge ' + (locked?'badge-blue':'badge-gray') + '" style="font-size:11px;">' + (locked?'B-已创建采购订单':'N-未编辑') + '</span></td>'}
+      ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
       <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注"${dis} style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
     </tr>`;
   },
