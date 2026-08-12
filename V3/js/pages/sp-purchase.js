@@ -761,7 +761,7 @@ const SpPurchase = {
       applicant: f('prFApplicant') || (window.currentUserId || 'admin'),
       plant: f('prFPlant'),
       dept: f('prFDept'),
-      notes: f('prFNotes'),
+      notes: '',
       purchaseType,
       purchaseGroup,
       lines: []
@@ -934,7 +934,7 @@ const SpPurchase = {
             <!-- 抬头信息 -->
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
-              <div class="detail-grid">
+              <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
                 <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}</dd></div>
                 <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong></dd></div>
                 <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}</dd></div>
@@ -943,7 +943,6 @@ const SpPurchase = {
                 <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}</dd></div>
                 <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
                 <div class="detail-item"><dt>采购组</dt><dd>${esc(pgLabel?pgLabel.label:pr.purchaseGroup||'-')}</dd></div>
-                <div class="detail-item" style="grid-column: 1 / -1;"><dt>备注</dt><dd>${esc(pr.notes||'-')}</dd></div>
               </div>
             </div>
             <!-- 行项目 -->
@@ -1065,7 +1064,7 @@ const SpPurchase = {
     // 编辑模式：抬头与查看弹窗完全一致（纯文本展示），值通过 hidden input 保留以便提交
     // 新建模式：抬头为可编辑控件
     const headerHTML = this.editMode ? `
-      <div class="detail-grid">
+      <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
         <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}<input type="hidden" id="prFPlant" value="${esc(pr.plant)}"></dd></div>
         <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}<input type="hidden" id="prFPurchaseType" value="${esc(purchaseType)}"></dd></div>
@@ -1074,9 +1073,8 @@ const SpPurchase = {
         <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}<input type="hidden" id="prFCreateTime" value="${esc(createTime)}"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}<input type="hidden" id="prFDept" value="${esc(pr.dept)}"></dd></div>
         <div class="detail-item"><dt>采购组</dt><dd>${esc(pgLabel?pgLabel.label:pr.purchaseGroup||'-')}<input type="hidden" id="prFPurchaseGroup" value="${esc(pr.purchaseGroup||'')}"></dd></div>
-        <div class="detail-item" style="grid-column: 1 / -1;"><dt>备注</dt><dd>${esc(pr.notes||'-')}<input type="hidden" id="prFNotes" value="${esc(pr.notes||'')}"></dd></div>
       </div>` : `
-      <div class="detail-grid">
+      <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
         <div class="detail-item"><dt>工厂</dt><dd><select id="prFPlant" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${plantOptions}</select></dd></div>
         <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo||'(自动生成)')}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd><select id="prFPurchaseType" onchange="SpPurchase.onPurchaseTypeChange()" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${PURCHASE_TYPE_OPTIONS.map(o=>`<option value="${o.value}"${purchaseType===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></dd></div>
@@ -1085,7 +1083,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>创建时间</dt><dd><input type="text" id="prFCreateTime" value="${esc(createTime)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd><select id="prFDept" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${deptOptions}</select></dd></div>
         <div class="detail-item"><dt><span class="req">*</span> 采购组</dt><dd><select id="prFPurchaseGroup" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"><option value="">请选择</option>${PURCHASE_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${pr.purchaseGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></dd></div>
-        <div class="detail-item" style="grid-column: 1 / -1;"><dt>备注</dt><dd><textarea id="prFNotes" rows="2" placeholder="补充说明" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;resize:vertical;font-family:inherit;">${esc(pr.notes||'')}</textarea></dd></div>
       </div>`;
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
