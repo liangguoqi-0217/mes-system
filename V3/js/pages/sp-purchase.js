@@ -6,8 +6,9 @@ const PURCHASE_TYPE_OPTIONS = [
   { value: 'Z02', label: 'Z02-非生产性采购申请' }
 ];
 const ACCT_ASS_CATEGORY_OPTIONS = [
-  { value: 'K', label: 'K-成本中心' }
-  // 预留扩展
+  { value: '', label: '空-正常物料采购' },
+  { value: 'K', label: 'K-费用化采购（成本中心）' },
+  { value: 'F', label: 'F-订单采购' }
 ];
 const COST_CENTER_OPTIONS = [
   { value: '100101', label: '100101-生产设备成本中心' },
@@ -786,7 +787,8 @@ const SpPurchase = {
       const p = parseFloat(getVal('price')) || 0;
       const acct = getSel('acctAssCategory');
       const costCtr = getSel('costCenter');
-      const mg = isZ01 ? row.querySelector('[data-field="matGroup"]')?.textContent?.trim() || '' : getSel('matGroup');
+      const mgEl = row.querySelector('[data-field="matGroup"]');
+      const mg = mgEl ? (mgEl.value !== undefined ? mgEl.value : ((mgEl.textContent||'').trim())) : '';
       const supplier = getVal('supplier');
       const supplierMatCode = getVal('supplierMatCode');
       const notes = getVal('notes');
@@ -795,9 +797,14 @@ const SpPurchase = {
       // Skip empty rows
       if (!mc && !st && !q) continue;
 
-      // Z01 validation
+      // Z01 validation（KNTTP=K 费用化采购：物料号置灰，物料组与短文本必填；其余：物料号必填）
       if (isZ01) {
-        if (!mc) { toast(`第 ${i+1} 行：物料号必填（Z01-生产性采购申请）`); return; }
+        if (acct === 'K') {
+          if (!mg) { toast(`第 ${i+1} 行：物料组必选（费用化采购）`); return; }
+          if (!st) { toast(`第 ${i+1} 行：短文本必填（费用化采购，请描述采购内容）`); return; }
+        } else {
+          if (!mc) { toast(`第 ${i+1} 行：物料号必填（Z01-生产性采购申请）`); return; }
+        }
         if (!q) { toast(`第 ${i+1} 行：申请数量必填`); return; }
       }
 
@@ -968,7 +975,7 @@ const SpPurchase = {
                   <th style="width:50px;text-align:center;">操作</th>
                 </tr></thead>
                 <tbody>${linesWithPO.map((l, i) => {
-                  const acctLabel = ACCT_ASS_CATEGORY_OPTIONS.find(o=>o.value===l.acctAssCategory);
+                  const acctLabel = ACCT_ASS_CATEGORY_OPTIONS.find(o=>o.value===(l.acctAssCategory||''));
                   const mgLabel = MAT_GROUP_OPTIONS.find(o=>o.value===l.matGroup);
                   const settled = l.isSettled || (l.poNo ? 'Y' : 'N');
                   const hasPO = l._pos && l._pos.length > 0;
@@ -1152,27 +1159,31 @@ const SpPurchase = {
     const locked = this.editMode && lineStatus === 'B';
     const rowClass = locked ? ' class="locked"' : '';
     const dis = locked ? ' disabled' : '';
+    // 科目分配类别（KNTTP）：空=正常物料采购 K=费用化采购 F=订单采购；Z01 默认空，Z02 默认 K
+    const knttp = (line.acctAssCategory !== undefined && line.acctAssCategory !== null) ? line.acctAssCategory : (isZ01 ? '' : 'K');
+    const knttpK = knttp === 'K';
 
-    // MatCode cell
+    // MatCode cell（Z01：KNTTP=K 时物料号置灰不可填写，其余可填写）
     const matCodeCell = isZ01
-      ? `<td><input type="text" data-field="matCode" value="${esc(line.matCode||'')}" placeholder="物料号"${dis} style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;" onblur="SpPurchase.onMatCodeBlur(this)" oninput="SpPurchase.recalcTotal()"></td>`
+      ? `<td><input type="text" data-field="matCode" value="${esc(line.matCode||'')}" placeholder="物料号"${dis} ${knttpK?'readonly':''} style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;${knttpK?'background:#f1f5f9;color:#64748b;':''}" onblur="SpPurchase.onMatCodeBlur(this)" oninput="SpPurchase.recalcTotal()"></td>`
       : `<td style="padding:5px;color:var(--text-muted);font-size:11px;text-align:center;">-</td>`;
 
-    // ShortText cell
-    const shortTextCell = isZ01
-      ? `<td><input type="text" data-field="shortText" value="${esc(line.shortText||'')}" placeholder="物料描述" readonly${dis} style="padding:5px 8px;width:100%;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;background:#f1f5f9;color:#64748b;" oninput="SpPurchase.recalcTotal()"></td>`
-      : `<td><input type="text" data-field="shortText" value="${esc(line.shortText||'')}" placeholder="费用性采购内容描述"${dis} style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()" required></td>`;
+    // ShortText cell（Z01：KNTTP=空时由物料主数据带出只读，K/F 手动描述可编辑；Z02：始终手动输入）
+    const stEditable = !isZ01 || knttp !== '';
+    const shortTextCell = stEditable
+      ? `<td><input type="text" data-field="shortText" value="${esc(line.shortText||'')}" placeholder="费用性采购内容描述"${dis} style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()" required></td>`
+      : `<td><input type="text" data-field="shortText" value="${esc(line.shortText||'')}" placeholder="物料描述" readonly${dis} style="padding:5px 8px;width:100%;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;background:#f1f5f9;color:#64748b;" oninput="SpPurchase.recalcTotal()"></td>`;
 
-    // AcctAssCategory cell
-    const acctAssCell = isZ01
-      ? `<td style="padding:5px;"><span style="color:var(--text-muted);font-size:11px;">-</span></td>`
-      : `<td style="padding:5px;"><select data-field="acctAssCategory"${dis} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;" required>${ACCT_ASS_CATEGORY_OPTIONS.map(o=>`<option value="${o.value}"${(line.acctAssCategory||'K')===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
+    // AcctAssCategory cell（Z01/Z02 均可下拉选择；锁定行 disabled）
+    const acctAssCell = `<td style="padding:5px;"><select data-field="acctAssCategory"${dis} onchange="SpPurchase.onAcctAssChange(this)" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;">${ACCT_ASS_CATEGORY_OPTIONS.map(o=>`<option value="${o.value}"${knttp===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
 
-    // MatGroup cell
+    // MatGroup cell（Z01：KNTTP=K 时下拉必选，否则物料主数据带出只读；Z02：始终下拉）
     let matGroupCell;
-    if (isZ01) {
+    if (isZ01 && knttpK) {
+      matGroupCell = `<td style="padding:5px;"><select data-field="matGroup"${dis} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;" required><option value="">请选择</option>${MAT_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${line.matGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
+    } else if (isZ01) {
       const groupLabel = MAT_GROUP_OPTIONS.find(o => o.value === line.matGroup);
-      matGroupCell = `<td style="padding:5px;"><span data-field="matGroup" style="font-size:12px;color:#64748b;">${esc((groupLabel?groupLabel.label:'')||'')}</span></td>`;
+      matGroupCell = `<td style="padding:5px;"><span data-field="matGroup" data-value="${esc(line.matGroup||'')}" style="font-size:12px;color:#64748b;">${esc((groupLabel?groupLabel.label:'')||'')}</span></td>`;
     } else {
       matGroupCell = `<td style="padding:5px;"><select data-field="matGroup"${dis} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;" required><option value="">请选择</option>${MAT_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${line.matGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
     }
@@ -1209,12 +1220,34 @@ const SpPurchase = {
     </tr>`;
   },
 
+  // ---- 科目分配类别（KNTTP）变化：按 PRD 4.3 联动规则重渲染该行 ----
+  onAcctAssChange(selectEl) {
+    const tr = selectEl.closest('tr');
+    const tbody = document.getElementById('prLinesBody');
+    if (!tr || !tbody) return;
+    const idx = Array.prototype.indexOf.call(tbody.rows, tr);
+    if (idx < 0) return;
+    const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
+    const getEl = f => tr.querySelector(`[data-field="${f}"]`);
+    const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
+    ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
+      const el = getEl(f);
+      if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent))) || opts[f];
+    });
+    opts.status = tr.classList.contains('locked') ? 'B' : 'N';
+    opts.totalValue = (parseFloat(opts.reqQty)||0) * (parseFloat(opts.price)||0);
+    const itemNoCell = tr.querySelector('td:first-child');
+    if (itemNoCell) opts.itemNo = parseInt((itemNoCell.textContent||'').replace(/\D/g,''),10) || ((idx+1)*10);
+    tr.outerHTML = this.renderLineRow(opts, idx, purchaseType);
+    this.recalcTotal();
+  },
+
   addLineRow() {
     const tbody = document.getElementById('prLinesBody');
     const idx = tbody.rows.length;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory:'K', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
   },
@@ -1276,10 +1309,10 @@ const SpPurchase = {
     rows.forEach((tr, i) => {
       // Collect existing data via data-field
       const getEl = field => tr.querySelector(`[data-field="${field}"]`);
-      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'K', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
+      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
       ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
         const el = getEl(f);
-        if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value || el.textContent || opts[f]));
+        if (el) opts[f] = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent))) || opts[f];
       });
       opts.status = tr.classList.contains('locked') ? 'B' : 'N';
       opts.totalValue = (parseFloat(opts.reqQty)||0) * (parseFloat(opts.price)||0);
