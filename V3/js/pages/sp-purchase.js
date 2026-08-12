@@ -145,12 +145,11 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table data-table-compact" style="min-width:1630px;">
+          <table class="data-table data-table-compact" style="min-width:1380px;">
             <thead><tr>
               <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>短文本</th><th>申请人</th>
               <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
-              <th>采购订单</th><th style="width:65px;">PO行项目</th><th style="text-align:right;">订货数量</th>
               <th style="width:100px;text-align:center;">处理状态</th><th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
               <th style="width:190px;">操作</th>
             </tr></thead>
@@ -224,9 +223,6 @@ const SpPurchase = {
         <td style="white-space:nowrap;">${esc(row.deliveryDate)}</td>
         <td style="text-align:right;">${Number(row.reqQty).toLocaleString()}</td>
         <td style="text-align:center;">${esc(row.unit)}</td>
-        <td>${esc(row.poNo)}</td>
-        <td style="text-align:center;">${esc(row.poLineItem)}</td>
-        <td style="text-align:right;">${Number(row.orderQty).toLocaleString()}</td>
         <td style="text-align:center;">${this.statusBadge(row.status)}</td>
         <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
         <td style="text-align:right;">${Number(row.price).toFixed(2)}</td>
