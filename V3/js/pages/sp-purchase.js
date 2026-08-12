@@ -1138,7 +1138,6 @@ const SpPurchase = {
                     <th style="width:100px;text-align:center;">处理状态</th>
                     <th style="width:60px;text-align:center;">已结算</th>
                     <th style="min-width:70px;">备注</th>
-                    <th style="width:50px;text-align:center;">操作</th>
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
                 </table>
@@ -1223,7 +1222,6 @@ const SpPurchase = {
       <td style="text-align:center;padding:5px;"><span class="badge ${locked?'badge-blue':'badge-gray'}" style="font-size:11px;">${locked?'B-已创建采购订单':'N-未编辑'}</span></td>
       <td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ${line.isSettled==='Y'?'checked':''} style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>
       <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注"${dis} style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:4px;text-align:center;">${locked ? '<span style="color:var(--text-muted);font-size:11px;">-</span>' : `<button class="btn btn-sm" style="padding:3px 8px;font-size:18px;line-height:1;color:var(--danger);background:none;border:1px solid transparent;" onclick="SpPurchase.removeLineRow(this)" title="删除此行">&times;</button>`}</td>
     </tr>`;
   },
 
@@ -1260,17 +1258,6 @@ const SpPurchase = {
     tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
-  },
-
-  removeLineRow(btn) {
-    const tr = btn.closest('tr');
-    if (document.getElementById('prLinesBody').rows.length <= 1) {
-      toast('至少保留一行');
-      return;
-    }
-    tr.remove();
-    this.reindexRows();
-    this.recalcTotal();
   },
 
   reindexRows() {
