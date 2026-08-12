@@ -147,7 +147,7 @@ const SpPurchase = {
               <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th>采购订单</th><th style="width:65px;">PO行项目</th><th style="text-align:right;">订货数量</th>
               <th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
-              <th style="width:90px;">操作</th>
+              <th style="width:190px;">操作</th>
             </tr></thead>
             <tbody id="prTableBody"></tbody>
           </table>
@@ -204,8 +204,10 @@ const SpPurchase = {
       lastDoc = row.docNo;
       let actions = '';
       if (isNewGroup) {
-        actions += `<button class="btn btn-blue btn-sm" onclick="SpPurchase.viewDetail('${row.docNo}')">查看</button>`;
-        actions += `<button class="btn btn-outline btn-sm" onclick="SpPurchase.refreshPurchaseProgress('${row.docNo}', this)" style="margin-left:4px;">刷新采购进度</button>`;
+        actions = `<div class="table-actions">
+          <button class="btn btn-blue btn-sm" onclick="SpPurchase.viewDetail('${row.docNo}')">查看</button>
+          <button class="btn btn-outline btn-sm" onclick="SpPurchase.refreshPurchaseProgress('${row.docNo}', this)">刷新采购进度</button>
+        </div>`;
       }
       return `<tr>
         <td style="white-space:nowrap;">${isNewGroup ? esc(row.plant) : ''}</td>
@@ -222,7 +224,7 @@ const SpPurchase = {
         <td style="text-align:right;">${Number(row.orderQty).toLocaleString()}</td>
         <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
         <td style="text-align:right;">${Number(row.price).toFixed(2)}</td>
-        <td>${actions}</td>
+        <td style="white-space:nowrap;">${actions}</td>
       </tr>`;
     }).join('');
   },
