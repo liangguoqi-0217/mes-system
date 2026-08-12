@@ -205,6 +205,7 @@ const SpPurchase = {
       let actions = '';
       if (isNewGroup) {
         actions += `<button class="btn btn-blue btn-sm" onclick="SpPurchase.viewDetail('${row.docNo}')">查看</button>`;
+        actions += `<button class="btn btn-outline btn-sm" onclick="SpPurchase.refreshPurchaseProgress('${row.docNo}', this)" style="margin-left:4px;">刷新采购进度</button>`;
       }
       return `<tr>
         <td style="white-space:nowrap;">${isNewGroup ? esc(row.plant) : ''}</td>
@@ -794,6 +795,30 @@ const SpPurchase = {
       this.flatRows = this.flattenData(); this.filteredFlat = [...this.flatRows]; this.page=1; this.renderTable();
       toast('已删除');
     }
+  },
+
+  // ---- 刷新采购进度：调用 SAP 接口查询该采购申请最新进度 ----
+  // 模拟接口：对接真实后端时，将 _fetchSAPPurchaseProgress 替换为实际 fetch/AJAX 调用即可，
+  // 成功/失败分支已就绪。
+  _fetchSAPPurchaseProgress(docNo) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const found = spPurchaseData.find(r => r.docNo === docNo);
+        if (found) {
+          resolve({ docNo });
+        } else {
+          reject(new Error('单据不存在'));
+        }
+      }, 600); // 模拟网络延迟
+    });
+  },
+
+  refreshPurchaseProgress(docNo, btn) {
+    if (btn) { btn.disabled = true; }
+    this._fetchSAPPurchaseProgress(docNo)
+      .then(() => { toast('采购进度已获取'); })
+      .catch(() => { toast('数据调取失败'); })
+      .finally(() => { if (btn) { btn.disabled = false; } });
   },
 
   viewDetail(docNo) {
