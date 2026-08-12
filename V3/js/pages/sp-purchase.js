@@ -426,7 +426,7 @@ const SpPurchase = {
       plant: '1000', dept: '',
       notes: '',
       purchaseType: 'Z01',
-      lines: [{ itemNo:10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N', acctAssCategory:'', matGroup:'', storageLocation:'', costCenter:'' }]
+      lines: Array.from({ length: 10 }, (_, i) => ({ itemNo:(i+1)*10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N', acctAssCategory:'', matGroup:'', storageLocation:'', costCenter:'' }))
     };
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(emptyPr);
 
