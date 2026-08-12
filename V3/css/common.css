@@ -65,6 +65,43 @@ body {
 .badge-purple { background: rgba(139,92,246,0.1); color: #6d28d9; }
 .badge-sm { padding: 2px 8px; font-size: 11px; }
 
+/* ===== Tooltip（轻量提示组件，body 级单例 + 事件委托驱动）===== */
+.ui-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 320px;
+  padding: 8px 12px;
+  background: #1E293B;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+  border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(15,23,42,.22);
+  pointer-events: none;
+  white-space: normal;
+  opacity: 0;
+  display: none;
+  transition: opacity .15s ease;
+}
+.ui-tooltip.show { opacity: 1; }
+.ui-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  margin-left: -5px;
+  border: 5px solid transparent;
+}
+.ui-tooltip.below::after { top: -10px; border-bottom-color: #1E293B; }
+.ui-tooltip.above::after { bottom: -10px; border-top-color: #1E293B; }
+
+/* 可悬停提示字段的视觉暗示：点线底线 + help 光标 */
+.price-cell {
+  cursor: help;
+  border-bottom: 1px dotted rgba(30,58,95,.35);
+  padding-bottom: 1px;
+}
+
 /* ===== Data Table ===== */
 .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
 .data-table th {

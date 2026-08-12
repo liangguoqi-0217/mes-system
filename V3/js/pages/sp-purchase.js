@@ -69,6 +69,78 @@ const materialMasterMock = [
   { matCode: '60001281', shortText: '压力表-0-2.5MPa', matGroup: '60405', storageLocation: '5004', price: 85.00 }
 ];
 
+// ---- 轻量 Tooltip 组件：body 级单例 + 事件委托，跨浏览器兼容，不受表格 overflow 裁剪 ----
+function initGlobalTooltip() {
+  if (window.__tooltipInited) return;
+  window.__tooltipInited = true;
+
+  const tip = document.createElement('div');
+  tip.className = 'ui-tooltip';
+  tip.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(tip);
+
+  let currentAnchor = null;
+  let hideTimer = null;
+  const raf = window.requestAnimationFrame || (fn => setTimeout(fn, 16));
+
+  function positionTip(anchor) {
+    const r = anchor.getBoundingClientRect();
+    const tw = tip.offsetWidth;
+    const th = tip.offsetHeight;
+    const gap = 10, margin = 8;
+    let x = r.left + r.width / 2 - tw / 2;
+    x = Math.max(margin, Math.min(x, window.innerWidth - tw - margin));
+    const placeBelow = r.top - th - gap < margin;
+    tip.classList.toggle('below', placeBelow);
+    tip.classList.toggle('above', !placeBelow);
+    tip.style.left = x + 'px';
+    tip.style.top = (placeBelow ? r.bottom + gap : r.top - th - gap) + 'px';
+  }
+
+  function show(anchor) {
+    const text = (anchor.getAttribute('data-tip') || '').trim();
+    if (!text) return;
+    currentAnchor = anchor;
+    tip.textContent = text;
+    tip.classList.remove('show', 'above', 'below');
+    tip.style.display = 'block';
+    positionTip(anchor);
+    clearTimeout(hideTimer);
+    raf(() => tip.classList.add('show'));
+  }
+
+  function hide() {
+    currentAnchor = null;
+    tip.classList.remove('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => { if (!tip.classList.contains('show')) tip.style.display = 'none'; }, 150);
+  }
+
+  document.addEventListener('mouseover', e => {
+    const anchor = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (anchor) show(anchor);
+    else if (currentAnchor) hide();
+  });
+
+  document.addEventListener('mouseout', e => {
+    const anchor = e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (!anchor || !anchor.contains(e.relatedTarget)) hide();
+  });
+
+  // 滚动/缩放时跟随锚点重新定位（capture 阶段捕获所有滚动容器）
+  let pending = false;
+  const reposition = () => {
+    if (currentAnchor) {
+      if (!pending) {
+        pending = true;
+        raf(() => { pending = false; positionTip(currentAnchor); });
+      }
+    }
+  };
+  window.addEventListener('scroll', reposition, true);
+  window.addEventListener('resize', reposition);
+}
+
 const SpPurchase = {
   page: 1, pageSize: 20, flatRows: [], filteredFlat: [],
   editMode: false, editId: null,
@@ -165,6 +237,7 @@ const SpPurchase = {
   },
 
   init() {
+    initGlobalTooltip();
     this.flatRows = this.flattenData();
     this.filteredFlat = [...this.flatRows];
     this.page = 1;
@@ -218,7 +291,7 @@ const SpPurchase = {
         <td style="text-align:center;">${esc(row.unit)}</td>
         <td style="text-align:center;">${this.statusBadge(row.status)}</td>
         <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
-        <td style="text-align:right;">${Number(row.price).toFixed(2)}</td>
+        <td style="text-align:right;"><span class="price-cell" data-tip="需求部门填写的预估单价，供采购人员参考">${Number(row.price).toFixed(2)}</span></td>
         <td style="white-space:nowrap;">${actions}</td>
       </tr>`;
     }).join('');
