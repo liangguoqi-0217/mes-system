@@ -133,6 +133,11 @@ const SpPurchase = {
             <option value="">全部</option>
             <option value="Y">已结算</option>
           </select></div>
+          <div class="filter-group"><label>处理状态</label><select id="prStatus">
+            <option value="">全部</option>
+            <option value="N">未处理</option>
+            <option value="B">已创建订单</option>
+          </select></div>
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SpPurchase.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SpPurchase.reset()">重置</button>
@@ -140,13 +145,13 @@ const SpPurchase = {
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
-          <table class="data-table data-table-compact" style="min-width:1500px;">
+          <table class="data-table data-table-compact" style="min-width:1630px;">
             <thead><tr>
               <th>工厂</th><th>采购申请号</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>短文本</th><th>申请人</th>
               <th>交货日期</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th>采购订单</th><th style="width:65px;">PO行项目</th><th style="text-align:right;">订货数量</th>
-              <th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
+              <th style="width:100px;text-align:center;">处理状态</th><th style="width:72px;text-align:center;">已结算</th><th style="text-align:right;">评估价格</th>
               <th style="width:190px;">操作</th>
             </tr></thead>
             <tbody id="prTableBody"></tbody>
@@ -222,11 +227,19 @@ const SpPurchase = {
         <td>${esc(row.poNo)}</td>
         <td style="text-align:center;">${esc(row.poLineItem)}</td>
         <td style="text-align:right;">${Number(row.orderQty).toLocaleString()}</td>
+        <td style="text-align:center;">${this.statusBadge(row.status)}</td>
         <td style="text-align:center;">${row.isSettled === 'Y' ? '<span class="badge badge-green">是</span>' : '<span class="badge badge-gray">否</span>'}</td>
         <td style="text-align:right;">${Number(row.price).toFixed(2)}</td>
         <td style="white-space:nowrap;">${actions}</td>
       </tr>`;
     }).join('');
+  },
+
+  statusBadge(status) {
+    const s = status || 'N';
+    if (s === 'B') return '<span class="badge badge-blue">已创建订单</span>';
+    if (s === 'Y') return '<span class="badge badge-green">已下达</span>';
+    return '<span class="badge badge-gray">未处理</span>';
   },
 
   search() {
@@ -237,6 +250,7 @@ const SpPurchase = {
     const createTo = document.getElementById('prCreateDateTo')?.value || '';
     const dept = document.getElementById('prDept')?.value || '';
     const isSettled = document.getElementById('prIsSettled')?.value || '';
+    const status = document.getElementById('prStatus')?.value || '';
     const applicant = document.getElementById('prApplicant')?.value.trim() || '';
 
     this.filteredFlat = this.flatRows.filter(row => {
@@ -247,6 +261,7 @@ const SpPurchase = {
       if (createTo && row.createDate > createTo) return false;
       if (dept && row.dept !== dept) return false;
       if (isSettled && row.isSettled !== isSettled) return false;
+      if (status && (row.status || 'N') !== status) return false;
       if (applicant && row.applicant !== applicant) return false;
       return true;
     });
@@ -257,7 +272,7 @@ const SpPurchase = {
   reset() {
     const ids = ['prPlant','prDocNo','prMatCode','prCreateDateFrom','prCreateDateTo','prApplicant'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const selIds = ['prDept','prIsSettled'];
+    const selIds = ['prDept','prIsSettled','prStatus'];
     selIds.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filteredFlat = [...this.flatRows];
     this.page = 1;
