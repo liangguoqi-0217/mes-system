@@ -801,6 +801,7 @@ const SpPurchase = {
       if (isZ01) {
         if (acct === 'K') {
           if (!mg) { toast(`第 ${i+1} 行：物料组必选（费用化采购）`); return; }
+          if (!costCtr) { toast(`第 ${i+1} 行：成本中心必选（费用化采购）`); return; }
           if (!st) { toast(`第 ${i+1} 行：短文本必填（费用化采购，请描述采购内容）`); return; }
         } else {
           if (!mc) { toast(`第 ${i+1} 行：物料号必填（Z01-生产性采购申请）`); return; }
@@ -1188,10 +1189,10 @@ const SpPurchase = {
       matGroupCell = `<td style="padding:5px;"><select data-field="matGroup"${dis} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;" required><option value="">请选择</option>${MAT_GROUP_OPTIONS.map(o=>`<option value="${o.value}"${line.matGroup===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
     }
 
-    // CostCenter cell (Z02 only, always show column for alignment)
-    const costCenterCell = isZ01
+    // CostCenter cell (Z01: KNTTP=K 费用化采购时下拉必选；Z02: 始终下拉；否则显示 - )
+    const costCenterCell = (isZ01 && !knttpK)
       ? `<td style="padding:5px;"><span style="color:var(--text-muted);font-size:11px;">-</span></td>`
-      : `<td style="padding:5px;"><select data-field="costCenter"${dis} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;"><option value="">请选择</option>${COST_CENTER_OPTIONS.map(o=>`<option value="${o.value}"${line.costCenter===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
+      : `<td style="padding:5px;"><select data-field="costCenter"${dis}${knttpK?' required':''} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;"><option value="">请选择</option>${COST_CENTER_OPTIONS.map(o=>`<option value="${o.value}"${line.costCenter===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
 
     // Price cell
     const priceCell = isZ01
