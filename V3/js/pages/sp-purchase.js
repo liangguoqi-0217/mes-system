@@ -583,133 +583,14 @@ const SpPurchase = {
   },
 
   openEditModal(docNo) {
-    // 编辑前强制同步 SAP 最新状态（PP0032）：
-    // 处理状态等权威数据存储在 SAP，本地仅是镜像，若不先同步，基于过期状态编辑提交可能覆盖 SAP 侧最新变更。
-    if (this._editingLoading) return;               // 请求在途时忽略重复点击
     const pr = spPurchaseData.find(r => r.docNo === docNo);
     if (!pr) return;
-    this._editingLoading = true;
-    this._syncedAt = null;
-    this._showEditFetching();                        // 加载层：正在获取最新状态
-
-    // 调用 PP0032（同步返回接口），获取该采购申请最新完整信息
-    this._fetchPP0032(docNo)
-      .then(res => {
-        this._applyRemotePR(res);                    // 后端落库后，用返回值替换本地记录
-        this._hideEditFetching();
-        this.editMode = true;
-        this.editId = docNo;
-        this._syncedAt = Date.now();
-        const prClone = JSON.parse(JSON.stringify(res));
-        prClone.lines = prClone.lines.map(l => { l.status = l.status || (l.poNo ? 'B' : 'N'); return l; });
-        document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(prClone);
-        setTimeout(() => this.onPurchaseTypeChange(), 50);
-        toast('已更新至最新状态');
-      })
-      .catch(err => {
-        // 同步失败：不进入编辑界面，弹错误框展示 SAP 失败消息，提供「重试 / 取消」
-        this._hideEditFetching();
-        const msg = (err && err.message) ? err.message : '获取最新状态失败，请稍后重试';
-        this._showEditError(msg, () => this.openEditModal(docNo));
-      })
-      .finally(() => { this._editingLoading = false; });
-  },
-
-  // ---- 编辑前同步：调用 PP0032 接口获取采购申请最新信息（同步返回）----
-  // 模拟接口：对接真实后端时，将 _fetchPP0032 替换为实际 fetch/AJAX 调用即可，
-  // 成功 / SAP业务失败 / 网络异常 / 超时 分支均已就绪。
-  _fetchPP0032(docNo) {
-    const mock = new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const found = spPurchaseData.find(r => r.docNo === docNo);
-        if (!found) { reject(new Error('SAP 返回：单据不存在或已被删除')); return; }
-        // 模拟 SAP 侧返回的完整最新数据（深拷贝本地记录后做演示性修正；正式环境由 SAP 返回）
-        const latest = JSON.parse(JSON.stringify(found));
-        // 演示：模拟「SAP 已创建采购订单但本地尚未同步」，同步后处理状态/PO 信息刷新为最新
-        if (docNo === '2100002984') {
-          latest.lines.forEach(l => {
-            if (l.poNo && l.status !== 'B') {
-              l.status = 'B';
-              l.orderQty = l.reqQty;
-              l.isSettled = l.isSettled || 'N';
-              l.deliveredQty = 0;
-              l.poDate = l.poDate || '20260620';
-              l.poLineItem = l.poLineItem || l.itemNo;
-            }
-          });
-        }
-        resolve(latest);
-      }, 800); // 模拟网络延迟
-    });
-    return this._withTimeout(mock, 30000); // 30s 超时保护，超时按失败分支处理
-  },
-
-  _withTimeout(promise, ms) {
-    let timer;
-    const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('获取超时（30 秒），请检查网络后重试')), ms);
-    });
-    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-  },
-
-  // 用 PP0032 返回的最新数据替换本地记录（模拟后端落库后的回写）
-  _applyRemotePR(res) {
-    const idx = spPurchaseData.findIndex(r => r.docNo === res.docNo);
-    if (idx > -1) spPurchaseData[idx] = res;
-  },
-
-  // ---- 加载层：正在获取最新状态 ----
-  _showEditFetching() {
-    const c = document.getElementById('prModalContainer');
-    if (!c || document.getElementById('prEditFetchingLayer')) return;
-    const div = document.createElement('div');
-    div.id = 'prEditFetchingLayer';
-    div.innerHTML = `
-      <style>@keyframes prSpin{to{transform:rotate(360deg)}}</style>
-      <div style="position:fixed;inset:0;z-index:99999;background:rgba(248,250,252,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;">
-        <div style="width:46px;height:46px;border:4px solid #e5e7eb;border-top-color:#1E3A5F;border-radius:50%;animation:prSpin 1s linear infinite;"></div>
-        <div style="font-size:15px;color:#1f2937;font-weight:500;letter-spacing:.5px;">正在获取该采购申请的最新状态，请等待…</div>
-      </div>`;
-    c.appendChild(div);
-  },
-
-  _hideEditFetching() {
-    const el = document.getElementById('prEditFetchingLayer');
-    if (el) el.remove();
-  },
-
-  // ---- 同步失败：弹出错误框，提供「重试 / 取消」，不进入编辑界面 ----
-  _showEditError(msg, retryFn) {
-    this._retryFn = retryFn;
-    document.getElementById('prModalContainer').innerHTML = `
-      <div class="modal-backdrop" id="prEditErrorBackdrop" onclick="SpPurchase._closeEditError()">
-        <div class="modal" style="width:600px;max-width:92vw;" onclick="event.stopPropagation()">
-          <div class="modal-header">
-            <div class="modal-title">获取最新状态失败</div>
-            <button class="modal-close" onclick="SpPurchase._closeEditError()">✕</button>
-          </div>
-          <div class="modal-body" style="padding:28px 32px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;">
-            <div style="width:54px;height:54px;border-radius:50%;background:#fef2f2;color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;">!</div>
-            <div style="font-size:14px;color:#1f2937;line-height:1.8;">${esc(msg)}</div>
-            <div style="font-size:12px;color:var(--text-muted);">为避免基于过期数据编辑和提交，本次未进入编辑界面。</div>
-          </div>
-          <div class="modal-footer" style="justify-content:center;gap:12px;">
-            <button class="btn btn-secondary" onclick="SpPurchase._closeEditError()">取消</button>
-            <button class="btn btn-primary" onclick="SpPurchase._retryEditError()">重试</button>
-          </div>
-        </div>
-      </div>`;
-  },
-
-  _closeEditError() {
-    this._retryFn = null;
-    document.getElementById('prModalContainer').innerHTML = '';
-  },
-
-  _retryEditError() {
-    const fn = this._retryFn;
-    this._closeEditError();
-    if (fn) fn();
+    this.editMode = true;
+    this.editId = docNo;
+    const prClone = JSON.parse(JSON.stringify(pr));
+    prClone.lines = prClone.lines.map(l => { l.status = l.status || (l.poNo ? 'B' : 'N'); return l; });
+    document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(prClone);
+    setTimeout(() => this.onPurchaseTypeChange(), 50);
   },
 
   // ---- 下载CSV模板 ----
@@ -1221,12 +1102,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>创建时间</dt><dd><input type="text" id="prFCreateTime" value="${esc(createTime)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd><select id="prFDept" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${deptOptions}</select></dd></div>
       </div>`;
-    // 编辑前已通过 PP0032 同步过最新状态时，在弹窗顶部给出提示
-    const syncTip = (this.editMode && this._syncedAt)
-      ? `<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;margin-bottom:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;color:#1e3a5f;font-size:13px;">
-          <span style="width:18px;height:18px;border-radius:50%;background:#1E3A5F;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;">✓</span>
-          已更新至最新状态（同步时间 ${new Date(this._syncedAt).toLocaleTimeString()}），以下均为 SAP 最新数据
-        </div>` : '';
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
         <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
@@ -1235,7 +1110,6 @@ const SpPurchase = {
             <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:none;">
-            ${syncTip}
             <${''}!-- Header ${''}-->
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
