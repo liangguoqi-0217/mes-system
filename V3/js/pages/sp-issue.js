@@ -70,7 +70,7 @@ const SpIssue = {
           </div>
         </div>
         <div class="filter-bar filter-bar-nowrap" style="flex-shrink:0;">
-          <div class="filter-group"><label>领料单号</label><input type="text" id="issueDocNo" placeholder="单号"></div>
+          <div class="filter-group"><label>预留号</label><input type="text" id="issueDocNo" placeholder="号码"></div>
           <div class="filter-group"><label>领料方式</label><select id="issueType">
             <option value="">全部</option>
             ${Object.keys(ISSUE_TYPE_MAP).map(k => `<option value="${k}">${esc(ISSUE_TYPE_MAP[k].label)}</option>`).join('')}
@@ -90,7 +90,7 @@ const SpIssue = {
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1400px;">
             <thead><tr>
-              <th>领料单号</th><th>领料方式</th><th style="width:55px;text-align:center;">行项目</th>
+              <th>预留号</th><th>领料方式</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>物料描述</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th>发出库位</th><th>目标库位</th><th>内部订单/成本中心/流程订单</th>
               <th>请领部门</th><th>申请人</th><th>领料日期</th>
@@ -131,7 +131,7 @@ const SpIssue = {
     } else {
       body.innerHTML = rows.map(r => `
         <tr>
-          <td><strong>${esc(r.docNo)}</strong><div style="font-size:11px;color:var(--text-muted);">预留号: ${esc(r.reservationNo || '-')}</div></td>
+          <td><strong>${esc(r.reservationNo || '-')}</strong></td>
           <td>${this.getTypeBadge(r.issueType)}</td>
           <td style="text-align:center;">${r.itemNo}</td>
           <td>${esc(r.matCode || '-')}</td>
@@ -164,7 +164,7 @@ const SpIssue = {
     const qDept = (document.getElementById('issueDept').value || '').trim().toLowerCase();
     const qStatus = document.getElementById('issueStatus').value;
     this.filteredFlat = this.flatRows.filter(r =>
-      (!qDoc || r.docNo.toLowerCase().includes(qDoc)) &&
+      (!qDoc || (r.reservationNo || '').toLowerCase().includes(qDoc) || r.docNo.toLowerCase().includes(qDoc)) &&
       (!qType || r.issueType === qType) &&
       (!qLoc || r.issueLocation.toLowerCase().includes(qLoc) || (r.targetLocation || '').toLowerCase().includes(qLoc)) &&
       (!qDept || r.issueDept.toLowerCase().includes(qDept)) &&

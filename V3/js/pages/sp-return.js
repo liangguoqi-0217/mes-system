@@ -66,7 +66,7 @@ const SpReturn = {
           </div>
         </div>
         <div class="filter-bar filter-bar-nowrap" style="flex-shrink:0;">
-          <div class="filter-group"><label>退料单号</label><input type="text" id="retDocNo" placeholder="单号"></div>
+          <div class="filter-group"><label>预留号</label><input type="text" id="retDocNo" placeholder="号码"></div>
           <div class="filter-group"><label>退料方式</label><select id="retType">
             <option value="">全部</option>
             ${Object.keys(RETURN_TYPE_MAP).map(k => `<option value="${k}">${esc(RETURN_TYPE_MAP[k].label)}</option>`).join('')}
@@ -86,7 +86,7 @@ const SpReturn = {
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1250px;">
             <thead><tr>
-              <th>退料单号</th><th>退料方式</th><th style="width:55px;text-align:center;">行项目</th>
+              <th>预留号</th><th>退料方式</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>物料描述</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th>退回库位</th><th>内部订单/成本中心</th><th>关联领料单</th>
               <th>退料部门</th><th>退料人</th><th>退料日期</th>
@@ -127,7 +127,7 @@ const SpReturn = {
     } else {
       body.innerHTML = rows.map(r => `
         <tr>
-          <td><strong>${esc(r.docNo)}</strong><div style="font-size:11px;color:var(--text-muted);">预留号: ${esc(r.reservationNo || '-')}</div></td>
+          <td><strong>${esc(r.reservationNo || '-')}</strong></td>
           <td>${this.getTypeBadge(r.returnType)}</td>
           <td style="text-align:center;">${r.itemNo}</td>
           <td>${esc(r.matCode || '-')}</td>
@@ -159,7 +159,7 @@ const SpReturn = {
     const qDept = (document.getElementById('retDept').value || '').trim().toLowerCase();
     const qStatus = document.getElementById('retStatus').value;
     this.filteredFlat = this.flatRows.filter(r =>
-      (!qDoc || r.docNo.toLowerCase().includes(qDoc)) &&
+      (!qDoc || (r.reservationNo || '').toLowerCase().includes(qDoc) || r.docNo.toLowerCase().includes(qDoc)) &&
       (!qType || r.returnType === qType) &&
       (!qLoc || r.returnLocation.toLowerCase().includes(qLoc)) &&
       (!qDept || r.returnDept.toLowerCase().includes(qDept)) &&

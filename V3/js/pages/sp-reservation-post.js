@@ -60,7 +60,6 @@ const SpReservationPost = {
         </div>
         <div class="filter-bar filter-bar-nowrap" style="flex-shrink:0;">
           <div class="filter-group"><label>预留号</label><input type="text" id="rspResNo" placeholder="预留号"></div>
-          <div class="filter-group"><label>关联领料单</label><input type="text" id="rspDocNo" placeholder="领料单号"></div>
           <div class="filter-group"><label>发出车间</label><input type="text" id="rspSource" placeholder="发出车间"></div>
           <div class="filter-group"><label>收货车间</label><input type="text" id="rspTarget" placeholder="收货车间"></div>
           <div class="filter-group"><label>状态</label><select id="rspStatus">
@@ -75,7 +74,7 @@ const SpReservationPost = {
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1350px;">
             <thead><tr>
-              <th>预留号</th><th>关联领料单</th><th>领料方式</th><th>发出车间</th><th>发出库位</th>
+              <th>预留号</th><th>领料方式</th><th>发出车间</th><th>发出库位</th>
               <th>收货车间</th><th>目标库位</th><th style="width:55px;text-align:center;">行</th>
               <th>物料</th><th>物料描述</th><th style="text-align:right;">预留数量</th>
               <th style="text-align:right;">已过账</th><th style="width:38px;">单位</th><th>创建日期</th>
@@ -112,12 +111,11 @@ const SpReservationPost = {
     const start = (this.page - 1) * this.pageSize;
     const rows = this.filteredFlat.slice(start, start + this.pageSize);
     if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="16" class="empty-cell">暂无待过账预留</td></tr>`;
+      body.innerHTML = `<tr><td colspan="15" class="empty-cell">暂无待过账预留</td></tr>`;
     } else {
       body.innerHTML = rows.map(r => `
         <tr>
           <td><strong>${esc(r.reservationNo)}</strong><div style="font-size:11px;color:var(--text-muted);">${r.postedQty > 0 ? '物料凭证: ' + esc(r.materialDocNo || '-') : '&nbsp;'}</div></td>
-          <td>${esc(r.docNo)}</td>
           <td>${esc(r.issueTypeText)}</td>
           <td>${esc(r.sourceDept)}</td>
           <td>${esc(r.sourceLocation)}</td>
@@ -144,13 +142,11 @@ const SpReservationPost = {
 
   search() {
     const qRes = (document.getElementById('rspResNo').value || '').trim().toLowerCase();
-    const qDoc = (document.getElementById('rspDocNo').value || '').trim().toLowerCase();
     const qSrc = (document.getElementById('rspSource').value || '').trim().toLowerCase();
     const qTgt = (document.getElementById('rspTarget').value || '').trim().toLowerCase();
     const qStatus = document.getElementById('rspStatus').value;
     this.filteredFlat = this.flatRows.filter(r =>
       (!qRes || r.reservationNo.toLowerCase().includes(qRes)) &&
-      (!qDoc || r.docNo.toLowerCase().includes(qDoc)) &&
       (!qSrc || r.sourceDept.toLowerCase().includes(qSrc) || r.sourceLocation.toLowerCase().includes(qSrc)) &&
       (!qTgt || r.targetDept.toLowerCase().includes(qTgt) || r.targetLocation.toLowerCase().includes(qTgt)) &&
       (!qStatus || r.status === qStatus)
@@ -160,7 +156,7 @@ const SpReservationPost = {
     const c = document.getElementById('rspCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
   },
   reset() {
-    ['rspResNo', 'rspDocNo', 'rspSource', 'rspTarget'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['rspResNo', 'rspSource', 'rspTarget'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     const s = document.getElementById('rspStatus'); if (s) s.value = '';
     this.filteredFlat = [...this.flatRows];
     this.page = 1;
