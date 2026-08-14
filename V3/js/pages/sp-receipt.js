@@ -48,7 +48,7 @@ const SpReceipt = {
           </div>
         </div>
         <div class="filter-bar filter-bar-nowrap" style="flex-shrink:0;">
-          <div class="filter-group"><label>入库单号</label><input type="text" id="rcDocNo" placeholder="单号"></div>
+          <div class="filter-group"><label>物料凭证</label><input type="text" id="rcDocNo" placeholder="号码"></div>
           <div class="filter-group"><label>生产订单号</label><input type="text" id="rcPoNo" placeholder="生产订单"></div>
           <div class="filter-group"><label>目标库位</label><input type="text" id="rcLoc" placeholder="库位"></div>
           <div class="filter-group"><label>状态</label><select id="rcStatus">
@@ -64,7 +64,7 @@ const SpReceipt = {
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1150px;">
             <thead><tr>
-              <th>入库单号</th><th>生产订单号</th><th style="width:55px;text-align:center;">行项目</th>
+              <th>物料凭证</th><th>生产订单号</th><th style="width:55px;text-align:center;">行项目</th>
               <th>物料</th><th>物料描述</th><th style="text-align:right;">数量</th><th style="width:38px;">单位</th>
               <th>批次</th><th>目标库位</th><th>入库部门</th><th>入库人</th><th>入库日期</th>
               <th style="width:80px;text-align:center;">状态</th><th style="width:76px;">操作</th>
@@ -104,7 +104,7 @@ const SpReceipt = {
     } else {
       body.innerHTML = rows.map(r => `
         <tr>
-          <td><strong>${esc(r.docNo)}</strong><div style="font-size:11px;color:var(--text-muted);">物料凭证: ${esc(r.materialDocNo || '-')}</div></td>
+          <td><strong>${esc(r.materialDocNo || '-')}</strong></td>
           <td>${esc(r.processOrderNo)}</td>
           <td style="text-align:center;">${r.itemNo}</td>
           <td>${esc(r.matCode || '-')}</td>
@@ -134,7 +134,7 @@ const SpReceipt = {
     const qLoc = (document.getElementById('rcLoc').value || '').trim().toLowerCase();
     const qStatus = document.getElementById('rcStatus').value;
     this.filteredFlat = this.flatRows.filter(r =>
-      (!qDoc || r.docNo.toLowerCase().includes(qDoc)) &&
+      (!qDoc || (r.materialDocNo || '').toLowerCase().includes(qDoc) || r.docNo.toLowerCase().includes(qDoc)) &&
       (!qPo || r.processOrderNo.toLowerCase().includes(qPo)) &&
       (!qLoc || r.targetLocation.toLowerCase().includes(qLoc)) &&
       (!qStatus || r.status === qStatus)
