@@ -80,7 +80,7 @@ const App = {
       ]
     },
     {
-      id:'purchase-demand', label:'采购需求管理', icon:'📦',
+      id:'purchase-demand', label:'库存管理', icon:'📦',
       groups: [
         {
           title:'物料主数据', items: [
@@ -92,6 +92,19 @@ const App = {
             { id:'sp-stock', label:'库存查询', route:'sp-stock' },
             { id:'sp-pick', label:'备件领用', route:'sp-pick' },
             { id:'safety-stock-alert', label:'安全库存预警', route:'safety-stock-alert', pageObj:'SafetyStockAlert' }
+          ]
+        },
+        {
+          title:'预留单据', items: [
+            { id:'sp-issue', label:'领料单', route:'sp-issue' },
+            { id:'sp-return', label:'退料单', route:'sp-return' },
+            { id:'sp-receipt', label:'入库单', route:'sp-receipt' },
+            { id:'sp-reservation-post', label:'预留过账', route:'sp-reservation-post' }
+          ]
+        },
+        {
+          title:'库存记账', items: [
+            { id:'sp-stock-post', label:'库存记账', route:'sp-stock-post' }
           ]
         },
         {
@@ -123,6 +136,11 @@ const App = {
     'sp-stock': SparePartsStock,
     'sp-purchase': SpPurchase,
     'sp-pick': SpPick,
+    'sp-issue': SpIssue,
+    'sp-return': SpReturn,
+    'sp-receipt': SpReceipt,
+    'sp-reservation-post': SpReservationPost,
+    'sp-stock-post': SpStockPost,
     'mf-preventive': MaintPreventive,
     'mf-notification-v3': MaintenanceNotificationV3,
     'mf-workorder': MaintenanceWorkOrderV3,

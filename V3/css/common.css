@@ -843,3 +843,50 @@ tr.locked td { background: #fafbfc; }
   .clean-op-table { font-size: 11px; }
   .clean-op-table th, .clean-op-table td { padding: 6px 8px; }
 }
+
+/* ===== 创建方式选择卡片（单据创建弹窗） ===== */
+.new-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.new-type-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px 14px;
+  background: var(--bg-card, #fff);
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.new-type-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(30, 58, 95, 0.10);
+  transform: translateY(-2px);
+}
+.new-type-icon {
+  font-size: 20px;
+  color: var(--primary);
+  margin-bottom: 8px;
+  line-height: 1;
+}
+.new-type-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.new-type-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 8px;
+}
+.new-type-move {
+  display: inline-block;
+  font-size: 11px;
+  color: var(--primary);
+  background: rgba(30, 58, 95, 0.07);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
