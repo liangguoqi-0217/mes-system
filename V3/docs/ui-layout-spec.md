@@ -171,9 +171,8 @@
 | 3 | `equipment-bom.js` | 设备BOM管理 | 底部 |
 | 4 | `spare-parts-stock.js` | 备件库存查询 | 底部 |
 | 5 | `sp-purchase.js` | 采购申请提报 | 底部 |
-| 6 | `sp-pick.js` | 备件领用 | 底部 |
-| 7 | `equipment-status-change.js` | 设备状态变更单 | 底部 |
-| 8 | `equipment-run-log.js` | 设备运行&停机台账 | 底部 |
+| 6 | `equipment-status-change.js` | 设备状态变更单 | 底部 |
+| 7 | `equipment-run-log.js` | 设备运行&停机台账 | 底部 |
 
 > 注：`equipment-run-dashboard.js`（设备运行总看板）为看板双面板布局，不使用传统分页。
 > 注：`equipment-retrofit.js` 和 `equipment-retire.js` 已标记为孤儿代码（重命名为 `.js.bak`），前台无入口，已从合规清单移除（2026-06-29）。

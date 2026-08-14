@@ -88,9 +88,8 @@ const App = {
           ]
         },
         {
-          title:'备品备件管理', items: [
+          title:'库存查询与预警', items: [
             { id:'sp-stock', label:'库存查询', route:'sp-stock' },
-            { id:'sp-pick', label:'备件领用', route:'sp-pick' },
             { id:'safety-stock-alert', label:'安全库存预警', route:'safety-stock-alert', pageObj:'SafetyStockAlert' }
           ]
         },
@@ -135,7 +134,6 @@ const App = {
     'mr-entry': MeasurementRecord,
     'sp-stock': SparePartsStock,
     'sp-purchase': SpPurchase,
-    'sp-pick': SpPick,
     'sp-issue': SpIssue,
     'sp-return': SpReturn,
     'sp-receipt': SpReceipt,
@@ -238,7 +236,7 @@ const App = {
       { id:1, type:'warn', icon:'⚠', title:'CNC控制柜接线端子松动', desc:'紧急安全隐患需立即处理', time:'2026-06-01 10:30', read:false },
       { id:2, type:'info', icon:'📋', title:'6月预防性工单已生成', desc:'CNC加工中心月度润滑保养工单待派工', time:'2026-06-01 08:00', read:false },
       { id:3, type:'success',icon:'✓', title:'包装机维修工单已关闭', desc:'验收合格，包装线已恢复正常生产', time:'2026-05-22 16:30', read:false },
-      { id:4, type:'info', icon:'📦', title:'备件领用审批通过', desc:'接头密封垫SP-SEAL-010领用3个已出库', time:'2026-05-22 09:15', read:true },
+      { id:4, type:'info', icon:'📦', title:'入库单已过账', desc:'密封垫SP-SEAL-010入库10个已记账', time:'2026-05-22 09:15', read:true },
       { id:5, type:'danger',icon:'🔴',title:'纯化水泵变频器故障', desc:'1#变频器F007过载报警，已切换至2#单泵运行', time:'2026-05-27 10:00', read:true },
     ];
     this._activeDropdown = null;
@@ -410,7 +408,7 @@ const App = {
             <div style="font-size:14px;color:var(--text-secondary);">制造执行系统</div>
             <div style="margin-top:16px;font-size:12px;color:var(--text-muted);">
               <p>基于现代Web架构，支持设备管理、</p>
-              <p>维修工单管理、备品备件管理等核心功能。</p>
+              <p>维修工单管理、库存管理等核心功能。</p>
               <p style="margin-top:12px;">Version 2.0.0 · &copy; 2026</p>
             </div>
           </div>

@@ -22,7 +22,7 @@ var files = [
   'js/pages/equipment-master.js', 'js/pages/functional-location.js',
   'js/pages/work-center.js', 'js/pages/equipment-bom.js',
   'js/pages/spare-parts-stock.js', 'js/pages/sp-purchase.js',
-  'js/pages/sp-pick.js', 'js/main.js'
+  'js/main.js'
 ];
 
 function log(msg, cls) {
@@ -54,7 +54,7 @@ function testFile(file, i) {
 
 function checkVars() {
   out.appendChild(document.createElement('h2')).textContent = '变量检查:';
-  var vars = ['equipmentData','FL_FACTORIES','flMockData','wcMockData','spPickData','spPick','EquipmentMaster','FunctionalLocation','WorkCenter','SpPurchase','App'];
+  var vars = ['equipmentData','FL_FACTORIES','flMockData','wcMockData','EquipmentMaster','FunctionalLocation','WorkCenter','SpPurchase','App'];
   vars.forEach(function(v) {
     var exists = (typeof window[v] !== 'undefined');
     log((exists ? '✓' : '✗') + ' ' + v + (exists ? ' = ' + typeof window[v] : ' 未定义'), exists ? 'ok' : 'err');
