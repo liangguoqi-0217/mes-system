@@ -182,18 +182,39 @@ const SpReturn = {
   changePageSize() { this.pageSize = +document.getElementById('retPageSizeSel').value; this.page = 1; this.renderRows(); },
 
   openNewModal() {
-    const cards = Object.entries(RETURN_TYPE_MAP).map(([k, v]) => `
-      <div class="new-type-card" onclick="SpReturn.openForm('${k}')">
-        <div class="new-type-icon">${v.icon}</div>
-        <div class="new-type-name">${esc(v.label)}</div>
-        <div class="new-type-desc">${esc(v.desc)}</div>
-        <div class="new-type-move">移动类型 ${v.moveType}</div>
-      </div>`).join('');
-    showModal('创建退料单 — 请选择退料方式', `
-      <div style="padding:4px 2px 12px;">
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">退料单创建后自动调用 SAP 创建预留接口，SAP 返回预留编号后单据方生效。</div>
-        <div class="new-type-grid">${cards}</div>
-      </div>`, [{ text: '取消', cls: 'btn-secondary', action: closeModal }], 'modal-xl');
+    const typeList = Object.entries(RETURN_TYPE_MAP).map(([k, v]) => ({ key: k, ...v }));
+    const colors = [
+      { bg1: '#eff6ff', bg2: '#dbeafe', border: '#bfdbfe', hover: '#3b82f6', text: '#1e40af', btn: '#3b82f6', btnText: '#fff' },
+      { bg1: '#ecfdf5', bg2: '#d1fae5', border: '#86efac', hover: '#10b981', text: '#065f46', btn: '#10b981', btnText: '#fff' },
+      { bg1: '#fef3c7', bg2: '#fde68a', border: '#fcd34d', hover: '#f59e0b', text: '#92400e', btn: '#f59e0b', btnText: '#fff' }
+    ];
+    const gridCols = '1fr 1fr 1fr';
+    const cards = typeList.map((t, i) => {
+      const c = colors[i % colors.length];
+      return `
+        <div onclick="closeModal();SpReturn.openForm('${t.key}')"
+          style="background:linear-gradient(135deg,${c.bg1},${c.bg2});border:2px solid ${c.border};border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
+          onmouseenter="this.style.borderColor='${c.hover}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.12)'"
+          onmouseleave="this.style.borderColor='${c.border}';this.style.transform='translateY(0)';this.style.boxShadow='none'">
+          <div style="font-size:36px;margin-bottom:8px;">${t.icon}</div>
+          <div style="font-size:15px;font-weight:700;color:${c.text};margin-bottom:4px;">${esc(t.label)}</div>
+          <div style="font-size:12px;color:#6b7280;line-height:1.45;">${esc(t.desc)}</div>
+          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:${c.btn};color:${c.btnText};cursor:pointer;">开始填写 →</span></div>
+        </div>`;
+    }).join('');
+    const body = `
+      <div style="padding:4px 0;">
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;text-align:center;">
+          请选择一种退料方式
+        </div>
+        <div style="display:grid;grid-template-columns:${gridCols};gap:14px;">
+          ${cards}
+        </div>
+        <div style="margin-top:14px;padding:8px 12px;background:#f9fafb;border-radius:8px;font-size:12px;color:var(--text-muted);text-align:center;border:1px dashed var(--border);">
+          💡 提示：退料单创建后自动调用 SAP 创建预留接口，返回预留编号后单据方生效
+        </div>
+      </div>`;
+    showModal('📌 选择退料方式', body, [{ text: '取消', cls: 'btn-secondary', action: closeModal }], 'modal-xl');
   },
 
   _renderTypeFields(type, d) {
