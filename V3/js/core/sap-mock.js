@@ -18,6 +18,15 @@
     return s;
   }
 
+  /**
+   * 生成 SAP 预留编号
+   * 号码段：0000000001 ~ 8999999999（10 位数字，不足前补零）
+   */
+  function randomReservationNo() {
+    const num = 1 + Math.floor(Math.random() * 8999999999);
+    return String(num).padStart(10, '0');
+  }
+
   const SAP_MOCK = {
 
     /**
@@ -33,7 +42,7 @@
         if (Math.random() < 0.12) {
           return Promise.reject({ ok:false, code:'SAP_ERR', message:'SAP 系统繁忙，预留单创建未成功，请稍后重试。' });
         }
-        return { ok:true, reservationNo: '1' + randomDigits(9) };
+        return { ok:true, reservationNo: randomReservationNo() };
       });
     },
 

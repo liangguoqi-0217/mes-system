@@ -532,7 +532,7 @@ const SpIssue = {
 /* ---------------- 模拟数据 ---------------- */
 const spIssueData = [
   {
-    docNo: 'PL-20260701-001', issueType: 'consume-internal-order', moveType: '261', reservationNo: '1000000111',
+    docNo: 'PL-20260701-001', issueType: 'consume-internal-order', moveType: '261', reservationNo: '0000000111',
     plant: '1000', issueLocation: 'A01原料仓', targetLocation: '',
     internalOrderNo: 'IO-2026-0101', costCenter: '', processOrderNo: '',
     issueDept: '生产一部', applicant: '张伟', issueDate: '2026-07-01', status: '部分过账',
@@ -543,7 +543,7 @@ const spIssueData = [
     ]
   },
   {
-    docNo: 'PL-20260705-002', issueType: 'consume-cost-center', moveType: '201', reservationNo: '1000000213',
+    docNo: 'PL-20260705-002', issueType: 'consume-cost-center', moveType: '201', reservationNo: '0000000213',
     plant: '1000', issueLocation: 'A02辅料仓', targetLocation: '',
     internalOrderNo: '', costCenter: 'CC-1001', processOrderNo: '',
     issueDept: '设备部', applicant: '李强', issueDate: '2026-07-05', status: '已同步',
@@ -553,7 +553,7 @@ const spIssueData = [
     ]
   },
   {
-    docNo: 'PL-20260712-003', issueType: 'staging-move', moveType: '311', reservationNo: '1000000316',
+    docNo: 'PL-20260712-003', issueType: 'staging-move', moveType: '311', reservationNo: '0000000316',
     plant: '1000', issueLocation: 'A03包装材料仓', targetLocation: 'C01暂存间',
     internalOrderNo: '', costCenter: '', processOrderNo: '',
     issueDept: '生产二部', applicant: '王芳', issueDate: '2026-07-12', status: '已完成',
@@ -564,7 +564,7 @@ const spIssueData = [
     ]
   },
   {
-    docNo: 'PL-20260720-004', issueType: 'staging-process-order', moveType: '311', reservationNo: '1000000428',
+    docNo: 'PL-20260720-004', issueType: 'staging-process-order', moveType: '311', reservationNo: '0000000428',
     plant: '1000', issueLocation: 'A01原料仓', targetLocation: 'B01线边仓',
     internalOrderNo: '', costCenter: '', processOrderNo: '6000001234',
     issueDept: '生产三部', applicant: '赵磊', issueDate: '2026-07-20', status: '已同步',

@@ -513,7 +513,7 @@ const SpReturn = {
 /* ---------------- 模拟数据 ---------------- */
 const spReturnData = [
   {
-    docNo: 'RT-20260715-001', returnType: 'return-internal-order', moveType: '262', reservationNo: '1000000511',
+    docNo: 'RT-20260715-001', returnType: 'return-internal-order', moveType: '262', reservationNo: '0000000511',
     plant: '1000', returnLocation: 'A01原料仓',
     internalOrderNo: 'IO-2026-0101', costCenter: '', refDocNo: 'PL-20260701-001',
     returnDept: '生产一部', applicant: '张伟', returnDate: '2026-07-15', status: '已完成',
@@ -524,7 +524,7 @@ const spReturnData = [
     ]
   },
   {
-    docNo: 'RT-20260722-002', returnType: 'return-cost-center', moveType: '202', reservationNo: '1000000619',
+    docNo: 'RT-20260722-002', returnType: 'return-cost-center', moveType: '202', reservationNo: '0000000619',
     plant: '1000', returnLocation: 'A02辅料仓',
     internalOrderNo: '', costCenter: 'CC-1001', refDocNo: 'PL-20260705-002',
     returnDept: '设备部', applicant: '李强', returnDate: '2026-07-22', status: '已同步',
@@ -534,7 +534,7 @@ const spReturnData = [
     ]
   },
   {
-    docNo: 'RT-20260728-003', returnType: 'return-stock', moveType: '262', reservationNo: '1000000722',
+    docNo: 'RT-20260728-003', returnType: 'return-stock', moveType: '262', reservationNo: '0000000722',
     plant: '1000', returnLocation: 'A03包装材料仓',
     internalOrderNo: '', costCenter: '', refDocNo: 'PL-20260712-003',
     returnDept: '生产二部', applicant: '王芳', returnDate: '2026-07-28', status: '部分过账',

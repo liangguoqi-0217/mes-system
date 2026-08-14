@@ -350,7 +350,7 @@ const SpReservationPost = {
 /* ---------------- 模拟数据 ---------------- */
 const spReservationData = [
   {
-    reservationNo: '1000000111', docNo: 'PL-20260701-001', issueType: 'consume-internal-order', moveType: '261',
+    reservationNo: '0000000111', docNo: 'PL-20260701-001', issueType: 'consume-internal-order', moveType: '261',
     sourcePlant: '1000', sourceLocation: 'A01原料仓', sourceDept: '生产一部',
     targetPlant: '1000', targetLocation: 'B01线边仓', targetDept: '生产二部',
     createDate: '2026-07-01', status: '已过账', materialDocNo: '4900000101', applicant: '张伟',
@@ -361,7 +361,7 @@ const spReservationData = [
     ]
   },
   {
-    reservationNo: '1000000428', docNo: 'PL-20260720-004', issueType: 'staging-process-order', moveType: '311',
+    reservationNo: '0000000428', docNo: 'PL-20260720-004', issueType: 'staging-process-order', moveType: '311',
     sourcePlant: '1000', sourceLocation: 'A01原料仓', sourceDept: '生产一部',
     targetPlant: '1000', targetLocation: 'B02线边仓', targetDept: '生产二部',
     createDate: '2026-07-20', status: '待过账', materialDocNo: '', applicant: '赵磊',
@@ -372,7 +372,7 @@ const spReservationData = [
     ]
   },
   {
-    reservationNo: '1000000316', docNo: 'PL-20260712-003', issueType: 'staging-move', moveType: '311',
+    reservationNo: '0000000316', docNo: 'PL-20260712-003', issueType: 'staging-move', moveType: '311',
     sourcePlant: '1000', sourceLocation: 'A03包装材料仓', sourceDept: '生产二部',
     targetPlant: '1000', targetLocation: 'C01暂存间', targetDept: '生产三部',
     createDate: '2026-07-12', status: '部分过账', materialDocNo: '4900000302', applicant: '王芳',
