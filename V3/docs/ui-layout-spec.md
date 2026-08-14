@@ -173,6 +173,8 @@
 | 5 | `sp-purchase.js` | 采购申请提报 | 底部 |
 | 6 | `equipment-status-change.js` | 设备状态变更单 | 底部 |
 | 7 | `equipment-run-log.js` | 设备运行&停机台账 | 底部 |
+| 8 | `batch-char.js` | 批次特性（双 Tab：特性修改/修改记录） | 底部 |
+| 9 | `material-doc-reversal.js` | 物料凭证冲销 | 底部 |
 
 > 注：`equipment-run-dashboard.js`（设备运行总看板）为看板双面板布局，不使用传统分页。
 > 注：`equipment-retrofit.js` 和 `equipment-retire.js` 已标记为孤儿代码（重命名为 `.js.bak`），前台无入口，已从合规清单移除（2026-06-29）。

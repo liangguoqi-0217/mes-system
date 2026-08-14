@@ -84,7 +84,8 @@ const App = {
       groups: [
         {
           title:'物料主数据', items: [
-            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' }
+            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' },
+            { id:'batch-char', label:'批次特性', route:'batch-char', pageObj:'BatchChar' }
           ]
         },
         {
@@ -103,7 +104,8 @@ const App = {
         },
         {
           title:'库存记账', items: [
-            { id:'sp-stock-post', label:'库存记账', route:'sp-stock-post' }
+            { id:'sp-stock-post', label:'库存记账', route:'sp-stock-post' },
+            { id:'material-doc-reversal', label:'物料凭证冲销', route:'material-doc-reversal', pageObj:'MaterialDocReversal' }
           ]
         },
         {
@@ -127,6 +129,8 @@ const App = {
 
   pageMap: {
     'material-master': MaterialMaster,
+    'batch-char': BatchChar,
+    'material-doc-reversal': MaterialDocReversal,
     'equipment-master': EquipmentMaster,
     'functional-location': FunctionalLocation,
     'work-center': WorkCenter,

@@ -18,11 +18,14 @@
 <script>
 var out = document.getElementById('results');
 var files = [
-  'js/data.js', 'js/app.js',
+  'js/data.js', 'js/app.js', 'js/core/sap-mock.js',
   'js/pages/equipment-master.js', 'js/pages/functional-location.js',
   'js/pages/work-center.js', 'js/pages/equipment-bom.js',
   'js/pages/spare-parts-stock.js', 'js/pages/sp-purchase.js',
-  'js/main.js'
+  'js/pages/sp-issue.js', 'js/pages/sp-return.js', 'js/pages/sp-receipt.js',
+  'js/pages/sp-reservation-post.js', 'js/pages/sp-stock-post.js',
+  'js/pages/material-doc-reversal.js', 'js/pages/material-master.js',
+  'js/pages/batch-char.js', 'js/main.js'
 ];
 
 function log(msg, cls) {
@@ -54,7 +57,7 @@ function testFile(file, i) {
 
 function checkVars() {
   out.appendChild(document.createElement('h2')).textContent = '变量检查:';
-  var vars = ['equipmentData','FL_FACTORIES','flMockData','wcMockData','EquipmentMaster','FunctionalLocation','WorkCenter','SpPurchase','App'];
+  var vars = ['equipmentData','FL_FACTORIES','flMockData','wcMockData','EquipmentMaster','FunctionalLocation','WorkCenter','SpPurchase','SpIssue','SpReturn','SpReceipt','SpReservationPost','SpStockPost','MaterialDocReversal','MaterialMaster','BatchChar','App'];
   vars.forEach(function(v) {
     var exists = (typeof window[v] !== 'undefined');
     log((exists ? '✓' : '✗') + ' ' + v + (exists ? ' = ' + typeof window[v] : ' 未定义'), exists ? 'ok' : 'err');

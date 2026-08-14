@@ -51,7 +51,10 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 | 预留单据 | 入库单 | `SpReceipt` | 成品入库，单一创建表单 |
 | 预留单据 | 预留过账 | `SpReservationPost` | 跨车间预留执行过账 |
 | 库存记账 | 库存记账 | `SpStockPost` | 统一入口，6 种记账类型 |
-| 保留 | 物料主数据、库存查询与预警（库存查询/安全库存预警）、采购申请管理 | — | 备件领用已删除，功能并入领料单 |
+| 库存记账 | 物料凭证冲销 | `MaterialDocReversal` | 汇总所有已过账物料凭证，反向冲销 |
+| 物料主数据 | 物料主数据 | `MaterialMaster` | 物料主数据维护 |
+| 物料主数据 | 批次特性 | `BatchChar` | 双 Tab：批次特性修改 / 修改记录 |
+| 保留 | 库存查询与预警（库存查询/安全库存预警）、采购申请管理 | — | 备件领用已删除，功能并入领料单 |
 
 ---
 
@@ -185,7 +188,51 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 | postDept / applicant / postDate | — | 是 | 记账部门、记账人、记账日期 |
 | status | CHAR | 是 | 草稿 / 已过账 / 已冲销 |
 | materialDocNo | CHAR | 条件 | SAP 物料凭证号 |
+| reversalDocNo | CHAR | 条件 | SAP 冲销凭证号，冲销成功后回填 |
 | lines[] | ARRAY | 是 | 行项目：itemNo、matCode、matName、qty（>0）、unit、batch |
+
+### 4.6 批次特性（batchCharData，含修改记录 batchCharLogData）
+
+批次特性与库存批次一一对应，记录物料批次的检验特性值（含量/水分/粒度等），修改即写一条修改记录：
+
+**批次特性主数据（batchCharData）：**
+
+| 字段名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| batchNo | CHAR | 是 | 库存批次号 |
+| materialCode / materialName | CHAR | 是 | 物料编码 / 物料名称 |
+| factory / location | CHAR | 是 | 工厂、库位 |
+| chars[] | ARRAY | 是 | 特性：charCode、charName、charValue（当前值）、unit |
+| updateBy / updateTime | CHAR | 是 | 最近修改人、最近修改时间 |
+
+**修改记录（batchCharLogData，表前缀 BCL-）：**
+
+| 字段名 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| logNo | CHAR | 是 | 记录号，`BCL-YYYYMMDD-NNN`（SAP 返回后拼接流水） |
+| batchNo / materialCode | CHAR | 是 | 批次号、物料编码 |
+| charCode / charName / unit | CHAR | 是 | 特性编码、特性名称、单位 |
+| oldValue / newValue | CHAR | 是 | 原值 → 新值 |
+| changeBy / changeTime | CHAR | 是 | 修改人、修改时间 |
+| reason | CHAR | 是 | 修改原因（必填） |
+
+### 4.7 物料凭证冲销（跨来源汇总）
+
+汇总以下已过账来源中 `materialDocNo` 非空的行项目，扁平行字段：
+
+| 字段名 | 说明 |
+|---|---|
+| docNo | 来源单据号 |
+| sourceType | 来源类型：库存记账 / 入库单 / 预留过账 |
+| materialDocNo | SAP 物料凭证号 |
+| moveType | 原移动类型（自动带出） |
+| matCode / matName / qty / unit / batch | 物料行项目 |
+| factory / location | 工厂、库位 |
+| postDate | 过账日期 |
+| status | 已过账 / 部分过账 / 已冲销 |
+| reversalDocNo | 冲销凭证号，冲销成功后回填 |
+
+> 冲销后同步回写源单据数组（spStockPostData / spReceiptData / spReservationData）对应元素：`status='已冲销'`、`reversalDocNo=冲销凭证号`，保证单据页与冲销页状态联动。
 
 ---
 
@@ -268,6 +315,37 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 - 行项目在列表中聚合展示，明细在查看弹窗中以表格展开
 - 操作列统一仅「查看」按钮（`btn btn-blue btn-sm`），保持界面清爽
 
+### 5.7 批次特性（双 Tab 页面）
+
+**Tab1「批次特性修改」：**
+- 查询条件：工厂（下拉）、物料编码/名称（模糊）、批次号（模糊）
+- 列表：批次号、物料编码/名称、工厂、库位、特性数、最近修改人、最近修改时间，操作列仅「查看」
+- 查看弹窗（大弹窗）：批次抬头 `detail-grid` 纯文本 + 特性表格（每行特性可编辑当前值）+ 修改原因输入框（必填）
+- 「保存修改」→ 校验有变更项且原因已填 → 调 `SAP_MOCK.changeBatchChar` → 成功后：
+  - 回写 batchCharData 对应特性值、updateBy/updateTime
+  - 每条变更写入 batchCharLogData（oldValue → newValue、原因）
+- 无变更时提示「没有修改任何特性值」，不调 SAP
+
+**Tab2「修改记录」：**
+- 查询条件：批次号、特性名称（模糊）、修改人（模糊）、修改日期（date）
+- 列表：记录号、批次号、物料编码、特性、原值→新值（原值删除线、新值绿色加粗）、修改人、修改时间、修改原因
+
+**数据：** 批次特性数据基于物料主数据的「批次管理」启用的物料批次；修改记录不可手工编辑，仅由 Tab1 保存动作自动生成。
+
+### 5.8 物料凭证冲销
+
+- 汇总所有已过账来源（库存记账 / 入库单 / 预留过账）中 `materialDocNo` 非空的行项目，页面加载时一次性构建扁平数据，筛选走内存过滤
+- 查询条件：物料凭证号、来源单据号、来源类型（下拉）、物料编码/名称（模糊）、状态（已过账/部分过账/已冲销）
+- 统计栏：物料凭证行数 / 可冲销（已过账）/ 部分过账 / 已冲销
+- 列表：物料凭证号、来源单据、来源类型（徽章）、移动类型（含文字说明）、物料、数量/单位、批次、工厂/库位、过账日期、状态徽章（已过账绿 / 部分过账蓝 / 已冲销红），操作列仅「查看」
+- 查看弹窗：凭证抬头 `detail-grid` + 行项目表格；已冲销凭证展示冲销凭证号（红）；未冲销凭证弹窗底部提供「执行冲销」按钮
+- 冲销弹窗：
+  - 冲销移动类型由 SAP 按原移动类型**自动映射反向**（如 101→102），不允许手工修改
+  - 冲销原因下拉必选（记账错误/数量错误/物料错误/库位错误/质量不合格退回/其他），可选填冲销说明
+  - 「确认冲销」→ 调 `SAP_MOCK.reverseGoodsMovement` → 成功后：
+    - 回写源单据数组对应元素 `status='已冲销'`、`reversalDocNo=冲销凭证号`
+    - 刷新冲销页列表与统计
+
 ---
 
 ## 6. 交互规范
@@ -324,8 +402,13 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 | BR-09 | 入库单批次（batch）必填；预留单据批次可选 |
 | BR-10 | 所有列表操作列仅「查看」，编辑入口在查看弹窗内 |
 | BR-11 | 所有多方式创建单据，「创建」按钮先弹方式选择弹窗，不直接跳表单 |
-| BR-12 | 库存记账提交后不可直接删除，如记账错误走冲销（后续扩展） |
+| BR-12 | 库存记账提交后不可直接删除，如记账错误走冲销 |
 | BR-13 | 移动类型由创建方式/记账类型自动带出，不允许用户手工修改 |
+| BR-14 | 批次特性修改必须填写修改原因，否则不允许提交 |
+| BR-15 | 批次特性修改成功即自动生成修改记录（batchCharLogData），修改记录不可手工新增/编辑 |
+| BR-16 | 物料凭证冲销移动类型由 SAP 自动映射反向（101→102、261→262、201→202、311→312、551→552、561→562），不允许手工修改 |
+| BR-17 | 已冲销凭证不允许重复冲销；草稿/待同步状态无物料凭证号，不进入冲销列表 |
+| BR-18 | 冲销成功后必须回写源单据状态为「已冲销」并记录冲销凭证号，保证各页面状态一致 |
 
 ---
 
@@ -357,7 +440,23 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 - **返回**：`{ ok: true, materialDocNo: '49xxxxxx' }`
 - **失败率**：约 8%
 
-### 8.4 公共能力
+### 8.4 修改批次特性 `changeBatchChar(payload)`
+
+- **方向**：MES → SAP
+- **触发时机**：批次特性查看弹窗内「保存修改」
+- **入参**：批次号、物料编码、修改原因、变更项数组（charCode/charName/unit/oldValue/newValue）
+- **返回**：`{ ok: true, logNo: 'BCL-YYYYMMDD-NNN', changeBy, changeTime }`
+- **失败率**：约 6%，失败返回 `{ ok: false, error }`（批次被锁定/被其他用户占用）
+
+### 8.5 冲销物料凭证 `reverseGoodsMovement(payload)`
+
+- **方向**：MES → SAP
+- **触发时机**：物料凭证冲销弹窗内「确认冲销」
+- **入参**：物料凭证号、来源类型、来源单据号、冲销移动类型（自动映射）、物料/数量/批次、冲销原因
+- **返回**：`{ ok: true, reversalDocNo: '49xxxxxxxx', reverseMoveType }`
+- **失败率**：约 8%，失败返回 `{ ok: false, error }`（凭证已存在冲销记录或不允许冲销）
+
+### 8.6 公共能力
 
 - `SAP_MOCK.showLoading(text)` / `SAP_MOCK.hideLoading()`：全局 loading 层（深蓝旋转圈）
 - 所有接口含 30s 超时保护
@@ -379,6 +478,14 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 | 561 / 562 | 库存盘点调整（盘盈/盘亏） | 库存差异调整 |
 | K | 客供料收发 | 客供料收发 |
 | 101 | 收货（GR） | 成品入库 |
+| 102 | 冲销收货 | 冲销 101 入库凭证 |
+| 262 | 冲销内部订单发料 | 冲销 261 发料凭证 |
+| 202 | 冲销成本中心发料 | 冲销 201 发料凭证 |
+| 312 | 冲销库内转移 | 冲销 311 转移凭证 |
+| 552 | 冲销报废 | 冲销 551 报废凭证 |
+| 562 | 冲销盘盈/期初 | 冲销 561 期初/盘盈凭证 |
+
+> 冲销移动类型映射（SAP 标准）：101→102、201→202、261→262、311→312、551→552、561→562，由 `SAP_MOCK.reverseGoodsMovement` 自动映射，不允许手工修改。
 
 ### 9.2 状态流转
 
@@ -400,6 +507,8 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 草稿(灰) → 已过账(绿) → 已冲销(红)
 ```
 
+> 已冲销为物料凭证冲销页执行冲销后的终态，冲销后不可再次冲销。
+
 ### 9.3 单据号规则
 
 | 单据 | 前缀 | 示例 |
@@ -410,6 +519,8 @@ MES 创建单据 → 调 SAP 创建预留接口 → SAP 返回预留编号 → M
 | 库存记账 | SP-YYYYMMDD-NNN | SP-20260702-001 |
 | 预留编号 | 1000000xxx（SAP 返回） | 1000000111 |
 | 物料凭证号 | 49xxxxxx（SAP 返回） | 4900000101 |
+| 冲销凭证号 | 49xxxxxxxx（SAP 返回） | 4900000123 |
+| 批次特性修改记录 | BCL-YYYYMMDD-NNN（SAP 返回后拼接流水） | BCL-20260703-001 |
 
 ### 9.4 Mock 数据源
 
@@ -424,10 +535,16 @@ main.js App.menu ─┬─ 预留单据分组 ─┬─ sp-issue.js 领料单
                   │               ├─ sp-return.js 退料单
                   │               ├─ sp-receipt.js 入库单
                   │               └─ sp-reservation-post.js 预留过账
-                  └─ 库存记账分组 ── sp-stock-post.js 库存记账
+                  ├─ 库存记账分组 ─┬─ sp-stock-post.js 库存记账
+                  │               └─ material-doc-reversal.js 物料凭证冲销
+                  └─ 物料主数据分组 ─┬─ material-master.js 物料主数据
+                                    └─ batch-char.js 批次特性（双 Tab）
 
 sp-issue / sp-return / sp-reservation-post ──→ SAP_MOCK 模拟接口层 ──→ 本地自建表(模拟数据)
+sp-stock-post / sp-receipt / sp-reservation-post ──→ material-doc-reversal.js（汇总凭证 + 冲销回写）
 ```
+
+> 脚本加载顺序：`material-doc-reversal.js` 必须排在所有 sp-* 单据脚本之后（依赖其顶层 const 数据数组）；`batch-char.js` 排在 `material-master.js` 之后。
 
 - 页面对象 `{ render() / init() }` 由 `main.js` 的 `App.pageMap` 注册挂载
 - 模拟数据数组置于各页面文件底部（`const spXxxData = [...]`）

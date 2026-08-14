@@ -69,6 +69,50 @@
       });
     },
 
+    /**
+     * 修改批次特性（模拟 SAP 批次特性维护）
+     * @param {Object} payload { batchNo, materialCode, reason, changes:[{charCode,charName,unit,oldValue,newValue}] }
+     * @returns {Promise<{ok:true, logNo:string, changeBy:string, changeTime:string}>}
+     * @rejects {Promise<{ok:false, code:string, message:string}>}
+     */
+    changeBatchChar(payload) {
+      return delay(800).then(function () {
+        if (Math.random() < 0.06) {
+          return Promise.reject({ ok:false, code:'SAP_ERR', message:'SAP 批次特性修改失败：批次 ' + (payload.batchNo || '') + ' 已被锁定或被其他用户占用，请稍后重试。' });
+        }
+        const now = new Date();
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        const changeTime = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) +
+          ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+        return {
+          ok:true,
+          logNo: 'BCL-' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + randomDigits(3),
+          changeBy: '当前用户',
+          changeTime
+        };
+      });
+    },
+
+    /**
+     * 冲销物料凭证（模拟 SAP MIGO 冲销，移动类型自动映射反向）
+     * @param {Object} payload { materialDocNo, sourceType, sourceDocNo, reverseMoveType,
+     *                          materialCode, materialName, qty, unit, batch, factory, location, reason }
+     * @returns {Promise<{ok:true, reversalDocNo:string, reverseMoveType:string}>}
+     * @rejects {Promise<{ok:false, code:string, message:string}>}
+     */
+    reverseGoodsMovement(payload) {
+      return delay(900).then(function () {
+        if (Math.random() < 0.08) {
+          return Promise.reject({ ok:false, code:'SAP_ERR', message:'冲销失败：物料凭证 ' + (payload.materialDocNo || '') + ' 已存在冲销记录或不允许冲销，请联系 SAP 管理员。' });
+        }
+        return {
+          ok:true,
+          reversalDocNo: '49' + randomDigits(8),
+          reverseMoveType: payload.reverseMoveType
+        };
+      });
+    },
+
     /* ---------- 全局 loading 遮罩 ---------- */
     showLoading(text) {
       let el = document.getElementById('sapLoadingLayer');
