@@ -160,23 +160,24 @@ const SpReceipt = {
     const isEdit = this.editMode;
     const lines = (d.lines && d.lines.length ? d.lines : [{ itemNo: 10, matCode: '', matName: '', qty: '', unit: 'BOX', batch: '' }]);
     const today = new Date().toISOString().slice(0, 10);
+    const inputStyle = 'width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;';
     return `
       <div class="modal-backdrop" id="rcModalBackdrop" onclick="SpReceipt.closeModal()">
-        <div class="modal" style="width:96vw;max-width:96vw;max-height:98vh;" onclick="event.stopPropagation()">
+        <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
           <div class="modal-header">
-            <div class="modal-title">${isEdit ? '修改' : '创建'}入库单 <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">成品入库 · 移动类型 101${d.materialDocNo ? ' · 物料凭证 ' + d.materialDocNo : ''}</span></div>
+            <div class="modal-title">${isEdit ? '修改' : '新建'}入库单 - ${esc(d.docNo || '(自动生成)')} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">成品入库 · 移动类型 101${d.materialDocNo ? ' · 物料凭证 ' + d.materialDocNo : ''}</span></div>
             <button class="modal-close" onclick="SpReceipt.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:none;">
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
-              <div class="detail-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));">
+              <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
                 <div class="detail-item"><dt>入库单号</dt><dd><strong>${esc(d.docNo || '(自动生成)')}</strong><input type="hidden" id="rcFDocNo" value="${esc(d.docNo || '')}"></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 生产订单号</dt><dd><input type="text" id="rcFPoNo" placeholder="如 6000001234" value="${esc(d.processOrderNo || '')}"></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 目标库位</dt><dd><select id="rcFLoc">${RECEIPT_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.targetLocation===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 入库日期</dt><dd><input type="date" id="rcFDate" value="${esc(d.receiptDate || today)}"></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 入库部门</dt><dd><select id="rcFDept">${[''].concat(RECEIPT_DEPT_OPTIONS).map(o => `<option value="${o}"${d.createDept===o?' selected':''}>${o || '请选择'}</option>`).join('')}</select></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 入库人</dt><dd><input type="text" id="rcFApplicant" value="${esc(d.applicant || window.currentUserId || '')}"></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 生产订单号</dt><dd><input type="text" id="rcFPoNo" placeholder="如 6000001234" value="${esc(d.processOrderNo || '')}" style="${inputStyle}"></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 目标库位</dt><dd><select id="rcFLoc" style="${inputStyle}">${RECEIPT_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.targetLocation===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 入库日期</dt><dd><input type="date" id="rcFDate" value="${esc(d.receiptDate || today)}" style="${inputStyle}"></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 入库部门</dt><dd><select id="rcFDept" style="${inputStyle}">${[''].concat(RECEIPT_DEPT_OPTIONS).map(o => `<option value="${o}"${d.createDept===o?' selected':''}>${o || '请选择'}</option>`).join('')}</select></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 入库人</dt><dd><input type="text" id="rcFApplicant" value="${esc(d.applicant || window.currentUserId || '')}" style="${inputStyle}"></dd></div>
               </div>
             </div>
 
@@ -213,7 +214,7 @@ const SpReceipt = {
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="SpReceipt.closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="SpReceipt.submitForm()">${isEdit ? '保存修改（同步 SAP）' : '提交并同步 SAP'}</button>
+            <button class="btn btn-primary" onclick="SpReceipt.submitForm()">提交</button>
           </div>
         </div>
       </div>`;

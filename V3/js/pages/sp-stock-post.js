@@ -201,31 +201,32 @@ const SpStockPost = {
 
   _renderTypeFields(type, d) {
     d = d || {};
+    const inputStyle = 'width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;';
     const base = `
-      <div class="detail-item"><dt><span class="req">*</span> 库存地点</dt><dd><select id="spFLoc">${STOCK_POST_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.location===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>`;
+      <div class="detail-item"><dt><span class="req">*</span> 库存地点</dt><dd><select id="spFLoc" style="${inputStyle}">${STOCK_POST_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.location===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>`;
     const byType = {
       'stock-transfer': `
-        <div class="detail-item"><dt><span class="req">*</span> 目标库位</dt><dd><select id="spFTargetLoc">${STOCK_POST_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.targetLocation===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>`,
+        <div class="detail-item"><dt><span class="req">*</span> 目标库位</dt><dd><select id="spFTargetLoc" style="${inputStyle}">${STOCK_POST_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.targetLocation===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>`,
       'stock-scrap': `
-        <div class="detail-item"><dt><span class="req">*</span> 报废原因</dt><dd><select id="spFScrapReason">
+        <div class="detail-item"><dt><span class="req">*</span> 报废原因</dt><dd><select id="spFScrapReason" style="${inputStyle}">
           <option value="">请选择</option>
           ${['质量不合格', '过期失效', '包装破损', '生产损耗'].map(o => `<option value="${o}"${d.scrapReason===o?' selected':''}>${o}</option>`).join('')}
         </select></dd></div>`,
       'stock-adjustment': `
-        <div class="detail-item"><dt><span class="req">*</span> 差异方向</dt><dd><select id="spFAdjustDir">
+        <div class="detail-item"><dt><span class="req">*</span> 差异方向</dt><dd><select id="spFAdjustDir" style="${inputStyle}">
           <option value="gain"${d.adjustDir==='gain'?' selected':''}>盘盈（增加库存）</option>
           <option value="loss"${d.adjustDir==='loss'?' selected':''}>盘亏（减少库存）</option>
         </select></dd></div>
-        <div class="detail-item"><dt>差异原因</dt><dd><input type="text" id="spFAdjustReason" placeholder="选填" value="${esc(d.adjustReason || '')}"></dd></div>`,
+        <div class="detail-item"><dt>差异原因</dt><dd><input type="text" id="spFAdjustReason" placeholder="选填" value="${esc(d.adjustReason || '')}" style="${inputStyle}"></dd></div>`,
       'consignment': `
-        <div class="detail-item"><dt><span class="req">*</span> 收发方向</dt><dd><select id="spFConsignDir">
+        <div class="detail-item"><dt><span class="req">*</span> 收发方向</dt><dd><select id="spFConsignDir" style="${inputStyle}">
           <option value="receive"${d.consignDir==='receive'?' selected':''}>客供料收货</option>
           <option value="issue"${d.consignDir==='issue'?' selected':''}>客供料消耗</option>
         </select></dd></div>`,
       'internal-order-issue': `
-        <div class="detail-item"><dt><span class="req">*</span> 内部订单号</dt><dd><input type="text" id="spFInternalOrder" placeholder="如 IO-2026-0101" value="${esc(d.internalOrderNo || '')}"></dd></div>`,
+        <div class="detail-item"><dt><span class="req">*</span> 内部订单号</dt><dd><input type="text" id="spFInternalOrder" placeholder="如 IO-2026-0101" value="${esc(d.internalOrderNo || '')}" style="${inputStyle}"></dd></div>`,
       'cost-center-issue': `
-        <div class="detail-item"><dt><span class="req">*</span> 成本中心</dt><dd><input type="text" id="spFCostCenter" placeholder="如 CC-1001" value="${esc(d.costCenter || '')}"></dd></div>`
+        <div class="detail-item"><dt><span class="req">*</span> 成本中心</dt><dd><input type="text" id="spFCostCenter" placeholder="如 CC-1001" value="${esc(d.costCenter || '')}" style="${inputStyle}"></dd></div>`
     };
     return base + (byType[type] || '');
   },
@@ -236,30 +237,25 @@ const SpStockPost = {
     const isEdit = this.editMode;
     const lines = (d.lines && d.lines.length ? d.lines : [{ itemNo: 10, matCode: '', matName: '', qty: '', unit: 'KG', batch: '' }]);
     const today = new Date().toISOString().slice(0, 10);
+    const inputStyle = 'width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;';
     return `
       <div class="modal-backdrop" id="spModalBackdrop" onclick="SpStockPost.closeModal()">
-        <div class="modal" style="width:96vw;max-width:96vw;max-height:98vh;" onclick="event.stopPropagation()">
+        <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
           <div class="modal-header">
-            <div class="modal-title">${isEdit ? '修改' : '新建'}库存记账 <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(info.label)} · 移动类型 ${info.moveType}${d.materialDocNo ? ' · 物料凭证 ' + d.materialDocNo : ''}</span></div>
+            <div class="modal-title">${isEdit ? '修改' : '新建'}库存记账 - ${esc(d.docNo || '(自动生成)')} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(info.label)} · 移动类型 ${info.moveType}${d.materialDocNo ? ' · 物料凭证 ' + d.materialDocNo : ''}</span></div>
             <button class="modal-close" onclick="SpStockPost.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:none;">
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
-              <div class="detail-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));">
+              <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
                 <div class="detail-item"><dt>记账单号</dt><dd><strong>${esc(d.docNo || '(自动生成)')}</strong><input type="hidden" id="spFDocNo" value="${esc(d.docNo || '')}"></dd></div>
                 <div class="detail-item"><dt>记账类型</dt><dd>${esc(info.label)}<input type="hidden" id="spFType" value="${type}"></dd></div>
                 <div class="detail-item"><dt>移动类型</dt><dd>${info.moveType}</dd></div>
-                <div class="detail-item"><dt>工厂</dt><dd><select id="spFPlant"><option value="1000">1000 - 山东步长制药工厂</option></select></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 记账日期</dt><dd><input type="date" id="spFDate" value="${esc(d.postDate || today)}"></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 记账部门</dt><dd><select id="spFDept">${[''].concat(STOCK_POST_DEPT_OPTIONS).map(o => `<option value="${o}"${d.postDept===o?' selected':''}>${o || '请选择'}</option>`).join('')}</select></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 记账人</dt><dd><input type="text" id="spFApplicant" value="${esc(d.applicant || window.currentUserId || '')}"></dd></div>
-              </div>
-            </div>
-
-            <div class="form-section" style="margin-top:14px;">
-              <div class="form-section-title">记账信息（按类型）</div>
-              <div class="detail-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+                <div class="detail-item"><dt>工厂</dt><dd><select id="spFPlant" style="${inputStyle}"><option value="1000">1000 - 山东步长制药工厂</option></select></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 记账日期</dt><dd><input type="date" id="spFDate" value="${esc(d.postDate || today)}" style="${inputStyle}"></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 记账部门</dt><dd><select id="spFDept" style="${inputStyle}">${[''].concat(STOCK_POST_DEPT_OPTIONS).map(o => `<option value="${o}"${d.postDept===o?' selected':''}>${o || '请选择'}</option>`).join('')}</select></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 记账人</dt><dd><input type="text" id="spFApplicant" value="${esc(d.applicant || window.currentUserId || '')}" style="${inputStyle}"></dd></div>
                 ${this._renderTypeFields(type, d)}
               </div>
             </div>
@@ -297,7 +293,7 @@ const SpStockPost = {
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="SpStockPost.closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="SpStockPost.submitForm()">${isEdit ? '保存修改（同步 SAP）' : '提交并同步 SAP'}</button>
+            <button class="btn btn-primary" onclick="SpStockPost.submitForm()">提交</button>
           </div>
         </div>
       </div>`;

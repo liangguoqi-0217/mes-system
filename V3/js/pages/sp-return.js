@@ -198,15 +198,16 @@ const SpReturn = {
 
   _renderTypeFields(type, d) {
     d = d || {};
+    const inputStyle = 'width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;';
     const byType = {
       'return-internal-order': `
-        <div class="detail-item"><dt><span class="req">*</span> 内部订单号</dt><dd><input type="text" id="retFInternalOrder" placeholder="如 IO-2026-0101" value="${esc(d.internalOrderNo || '')}"></dd></div>`,
+        <div class="detail-item"><dt><span class="req">*</span> 内部订单号</dt><dd><input type="text" id="retFInternalOrder" placeholder="如 IO-2026-0101" value="${esc(d.internalOrderNo || '')}" style="${inputStyle}"></dd></div>`,
       'return-cost-center': `
-        <div class="detail-item"><dt><span class="req">*</span> 成本中心</dt><dd><input type="text" id="retFCostCenter" placeholder="如 CC-1001" value="${esc(d.costCenter || '')}"></dd></div>`,
+        <div class="detail-item"><dt><span class="req">*</span> 成本中心</dt><dd><input type="text" id="retFCostCenter" placeholder="如 CC-1001" value="${esc(d.costCenter || '')}" style="${inputStyle}"></dd></div>`,
       'return-stock': ``
     };
     return (byType[type] || '') + `
-      <div class="detail-item"><dt>关联领料单号</dt><dd><input type="text" id="retFRefDoc" placeholder="选填，如 PL-20260701-001" value="${esc(d.refDocNo || '')}"></dd></div>`;
+      <div class="detail-item"><dt>关联领料单号</dt><dd><input type="text" id="retFRefDoc" placeholder="选填，如 PL-20260701-001" value="${esc(d.refDocNo || '')}" style="${inputStyle}"></dd></div>`;
   },
 
   getFormModalHTML(type, d) {
@@ -215,31 +216,26 @@ const SpReturn = {
     const isEdit = this.editMode;
     const lines = (d.lines && d.lines.length ? d.lines : [{ itemNo: 10, matCode: '', matName: '', qty: '', unit: 'KG', batch: '' }]);
     const today = new Date().toISOString().slice(0, 10);
+    const inputStyle = 'width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;';
     return `
       <div class="modal-backdrop" id="retModalBackdrop" onclick="SpReturn.closeModal()">
-        <div class="modal" style="width:96vw;max-width:96vw;max-height:98vh;" onclick="event.stopPropagation()">
+        <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
           <div class="modal-header">
-            <div class="modal-title">${isEdit ? '修改' : '创建'}退料单 <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(info.label)} · 移动类型 ${info.moveType}${d.reservationNo ? ' · 预留号 ' + d.reservationNo : ''}</span></div>
+            <div class="modal-title">${isEdit ? '修改' : '新建'}退料单 - ${esc(d.docNo || '(自动生成)')} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(info.label)} · 移动类型 ${info.moveType}${d.reservationNo ? ' · 预留号 ' + d.reservationNo : ''}</span></div>
             <button class="modal-close" onclick="SpReturn.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:none;">
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
-              <div class="detail-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));">
+              <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
                 <div class="detail-item"><dt>退料单号</dt><dd><strong>${esc(d.docNo || '(自动生成)')}</strong><input type="hidden" id="retFDocNo" value="${esc(d.docNo || '')}"></dd></div>
                 <div class="detail-item"><dt>退料方式</dt><dd>${esc(info.label)}<input type="hidden" id="retFType" value="${type}"></dd></div>
                 <div class="detail-item"><dt>移动类型</dt><dd>${info.moveType}</dd></div>
-                <div class="detail-item"><dt>工厂</dt><dd><select id="retFPlant"><option value="1000">1000 - 山东步长制药工厂</option></select></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 退料日期</dt><dd><input type="date" id="retFDate" value="${esc(d.returnDate || today)}"></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 退料部门</dt><dd><select id="retFDept">${[''].concat(RETURN_DEPT_OPTIONS).map(o => `<option value="${o}"${d.returnDept===o?' selected':''}>${o || '请选择'}</option>`).join('')}</select></dd></div>
-                <div class="detail-item"><dt><span class="req">*</span> 退料人</dt><dd><input type="text" id="retFApplicant" value="${esc(d.applicant || window.currentUserId || '')}"></dd></div>
-              </div>
-            </div>
-
-            <div class="form-section" style="margin-top:14px;">
-              <div class="form-section-title">退料信息（按退料方式）</div>
-              <div class="detail-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
-                <div class="detail-item"><dt><span class="req">*</span> 退回库位</dt><dd><select id="retFLoc">${RETURN_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.returnLocation===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>
+                <div class="detail-item"><dt>工厂</dt><dd><select id="retFPlant" style="${inputStyle}"><option value="1000">1000 - 山东步长制药工厂</option></select></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 退料日期</dt><dd><input type="date" id="retFDate" value="${esc(d.returnDate || today)}" style="${inputStyle}"></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 退料部门</dt><dd><select id="retFDept" style="${inputStyle}">${[''].concat(RETURN_DEPT_OPTIONS).map(o => `<option value="${o}"${d.returnDept===o?' selected':''}>${o || '请选择'}</option>`).join('')}</select></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 退料人</dt><dd><input type="text" id="retFApplicant" value="${esc(d.applicant || window.currentUserId || '')}" style="${inputStyle}"></dd></div>
+                <div class="detail-item"><dt><span class="req">*</span> 退回库位</dt><dd><select id="retFLoc" style="${inputStyle}">${RETURN_LOCATION_OPTIONS.map(o => `<option value="${o}"${d.returnLocation===o?' selected':''}>${o}</option>`).join('')}</select></dd></div>
                 ${this._renderTypeFields(type, d)}
               </div>
             </div>
@@ -277,7 +273,7 @@ const SpReturn = {
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="SpReturn.closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="SpReturn.submitForm()">${isEdit ? '保存修改（同步 SAP）' : '提交并同步 SAP'}</button>
+            <button class="btn btn-primary" onclick="SpReturn.submitForm()">提交</button>
           </div>
         </div>
       </div>`;
