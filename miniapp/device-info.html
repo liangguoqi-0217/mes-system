@@ -1344,30 +1344,32 @@
   #page-login { background: var(--cds-gray-10); }
 
   .login-hero {
-    background: var(--cds-gray-100);
-    padding: 56px 24px 44px;
+    background: var(--cds-gray-10);
+    padding: 56px 24px 16px;
     color: var(--cds-white);
     flex-shrink: 0;
   }
   .login-hero-tagline {
     font-size: 11px; letter-spacing: 0.38em;
-    color: var(--cds-gray-30); margin-bottom: 14px;
+    color: var(--cds-gray-50); margin-bottom: 14px;
     font-weight: 400; text-transform: uppercase;
   }
   .login-hero-title {
     font-size: 30px; font-weight: 300; letter-spacing: 0;
     line-height: 1.15; margin-bottom: 10px;
+    color: var(--cds-blue-70);
   }
 
   .login-body {
     flex: 1;
-    padding: 24px 20px 36px;
+    padding: 0 20px 36px;
   }
 
   .login-card {
     background: var(--cds-white);
     padding: 0 20px 28px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--cds-gray-20);
   }
   .login-tabs {
     display: flex;
@@ -1443,140 +1445,6 @@
     font-size: 11px; letter-spacing: 0.16px;
     color: var(--cds-gray-30);
   }
-
-  /* ---------- 登录页多版本主题（原型对比用） ---------- */
-
-  /* V2 深蓝渐变版：品牌区深蓝渐变，整体商务稳重 */
-  .login-theme-2 .login-hero {
-    background: linear-gradient(150deg, #0f62fe 0%, #0043ce 55%, #002d9c 100%);
-  }
-  .login-theme-2 .login-hero-tagline {
-    color: rgba(255,255,255,0.72);
-    letter-spacing: 0.4em;
-  }
-  .login-theme-2 .login-hero-title { font-weight: 500; color: var(--cds-white); }
-  .login-theme-2 .login-card { box-shadow: 0 8px 24px rgba(0, 43, 156, 0.10); }
-
-  /* V3 浅色柔和版：整体浅灰无深色大块，对比最柔和 */
-  .login-theme-3 .login-hero {
-    background: var(--cds-gray-10);
-    padding-bottom: 16px;
-  }
-  .login-theme-3 .login-hero-tagline { color: var(--cds-gray-50); }
-  .login-theme-3 .login-hero-title { color: var(--cds-blue-70); }
-  .login-theme-3 .login-body { padding-top: 0; }
-  .login-theme-3 .login-card {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    border: 1px solid var(--cds-gray-20);
-  }
-
-  /* ---------- 版本切换器（原型工具，确定版本后移除） ---------- */
-  .login-theme-switcher {
-    margin-top: 36px;
-    text-align: center;
-  }
-  .login-theme-switcher-label {
-    font-size: 11px; letter-spacing: 0.16px;
-    color: var(--cds-gray-50); margin-bottom: 10px;
-  }
-  .login-theme-switcher-group {
-    display: inline-flex;
-    background: var(--cds-gray-20);
-    border-radius: 8px; padding: 3px; gap: 2px;
-  }
-  .login-theme-switcher-group button {
-    border: none; background: transparent;
-    padding: 6px 14px; border-radius: 6px;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 12px; font-weight: 600; color: var(--cds-text-secondary);
-    cursor: pointer; transition: all 0.15s;
-  }
-  .login-theme-switcher-group button.active {
-    background: var(--cds-white); color: var(--cds-blue-60);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-  }
-
-  /* 品牌徽标（默认隐藏，部分主题显示） */
-  .login-brand-mark {
-    display: none;
-    width: 44px; height: 44px;
-    border-radius: 10px;
-    background: var(--cds-blue-60);
-    position: relative;
-    margin: 0 auto 16px;
-  }
-  .login-brand-mark::after {
-    content: 'B';
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 22px; font-weight: 600; color: var(--cds-white);
-  }
-
-  /* V4 全暗色沉浸版：整页深色，无黑白割裂，工业暗黑气质 */
-  .login-theme-4 #page-login { background: var(--cds-gray-100); }
-  .login-theme-4 .login-hero { background: var(--cds-gray-100); }
-  .login-theme-4 .login-hero-tagline { color: var(--cds-gray-50); }
-  .login-theme-4 .login-hero-title { color: var(--cds-white); }
-  .login-theme-4 .login-body { padding-top: 8px; }
-  .login-theme-4 .login-card {
-    background: var(--cds-gray-90);
-    border: 1px solid var(--cds-gray-80);
-    box-shadow: none;
-  }
-  .login-theme-4 .login-tabs { border-bottom-color: var(--cds-gray-80); }
-  .login-theme-4 .login-tab { color: var(--cds-gray-30); }
-  .login-theme-4 .login-tab.active { color: #6ea6ff; }
-  .login-theme-4 .login-tab.active::after { background: #6ea6ff; }
-  .login-theme-4 .login-tab:active { background: var(--cds-gray-80); }
-  .login-theme-4 .login-label { color: var(--cds-gray-30); }
-  .login-theme-4 .login-prefix { color: var(--cds-gray-30); border-bottom-color: var(--cds-gray-70); }
-  .login-theme-4 .cds-input {
-    color: var(--cds-white);
-    border-bottom-color: var(--cds-gray-70);
-  }
-  .login-theme-4 .cds-input:focus { border-bottom-color: #6ea6ff; }
-  .login-theme-4 .cds-input::placeholder { color: var(--cds-gray-60); }
-  .login-theme-4 .login-code-btn { background: rgba(110,166,255,0.16); color: #6ea6ff; }
-  .login-theme-4 .login-code-btn:disabled { background: var(--cds-gray-80); color: var(--cds-gray-50); }
-  .login-theme-4 .login-footer { color: var(--cds-gray-50); }
-  .login-theme-4 .login-footer .login-ver { color: var(--cds-gray-60); }
-
-  /* V5 浅色居中卡片版：品牌区居中、表单卡片悬浮，现代移动端形态 */
-  .login-theme-5 .login-hero {
-    background: var(--cds-gray-10);
-    text-align: center;
-    padding: 36px 24px 16px;
-  }
-  .login-theme-5 .login-brand-mark { display: block; }
-  .login-theme-5 .login-hero-tagline {
-    color: var(--cds-gray-50);
-    letter-spacing: 0.4em;
-  }
-  .login-theme-5 .login-hero-title { color: var(--cds-text-primary); font-size: 26px; }
-  .login-theme-5 .login-body { padding: 8px 32px 36px; }
-  .login-theme-5 .login-card {
-    border-radius: 14px;
-    border: 1px solid var(--cds-gray-20);
-    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
-    padding: 0 20px 24px;
-  }
-
-  /* V6 浅蓝渐变过渡版：淡蓝氛围渐变到白卡片，最顺滑不刺眼 */
-  .login-theme-6 .login-hero {
-    background: linear-gradient(180deg, var(--cds-blue-10) 0%, var(--cds-white) 100%);
-    text-align: center;
-    padding: 44px 24px 0;
-  }
-  .login-theme-6 .login-brand-mark { display: block; }
-  .login-theme-6 .login-hero-tagline { color: var(--cds-blue-60); letter-spacing: 0.4em; }
-  .login-theme-6 .login-hero-title { color: var(--cds-blue-70); }
-  .login-theme-6 .login-body { padding-top: 0; }
-  .login-theme-6 .login-card {
-    border: 1px solid var(--cds-gray-20);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-    padding: 0 20px 24px;
-  }
 </style>
 </head>
 <body>
@@ -1599,9 +1467,8 @@
     <!-- ================================================================
          PAGE 0: Login — 登录（默认启动页）
          ================================================================ -->
-    <div class="page active login-theme-1" id="page-login">
+    <div class="page active" id="page-login">
       <div class="login-hero">
-        <div class="login-brand-mark"></div>
         <div class="login-hero-tagline">BUCHANG INTELLIGENT MANUFACTURING</div>
         <div class="login-hero-title">步长智造平台</div>
       </div>
@@ -1649,19 +1516,6 @@
         <div class="login-footer">
           <div>步长智造平台 · 内部系统</div>
           <div class="login-ver">V3.0.0</div>
-        </div>
-
-        <!-- 版本对比切换器（原型工具，选定版本后移除） -->
-        <div class="login-theme-switcher">
-          <div class="login-theme-switcher-label">登录页版本对比</div>
-          <div class="login-theme-switcher-group">
-            <button class="active" data-theme="1" onclick="switchLoginTheme(1)">V1 高对比</button>
-            <button data-theme="2" onclick="switchLoginTheme(2)">V2 深蓝渐变</button>
-            <button data-theme="3" onclick="switchLoginTheme(3)">V3 浅色柔和</button>
-            <button data-theme="4" onclick="switchLoginTheme(4)">V4 全暗色</button>
-            <button data-theme="5" onclick="switchLoginTheme(5)">V5 居中卡片</button>
-            <button data-theme="6" onclick="switchLoginTheme(6)">V6 浅蓝渐变</button>
-          </div>
         </div>
       </div>
     </div>
@@ -2312,16 +2166,6 @@ function handleLogin() {
     btn.textContent = '登 录';
     btn.disabled = false;
   }, 600);
-}
-
-// 登录页版本切换（原型对比用）
-function switchLoginTheme(n) {
-  const page = document.getElementById('page-login');
-  for (let i = 1; i <= 6; i++) page.classList.remove('login-theme-' + i);
-  page.classList.add('login-theme-' + n);
-  document.querySelectorAll('.login-theme-switcher-group button').forEach(b => {
-    b.classList.toggle('active', b.dataset.theme === String(n));
-  });
 }
 
 function resetSubViews() {
