@@ -1038,6 +1038,415 @@
     font-family: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
     font-size: 14px; letter-spacing: 0.16px;
   }
+
+  /* ================================================================
+     Device Home — 设备主页（身份 / 档案 / 资料 / 业务）
+     ================================================================ */
+  .devhome-hero {
+    background: var(--cds-gray-100);
+    padding: 20px 16px 0;
+    color: var(--cds-white);
+    position: relative;
+  }
+  .devhome-hero-top {
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .devhome-hero-icon {
+    width: 48px; height: 48px; flex-shrink: 0;
+    background: var(--cds-gray-80);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .devhome-hero-main { flex: 1; min-width: 0; }
+  .devhome-hero-name {
+    font-size: 20px; font-weight: 600; line-height: 1.25;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .devhome-hero-code {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-gray-30); margin-top: 4px;
+  }
+  .devhome-hero-loc {
+    font-size: 12px; letter-spacing: 0.32px;
+    color: var(--cds-gray-30); margin-top: 2px;
+  }
+  .devhome-qr-btn {
+    flex-shrink: 0;
+    width: 40px; height: 40px;
+    background: var(--cds-gray-80);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--cds-white);
+    transition: background 0.15s;
+  }
+  .devhome-qr-btn:hover { background: var(--cds-gray-70); }
+  .devhome-qr-btn svg { width: 20px; height: 20px; }
+  .devhome-hero-meta {
+    display: flex; align-items: center; gap: 12px;
+    margin: 14px 0 0;
+    padding-bottom: 14px;
+    font-size: 12px; color: var(--cds-gray-30);
+  }
+
+  /* 四层分段 Tab */
+  .devhome-tabs {
+    display: flex;
+    background: var(--cds-gray-100);
+    border-bottom: 1px solid var(--cds-gray-80);
+    position: sticky; top: 0; z-index: 20;
+  }
+  .devhome-tab {
+    flex: 1; text-align: center;
+    padding: 12px 0 10px;
+    font-size: 14px; font-weight: 400;
+    color: var(--cds-gray-50);
+    cursor: pointer; user-select: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    background: transparent; border-top: none; border-left: none; border-right: none;
+    font-family: inherit; letter-spacing: 0.16px;
+  }
+  .devhome-tab:active { background: var(--cds-gray-80); }
+  .devhome-tab.active {
+    color: var(--cds-white);
+    border-bottom-color: var(--cds-blue-60);
+    font-weight: 600;
+  }
+
+  .devhome-body {
+    padding: 12px 12px 40px;
+    animation: devhomeFade 0.15s ease-out;
+  }
+  @keyframes devhomeFade {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+  .devhome-tabpanel { display: none; }
+  .devhome-tabpanel.active { display: block; }
+
+  /* 身份 Tab 摘要徽章行 */
+  .devhome-summary {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  /* 档案分组卡片 */
+  .arch-group {
+    background: var(--cds-white);
+    margin-bottom: 10px;
+    border: 1px solid var(--cds-gray-20);
+  }
+  .arch-group-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 12px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .arch-group-head:hover { background: var(--cds-gray-10); }
+  .arch-group-head.active { background: var(--cds-gray-10); }
+  .arch-group-icon {
+    width: 32px; height: 32px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--cds-gray-10);
+    font-size: 16px;
+  }
+  .arch-group-title { flex: 1; min-width: 0; }
+  .arch-group-name { font-size: 15px; font-weight: 600; color: var(--cds-text-primary); }
+  .arch-group-count {
+    font-size: 12px; color: var(--cds-text-secondary); margin-top: 1px;
+  }
+  .arch-group-arrow {
+    flex-shrink: 0; color: var(--cds-gray-50);
+    font-size: 12px; transition: transform 0.2s;
+  }
+  .arch-group-head.active .arch-group-arrow { transform: rotate(90deg); }
+  .arch-group-body { display: none; border-top: 1px solid var(--cds-gray-20); }
+  .arch-group-body.active { display: block; }
+  .arch-item {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--cds-gray-20);
+    font-size: 13px;
+  }
+  .arch-item:last-child { border-bottom: none; }
+  .arch-item-top {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .arch-item-title { font-size: 14px; font-weight: 500; color: var(--cds-text-primary); }
+  .arch-item-sub {
+    font-size: 12px; color: var(--cds-text-secondary);
+    margin-top: 3px; line-height: 1.45;
+  }
+  .arch-item-time { font-size: 12px; color: var(--cds-text-secondary); margin-top: 3px; }
+  .arch-empty {
+    padding: 20px 12px; text-align: center;
+    font-size: 13px; color: var(--cds-text-secondary);
+  }
+  /* 测量点行 */
+  .mp-row { display: flex; align-items: center; gap: 8px; }
+  .mp-tag {
+    flex-shrink: 0; font-size: 11px; padding: 2px 6px;
+    color: var(--cds-blue-70); background: var(--cds-blue-10);
+    letter-spacing: 0.32px;
+  }
+  .mp-name { flex: 1; min-width: 0; font-weight: 500; }
+  .mp-val { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--cds-text-primary); }
+  .mp-limit { font-size: 11px; color: var(--cds-text-secondary); margin-top: 2px; }
+
+  /* 资料 Tab */
+  .doc-cats {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .doc-cat-btn {
+    padding: 6px 12px; font-size: 13px;
+    color: var(--cds-text-secondary);
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-30);
+    cursor: pointer; transition: all 0.15s;
+    font-family: inherit;
+  }
+  .doc-cat-btn:hover { border-color: var(--cds-blue-60); color: var(--cds-blue-70); }
+  .doc-cat-btn.active {
+    background: var(--cds-blue-60); border-color: var(--cds-blue-60);
+    color: var(--cds-white); font-weight: 600;
+  }
+  .doc-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--cds-white);
+    padding: 13px 12px;
+    margin-bottom: 8px;
+    border: 1px solid var(--cds-gray-20);
+    cursor: pointer; user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .doc-row:hover { border-color: var(--cds-blue-60); }
+  .doc-row:active { background: var(--cds-gray-10); }
+  .doc-fmt {
+    width: 40px; height: 40px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.32px;
+    color: var(--cds-blue-70); background: var(--cds-blue-10);
+  }
+  .doc-row-body { flex: 1; min-width: 0; }
+  .doc-row-title {
+    font-size: 14px; font-weight: 500; color: var(--cds-text-primary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .doc-row-meta {
+    font-size: 12px; color: var(--cds-text-secondary); margin-top: 3px;
+  }
+  .doc-row-arrow { flex-shrink: 0; color: var(--cds-gray-50); font-size: 14px; }
+
+  /* 业务 Tab */
+  .biz-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .biz-card {
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    padding: 14px 12px;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .biz-card:hover { border-color: var(--cds-blue-60); }
+  .biz-card:active { background: var(--cds-gray-10); }
+  .biz-card-icon { font-size: 20px; }
+  .biz-card-name { font-size: 15px; font-weight: 600; color: var(--cds-text-primary); margin-top: 8px; }
+  .biz-card-desc { font-size: 12px; color: var(--cds-text-secondary); margin-top: 3px; line-height: 1.4; }
+  .biz-list-title {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.32px;
+    color: var(--cds-text-secondary); text-transform: uppercase;
+    padding: 4px 2px 8px;
+  }
+  .biz-item {
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    padding: 12px; margin-bottom: 8px;
+  }
+  .biz-item-top { display: flex; align-items: center; gap: 8px; }
+  .biz-item-code {
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    color: var(--cds-text-secondary);
+  }
+  .biz-item-title {
+    flex: 1; font-size: 14px; font-weight: 500; color: var(--cds-text-primary);
+  }
+  .biz-item-desc { font-size: 12px; color: var(--cds-text-secondary); margin-top: 5px; line-height: 1.45; }
+  .biz-item-meta { font-size: 12px; color: var(--cds-text-secondary); margin-top: 4px; }
+  .biz-upload-area {
+    background: var(--cds-white);
+    border: 1px dashed var(--cds-gray-30);
+    padding: 22px 12px; text-align: center; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    margin-bottom: 10px;
+  }
+  .biz-upload-area:hover { border-color: var(--cds-blue-60); background: var(--cds-blue-10); }
+  .biz-upload-icon { font-size: 26px; }
+  .biz-upload-text { font-size: 14px; font-weight: 500; color: var(--cds-text-primary); margin-top: 8px; }
+  .biz-upload-sub { font-size: 12px; color: var(--cds-text-secondary); margin-top: 3px; }
+
+  /* 文档预览弹窗（近全屏） */
+  .doc-preview-overlay {
+    position: absolute; inset: 0; z-index: 150;
+    background: rgba(22,22,22,0.55);
+    display: none; align-items: center; justify-content: center;
+    padding: 12px;
+  }
+  .doc-preview-overlay.show { display: flex; }
+  .doc-preview-modal {
+    width: 100%; height: 88%;
+    background: var(--cds-white);
+    display: flex; flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .doc-preview-head {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--cds-gray-20);
+  }
+  .doc-preview-title { font-size: 16px; font-weight: 600; color: var(--cds-text-primary); }
+  .doc-preview-meta { font-size: 12px; color: var(--cds-text-secondary); margin-top: 4px; }
+  .doc-preview-tools {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .doc-preview-body {
+    flex: 1; overflow-y: auto; padding: 20px 16px;
+    background: var(--cds-gray-10);
+  }
+  .doc-page {
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    padding: 18px 16px;
+    margin-bottom: 12px;
+    min-height: 140px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .doc-page:last-child { margin-bottom: 0; }
+  .doc-page-title {
+    font-size: 15px; font-weight: 600; color: var(--cds-text-primary);
+    padding-bottom: 8px; border-bottom: 1px solid var(--cds-gray-20); margin-bottom: 10px;
+  }
+  .doc-page-row {
+    display: flex; justify-content: space-between; gap: 16px;
+    font-size: 13px; color: var(--cds-text-secondary); padding: 4px 0;
+    border-bottom: 1px dashed var(--cds-gray-20);
+  }
+  .doc-page-row .v { color: var(--cds-text-primary); text-align: right; }
+  .doc-preview-foot {
+    padding: 12px 16px;
+    border-top: 1px solid var(--cds-gray-20);
+    display: flex; gap: 8px;
+  }
+
+  /* ================================================================
+     Login Page — 登录（默认启动页）
+     ================================================================ */
+  #page-login { background: var(--cds-gray-10); }
+
+  .login-hero {
+    background: var(--cds-gray-100);
+    padding: 56px 24px 44px;
+    color: var(--cds-white);
+    flex-shrink: 0;
+  }
+  .login-hero-tagline {
+    font-size: 11px; letter-spacing: 0.38em;
+    color: var(--cds-gray-30); margin-bottom: 14px;
+    font-weight: 400; text-transform: uppercase;
+  }
+  .login-hero-title {
+    font-size: 30px; font-weight: 300; letter-spacing: 0;
+    line-height: 1.15; margin-bottom: 10px;
+  }
+  .login-hero-subtitle {
+    font-size: 13px; font-weight: 400; letter-spacing: 0.16px;
+    color: var(--cds-gray-50); line-height: 1.43;
+  }
+
+  .login-body {
+    flex: 1;
+    padding: 24px 20px 36px;
+  }
+
+  .login-card {
+    background: var(--cds-white);
+    padding: 0 20px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .login-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--cds-gray-20);
+    margin-bottom: 28px;
+  }
+  .login-tab {
+    flex: 1; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600;
+    letter-spacing: 0.16px;
+    color: var(--cds-text-secondary);
+    cursor: pointer; user-select: none;
+    position: relative;
+    transition: color 0.15s;
+  }
+  .login-tab::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px;
+    height: 2px; background: transparent;
+    transition: background 0.2s;
+  }
+  .login-tab.active { color: var(--cds-blue-60); }
+  .login-tab.active::after { background: var(--cds-blue-60); }
+  .login-tab:active { background: var(--cds-gray-10); }
+
+  .login-form { animation: loginFade 0.2s ease; }
+  @keyframes loginFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-field { margin-bottom: 24px; }
+  .login-label {
+    display: block; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.32px; color: var(--cds-text-secondary);
+    margin-bottom: 8px;
+  }
+  .login-input-wrap { display: flex; align-items: baseline; }
+  .login-prefix {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px; color: var(--cds-text-secondary);
+    line-height: 40px;
+    border-bottom: 2px solid var(--cds-gray-30);
+    padding: 0 10px 0 0; margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .login-code-row { display: flex; gap: 12px; align-items: flex-end; }
+  .login-code-row .cds-input { flex: 1; min-width: 0; }
+  .login-code-btn {
+    height: 40px; padding: 0 16px; flex-shrink: 0;
+    background: var(--cds-blue-10); color: var(--cds-blue-60);
+    border: 1px solid transparent; border-radius: 0px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.16px;
+    cursor: pointer; user-select: none; white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .login-code-btn:hover { background: #d0e2ff; }
+  .login-code-btn:active { background: #a6c8ff; }
+  .login-code-btn:disabled { background: var(--cds-gray-10); color: var(--cds-gray-50); cursor: default; }
+
+  .login-submit { margin-top: 12px; }
+  .login-submit:disabled { opacity: 0.6; cursor: default; }
+
+  .login-footer {
+    text-align: center;
+    margin-top: 44px;
+    font-size: 12px; color: var(--cds-gray-50); letter-spacing: 0.16px;
+  }
+  .login-footer .login-ver {
+    margin-top: 5px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing: 0.16px;
+    color: var(--cds-gray-30);
+  }
 </style>
 </head>
 <body>
@@ -1058,9 +1467,66 @@
 
   <div class="pages-wrapper">
     <!-- ================================================================
-         PAGE 0: Home — 步长智造平台首页
+         PAGE 0: Login — 登录（默认启动页）
          ================================================================ -->
-    <div class="page active" id="page-home">
+    <div class="page active" id="page-login">
+      <div class="login-hero">
+        <div class="login-hero-tagline">BUCHANG INTELLIGENT MANUFACTURING</div>
+        <div class="login-hero-title">步长智造平台</div>
+        <div class="login-hero-subtitle">设备管理 · 维修通知单 · 库存查询 · 故障代码</div>
+      </div>
+
+      <div class="login-body">
+        <div class="login-card">
+          <div class="login-tabs">
+            <div class="login-tab active" id="loginTabPhone" onclick="switchLoginMode('phone')">手机号登录</div>
+            <div class="login-tab" id="loginTabAccount" onclick="switchLoginMode('account')">账号密码登录</div>
+          </div>
+
+          <!-- 手机号登录表单 -->
+          <div class="login-form" id="loginFormPhone">
+            <div class="login-field">
+              <label class="login-label" for="loginPhone">手机号</label>
+              <div class="login-input-wrap">
+                <span class="login-prefix">+86</span>
+                <input class="cds-input" type="tel" id="loginPhone" placeholder="请输入11位手机号" maxlength="11" autocomplete="off">
+              </div>
+            </div>
+            <div class="login-field">
+              <label class="login-label" for="loginSmsCode">验证码</label>
+              <div class="login-code-row">
+                <input class="cds-input" type="text" id="loginSmsCode" placeholder="请输入6位验证码" maxlength="6" inputmode="numeric" autocomplete="off">
+                <button class="login-code-btn" id="smsCodeBtn" onclick="sendSmsCode()">获取验证码</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 账号密码登录表单 -->
+          <div class="login-form" id="loginFormAccount" style="display:none;">
+            <div class="login-field">
+              <label class="login-label" for="loginAccount">账号</label>
+              <input class="cds-input" type="text" id="loginAccount" placeholder="请输入账号" autocomplete="off">
+            </div>
+            <div class="login-field">
+              <label class="login-label" for="loginPassword">密码</label>
+              <input class="cds-input" type="password" id="loginPassword" placeholder="请输入密码">
+            </div>
+          </div>
+
+          <button class="cds-btn-primary cds-btn-primary--full login-submit" id="loginSubmitBtn" onclick="handleLogin()">登 录</button>
+        </div>
+
+        <div class="login-footer">
+          <div>步长智造平台 · 内部系统</div>
+          <div class="login-ver">V3.0.0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         PAGE 1: Home — 步长智造平台首页
+         ================================================================ -->
+    <div class="page" id="page-home">
       <div class="home-hero">
         <div class="hero-tagline">BUCHANG INTELLIGENT MANUFACTURING</div>
         <div class="hero-title">步长智造平台</div>
@@ -1215,6 +1681,25 @@
   </div>
 
   <div class="cds-toast" id="cdsToast"></div>
+
+  <!-- Document Preview Overlay (in-app, no external jump) -->
+  <div class="doc-preview-overlay" id="docPreviewOverlay">
+    <div class="doc-preview-modal">
+      <div class="doc-preview-head">
+        <div class="doc-preview-title" id="docPreviewTitle">文档预览</div>
+        <div class="doc-preview-meta" id="docPreviewMeta"></div>
+        <div class="doc-preview-tools">
+          <button class="cds-btn cds-btn-secondary" style="flex:1;" onclick="openWithOtherApp()">
+            <span style="font-size:13px;">📄 用其他应用打开</span>
+          </button>
+        </div>
+      </div>
+      <div class="doc-preview-body" id="docPreviewBody"></div>
+      <div class="doc-preview-foot">
+        <button class="cds-btn cds-btn-primary" style="flex:1;" onclick="closeDocPreview()">关闭预览</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1287,6 +1772,165 @@ const MEASURE_PARAMS = {
 
 /* Mock measurement records (模拟 PC 端录入的历史数据) */
 const MEASURE_RECORDS = {};
+
+// ========================================================================
+//  Device Home Data — 设备主页 mock 数据层（仅用于小程序原型）
+// ========================================================================
+/* 测量点（对齐 PC 端 equipment-master 测量点定义：定量/定性、上下限、计数器） */
+const MEASURE_POINTS = {
+  EQ001: [
+    { code:'MP-EQ001-01', name:'主轴振动', type:'QTY', unit:'mm/s', upperLimit:2.8, lowerLimit:null, isCounter:false, latestValue:1.86, latestTime:'2026-08-15 14:30' },
+    { code:'MP-EQ001-02', name:'主轴温度', type:'QTY', unit:'°C', upperLimit:65, lowerLimit:null, isCounter:false, latestValue:52.4, latestTime:'2026-08-15 14:30' },
+    { code:'MP-EQ001-03', name:'刀具磨损', type:'QTY', unit:'μm', upperLimit:50, lowerLimit:null, isCounter:false, latestValue:23, latestTime:'2026-08-15 14:30' },
+    { code:'MP-EQ001-04', name:'冷却液浓度', type:'QTY', unit:'%', upperLimit:8, lowerLimit:5, isCounter:false, latestValue:6.2, latestTime:'2026-08-15 14:30' },
+    { code:'MP-EQ001-05', name:'主轴累计运行时间', type:'QTY', unit:'h', upperLimit:null, lowerLimit:null, isCounter:true, latestValue:8420, latestTime:'2026-08-17 08:00' }
+  ],
+  EQ005: [
+    { code:'MP-EQ005-01', name:'贴装精度', type:'QTY', unit:'μm', upperLimit:50, lowerLimit:null, isCounter:false, latestValue:43.2, latestTime:'2026-08-16 16:40' },
+    { code:'MP-EQ005-02', name:'吸嘴真空度', type:'QTY', unit:'kPa', upperLimit:null, lowerLimit:-80, isCounter:false, latestValue:-87.5, latestTime:'2026-08-16 16:40' },
+    { code:'MP-EQ005-03', name:'吸嘴状态', type:'QLTY', unit:'—', upperLimit:null, lowerLimit:null, isCounter:false, latestValue:'正常', latestTime:'2026-08-16 16:40' }
+  ],
+  EQ006: [
+    { code:'MP-EQ006-01', name:'釜内温度', type:'QTY', unit:'°C', upperLimit:150, lowerLimit:null, isCounter:false, latestValue:118.6, latestTime:'2026-08-17 07:55' },
+    { code:'MP-EQ006-02', name:'搅拌转速', type:'QTY', unit:'rpm', upperLimit:300, lowerLimit:60, isCounter:false, latestValue:180, latestTime:'2026-08-17 07:55' },
+    { code:'MP-EQ006-03', name:'釜内压力', type:'QTY', unit:'MPa', upperLimit:0.5, lowerLimit:null, isCounter:false, latestValue:0.32, latestTime:'2026-08-17 07:55' },
+    { code:'MP-EQ006-04', name:'累计使用批次', type:'QTY', unit:'批', upperLimit:null, lowerLimit:null, isCounter:true, latestValue:126, latestTime:'2026-08-17 07:55' }
+  ],
+  EQ012: [
+    { code:'MP-EQ012-01', name:'压力', type:'QTY', unit:'kN', upperLimit:60, lowerLimit:20, isCounter:false, latestValue:38.5, latestTime:'2026-08-16 23:10' },
+    { code:'MP-EQ012-02', name:'填充深度', type:'QTY', unit:'mm', upperLimit:15, lowerLimit:8, isCounter:false, latestValue:11.2, latestTime:'2026-08-16 23:10' },
+    { code:'MP-EQ012-03', name:'片剂硬度', type:'QTY', unit:'N', upperLimit:120, lowerLimit:50, isCounter:false, latestValue:86, latestTime:'2026-08-16 23:10' },
+    { code:'MP-EQ012-04', name:'转台转速', type:'QTY', unit:'rpm', upperLimit:60, lowerLimit:15, isCounter:false, latestValue:42, latestTime:'2026-08-16 23:10' }
+  ]
+};
+
+/* 预防性维护计划（对齐 maintenance-preventive：基于计数器/基于时间） */
+const PM_PLANS = {
+  EQ001: [
+    { code:'PM-2026-001', name:'主轴轴承润滑保养', planType:'time', cycle:'每30天', nextDueDate:'2026-08-28', status:'scheduled' },
+    { code:'PM-2026-002', name:'冷却液更换', planType:'time', cycle:'每90天', nextDueDate:'2026-09-15', status:'scheduled' },
+    { code:'PM-2026-003', name:'刀库原点校准', planType:'counter', cycle:'每500小时', nextDueDate:'2026-08-20', status:'due' }
+  ],
+  EQ005: [
+    { code:'PM-2026-101', name:'贴装头吸嘴检查', planType:'time', cycle:'每15天', nextDueDate:'2026-08-16', status:'overdue' },
+    { code:'PM-2026-102', name:'飞达导轨润滑', planType:'time', cycle:'每30天', nextDueDate:'2026-09-01', status:'scheduled' }
+  ],
+  EQ006: [
+    { code:'PM-2026-201', name:'反应釜密封件更换', planType:'counter', cycle:'每100批次', nextDueDate:'2026-08-15', status:'overdue' },
+    { code:'PM-2026-202', name:'夹套清洗', planType:'time', cycle:'每90天', nextDueDate:'2026-09-30', status:'scheduled' }
+  ],
+  EQ012: [
+    { code:'PM-2026-301', name:'压轮间隙调整', planType:'time', cycle:'每7天', nextDueDate:'2026-08-19', status:'due' },
+    { code:'PM-2026-302', name:'冲模润滑', planType:'time', cycle:'每7天', nextDueDate:'2026-08-19', status:'due' }
+  ]
+};
+
+/* 校准记录（计量器具校准证书管理：器具/证书号/机构/送检周期/到期预警） */
+const CALIB_RECORDS = {
+  EQ001: [
+    { instrument:'主轴振动传感器', certNo:'JL-2026-0321', calibOrg:'江苏省计量科学研究院', lastDate:'2025-08-20', nextDueDate:'2026-08-19', status:'due' },
+    { instrument:'温度传感器 PT100', certNo:'JL-2026-0188', calibOrg:'苏州市计量测试院', lastDate:'2026-02-15', nextDueDate:'2027-02-14', status:'normal' }
+  ],
+  EQ005: [
+    { instrument:'真空压力表', certNo:'JL-2025-1102', calibOrg:'苏州市计量测试院', lastDate:'2025-08-12', nextDueDate:'2026-08-11', status:'expired' }
+  ],
+  EQ006: [
+    { instrument:'釜内压力变送器', certNo:'JL-2026-0277', calibOrg:'江苏省计量科学研究院', lastDate:'2025-12-10', nextDueDate:'2026-12-09', status:'normal' },
+    { instrument:'温度显示仪表', certNo:'JL-2026-0155', calibOrg:'苏州市计量测试院', lastDate:'2026-01-22', nextDueDate:'2027-01-21', status:'normal' }
+  ],
+  EQ012: [
+    { instrument:'片剂硬度计', certNo:'JL-2026-0099', calibOrg:'苏州市计量测试院', lastDate:'2026-03-05', nextDueDate:'2027-03-04', status:'normal' }
+  ]
+};
+
+/* 维修记录 */
+const REPAIR_RECORDS = {
+  EQ001: [
+    { code:'GD03-2026-06001', type:'维修工单', desc:'控制柜380V接线端子紧固，消除电弧风险', tech:'赵工', startDate:'2026-05-26', endDate:'2026-05-27', status:'closed' },
+    { code:'GD03-2026-05102', type:'维修工单', desc:'主轴冷却液管路渗漏修复', tech:'张工', startDate:'2026-04-10', endDate:'2026-04-11', status:'closed' }
+  ],
+  EQ005: [
+    { code:'GD02-2026-06003', type:'维修工单', desc:'贴片头卡料，需拆解清理贴装头', tech:'孙工', startDate:'2026-06-10', endDate:'', status:'inprogress' }
+  ],
+  EQ006: [
+    { code:'GD02-2026-06001', type:'维修工单', desc:'更换搅拌轴密封件', tech:'周工', startDate:'2026-06-08', endDate:'', status:'inprogress' }
+  ],
+  EQ012: [
+    { code:'GD03-2026-05015', type:'维修工单', desc:'冲模装卸机构卡滞处理', tech:'张工', startDate:'2026-05-15', endDate:'2026-05-15', status:'closed' }
+  ]
+};
+
+/* 故障记录 */
+const FAULT_RECORDS = {
+  EQ001: [
+    { code:'CNC-E01', name:'主轴异常振动', time:'2026-05-18 09:20', duration:'2.5h', desc:'刀柄锥面残留切屑导致动平衡偏移', status:'resolved' },
+    { code:'CNC-E02', name:'刀库换刀失败', time:'2026-04-02 14:10', duration:'1h', desc:'刀库定位传感器信号不稳定', status:'resolved' }
+  ],
+  EQ005: [
+    { code:'SEN-E02', name:'接近开关误触发', time:'2026-02-14 11:05', duration:'0.5h', desc:'感应面金属碎屑堆积', status:'resolved' }
+  ],
+  EQ006: [
+    { code:'HYD-E01', name:'液压系统压力不足', time:'2026-01-22 16:30', duration:'4h', desc:'吸油滤网堵塞，已清洗并更换液压油', status:'resolved' }
+  ]
+};
+
+/* 变更记录 */
+const CHANGE_RECORDS = {
+  EQ001: [
+    { time:'2026-05-20', type:'参数变更', operator:'张工', desc:'主轴转速上限由12000rpm调整为10000rpm' },
+    { time:'2026-03-15', type:'位置变更', operator:'设备科', desc:'由F001-L01-W02调拨至F001-L01-W01' }
+  ],
+  EQ005: [
+    { time:'2026-04-01', type:'配置变更', operator:'孙工', desc:'更新贴装程序版本至V3.2.1' }
+  ]
+};
+
+/* 资料文档（分类：说明书/SOP/图纸/BOM/合格证/验收/维修报告） */
+const EQ_DOCS = {
+  EQ001: [
+    { id:'D001', category:'说明书', title:'DMG MORI NVX5000 操作手册', format:'PDF', size:'12.8 MB', updateDate:'2025-11-20', pages:286 },
+    { id:'D002', category:'SOP', title:'CNC加工中心日常点检SOP', format:'PDF', size:'2.1 MB', updateDate:'2026-03-12', pages:18 },
+    { id:'D003', category:'图纸', title:'主轴装配图 NVX5000-1300', format:'DWG', size:'8.4 MB', updateDate:'2024-01-15', pages:6 },
+    { id:'D004', category:'BOM', title:'主轴部件BOM清单', format:'XLS', size:'0.8 MB', updateDate:'2026-02-01', pages:3 },
+    { id:'D005', category:'验收', title:'设备安装调试验收单', format:'PDF', size:'3.5 MB', updateDate:'2024-01-20', pages:24 },
+    { id:'D006', category:'维修报告', title:'主轴异响维修报告 2026-03', format:'PDF', size:'1.2 MB', updateDate:'2026-03-18', pages:8 }
+  ],
+  EQ005: [
+    { id:'D101', category:'说明书', title:'JUKI JX-350 操作手册', format:'PDF', size:'9.6 MB', updateDate:'2024-04-10', pages:240 },
+    { id:'D102', category:'SOP', title:'贴片机换线换型SOP', format:'PDF', size:'1.5 MB', updateDate:'2026-01-20', pages:12 },
+    { id:'D103', category:'维修报告', title:'贴片头卡料维修报告 2026-06', format:'PDF', size:'0.9 MB', updateDate:'2026-06-12', pages:5 }
+  ],
+  EQ006: [
+    { id:'D201', category:'说明书', title:'ZF-5000L 反应釜使用说明书', format:'PDF', size:'15.2 MB', updateDate:'2024-05-05', pages:320 },
+    { id:'D202', category:'图纸', title:'反应釜总装图 ZF-5000L-00', format:'DWG', size:'11.7 MB', updateDate:'2024-01-15', pages:8 },
+    { id:'D203', category:'合格证', title:'反应釜出厂合格证', format:'PDF', size:'0.6 MB', updateDate:'2024-04-20', pages:2 }
+  ],
+  EQ012: [
+    { id:'D301', category:'说明书', title:'FETTE 3090 压片机操作手册', format:'PDF', size:'18.4 MB', updateDate:'2024-10-01', pages:360 },
+    { id:'D302', category:'SOP', title:'压片机清洁SOP（GMP）', format:'PDF', size:'2.4 MB', updateDate:'2026-04-15', pages:16 },
+    { id:'D303', category:'图纸', title:'冲模机构装配图 3090-PM03', format:'DWG', size:'6.8 MB', updateDate:'2024-09-20', pages:5 },
+    { id:'D304', category:'BOM', title:'压轮组件BOM清单', format:'XLS', size:'0.5 MB', updateDate:'2026-02-20', pages:2 }
+  ]
+};
+const DOC_CATEGORIES = ['全部','说明书','SOP','图纸','BOM','合格证','验收','维修报告'];
+
+/* 待处理工单 */
+const PENDING_WORK_ORDERS = [
+  { code:'GD02-2026-06003', eqId:'EQ005', eqName:'贴片机', type:'维修工单', status:'inprogress', statusName:'处理中', priority:'1-高', desc:'贴片头卡料，拆解清理贴装头', assignee:'孙工', dueDate:'2026-08-18' },
+  { code:'GD03-2026-06001', eqId:'EQ001', eqName:'CNC加工中心', type:'维修工单', status:'inprogress', statusName:'处理中', priority:'2-中', desc:'控制柜接线端子紧固', assignee:'赵工', dueDate:'2026-08-20' }
+];
+
+/* 维修任务 */
+const MAINT_TASKS = [
+  { code:'RW-2026-0801', eqId:'EQ006', eqName:'反应釜', type:'维修任务', desc:'更换搅拌轴密封件', assignee:'周工', dueDate:'2026-08-18', status:'todo', statusName:'待执行' },
+  { code:'RW-2026-0802', eqId:'EQ012', eqName:'压片机', type:'维修任务', desc:'压轮间隙调整', assignee:'张工', dueDate:'2026-08-19', status:'todo', statusName:'待执行' }
+];
+
+/* 已上传照片报告（模拟） */
+const PHOTO_REPORTS = [
+  { id:'PH001', eqId:'EQ006', title:'更换密封件前状态', time:'2026-08-16 10:20', uploader:'周工', photos:3 },
+  { id:'PH002', eqId:'EQ005', title:'贴片头卡料部位', time:'2026-08-15 15:40', uploader:'孙工', photos:2 }
+];
 
 // ========================================================================
 const equipmentData = [
@@ -1412,7 +2056,7 @@ function simulateScan(caller) {
       overlay.classList.remove('show');
       if (scanCallbackType === 'device') {
         document.getElementById('deviceCodeSelect').value = eq.code;
-        showDeviceDetail(eq.id);
+        renderDeviceHome(eq.id);
       } else if (scanCallbackType === 'notification') {
         startCreateNFWithDevice(eq);
       }
@@ -1428,6 +2072,7 @@ function closeScan() {
 //  Navigation
 // ========================================================================
 const pageTitles = {
+  login: '登录',
   home: '步长智造平台',
   device: '设备信息',
   notification: '维修通知单',
@@ -1435,14 +2080,14 @@ const pageTitles = {
   faultcode: '故障代码'
 };
 
-let currentPage = 'home';
+let currentPage = 'login';
 
 function navigateTo(pageName) {
   currentPage = pageName;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + pageName).classList.add('active');
   document.getElementById('navTitle').textContent = pageTitles[pageName];
-  document.getElementById('backBtn').style.display = pageName === 'home' ? 'none' : 'flex';
+  document.getElementById('backBtn').style.display = (pageName === 'home' || pageName === 'login') ? 'none' : 'flex';
 
   // Reset sub views
   resetSubViews();
@@ -1460,6 +2105,72 @@ function navigateTo(pageName) {
 
 function goBack() { navigateTo('home'); }
 
+// ========================================================================
+//  Login — 登录
+// ========================================================================
+let smsTimer = null;
+let smsCountdown = 0;
+
+function switchLoginMode(mode) {
+  const isPhone = mode === 'phone';
+  document.getElementById('loginTabPhone').classList.toggle('active', isPhone);
+  document.getElementById('loginTabAccount').classList.toggle('active', !isPhone);
+  document.getElementById('loginFormPhone').style.display = isPhone ? 'block' : 'none';
+  document.getElementById('loginFormAccount').style.display = isPhone ? 'none' : 'block';
+}
+
+function sendSmsCode() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  if (!/^1\d{10}$/.test(phone)) {
+    showToast('请输入正确的11位手机号');
+    return;
+  }
+  if (smsTimer) return;
+  const btn = document.getElementById('smsCodeBtn');
+  smsCountdown = 60;
+  btn.disabled = true;
+  btn.textContent = '重新获取(60s)';
+  smsTimer = setInterval(() => {
+    smsCountdown--;
+    if (smsCountdown <= 0) {
+      clearInterval(smsTimer);
+      smsTimer = null;
+      btn.disabled = false;
+      btn.textContent = '获取验证码';
+    } else {
+      btn.textContent = '重新获取(' + smsCountdown + 's)';
+    }
+  }, 1000);
+}
+
+function handleLogin() {
+  const isPhone = document.getElementById('loginFormPhone').style.display !== 'none';
+  if (isPhone) {
+    const phone = document.getElementById('loginPhone').value.trim();
+    const code = document.getElementById('loginSmsCode').value.trim();
+    if (!/^1\d{10}$/.test(phone)) { showToast('请输入正确的11位手机号'); return; }
+    if (!code) { showToast('请输入验证码'); return; }
+  } else {
+    const account = document.getElementById('loginAccount').value.trim();
+    const pass = document.getElementById('loginPassword').value.trim();
+    if (!account) { showToast('请输入账号'); return; }
+    if (!pass) { showToast('请输入密码'); return; }
+  }
+
+  const btn = document.getElementById('loginSubmitBtn');
+  btn.textContent = '正在登录...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    if (smsTimer) { clearInterval(smsTimer); smsTimer = null; }
+    const codeBtn = document.getElementById('smsCodeBtn');
+    if (codeBtn) { codeBtn.disabled = false; codeBtn.textContent = '获取验证码'; }
+    navigateTo('home');
+    btn.textContent = '登 录';
+    btn.disabled = false;
+  }, 600);
+}
+
 function resetSubViews() {
   ['nfFormView','invDetailView','fcDetailView'].forEach(id => {
     const el = document.getElementById(id);
@@ -1472,7 +2183,10 @@ function resetSubViews() {
   // fcTree is always visible via page reset
   const fcTree = document.getElementById('fcTree');
   if (fcTree) fcTree.style.display = 'block';
-  // Reset device page: clear measurement form, restore list & search
+  // Close any open doc preview overlay
+  const preview = document.getElementById('docPreviewOverlay');
+  if (preview) preview.classList.remove('show');
+  // Reset device page: clear measurement form & device home, restore list & search
   if (document.getElementById('deviceDetailArea')) {
     document.getElementById('deviceDetailArea').innerHTML = '';
   }
@@ -1502,7 +2216,7 @@ function renderHomeRecent() {
   container.innerHTML = recentIds.map(id => {
     const eq = equipmentData.find(e => e.id === id);
     if (!eq) return '';
-    return `<div class="home-recent-item" onclick="navigateTo('device');setTimeout(()=>showDeviceDetail('${eq.id}'),100)">
+    return `<div class="home-recent-item" onclick="navigateTo('device');setTimeout(()=>renderDeviceHome('${eq.id}'),100)">
       <div class="avatar">${eq.icon||'📋'}</div>
       <div class="info">
         <div class="name">${eq.name}</div>
@@ -1564,7 +2278,7 @@ function onDeviceCodeChange() {
   const code = document.getElementById('deviceCodeSelect').value;
   if (code) {
     const eq = equipmentData.find(e => e.code === code);
-    if (eq) { showDeviceDetail(eq.id); return; }
+    if (eq) { renderDeviceHome(eq.id); return; }
   }
   searchDevices();
 }
@@ -1597,7 +2311,7 @@ function renderDeviceList(factory, funcLocation, deviceDesc) {
 
   container.innerHTML = filtered.map(eq => {
     return `<div class="device-row">
-      <div class="device-row-main" onclick="event.stopPropagation();showDeviceDetail('${eq.id}')">
+      <div class="device-row-main" onclick="event.stopPropagation();renderDeviceHome('${eq.id}')">
         <span class="device-row-name">${eq.name}</span>
         <span class="device-row-sub">${eq.code} · ${eq.locationName}</span>
       </div>
@@ -1609,9 +2323,17 @@ function renderDeviceList(factory, funcLocation, deviceDesc) {
   }).join('');
 }
 
-function showDeviceDetail(id) {
+// ========================================================================
+//  Device Home — 设备主页（身份 / 档案 / 资料 / 业务），全程小程序内自承载
+// ========================================================================
+let devHomeState = { eqId: null, tab: 'identity', rendered: {} };
+
+function showDeviceDetail(id) { renderDeviceHome(id); }
+
+function renderDeviceHome(id) {
   const eq = equipmentData.find(e => e.id === id);
   if (!eq) return;
+  document.getElementById('docPreviewOverlay') && document.getElementById('docPreviewOverlay').classList.remove('show');
   // Restore list & search (in case coming from measurement view)
   document.getElementById('recentDeviceList').style.display = 'block';
   document.querySelector('#page-device .inv-search-form').style.display = 'grid';
@@ -1625,16 +2347,37 @@ function showDeviceDetail(id) {
   recentDeviceIds.unshift(id);
   if (recentDeviceIds.length > 10) recentDeviceIds = recentDeviceIds.slice(0, 10);
 
+  devHomeState = { eqId: id, tab: 'identity', rendered: {} };
+
   const statusClass = 'cds-badge--' + eq.status;
-  const priColors = { '高': 'cds-tag--red', '中': 'cds-tag--yellow', '低': 'cds-tag--gray' };
-  const gmpColors = { '关键设备': 'cds-tag--red', '一般设备': 'cds-tag--gray' };
 
   document.getElementById('deviceDetailArea').innerHTML = `
-    <div class="device-header">
-      <div class="eq-name">${eq.name}</div>
-      <div class="eq-code">${eq.code} · ${eq.typeName} · ${eq.statusName}</div>
+    <div class="devhome-hero">
+      <div class="devhome-hero-top">
+        <div class="devhome-hero-icon">${eq.icon||'📋'}</div>
+        <div class="devhome-hero-main">
+          <div class="devhome-hero-name">${eq.name}</div>
+          <div class="devhome-hero-code">${eq.code} · ${eq.typeName} · ${eq.model}</div>
+          <div class="devhome-hero-loc">${eq.locationName}${eq.workCenterName ? ' · ' + eq.workCenterName : ''}</div>
+        </div>
+        <button class="devhome-qr-btn" onclick="showDeviceQR('${eq.id}')" title="设备二维码">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14h1v1h-1zM14 20h1v1h-1zM18 18h2v2h-2z"/></svg>
+        </button>
+      </div>
+      <div class="devhome-hero-meta">
+        <span class="cds-badge ${statusClass}">${eq.statusName}</span>
+        <span>${eq.assetNo}</span>
+        <span>负责人：${eq.leader !== '-' ? eq.leader : '—'}</span>
+      </div>
     </div>
-
+    <div class="devhome-tabs">
+      <button class="devhome-tab active" data-tab="identity" onclick="switchHomeTab('identity')">身份</button>
+      <button class="devhome-tab" data-tab="archive" onclick="switchHomeTab('archive')">档案</button>
+      <button class="devhome-tab" data-tab="docs" onclick="switchHomeTab('docs')">资料</button>
+      <button class="devhome-tab" data-tab="biz" onclick="switchHomeTab('biz')">业务</button>
+    </div>
+    <div class="devhome-body">
+      <div class="devhome-tabpanel active" id="homePanel-identity">
     <div class="info-section">
       <div class="info-section-title">基本信息</div>
       <div class="info-section-body">
@@ -1684,7 +2427,388 @@ function showDeviceDetail(id) {
         ${eq.statusLogs.map(l=>`<div class="cds-data-row"><span class="cds-data-label">${l.time.split(' ')[0]}<br><span style="font-size:11px;color:var(--cds-text-secondary);">${(l.time.split(' ')[1]||'').substring(0,5)}</span></span><span class="cds-data-value"><span style="font-weight:600;">${l.status}</span> · ${l.desc}<br><span style="font-size:12px;color:var(--cds-text-secondary);">操作人：${l.operator}</span></span></div>`).join('')}
       </div>
     </div>`:''}
-    <div class="page-footer">数据来自 PC 端设备主数据系统</div>`;
+    <div class="devhome-summary">
+      <span style="font-size:12px;color:var(--cds-text-secondary);">本页数据由小程序内承载，来源于设备主数据</span>
+    </div>
+      </div>
+      <div class="devhome-tabpanel" id="homePanel-archive"></div>
+      <div class="devhome-tabpanel" id="homePanel-docs"></div>
+      <div class="devhome-tabpanel" id="homePanel-biz"></div>
+    </div>`;
+}
+
+function switchHomeTab(tab) {
+  if (!devHomeState.eqId) return;
+  devHomeState.tab = tab;
+  document.querySelectorAll('#deviceDetailArea .devhome-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('#deviceDetailArea .devhome-tabpanel').forEach(p => p.classList.toggle('active', p.id === 'homePanel-' + tab));
+  if (!devHomeState.rendered[tab]) {
+    devHomeState.rendered[tab] = true;
+    if (tab === 'archive') renderHomeArchiveTab();
+    else if (tab === 'docs') renderHomeDocsTab();
+    else if (tab === 'biz') renderHomeBizTab();
+  }
+}
+
+function showDeviceQR(eqId) {
+  const eq = equipmentData.find(e => e.id === eqId);
+  if (!eq) return;
+  // 模拟小程序内出示设备二维码
+  const svgQr = `
+  <svg viewBox="0 0 120 120" style="width:180px;height:180px;">
+    <rect x="4" y="4" width="112" height="112" fill="#fff" stroke="#161616" stroke-width="3"/>
+    <g fill="#161616">
+      <rect x="12" y="12" width="24" height="24"/><rect x="84" y="12" width="24" height="24"/><rect x="12" y="84" width="24" height="24"/>
+      <rect x="48" y="12" width="8" height="8"/><rect x="60" y="12" width="8" height="8"/><rect x="72" y="12" width="8" height="8"/>
+      <rect x="48" y="24" width="8" height="8"/><rect x="72" y="24" width="8" height="8"/><rect x="84" y="48" width="8" height="8"/>
+      <rect x="96" y="48" width="8" height="8"/><rect x="48" y="48" width="8" height="8"/><rect x="60" y="48" width="8" height="8"/>
+      <rect x="48" y="60" width="8" height="8"/><rect x="72" y="60" width="8" height="8"/><rect x="48" y="72" width="8" height="8"/>
+      <rect x="12" y="48" width="8" height="8"/><rect x="24" y="48" width="8" height="8"/><rect x="12" y="60" width="8" height="8"/>
+      <rect x="24" y="60" width="8" height="8"/><rect x="12" y="72" width="8" height="8"/><rect x="60" y="84" width="8" height="8"/>
+      <rect x="84" y="72" width="8" height="8"/><rect x="96" y="72" width="8" height="8"/><rect x="84" y="84" width="8" height="8"/>
+      <rect x="96" y="60" width="8" height="8"/><rect x="60" y="96" width="8" height="8"/><rect x="72" y="96" width="8" height="8"/>
+    </g>
+  </svg>`;
+  document.getElementById('scanResult').innerHTML = `
+    <div style="text-align:center;padding:4px 0;">
+      <div style="font-size:15px;font-weight:600;color:#161616;margin-bottom:2px;">${eq.name}</div>
+      <div style="font-size:12px;color:#525252;margin-bottom:14px;">${eq.code} · ${eq.locationName}</div>
+      ${svgQr}
+      <div style="font-size:12px;color:#525252;margin-top:14px;">设备二维码 · 扫码可查看设备主页</div>
+    </div>`;
+  document.getElementById('scanResultArea').style.display = 'flex';
+  document.getElementById('scanResultTitle').textContent = '设备二维码';
+  document.getElementById('scanOverlay').style.display = 'flex';
+}
+
+// ========================================================================
+//  Device Home — 档案 Tab（六类记录分组）
+// ========================================================================
+function toggleArchGroup(el) {
+  const body = el.nextElementSibling;
+  const isActive = el.classList.contains('active');
+  el.classList.toggle('active', !isActive);
+  body.classList.toggle('active', !isActive);
+}
+
+function archGroup(name, count, icon, bodyHtml) {
+  const empty = !count || count === 0;
+  const badge = count > 0 ? `<span class="cds-tag cds-tag--gray">${count}</span>` : '<span class="cds-tag cds-tag--gray">暂无</span>';
+  return `
+    <div class="arch-group">
+      <div class="arch-group-head ${count > 0 ? 'active' : ''}" onclick="toggleArchGroup(this)">
+        <div class="arch-group-icon">${icon}</div>
+        <div class="arch-group-title">
+          <div class="arch-group-name">${name}</div>
+          <div class="arch-group-count">${count > 0 ? '共 ' + count + ' 条记录' : '暂无记录'}</div>
+        </div>
+        ${badge}
+        <div class="arch-group-arrow">›</div>
+      </div>
+      <div class="arch-group-body ${count > 0 ? 'active' : ''}">
+        ${count > 0 ? bodyHtml : '<div class="arch-empty">该设备暂无相关记录</div>'}
+      </div>
+    </div>`;
+}
+
+function renderHomeArchiveTab() {
+  const id = devHomeState.eqId;
+  const eq = equipmentData.find(e => e.id === id);
+  if (!eq) return;
+
+  const repairs = REPAIR_RECORDS[id] || [];
+  const plans = PM_PLANS[id] || [];
+  const points = MEASURE_POINTS[id] || [];
+  const calibs = CALIB_RECORDS[id] || [];
+  const faults = FAULT_RECORDS[id] || [];
+  const changes = CHANGE_RECORDS[id] || [];
+
+  const planStatus = {
+    scheduled: '<span class="cds-tag cds-tag--blue">计划中</span>',
+    due: '<span class="cds-tag cds-tag--yellow">即将到期</span>',
+    overdue: '<span class="cds-tag cds-tag--red">已逾期</span>'
+  };
+  const calibStatus = {
+    normal: '<span class="cds-tag cds-tag--green">正常</span>',
+    due: '<span class="cds-tag cds-tag--yellow">即将到期</span>',
+    expired: '<span class="cds-tag cds-tag--red">已过期</span>'
+  };
+  const repairStatus = {
+    closed: '<span class="cds-tag cds-tag--green">已关闭</span>',
+    inprogress: '<span class="cds-tag cds-tag--blue">处理中</span>'
+  };
+  const faultStatus = {
+    resolved: '<span class="cds-tag cds-tag--green">已解决</span>'
+  };
+
+  // 维修记录
+  const repairsHtml = repairs.map(r => `
+    <div class="arch-item">
+      <div class="arch-item-top">
+        <span class="arch-item-title">${r.desc}</span>
+        ${repairStatus[r.status] || ''}
+      </div>
+      <div class="arch-item-sub mono">${r.code} · ${r.type}</div>
+      <div class="arch-item-time">维修人：${r.tech} · ${r.startDate}${r.endDate ? ' → ' + r.endDate : ' · 处理中'}</div>
+    </div>`).join('');
+
+  // 预防性维护计划（只读，不区分巡检）
+  const plansHtml = plans.map(p => `
+    <div class="arch-item">
+      <div class="arch-item-top">
+        <span class="arch-item-title">${p.name}</span>
+        ${planStatus[p.status] || ''}
+      </div>
+      <div class="arch-item-sub">${p.planType === 'counter' ? '基于计数器' : '基于时间'} · 周期 ${p.cycle}</div>
+      <div class="arch-item-time mono">${p.code} · 下次执行 ${p.nextDueDate}</div>
+    </div>`).join('');
+
+  // 测量点
+  const pointsHtml = points.map(p => {
+    const lim = p.type === 'QTY'
+      ? (p.upperLimit !== null ? '上限 ' + p.upperLimit + (p.unit ? ' ' + p.unit : '') : '') +
+        (p.lowerLimit !== null ? (p.upperLimit !== null ? ' / ' : '') + '下限 ' + p.lowerLimit + (p.unit ? ' ' + p.unit : '') : '')
+      : '定性';
+    return `
+    <div class="arch-item">
+      <div class="mp-row">
+        <span class="mp-tag">${p.type === 'QTY' ? '定量' : '定性'}</span>
+        <span class="mp-name">${p.name}</span>
+        ${p.isCounter ? '<span class="mp-tag" style="background:var(--cds-yellow-30);color:var(--cds-gray-100);">计数器</span>' : ''}
+        <span class="mp-val">${p.latestValue}${p.unit && p.type === 'QTY' ? ' ' + p.unit : ''}</span>
+      </div>
+      <div class="mp-limit">${lim ? '标准范围：' + lim : '—'} · 最近 ${p.latestTime}</div>
+    </div>`;
+  }).join('');
+
+  // 校准记录（计量器具校准证书管理）
+  const calibsHtml = calibs.map(c => `
+    <div class="arch-item">
+      <div class="arch-item-top">
+        <span class="arch-item-title">${c.instrument}</span>
+        ${calibStatus[c.status] || ''}
+      </div>
+      <div class="arch-item-sub mono">证书号 ${c.certNo} · ${c.calibOrg}</div>
+      <div class="arch-item-time">上次校准 ${c.lastDate} · 到期 ${c.nextDueDate}</div>
+    </div>`).join('');
+
+  // 故障记录
+  const faultsHtml = faults.map(f => `
+    <div class="arch-item">
+      <div class="arch-item-top">
+        <span class="arch-item-title">${f.name}</span>
+        ${faultStatus[f.status] || ''}
+      </div>
+      <div class="arch-item-sub mono">${f.code} · ${f.time} · 历时 ${f.duration}</div>
+      <div class="arch-item-time">${f.desc}</div>
+    </div>`).join('');
+
+  // 变更记录
+  const changesHtml = changes.map(c => `
+    <div class="arch-item">
+      <div class="arch-item-top">
+        <span class="arch-item-title">${c.type}</span>
+        <span style="font-size:12px;color:var(--cds-text-secondary);">${c.time}</span>
+      </div>
+      <div class="arch-item-sub">${c.desc}</div>
+      <div class="arch-item-time">操作人：${c.operator}</div>
+    </div>`).join('');
+
+  document.getElementById('homePanel-archive').innerHTML = `
+    ${archGroup('维修记录', repairs.length, '🔧', repairsHtml)}
+    ${archGroup('保养计划', plans.length, '🛠', plansHtml)}
+    ${archGroup('测量点', points.length, '📏', pointsHtml)}
+    ${archGroup('计量校准', calibs.length, '⚖️', calibsHtml)}
+    ${archGroup('故障记录', faults.length, '⚠️', faultsHtml)}
+    ${archGroup('变更记录', changes.length, '📝', changesHtml)}
+    <div style="padding:6px 2px 0;font-size:12px;color:var(--cds-text-secondary);">档案数据由小程序内承载 · 点击分组头展开/收起</div>`;
+}
+
+// ========================================================================
+//  Device Home — 资料 Tab（文档分类 + 内嵌预览）
+// ========================================================================
+let docFilter = '全部';
+
+function renderHomeDocsTab() {
+  const id = devHomeState.eqId;
+  const eq = equipmentData.find(e => e.id === id);
+  if (!eq) return;
+  const docs = EQ_DOCS[id] || [];
+  const cats = DOC_CATEGORIES;
+  const list = docFilter === '全部' ? docs : docs.filter(d => d.category === docFilter);
+
+  document.getElementById('homePanel-docs').innerHTML = `
+    <div class="doc-cats">
+      ${cats.map(c => `<button class="doc-cat-btn ${c === docFilter ? 'active' : ''}" onclick="filterDocs('${c}')">${c}</button>`).join('')}
+    </div>
+    ${list.length > 0 ? list.map(d => `
+      <div class="doc-row" onclick="showDocPreview('${d.id}')">
+        <div class="doc-fmt">${d.format}</div>
+        <div class="doc-row-body">
+          <div class="doc-row-title">${d.title}</div>
+          <div class="doc-row-meta">${d.category} · ${d.size} · ${d.updateDate}</div>
+        </div>
+        <div class="doc-row-arrow">›</div>
+      </div>`).join('')
+    : '<div class="arch-empty">该分类暂无资料文档</div>'}
+    <div style="padding:6px 2px 0;font-size:12px;color:var(--cds-text-secondary);">文档在小程序内预览 · 点击「用其他应用打开」可调起 WPS</div>`;
+}
+
+function filterDocs(cat) {
+  docFilter = cat;
+  renderHomeDocsTab();
+}
+
+function showDocPreview(docId) {
+  const id = devHomeState.eqId;
+  const docs = EQ_DOCS[id] || [];
+  const doc = docs.find(d => d.id === docId);
+  if (!doc) return;
+  document.getElementById('docPreviewTitle').textContent = doc.title;
+  document.getElementById('docPreviewMeta').textContent = `${doc.category} · ${doc.format} · ${doc.size} · 更新于 ${doc.updateDate}`;
+  document.getElementById('docPreviewBody').innerHTML = buildDocPages(doc);
+  document.getElementById('docPreviewOverlay').classList.add('show');
+}
+
+function buildDocPages(doc) {
+  const pageTitle = doc.title;
+  const pages = [];
+  const n = Math.min(Math.max(Math.ceil(doc.pages / 60), 2), 4);
+  for (let i = 1; i <= n; i++) {
+    pages.push(`
+    <div class="doc-page">
+      <div class="doc-page-title">${pageTitle} · 第 ${i} 页 / 共 ${n} 页</div>
+      ${i === 1 ? `
+      <div class="doc-page-row"><span>文档编号</span><span class="v mono">${doc.id}-${String(doc.pages)}</span></div>
+      <div class="doc-page-row"><span>文件格式</span><span class="v mono">${doc.format}</span></div>
+      <div class="doc-page-row"><span>文件大小</span><span class="v">${doc.size}</span></div>
+      <div class="doc-page-row"><span>更新时间</span><span class="v">${doc.updateDate}</span></div>
+      <div class="doc-page-row"><span>页数</span><span class="v">${doc.pages} 页</span></div>
+      <div style="height:10px;"></div>
+      <div style="font-size:13px;color:#525252;line-height:1.7;">
+        本文件为设备 ${doc.category} 资料，用于小程序内预览演示。<br><br>
+        正式版本由设备管理部门维护，可通过「用其他应用打开」调起 WPS 等工具查看完整内容。
+      </div>` : `
+      <div style="font-size:13px;color:#525252;line-height:1.8;">
+        （预览页 ${i}）此区域模拟 ${doc.format} 文档的渲染内容。<br><br>
+        设备资料面向维修、保养、操作人员开放，确保现场作业有据可依。
+      </div>`}
+    </div>`);
+  }
+  return pages.join('');
+}
+
+function closeDocPreview() {
+  document.getElementById('docPreviewOverlay').classList.remove('show');
+}
+
+function openWithOtherApp() {
+  showToast('已调起系统打开方式（模拟 WPS 打开）');
+}
+
+// ========================================================================
+//  Device Home — 业务 Tab（报修 / 工单 / 任务 / 照片）
+// ========================================================================
+function renderHomeBizTab() {
+  const id = devHomeState.eqId;
+  const eq = equipmentData.find(e => e.id === id);
+  if (!eq) return;
+
+  const wos = PENDING_WORK_ORDERS.filter(w => w.eqId === id);
+  const tasks = MAINT_TASKS.filter(t => t.eqId === id);
+  const photos = PHOTO_REPORTS.filter(p => p.eqId === id);
+
+  const woStatus = {
+    inprogress: '<span class="cds-tag cds-tag--blue">处理中</span>',
+    pending: '<span class="cds-tag cds-tag--yellow">待接单</span>'
+  };
+  const taskStatus = {
+    todo: '<span class="cds-tag cds-tag--yellow">待执行</span>',
+    doing: '<span class="cds-tag cds-tag--blue">执行中</span>'
+  };
+
+  document.getElementById('homePanel-biz').innerHTML = `
+    <div class="biz-grid">
+      <div class="biz-card" onclick="startReportFromDevice('${eq.id}')">
+        <div class="biz-card-icon">🚨</div>
+        <div class="biz-card-name">设备报修</div>
+        <div class="biz-card-desc">提交维修通知单，指派维修班组</div>
+      </div>
+      <div class="biz-card" onclick="showBizWorkOrders('${eq.id}')">
+        <div class="biz-card-icon">📋</div>
+        <div class="biz-card-name">待处理工单</div>
+        <div class="biz-card-desc">${wos.length} 张工单待跟进</div>
+      </div>
+      <div class="biz-card" onclick="showBizTasks('${eq.id}')">
+        <div class="biz-card-icon">🛠</div>
+        <div class="biz-card-name">维修任务</div>
+        <div class="biz-card-desc">${tasks.length} 项任务待执行</div>
+      </div>
+      <div class="biz-card" onclick="uploadPhotoReport('${eq.id}')">
+        <div class="biz-card-icon">📷</div>
+        <div class="biz-card-name">上传照片</div>
+        <div class="biz-card-desc">拍照上传现场照片报告</div>
+      </div>
+    </div>
+
+    <div id="bizListView">
+      <div class="biz-list-title">待处理工单</div>
+      ${wos.length > 0 ? wos.map(w => `
+        <div class="biz-item">
+          <div class="biz-item-top">
+            <span class="biz-item-code mono">${w.code}</span>
+            <span class="biz-item-title">${w.desc}</span>
+            ${woStatus[w.status] || ''}
+          </div>
+          <div class="biz-item-meta">优先级 ${w.priority} · 处理人 ${w.assignee} · 计划 ${w.dueDate} 完成</div>
+        </div>`).join('') : '<div class="arch-empty">暂无待处理工单</div>'}
+
+      <div class="biz-list-title" style="margin-top:14px;">维修任务</div>
+      ${tasks.length > 0 ? tasks.map(t => `
+        <div class="biz-item">
+          <div class="biz-item-top">
+            <span class="biz-item-code mono">${t.code}</span>
+            <span class="biz-item-title">${t.desc}</span>
+            ${taskStatus[t.status] || ''}
+          </div>
+          <div class="biz-item-meta">负责人 ${t.assignee} · 计划 ${t.dueDate} 完成</div>
+        </div>`).join('') : '<div class="arch-empty">暂无维修任务</div>'}
+
+      <div class="biz-list-title" style="margin-top:14px;">照片报告</div>
+      ${photos.length > 0 ? photos.map(p => `
+        <div class="biz-item">
+          <div class="biz-item-top">
+            <span class="biz-item-title">${p.title}</span>
+            <span class="cds-tag cds-tag--gray">${p.photos} 张</span>
+          </div>
+          <div class="biz-item-meta">上传人 ${p.uploader} · ${p.time}</div>
+        </div>`).join('') : '<div class="arch-empty">暂无照片报告</div>'}
+    </div>`;
+}
+
+function startReportFromDevice(eqId) {
+  const eq = equipmentData.find(e => e.id === eqId);
+  if (!eq) return;
+  startCreateNFWithDevice(eq);
+}
+
+function showBizWorkOrders() {
+  showToast('请在设备列表页「通知单」中查看工单详情');
+}
+
+function showBizTasks() {
+  showToast('维修任务由维修班组在小程序内跟进');
+}
+
+function uploadPhotoReport(eqId) {
+  const eq = equipmentData.find(e => e.id === eqId);
+  if (!eq) return;
+  const newId = 'PH' + String(100 + Math.floor(Math.random() * 900));
+  PHOTO_REPORTS.unshift({
+    id: newId, eqId: eqId, title: '现场照片报告（模拟上传）', time: '2026-08-17 09:30', uploader: '现场人员', photos: 1
+  });
+  if (devHomeState.tab === 'biz') renderHomeBizTab();
+  showToast('照片报告已上传（模拟）');
 }
 
 // ========================================================================
@@ -2287,6 +3411,7 @@ function backToFCList() {
 // ========================================================================
 //  Init
 // ========================================================================
+document.getElementById('navTitle').textContent = pageTitles.login; // 启动页为登录
 updateHomeStats();
 initDevicePage();
 renderRecentNF();
