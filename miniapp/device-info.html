@@ -1350,23 +1350,67 @@
      Home — 首页工作台
      ================================================================ */
   .home-v2 { background: var(--cds-gray-10); }
-  .ha-hero {
-    background: linear-gradient(150deg, #12293f 0%, #1E3A5F 58%, #26507e 100%);
-    padding: 32px 24px 26px;
+  .home-bg-b { background: var(--cds-white); }
+  /* 首页风格切换器（选型用，选定后移除） */
+  .ha-style-switch {
+    display: flex; gap: 6px;
+    padding: 14px 20px 0;
+  }
+  .ha-style-switch button {
+    flex: 1; height: 34px;
+    border: 1px solid var(--cds-gray-30);
+    background: var(--cds-white);
+    color: var(--cds-gray-70);
+    font-size: 13px; font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .ha-style-switch button.active {
+    background: var(--cds-gray-100);
+    color: var(--cds-white);
+    border-color: var(--cds-gray-100);
+  }
+  /* 三个版本的头部 */
+  .ha-header { margin-top: 16px; }
+  /* 版本 A：深色大气 */
+  .ha-header--a {
+    background: var(--cds-gray-100);
+    padding: 32px 24px 30px;
     color: var(--cds-white);
   }
-  .ha-hero-tag {
+  .ha-header--a .ha-header-tag {
     font-size: 11px; letter-spacing: 0.38em;
-    color: rgba(255, 255, 255, 0.55); margin-bottom: 10px;
+    color: var(--cds-gray-40); margin-bottom: 10px;
     font-weight: 400; text-transform: uppercase;
   }
-  .ha-hero-title { font-size: 28px; font-weight: 300; color: var(--cds-white); line-height: 1.2; }
-  .ha-hero-sub {
-    margin-top: 14px; padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.16);
-    font-size: 13px; letter-spacing: 0.2px;
-    color: rgba(255, 255, 255, 0.66);
+  .ha-header--a .ha-header-title { font-size: 28px; font-weight: 300; line-height: 1.2; }
+  /* 版本 B：纯白极简 */
+  .ha-header--b {
+    background: var(--cds-white);
+    padding: 28px 24px 22px;
+    border-bottom: 1px solid var(--cds-gray-20);
   }
+  .ha-header--b .ha-header-tag {
+    font-size: 11px; letter-spacing: 0.38em;
+    color: var(--cds-gray-50); margin-bottom: 10px;
+    font-weight: 400; text-transform: uppercase;
+  }
+  .ha-header--b .ha-header-title { font-size: 30px; font-weight: 300; color: var(--cds-gray-100); line-height: 1.2; }
+  /* 版本 C：浅灰卡片 */
+  .ha-header--c {
+    margin: 16px 20px 0;
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    border-radius: 14px;
+    padding: 28px 24px;
+  }
+  .ha-header--c .ha-header-tag {
+    font-size: 11px; letter-spacing: 0.38em;
+    color: var(--cds-gray-50); margin-bottom: 10px;
+    font-weight: 400; text-transform: uppercase;
+  }
+  .ha-header--c .ha-header-title { font-size: 28px; font-weight: 300; color: var(--cds-gray-100); line-height: 1.2; }
   .ha-section-title {
     padding: 22px 20px 12px;
     font-size: 15px; font-weight: 600; color: var(--cds-text-primary);
@@ -1498,10 +1542,22 @@
          PAGE 1: Home — 首页工作台
          ================================================================ -->
     <div class="page home-v2" id="page-home">
-      <div class="ha-hero">
-        <div class="ha-hero-tag">BUCHANG INTELLIGENT MANUFACTURING</div>
-        <div class="ha-hero-title">步长智造平台</div>
-        <div class="ha-hero-sub">设备全生命周期数字化管理</div>
+      <div class="ha-style-switch">
+        <button class="active" data-v="a" onclick="switchHomeStyle('a')">A 深色</button>
+        <button data-v="b" onclick="switchHomeStyle('b')">B 纯白</button>
+        <button data-v="c" onclick="switchHomeStyle('c')">C 卡片</button>
+      </div>
+      <div class="ha-header ha-header--a" id="haHeaderA">
+        <div class="ha-header-tag">BUCHANG INTELLIGENT MANUFACTURING</div>
+        <div class="ha-header-title">步长智造平台</div>
+      </div>
+      <div class="ha-header ha-header--b" id="haHeaderB" style="display:none">
+        <div class="ha-header-tag">BUCHANG INTELLIGENT MANUFACTURING</div>
+        <div class="ha-header-title">步长智造平台</div>
+      </div>
+      <div class="ha-header ha-header--c" id="haHeaderC" style="display:none">
+        <div class="ha-header-tag">BUCHANG INTELLIGENT MANUFACTURING</div>
+        <div class="ha-header-title">步长智造平台</div>
       </div>
       <div class="ha-section-title">常用功能</div>
       <div class="ha-grid">
@@ -2087,6 +2143,18 @@ function navigateTo(pageName) {
 
 function goBack() {
   navigateTo('home');
+}
+
+function switchHomeStyle(v) {
+  document.querySelectorAll('.ha-style-switch button').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-v') === v);
+  });
+  ['A', 'B', 'C'].forEach(function(x) {
+    var el = document.getElementById('haHeader' + x);
+    if (el) el.style.display = (x.toLowerCase() === v) ? '' : 'none';
+  });
+  var ph = document.getElementById('page-home');
+  if (ph) ph.classList.toggle('home-bg-b', v === 'b');
 }
 
 // ========================================================================
