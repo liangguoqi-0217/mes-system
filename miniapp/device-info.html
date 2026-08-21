@@ -1391,17 +1391,6 @@
     background: var(--cds-blue-10); color: var(--cds-blue-60);
   }
   .ha-grid-name { font-size: 13px; font-weight: 500; color: var(--cds-text-primary); }
-  .ha-grid-card--wide {
-    grid-column: 1 / -1;
-    flex-direction: row; justify-content: flex-start; gap: 14px;
-    padding: 14px 16px;
-  }
-  .ha-grid-card--wide .ha-grid-icon { width: 44px; height: 44px; }
-  .ha-grid-card--wide .ha-grid-name { font-size: 15px; }
-  .ha-grid-card--wide .ha-grid-arrow {
-    margin-left: auto;
-    color: var(--cds-gray-50); font-size: 14px;
-  }
   .ha-all {
     margin: 20px;
     height: 48px;
@@ -1432,7 +1421,6 @@
     background: transparent; color: var(--cds-text-primary);
   }
   .all-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 0 20px 24px; }
-  .all-grid .ha-grid-card--wide { grid-column: 1 / -1; }
 </style>
 </head>
 <body>
@@ -1532,10 +1520,6 @@
           <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg></div>
           <div class="ha-grid-name">维修通知单</div>
         </div>
-        <div class="ha-grid-card" onclick="showToast('维修工单功能开发中')">
-          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
-          <div class="ha-grid-name">维修工单</div>
-        </div>
         <div class="ha-grid-card" onclick="navigateTo('inventory')">
           <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M3 9v6l9 5 9-5V9"/><line x1="12" y1="14" x2="12" y2="19"/></svg></div>
           <div class="ha-grid-name">库存查询</div>
@@ -1543,15 +1527,6 @@
         <div class="ha-grid-card" onclick="navigateTo('faultcode')">
           <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.2a2.7 2.7 0 1 1 3.6 2.5c-.8.3-1 .9-1 1.6"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg></div>
           <div class="ha-grid-name">故障代码</div>
-        </div>
-        <div class="ha-grid-card" onclick="showToast('预防性维护功能开发中')">
-          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-          <div class="ha-grid-name">预防性维护</div>
-        </div>
-        <div class="ha-grid-card ha-grid-card--wide" onclick="showToast('提报隐患工单功能开发中')">
-          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
-          <div class="ha-grid-name">提报隐患工单</div>
-          <span class="ha-grid-arrow"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4l6 6-6 6"/></svg></span>
         </div>
       </div>
 
@@ -2119,19 +2094,15 @@ function goBack() {
 const ALL_FUNCTIONS = [
   { name: '设备信息', page: 'device', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>' },
   { name: '维修通知单', page: 'notification', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>' },
-  { name: '维修工单', page: null, icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>' },
   { name: '库存查询', page: 'inventory', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M3 9v6l9 5 9-5V9"/><line x1="12" y1="14" x2="12" y2="19"/></svg>' },
-  { name: '故障代码', page: 'faultcode', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.2a2.7 2.7 0 1 1 3.6 2.5c-.8.3-1 .9-1 1.6"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>' },
-  { name: '预防性维护', page: null, icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' },
-  { name: '提报隐患工单', page: null, wide: true, icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>' }
+  { name: '故障代码', page: 'faultcode', icon: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.2a2.7 2.7 0 1 1 3.6 2.5c-.8.3-1 .9-1 1.6"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg>' }
 ];
 
 function allFuncCard(f) {
   const click = f.page ? "navigateTo('" + f.page + "')" : "showToast('" + f.name + "功能开发中')";
-  return '<div class="ha-grid-card' + (f.wide ? ' ha-grid-card--wide' : '') + '" onclick="' + click + '" data-name="' + f.name + '">' +
+  return '<div class="ha-grid-card" onclick="' + click + '" data-name="' + f.name + '">' +
     '<div class="ha-grid-icon">' + f.icon + '</div>' +
     '<div class="ha-grid-name">' + f.name + '</div>' +
-    (f.wide ? '<span class="ha-grid-arrow"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4l6 6-6 6"/></svg></span>' : '') +
   '</div>';
 }
 
