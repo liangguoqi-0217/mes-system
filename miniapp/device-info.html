@@ -1358,10 +1358,6 @@
     font-size: 30px; font-weight: 300; letter-spacing: 0;
     line-height: 1.15; margin-bottom: 10px;
   }
-  .login-hero-subtitle {
-    font-size: 13px; font-weight: 400; letter-spacing: 0.16px;
-    color: var(--cds-gray-50); line-height: 1.43;
-  }
 
   .login-body {
     flex: 1;
@@ -1447,6 +1443,58 @@
     font-size: 11px; letter-spacing: 0.16px;
     color: var(--cds-gray-30);
   }
+
+  /* ---------- 登录页多版本主题（原型对比用） ---------- */
+
+  /* V2 深蓝渐变版：品牌区深蓝渐变，整体商务稳重 */
+  .login-theme-2 .login-hero {
+    background: linear-gradient(150deg, #0f62fe 0%, #0043ce 55%, #002d9c 100%);
+  }
+  .login-theme-2 .login-hero-tagline {
+    color: rgba(255,255,255,0.72);
+    letter-spacing: 0.4em;
+  }
+  .login-theme-2 .login-hero-title { font-weight: 500; color: var(--cds-white); }
+  .login-theme-2 .login-card { box-shadow: 0 8px 24px rgba(0, 43, 156, 0.10); }
+
+  /* V3 浅色柔和版：整体浅灰无深色大块，对比最柔和 */
+  .login-theme-3 .login-hero {
+    background: var(--cds-gray-10);
+    padding-bottom: 16px;
+  }
+  .login-theme-3 .login-hero-tagline { color: var(--cds-gray-50); }
+  .login-theme-3 .login-hero-title { color: var(--cds-blue-70); }
+  .login-theme-3 .login-body { padding-top: 0; }
+  .login-theme-3 .login-card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid var(--cds-gray-20);
+  }
+
+  /* ---------- 版本切换器（原型工具，确定版本后移除） ---------- */
+  .login-theme-switcher {
+    margin-top: 36px;
+    text-align: center;
+  }
+  .login-theme-switcher-label {
+    font-size: 11px; letter-spacing: 0.16px;
+    color: var(--cds-gray-50); margin-bottom: 10px;
+  }
+  .login-theme-switcher-group {
+    display: inline-flex;
+    background: var(--cds-gray-20);
+    border-radius: 8px; padding: 3px; gap: 2px;
+  }
+  .login-theme-switcher-group button {
+    border: none; background: transparent;
+    padding: 6px 14px; border-radius: 6px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--cds-text-secondary);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .login-theme-switcher-group button.active {
+    background: var(--cds-white); color: var(--cds-blue-60);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
 </style>
 </head>
 <body>
@@ -1469,11 +1517,10 @@
     <!-- ================================================================
          PAGE 0: Login — 登录（默认启动页）
          ================================================================ -->
-    <div class="page active" id="page-login">
+    <div class="page active login-theme-1" id="page-login">
       <div class="login-hero">
         <div class="login-hero-tagline">BUCHANG INTELLIGENT MANUFACTURING</div>
         <div class="login-hero-title">步长智造平台</div>
-        <div class="login-hero-subtitle">设备管理 · 维修通知单 · 库存查询 · 故障代码</div>
       </div>
 
       <div class="login-body">
@@ -1519,6 +1566,16 @@
         <div class="login-footer">
           <div>步长智造平台 · 内部系统</div>
           <div class="login-ver">V3.0.0</div>
+        </div>
+
+        <!-- 版本对比切换器（原型工具，选定版本后移除） -->
+        <div class="login-theme-switcher">
+          <div class="login-theme-switcher-label">登录页版本对比</div>
+          <div class="login-theme-switcher-group">
+            <button class="active" data-theme="1" onclick="switchLoginTheme(1)">V1 高对比</button>
+            <button data-theme="2" onclick="switchLoginTheme(2)">V2 深蓝渐变</button>
+            <button data-theme="3" onclick="switchLoginTheme(3)">V3 浅色柔和</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2169,6 +2226,16 @@ function handleLogin() {
     btn.textContent = '登 录';
     btn.disabled = false;
   }, 600);
+}
+
+// 登录页版本切换（原型对比用）
+function switchLoginTheme(n) {
+  const page = document.getElementById('page-login');
+  page.classList.remove('login-theme-1', 'login-theme-2', 'login-theme-3');
+  page.classList.add('login-theme-' + n);
+  document.querySelectorAll('.login-theme-switcher-group button').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === String(n));
+  });
 }
 
 function resetSubViews() {
