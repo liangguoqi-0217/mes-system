@@ -1866,7 +1866,9 @@
         </button>
       </div>
 
-      <div class="hb-groups" id="hbGroups"></div>
+      <div class="hb-groups" id="hbGroups">
+        <div style="padding:40px 20px;text-align:center;color:var(--cds-gray-50);font-size:14px;">正在加载分组...</div>
+      </div>
 
       <div class="hb-footer">步长智造平台 · 内部系统 · V3.0.0</div>
     </div>
@@ -2414,6 +2416,7 @@ function navigateTo(pageName) {
   if (pageName === 'notification') renderRecentNF();
   if (pageName === 'inventory') { searchInventory(); }
   if (pageName === 'faultcode') { renderFCTree(); }
+  if (pageName === 'home-b') { renderHBGroups(); }
 
   // Scroll to top
   document.getElementById('page-' + pageName).scrollTop = 0;
