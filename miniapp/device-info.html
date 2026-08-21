@@ -1445,6 +1445,198 @@
     font-size: 11px; letter-spacing: 0.16px;
     color: var(--cds-gray-30);
   }
+
+  /* ================================================================
+     Home Versions — 首页目录多版本原型（V1现状 / V2工作台 / V3分组）
+     ================================================================ */
+  /* ---- 版本切换器（原型工具，选定后移除） ---- */
+  .home-version-bar {
+    display: flex; justify-content: center;
+    padding: 10px 16px;
+    background: var(--cds-gray-10);
+  }
+  .home-version-bar.on-white { background: var(--cds-white); }
+  .home-version-group {
+    display: inline-flex;
+    background: var(--cds-gray-20);
+    border-radius: 20px; padding: 3px; gap: 2px;
+  }
+  .home-version-group button {
+    border: none; background: transparent;
+    padding: 6px 12px; border-radius: 16px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--cds-text-secondary);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .home-version-group button.active {
+    background: var(--cds-white); color: var(--cds-blue-60);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+
+  /* ---- V2 工作台式首页 ---- */
+  .home-v2 { background: var(--cds-gray-10); }
+  .ha-welcome { padding: 24px 20px 16px; }
+  .ha-welcome-tag {
+    font-size: 11px; letter-spacing: 0.38em;
+    color: var(--cds-gray-50); margin-bottom: 8px;
+    font-weight: 400; text-transform: uppercase;
+  }
+  .ha-welcome-title { font-size: 24px; font-weight: 300; color: var(--cds-blue-70); line-height: 1.2; }
+  .ha-welcome-greet { margin-top: 6px; font-size: 14px; color: var(--cds-text-secondary); }
+  .ha-scan {
+    margin: 8px 20px 0;
+    height: 56px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: var(--cds-blue-60); color: var(--cds-white);
+    font-size: 16px; font-weight: 600; letter-spacing: 0.16px;
+    border-radius: 10px;
+    cursor: pointer; user-select: none;
+    box-shadow: 0 4px 12px rgba(15, 98, 254, 0.30);
+    transition: background 0.15s;
+  }
+  .ha-scan:active { background: var(--cds-blue-70); }
+  .ha-todo { display: flex; gap: 12px; padding: 20px 20px 0; }
+  .ha-todo-card {
+    flex: 1;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    border-radius: 10px;
+    padding: 14px 12px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .ha-todo-card:active { background: var(--cds-gray-10); }
+  .ha-todo-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: var(--cds-blue-10); color: var(--cds-blue-60);
+  }
+  .ha-todo-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .ha-todo-name { font-size: 13px; color: var(--cds-text-primary); font-weight: 500; white-space: nowrap; }
+  .ha-todo-num { font-size: 12px; color: var(--cds-support-error); font-weight: 600; }
+  .ha-section-title {
+    padding: 24px 20px 12px;
+    font-size: 15px; font-weight: 600; color: var(--cds-text-primary);
+  }
+  .ha-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px; }
+  .ha-grid-card {
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    border-radius: 10px;
+    padding: 18px 12px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    cursor: pointer; user-select: none;
+    transition: background 0.15s;
+  }
+  .ha-grid-card:active { background: var(--cds-gray-10); }
+  .ha-grid-icon {
+    width: 42px; height: 42px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    background: var(--cds-blue-10); color: var(--cds-blue-60);
+  }
+  .ha-grid-name { font-size: 13px; font-weight: 500; color: var(--cds-text-primary); }
+  .ha-all {
+    margin: 20px;
+    height: 48px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    border-radius: 10px;
+    font-size: 14px; font-weight: 600; color: var(--cds-blue-60);
+    cursor: pointer; user-select: none;
+  }
+  .ha-all:active { background: var(--cds-gray-10); }
+
+  /* ---- V3 业务域分组式首页 ---- */
+  .home-v3 { background: var(--cds-gray-10); }
+  .hb-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 20px 20px;
+  }
+  .hb-head-tag {
+    font-size: 11px; letter-spacing: 0.38em;
+    color: var(--cds-gray-50); margin-bottom: 8px;
+    font-weight: 400; text-transform: uppercase;
+  }
+  .hb-head-title { font-size: 24px; font-weight: 300; color: var(--cds-blue-70); line-height: 1.2; }
+  .hb-scan-btn {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--cds-blue-60); color: var(--cds-white);
+    border: none; border-radius: 10px;
+    cursor: pointer;
+  }
+  .hb-scan-btn:active { background: var(--cds-blue-70); }
+  .hb-groups { padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
+  .hb-group {
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    border-radius: 10px; overflow: hidden;
+  }
+  .hb-group-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer; user-select: none;
+  }
+  .hb-group-header:active { background: var(--cds-gray-10); }
+  .hb-group-icon {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: var(--cds-blue-10); color: var(--cds-blue-60);
+    flex-shrink: 0;
+  }
+  .hb-group-name { font-size: 14px; font-weight: 600; color: var(--cds-text-primary); }
+  .hb-group-count { font-size: 12px; color: var(--cds-gray-50); margin-left: 8px; }
+  .hb-arrow { transition: transform 0.2s; color: var(--cds-gray-50); }
+  .hb-arrow.open { transform: rotate(180deg); }
+  .hb-group-items { display: none; border-top: 1px solid var(--cds-gray-20); }
+  .hb-group.open .hb-group-items { display: block; }
+  .hb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--cds-gray-10);
+    cursor: pointer; user-select: none;
+  }
+  .hb-item:last-child { border-bottom: none; }
+  .hb-item:active { background: var(--cds-gray-10); }
+  .hb-item-icon {
+    width: 30px; height: 30px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; background: var(--cds-blue-10); color: var(--cds-blue-60);
+  }
+  .hb-item-name { flex: 1; font-size: 14px; color: var(--cds-text-primary); }
+  .hb-item-arrow { color: var(--cds-gray-50); }
+  .hb-placeholder { opacity: 0.55; }
+  .hb-badge {
+    font-size: 11px; font-weight: 600; color: var(--cds-gray-50);
+    background: var(--cds-gray-10);
+    border-radius: 10px; padding: 2px 8px;
+    flex-shrink: 0;
+  }
+  .hb-footer { text-align: center; padding: 28px 20px 32px; font-size: 12px; color: var(--cds-gray-50); }
+
+  /* ---- 全部功能页 ---- */
+  .all-page { background: var(--cds-gray-10); }
+  .all-search {
+    margin: 16px 20px 20px;
+    height: 44px;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--cds-white);
+    border: 1px solid var(--cds-gray-20);
+    border-radius: 10px;
+    padding: 0 14px;
+    color: var(--cds-gray-50);
+  }
+  .all-search input {
+    flex: 1; border: none; outline: none;
+    font-size: 14px; font-family: inherit;
+    background: transparent; color: var(--cds-text-primary);
+  }
+  .all-groups { padding: 0 20px; display: flex; flex-direction: column; gap: 16px; }
 </style>
 </head>
 <body>
@@ -1529,6 +1721,15 @@
         <div class="hero-title">步长智造平台</div>
       </div>
 
+      <!-- 目录版本对比切换器（原型工具，选定后移除） -->
+      <div class="home-version-bar on-white">
+        <div class="home-version-group">
+          <button class="active" data-v="1" onclick="switchHomeVersion(1)">V1 现状</button>
+          <button data-v="2" onclick="switchHomeVersion(2)">V2 工作台</button>
+          <button data-v="3" onclick="switchHomeVersion(3)">V3 分组</button>
+        </div>
+      </div>
+
       <div class="home-functions">
         <div class="home-section-header">设备管理</div>
         <div class="home-func-list">
@@ -1567,6 +1768,107 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- ================================================================
+         PAGE 1A: 首页 V2 — 工作台式（对比版本）
+         ================================================================ -->
+    <div class="page home-v2" id="page-home-a">
+      <div class="home-version-bar">
+        <div class="home-version-group">
+          <button data-v="1" onclick="switchHomeVersion(1)">V1 现状</button>
+          <button class="active" data-v="2" onclick="switchHomeVersion(2)">V2 工作台</button>
+          <button data-v="3" onclick="switchHomeVersion(3)">V3 分组</button>
+        </div>
+      </div>
+
+      <div class="ha-welcome">
+        <div class="ha-welcome-tag">BUCHANG INTELLIGENT MANUFACTURING</div>
+        <div class="ha-welcome-title">步长智造平台</div>
+        <div class="ha-welcome-greet">上午好，张工</div>
+      </div>
+
+      <div class="ha-scan" onclick="simulateScan('device')">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+        <span>扫一扫 · 识别设备</span>
+      </div>
+
+      <div class="ha-todo">
+        <div class="ha-todo-card" onclick="navigateTo('notification')">
+          <div class="ha-todo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg></div>
+          <div class="ha-todo-body">
+            <div class="ha-todo-name">待处理通知单</div>
+            <div class="ha-todo-num">3 条待处理</div>
+          </div>
+        </div>
+        <div class="ha-todo-card" onclick="showToast('维修工单功能开发中')">
+          <div class="ha-todo-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+          <div class="ha-todo-body">
+            <div class="ha-todo-name">待处理工单</div>
+            <div class="ha-todo-num">5 条待处理</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ha-section-title">常用功能</div>
+      <div class="ha-grid">
+        <div class="ha-grid-card" onclick="navigateTo('device')">
+          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <div class="ha-grid-name">设备信息</div>
+        </div>
+        <div class="ha-grid-card" onclick="navigateTo('notification')">
+          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg></div>
+          <div class="ha-grid-name">维修通知单</div>
+        </div>
+        <div class="ha-grid-card" onclick="showToast('维修工单功能开发中')">
+          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+          <div class="ha-grid-name">维修工单</div>
+        </div>
+        <div class="ha-grid-card" onclick="navigateTo('inventory')">
+          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M3 9v6l9 5 9-5V9"/><line x1="12" y1="14" x2="12" y2="19"/></svg></div>
+          <div class="ha-grid-name">库存查询</div>
+        </div>
+        <div class="ha-grid-card" onclick="navigateTo('faultcode')">
+          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9.3 9.2a2.7 2.7 0 1 1 3.6 2.5c-.8.3-1 .9-1 1.6"/><circle cx="12" cy="17" r="0.6" fill="currentColor"/></svg></div>
+          <div class="ha-grid-name">故障代码</div>
+        </div>
+        <div class="ha-grid-card" onclick="showToast('预防性维护功能开发中')">
+          <div class="ha-grid-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <div class="ha-grid-name">预防性维护</div>
+        </div>
+      </div>
+
+      <div class="ha-all" onclick="navigateTo('all')">
+        全部功能
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4l6 6-6 6"/></svg>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         PAGE 1B: 首页 V3 — 业务域分组式（对比版本）
+         ================================================================ -->
+    <div class="page home-v3" id="page-home-b">
+      <div class="home-version-bar">
+        <div class="home-version-group">
+          <button data-v="1" onclick="switchHomeVersion(1)">V1 现状</button>
+          <button data-v="2" onclick="switchHomeVersion(2)">V2 工作台</button>
+          <button class="active" data-v="3" onclick="switchHomeVersion(3)">V3 分组</button>
+        </div>
+      </div>
+
+      <div class="hb-head">
+        <div>
+          <div class="hb-head-tag">BUCHANG INTELLIGENT MANUFACTURING</div>
+          <div class="hb-head-title">步长智造平台</div>
+        </div>
+        <button class="hb-scan-btn" onclick="simulateScan('device')">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+        </button>
+      </div>
+
+      <div class="hb-groups" id="hbGroups"></div>
+
+      <div class="hb-footer">步长智造平台 · 内部系统 · V3.0.0</div>
     </div>
 
     <!-- ================================================================
@@ -1660,6 +1962,17 @@
       <div style="padding:12px 16px;font-size:13px;color:var(--cds-text-secondary);border-bottom:1px solid var(--cds-gray-20);">点击展开目录浏览故障代码</div>
       <div class="fc-tree" id="fcTree"></div>
       <div id="fcDetailView" style="display:none;"></div>
+    </div>
+
+    <!-- ================================================================
+         PAGE 5: 全部功能 — 完整分组目录（扩展承载页）
+         ================================================================ -->
+    <div class="page all-page" id="page-all">
+      <div class="all-search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="text" placeholder="搜索功能，如：设备、工单、库存" oninput="filterAllFunctions(this.value)">
+      </div>
+      <div class="all-groups" id="allGroups"></div>
     </div>
   </div>
 
@@ -2071,20 +2384,26 @@ function closeScan() {
 const pageTitles = {
   login: '登录',
   home: '步长智造平台',
+  'home-a': '步长智造平台',
+  'home-b': '步长智造平台',
   device: '设备信息',
   notification: '维修通知单',
   inventory: '库存查询',
-  faultcode: '故障代码'
+  faultcode: '故障代码',
+  all: '全部功能'
 };
 
 let currentPage = 'login';
+const HOME_PAGES = ['home', 'home-a', 'home-b'];
+let homeVersion = 1; // 当前首页目录版本：1现状 / 2工作台 / 3分组
 
 function navigateTo(pageName) {
   currentPage = pageName;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + pageName).classList.add('active');
   document.getElementById('navTitle').textContent = pageTitles[pageName];
-  document.getElementById('backBtn').style.display = (pageName === 'home' || pageName === 'login') ? 'none' : 'flex';
+  const isRoot = pageName === 'login' || HOME_PAGES.indexOf(pageName) > -1;
+  document.getElementById('backBtn').style.display = isRoot ? 'none' : 'flex';
 
   // Reset sub views
   resetSubViews();
@@ -2100,7 +2419,130 @@ function navigateTo(pageName) {
   document.getElementById('page-' + pageName).scrollTop = 0;
 }
 
-function goBack() { navigateTo('home'); }
+function goBack() {
+  navigateTo(homeVersion === 2 ? 'home-a' : homeVersion === 3 ? 'home-b' : 'home');
+}
+
+// 首页目录版本切换（原型对比用，选定后移除）
+function switchHomeVersion(n) {
+  homeVersion = n;
+  navigateTo(n === 2 ? 'home-a' : n === 3 ? 'home-b' : 'home');
+  document.querySelectorAll('.home-version-group button').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.v) === n);
+  });
+}
+
+// ========================================================================
+//  Home Groups — 首页目录分组数据与渲染
+// ========================================================================
+const GROUP_ICONS = {
+  '设备管理': '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  '维修管理': '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>',
+  '库存管理': '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M3 9v6l9 5 9-5V9"/><line x1="12" y1="14" x2="12" y2="19"/></svg>',
+  '生产管理': '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l6 4V7l8 5v9"/></svg>',
+  '质量管理': '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M8.5 12l2.5 2.5 4.5-4.5"/></svg>'
+};
+
+// 分组数据：未来新增功能只需在此追加（page 为 null 表示占位）
+const HOME_GROUPS = [
+  {
+    name: '设备管理',
+    items: [
+      { name: '设备信息', page: 'device' },
+      { name: '故障代码', page: 'faultcode' }
+    ]
+  },
+  {
+    name: '维修管理',
+    items: [
+      { name: '维修通知单', page: 'notification' },
+      { name: '维修工单', page: null },
+      { name: '预防性维护', page: null }
+    ]
+  },
+  {
+    name: '库存管理',
+    items: [
+      { name: '库存查询', page: 'inventory' }
+    ]
+  },
+  { name: '生产管理', placeholder: true },
+  { name: '质量管理', placeholder: true }
+];
+
+function groupHtml(group) {
+  if (group.placeholder) {
+    return '<div class="hb-group hb-placeholder">' +
+      '<div class="hb-group-header" style="cursor:default;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span class="hb-group-icon">' + GROUP_ICONS[group.name] + '</span>' +
+          '<span class="hb-group-name">' + group.name + '</span>' +
+        '</div>' +
+        '<span class="hb-badge">敬请期待</span>' +
+      '</div>' +
+    '</div>';
+  }
+  const items = group.items.map(function(it) {
+    const click = it.page ? "navigateTo('" + it.page + "')" : "showToast('功能开发中，敬请期待')";
+    const badge = it.page ? '' : '<span class="hb-badge">敬请期待</span>';
+    return '<div class="hb-item" onclick="' + click + '">' +
+      '<span class="hb-item-name">' + it.name + '</span>' + badge +
+      '<span class="hb-item-arrow"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M7 4l6 6-6 6"/></svg></span>' +
+    '</div>';
+  }).join('');
+  return '<div class="hb-group">' +
+    '<div class="hb-group-header" onclick="toggleGroup(this)">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<span class="hb-group-icon">' + GROUP_ICONS[group.name] + '</span>' +
+        '<span class="hb-group-name">' + group.name + '</span>' +
+        '<span class="hb-group-count">' + group.items.length + ' 项</span>' +
+      '</div>' +
+      '<svg class="hb-arrow" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M5 8l7 7 7-7"/></svg>' +
+    '</div>' +
+    '<div class="hb-group-items">' + items + '</div>' +
+  '</div>';
+}
+
+function toggleGroup(header) {
+  const g = header.parentElement;
+  const open = g.classList.toggle('open');
+  const arrow = header.querySelector('.hb-arrow');
+  if (arrow) arrow.classList.toggle('open', open);
+}
+
+function renderHBGroups() {
+  const el = document.getElementById('hbGroups');
+  if (!el) return;
+  el.innerHTML = HOME_GROUPS.map(groupHtml).join('');
+  const first = el.querySelector('.hb-group:not(.hb-placeholder)');
+  if (first) { first.classList.add('open'); first.querySelector('.hb-arrow').classList.add('open'); }
+}
+
+function renderAllGroups() {
+  const el = document.getElementById('allGroups');
+  if (!el) return;
+  el.innerHTML = HOME_GROUPS.map(groupHtml).join('');
+  el.querySelectorAll('.hb-group:not(.hb-placeholder)').forEach(function(g) {
+    g.classList.add('open');
+    const a = g.querySelector('.hb-arrow');
+    if (a) a.classList.add('open');
+  });
+}
+
+function filterAllFunctions(val) {
+  const q = val.trim().toLowerCase();
+  document.querySelectorAll('#allGroups .hb-group').forEach(function(g) {
+    if (g.classList.contains('hb-placeholder')) { g.style.display = q ? 'none' : ''; return; }
+    let show = false;
+    g.querySelectorAll('.hb-item').forEach(function(it) {
+      const name = it.querySelector('.hb-item-name').textContent.toLowerCase();
+      const hit = !q || name.indexOf(q) > -1;
+      it.style.display = hit ? '' : 'none';
+      if (hit) show = true;
+    });
+    g.style.display = show ? '' : 'none';
+  });
+}
 
 // ========================================================================
 //  Login — 登录
@@ -3414,6 +3856,8 @@ initDevicePage();
 renderRecentNF();
 searchInventory();
 renderFCTree();
+renderHBGroups();
+renderAllGroups();
 </script>
 </body>
 </html>
