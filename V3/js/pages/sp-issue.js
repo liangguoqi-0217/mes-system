@@ -190,15 +190,17 @@ const SpIssue = {
   openNewModal() {
     const typeList = Object.entries(ISSUE_TYPE_MAP).map(([k, v]) => ({ key: k, ...v }));
     const gridCols = typeList.length <= 3 ? '1fr 1fr 1fr' : '1fr 1fr';
-    const cards = typeList.map((t) => {
+    const cards = typeList.map((t, i) => {
+      const num = String(i + 1).padStart(2, '0');
       return `
         <div onclick="closeModal();SpIssue.openForm('${t.key}')"
-          style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
+          style="background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:18px 16px;cursor:pointer;transition:all .22s;text-align:left;"
           onmouseenter="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 18px rgba(30,58,95,.10)'"
           onmouseleave="this.style.borderColor='var(--border)';this.style.transform='translateY(0)';this.style.boxShadow='none'">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#94a3b8;margin-bottom:6px;">${num}</div>
           <div style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:4px;">${esc(t.label)}</div>
           <div style="font-size:12px;color:#6b7280;line-height:1.45;">${esc(t.desc)}</div>
-          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:var(--primary);color:#fff;cursor:pointer;">开始填写 →</span></div>
+          <div style="margin-top:12px;text-align:right;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:var(--primary);color:#fff;cursor:pointer;">开始填写 →</span></div>
         </div>`;
     }).join('');
     const body = `
