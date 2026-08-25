@@ -68,20 +68,14 @@ const SparePartsStock = {
             <option value="2002|5001">5001 (丹红-五金库)</option>
             <option value="2003|2001">2001 (神州-五金劳保库)</option>
           </select></div>
-          <div class="filter-group"><label>显示类型</label><select id="spDisplayType">
-            <option value="summary" selected>显示汇总库存</option>
-            <option value="plant">显示工厂汇总库存</option>
-            <option value="batch">显示批次库存</option>
+          <div class="filter-group"><label>显示类型</label><select id="spDisplayType" onchange="SparePartsStock.onDisplayTypeChange()">
+            <option value="plant">工厂层级</option>
+            <option value="summary" selected>工厂+库存地点（批次汇总）</option>
+            <option value="batch">工厂+库存地点+批次（明细）</option>
           </select></div>
           <div class="filter-group"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
-          <div class="filter-group"><label>库存类型</label><select id="spStockType">
-            <option value="">全部库存</option>
-            <option value="unrestricted">非限制使用</option>
-            <option value="quality">质检中</option>
-            <option value="blocked">冻结</option>
-          </select></div>
-          <div class="filter-group"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
+          <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SparePartsStock.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
@@ -120,6 +114,7 @@ const SparePartsStock = {
     if (displayType === 'summary') this._aggregate();
     else if (displayType === 'plant') this._aggregateByPlant();
     this.renderTable();
+    this._syncFilterStates();
   },
 
   // 库位汇总档：按 工厂|库位|物料号|WBS|特殊库存|客户 聚合；安全库存仅作灰色参考，不参与红绿灯判断
@@ -276,13 +271,33 @@ const SparePartsStock = {
     if (btn) btn.textContent = this.showExtCols ? '收起次要字段' : '展开次要字段';
   },
 
+  // 显示类型联动：工厂层级档置灰库存地点/WBS、隐藏批次；其余档位恢复
+  _syncFilterStates() {
+    const isPlant = document.getElementById('spDisplayType').value === 'plant';
+    const locSel = document.getElementById('spStorageLoc');
+    const wbsInput = document.getElementById('spWbsNo');
+    const batchGroup = document.getElementById('spBatchGroup');
+    if (locSel) locSel.disabled = isPlant;
+    if (wbsInput) wbsInput.disabled = isPlant;
+    if (batchGroup) batchGroup.style.display = isPlant ? 'none' : '';
+  },
+
+  // 切换显示类型：切到工厂层级时清空无效筛选值，避免残留值参与查询
+  onDisplayTypeChange() {
+    if (document.getElementById('spDisplayType').value === 'plant') {
+      document.getElementById('spStorageLoc').value = '';
+      document.getElementById('spWbsNo').value = '';
+      document.getElementById('spBatch').value = '';
+    }
+    this._syncFilterStates();
+  },
+
   search() {
     const factory = document.getElementById('spFactory').value;
     const storageLoc = document.getElementById('spStorageLoc').value;
     const displayType = document.getElementById('spDisplayType').value;
     const wbsNo = document.getElementById('spWbsNo').value.trim();
     const matCode = document.getElementById('spMatCode').value.trim();
-    const stockType = document.getElementById('spStockType').value;
     const batch = document.getElementById('spBatch').value.trim();
 
     this.filtered = sparePartsStockData.filter(row => {
@@ -291,10 +306,6 @@ const SparePartsStock = {
       if (wbsNo && !(row.wbsNo || '').includes(wbsNo)) return false;
       if (matCode && !row.matCode.includes(matCode)) return false;
       if (batch && !row.batch.includes(batch)) return false;
-      // Stock type filter
-      if (stockType === 'unrestricted' && (!row.unrestrictedQty || row.unrestrictedQty <= 0)) return false;
-      if (stockType === 'quality' && (!row.qualityQty || row.qualityQty <= 0)) return false;
-      if (stockType === 'blocked' && (!row.blockedQty || row.blockedQty <= 0)) return false;
       return true;
     });
 
@@ -312,12 +323,12 @@ const SparePartsStock = {
     document.getElementById('spDisplayType').value = 'summary';
     document.getElementById('spWbsNo').value = '';
     document.getElementById('spMatCode').value = '';
-    document.getElementById('spStockType').value = '';
     document.getElementById('spBatch').value = '';
     this.filtered = [...sparePartsStockData];
     this._aggregate();
     this.page = 1;
     this.renderTable();
+    this._syncFilterStates();
   },
 
   prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
