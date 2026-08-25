@@ -203,7 +203,6 @@ const SpIssue = {
           style="background:linear-gradient(135deg,${c.bg1},${c.bg2});border:2px solid ${c.border};border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
           onmouseenter="this.style.borderColor='${c.hover}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.12)'"
           onmouseleave="this.style.borderColor='${c.border}';this.style.transform='translateY(0)';this.style.boxShadow='none'">
-          <div style="font-size:36px;margin-bottom:8px;">${t.icon}</div>
           <div style="font-size:15px;font-weight:700;color:${c.text};margin-bottom:4px;">${esc(t.label)}</div>
           <div style="font-size:12px;color:#6b7280;line-height:1.45;">${esc(t.desc)}</div>
           <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:${c.btn};color:${c.btnText};cursor:pointer;">开始填写 →</span></div>
