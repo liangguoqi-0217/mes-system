@@ -54,9 +54,9 @@ const SparePartsStock = {
             ${locOptionsHtml}
           </select></div>
           <div class="filter-group"><label>显示类型</label><select id="spDisplayType" onchange="SparePartsStock.onDisplayTypeChange()">
-            <option value="" selected>空 - 批次库存</option>
-            <option value="1">1 - 库位层级库存</option>
-            <option value="2">2 - 工厂层级库存</option>
+            <option value="" selected>空 - 明细</option>
+            <option value="1">1 - 批次汇总</option>
+            <option value="2">2 - 库位汇总</option>
           </select></div>
           <div class="filter-group" id="spWbsGroup"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
