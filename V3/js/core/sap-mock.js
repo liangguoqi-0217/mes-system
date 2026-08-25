@@ -79,10 +79,10 @@
     },
 
     /**
-     * 查询批次特性（模拟 SAP 批次特性读取 BAPI：输入 工厂/物料/批次）
-     * 说明：数据完全由 SAP 侧维护，MES 不落库；物料编码/批次支持模糊匹配，命中多个时全部返回。
+     * 查询批次特性（模拟 SAP 批次特性读取 BAPI：输入 工厂/物料/批次 精准查找）
+     * 说明：数据完全由 SAP 侧维护，MES 不落库；同一物料批次唯一，返回单个批次。
      * @param {Object} payload { factory, materialCode, batchNo }
-     * @returns {Promise<{ok:true, list:Array<{batchNo,materialCode,materialName,factory,location,updateBy,updateTime,chars}>}>}
+     * @returns {Promise<{ok:true, data:{batchNo,materialCode,materialName,factory,location,chars}}>}
      * @rejects {Promise<{ok:false, code:string, message:string}>}
      */
     getBatchChars(payload) {
@@ -94,31 +94,25 @@
         if (!factory || !materialCode || !batchNo) {
           return Promise.reject({ ok:false, code:'PARAM_ERR', message:'查询参数不完整：工厂、物料、批次均为必填项。' });
         }
-        const list = me._batchCharDb.filter(function (b) {
-          if (b.factory !== factory) return false;
-          if (!(b.materialCode.includes(materialCode) || b.materialName.includes(materialCode))) return false;
-          if (!b.batchNo.includes(batchNo)) return false;
-          return true;
-        }).map(function (b) {
-          return {
-            batchNo: b.batchNo, materialCode: b.materialCode, materialName: b.materialName,
-            factory: b.factory, location: b.location,
-            updateBy: b.updateBy, updateTime: b.updateTime,
-            chars: b.chars.map(function (c) {
-              return { charCode: c.charCode, charName: c.charName, charValue: c.charValue, unit: c.unit };
-            })
-          };
+        const d = me._batchCharDb.find(function (b) {
+          return b.factory === factory && b.materialCode === materialCode && b.batchNo === batchNo;
         });
-        if (!list.length) {
-          return Promise.reject({ ok:false, code:'NOT_FOUND', message:'SAP 未查询到符合条件的批次特性数据，请检查工厂/物料/批次后重试。' });
+        if (!d) {
+          return Promise.reject({ ok:false, code:'NOT_FOUND', message:'未查询到该物料批次的特性数据，请检查工厂/物料/批次后重试。' });
         }
-        return { ok:true, list: list };
+        return { ok:true, data: {
+          batchNo: d.batchNo, materialCode: d.materialCode, materialName: d.materialName,
+          factory: d.factory, location: d.location,
+          chars: d.chars.map(function (c) {
+            return { charCode: c.charCode, charName: c.charName, charValue: c.charValue, unit: c.unit };
+          })
+        } };
       });
     },
 
     /**
      * 修改批次特性（模拟 SAP 批次特性维护，成功后 SAP 侧更新特性值并生成修改记录）
-     * @param {Object} payload { factory, batchNo, materialCode, materialName, reason, changes:[{charCode,charName,unit,oldValue,newValue}] }
+     * @param {Object} payload { factory, batchNo, materialCode, materialName, changes:[{charCode,charName,unit,oldValue,newValue}] }
      * @returns {Promise<{ok:true, logNo:string, changeBy:string, changeTime:string, changedCount:number}>}
      * @rejects {Promise<{ok:false, code:string, message:string}>}
      */
@@ -152,7 +146,7 @@
             materialCode: payload.materialCode,
             charCode: ch.charCode, charName: ch.charName, unit: ch.unit || '',
             oldValue: ch.oldValue, newValue: ch.newValue,
-            changeBy: '当前用户', changeTime: changeTime, reason: payload.reason || ''
+            changeBy: '当前用户', changeTime: changeTime, reason: ''
           });
         });
         return {

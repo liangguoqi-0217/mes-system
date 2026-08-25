@@ -1,21 +1,20 @@
 /* ==================== 批次特性管理 ====================
  * 双 Tab 页面：
- *   Tab1「批次特性修改」：输入 工厂 + 物料 + 批次 → 查询 SAP 接口读取该批次特性
- *                          → 在线修改特性值 → 提交 SAP 接口（SAP 返回成功/失败）
- *   Tab2「修改记录」：查询 SAP 返回的修改历史（原值→新值、修改原因）
- * 架构：MES 全程不涉及数据库增删查改，仅做前端展示与 SAP 接口调用，
- *       批次特性数据全部由 SAP 侧维护。
+ *   Tab1「批次特性修改」：输入 工厂 + 物料 + 批次 → 查询 → 读取该批次特性
+ *                          → 直接修改特性值 → 提交（返回成功/失败）
+ *   Tab2「修改记录」：查询修改历史（原值→新值）
+ * 架构：MES 全程不涉及数据库增删查改，仅做前端展示与接口调用，
+ *       批次特性数据由核心系统（SAP）统一维护。
  * 接口：SAP_MOCK.getBatchChars / SAP_MOCK.changeBatchChar / SAP_MOCK.getBatchCharLogs
  */
 const BatchChar = {
-  _version: '1.1-20260825',
+  _version: '1.2-20260825',
   activeTab: 'modify', // 'modify' | 'log'
   page: 1, pageSize: 10,
   // Tab1 状态
   query: null,          // { factory, materialCode, batchNo }
-  matched: [],          // SAP 返回的批次列表
-  selectedBatchNo: '',
-  charsSnapshot: [],    // 当前选中批次的 SAP 原始特性快照（用于比对变更）
+  current: null,        // 当前批次（抬头 + 行项目特性）
+  charsSnapshot: [],    // 原始特性快照（用于比对变更）
   submitting: false,
   // Tab2 状态
   logData: [],
@@ -32,10 +31,6 @@ const BatchChar = {
     return f ? f.name : (code || '-');
   },
 
-  getStatusBadge() {
-    return `<span class="badge badge-blue">已生效</span>`;
-  },
-
   // ==================== 渲染页面 ====================
 
   render() {
@@ -48,22 +43,19 @@ const BatchChar = {
             <div style="font-size:18px;font-weight:700;">批次特性</div>
             <div style="font-size:13px;opacity:0.8;">库存管理 → 物料主数据 → 批次特性</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:11px;background:rgba(255,255,255,0.15);padding:4px 10px;border-radius:4px;">数据源：SAP 接口（MES 不落库）</span>
-            <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="BatchChar.refresh()">🔄 刷新数据</button>
-          </div>
+          <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="BatchChar.refresh()">刷新数据</button>
         </div>
 
         <!-- Tabs -->
         <div class="tabs" style="margin:0;padding:0 24px;background:white;border-bottom:1px solid var(--border);flex-shrink:0;">
-          <div class="tab ${this.activeTab==='modify'?'active':''}" id="bcTabModify" onclick="BatchChar.switchTab('modify')">✏️ 批次特性修改</div>
-          <div class="tab ${this.activeTab==='log'?'active':''}" id="bcTabLog" onclick="BatchChar.switchTab('log')">📋 修改记录 <span class="badge badge-gray badge-sm" id="bcLogCount" style="margin-left:4px;">0</span></div>
+          <div class="tab ${this.activeTab==='modify'?'active':''}" id="bcTabModify" onclick="BatchChar.switchTab('modify')">批次特性修改</div>
+          <div class="tab ${this.activeTab==='log'?'active':''}" id="bcTabLog" onclick="BatchChar.switchTab('log')">修改记录 <span class="badge badge-gray badge-sm" id="bcLogCount" style="margin-left:4px;">0</span></div>
         </div>
 
         <!-- 筛选栏 -->
         <div id="bcFilterBar" style="flex-shrink:0;"></div>
 
-        <!-- 结果区（Tab1：查询结果/特性编辑；Tab2：记录表格） -->
+        <!-- 结果区（Tab1：批次特性编辑；Tab2：记录表格） -->
         <div id="bcResultArea" style="flex:1;overflow:auto;padding:16px 20px;"></div>
 
         <!-- 底部工具栏（Tab2 分页） -->
@@ -107,7 +99,7 @@ const BatchChar = {
           <option value="">请选择</option>
           ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
         </select></div>
-        <div class="filter-group"><label>物料 <span style="color:#dc2626;">*</span></label><input type="text" id="bcMaterial" placeholder="物料编码或名称"></div>
+        <div class="filter-group"><label>物料号 <span style="color:#dc2626;">*</span></label><input type="text" id="bcMaterial" placeholder="物料号"></div>
         <div class="filter-group"><label>批次 <span style="color:#dc2626;">*</span></label><input type="text" id="bcBatch" placeholder="批次号"></div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="BatchChar.search()">查询</button>
@@ -129,7 +121,7 @@ const BatchChar = {
   },
 
   search() {
-    if (this.activeTab === 'modify') this.querySap();
+    if (this.activeTab === 'modify') this.queryBatch();
     else this.loadLogs();
   },
 
@@ -137,8 +129,7 @@ const BatchChar = {
     if (this.activeTab === 'modify') {
       ['bcFactory', 'bcMaterial', 'bcBatch'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
       this.query = null;
-      this.matched = [];
-      this.selectedBatchNo = '';
+      this.current = null;
       this.charsSnapshot = [];
       const footer = document.getElementById('bcFooterBar');
       if (footer) footer.innerHTML = '';
@@ -149,97 +140,76 @@ const BatchChar = {
     }
   },
 
-  // ==================== Tab1：查询 SAP ====================
+  // ==================== Tab1：查询批次 ====================
 
-  querySap() {
+  queryBatch() {
     const factory = document.getElementById('bcFactory')?.value || '';
     const materialCode = document.getElementById('bcMaterial')?.value.trim() || '';
     const batchNo = document.getElementById('bcBatch')?.value.trim() || '';
     if (!factory) { toast('请选择工厂'); return; }
-    if (!materialCode) { toast('请输入物料编码或名称'); return; }
+    if (!materialCode) { toast('请输入物料号'); return; }
     if (!batchNo) { toast('请输入批次号'); return; }
     this.query = { factory, materialCode, batchNo };
-    this.matched = [];
-    this.selectedBatchNo = '';
+    this.current = null;
     this.charsSnapshot = [];
     this.renderResultArea('loading');
-    SAP_MOCK.showLoading('正在向 SAP 查询批次特性，请稍候…');
+    SAP_MOCK.showLoading('正在查询批次特性，请稍候…');
     SAP_MOCK.getBatchChars(this.query).then(res => {
       SAP_MOCK.hideLoading();
-      this.matched = res.list || [];
-      if (this.matched.length) this.selectBatch(this.matched[0].batchNo);
-      else this.renderResultArea();
+      this.current = res.data || null;
+      this.charsSnapshot = this.current ? this.current.chars.map(c => ({ charCode: c.charCode, charValue: c.charValue })) : [];
+      this.renderResultArea();
     }).catch(err => {
       SAP_MOCK.hideLoading();
-      this.matched = [];
       this.renderResultArea('error', (err && err.message) ? err.message : '查询失败，请稍后重试');
     });
-  },
-
-  selectBatch(batchNo) {
-    const d = this.matched.find(b => b.batchNo === batchNo);
-    if (!d) return;
-    this.selectedBatchNo = batchNo;
-    this.charsSnapshot = d.chars.map(c => ({ charCode: c.charCode, charValue: c.charValue }));
-    this.renderResultArea();
   },
 
   renderResultArea(state, errMsg) {
     const el = document.getElementById('bcResultArea');
     if (!el) return;
     if (state === 'loading') {
-      el.innerHTML = this._centerHint('⏳', '正在向 SAP 查询批次特性…');
+      el.innerHTML = this._centerHint('正在查询批次特性…');
       return;
     }
     if (!this.query) {
-      el.innerHTML = this._centerHint('🔍', '请输入 工厂 + 物料 + 批次 后点击「查询」', 'MES 将实时调用 SAP 接口读取该批次的特性数据，修改后提交写回 SAP');
+      el.innerHTML = this._centerHint('请输入 工厂 + 物料号 + 批次 后点击「查询」', '查询后将展示该批次的特性数据，可直接编辑并提交');
       return;
     }
-    if (state === 'error' || !this.matched.length) {
-      el.innerHTML = this._centerHint('⚠️', errMsg || 'SAP 未查询到符合条件的批次特性数据，请检查工厂/物料/批次后重试。', '可修改查询条件后重新查询', true);
+    if (state === 'error' || !this.current) {
+      el.innerHTML = this._centerHint(errMsg || '未查询到该物料批次的特性数据，请检查工厂/物料/批次后重试。', '可修改查询条件后重新查询', true);
       return;
     }
-    const d = this.matched.find(b => b.batchNo === this.selectedBatchNo) || this.matched[0];
-    el.innerHTML = this._resultHtml(d);
+    el.innerHTML = this._resultHtml(this.current);
   },
 
-  _centerHint(icon, title, sub, isError) {
-    return `<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);">
-      <div style="font-size:38px;margin-bottom:12px;">${icon}</div>
+  _centerHint(title, sub, isError) {
+    return `<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);text-align:center;">
       <div style="font-size:15px;font-weight:600;color:${isError ? '#dc2626' : 'var(--text-secondary)'};">${title}</div>
       ${sub ? `<div style="margin-top:8px;font-size:12px;">${sub}</div>` : ''}
     </div>`;
   },
 
   _resultHtml(d) {
-    const chips = this.matched.length > 1 ? `<div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <span style="font-size:12px;color:var(--text-muted);">SAP 匹配到 ${this.matched.length} 个批次：</span>
-      ${this.matched.map(b => `<button class="btn btn-sm ${b.batchNo === this.selectedBatchNo ? 'btn-primary' : 'btn-secondary'}" onclick="BatchChar.selectBatch('${b.batchNo}')">${esc(b.batchNo)}</button>`).join('')}
-    </div>` : '';
-    return `${chips}
+    return `
       <div class="form-section" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <div class="form-section-title">批次信息（SAP 返回）</div>
-        <div class="detail-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));">
-          <div class="detail-item"><dt>批次号</dt><dd><strong style="color:#2563eb;font-family:monospace;font-size:12px;">${esc(d.batchNo)}</strong></dd></div>
-          <div class="detail-item"><dt>状态</dt><dd>${this.getStatusBadge()}</dd></div>
-          <div class="detail-item"><dt>物料编码</dt><dd style="font-family:monospace;font-size:12px;">${esc(d.materialCode)}</dd></div>
-          <div class="detail-item"><dt>物料名称</dt><dd>${esc(d.materialName)}</dd></div>
+        <div class="form-section-title">批次信息</div>
+        <div class="detail-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));">
           <div class="detail-item"><dt>工厂</dt><dd>${esc(this.getFactoryName(d.factory))}</dd></div>
-          <div class="detail-item"><dt>库位</dt><dd>${esc(d.location)}</dd></div>
-          <div class="detail-item"><dt>最近修改人</dt><dd>${esc(d.updateBy || '-')}</dd></div>
-          <div class="detail-item"><dt>最近修改时间</dt><dd>${esc(d.updateTime || '-')}</dd></div>
+          <div class="detail-item"><dt>物料号</dt><dd style="font-family:monospace;font-size:12px;">${esc(d.materialCode)}</dd></div>
+          <div class="detail-item"><dt>批次</dt><dd><strong style="color:#2563eb;font-family:monospace;font-size:12px;">${esc(d.batchNo)}</strong></dd></div>
         </div>
       </div>
 
       <div class="form-section" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:14px;">
-        <div class="form-section-title">批次特性（可直接编辑，提交后写回 SAP）</div>
+        <div class="form-section-title">批次特性（可直接编辑，提交后写回）</div>
         <table class="data-table data-table-compact" style="min-width:900px;">
           <thead><tr>
             <th style="width:90px;">特性编码</th>
             <th style="width:180px;">特性名称</th>
             <th style="width:90px;">单位</th>
             <th style="width:220px;">当前值（可编辑）</th>
-            <th style="width:150px;">SAP 原始值</th>
+            <th style="width:150px;">原值</th>
             <th style="width:110px;">修改状态</th>
           </tr></thead>
           <tbody>
@@ -248,14 +218,9 @@ const BatchChar = {
         </table>
       </div>
 
-      <div class="form-section" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:14px;">
-        <div class="form-section-title">修改原因 <span style="color:#dc2626;">*</span></div>
-        <input type="text" id="bcReason" placeholder="请填写本次修改的原因，如：复检结果更新 / 检验数据修正 / 批次放行调整等" style="width:100%;">
-      </div>
-
       <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px;">
-        <button class="btn btn-secondary" onclick="BatchChar.querySap()">重新查询</button>
-        <button class="btn btn-primary" id="bcSubmitBtn" onclick="BatchChar.saveChanges()">💾 提交修改</button>
+        <button class="btn btn-secondary" onclick="BatchChar.queryBatch()">重新查询</button>
+        <button class="btn btn-primary" id="bcSubmitBtn" onclick="BatchChar.saveChanges()">提交修改</button>
       </div>`;
   },
 
@@ -283,11 +248,9 @@ const BatchChar = {
 
   saveChanges() {
     if (this.submitting) return;
-    const d = this.matched.find(b => b.batchNo === this.selectedBatchNo);
+    const d = this.current;
     if (!d) return;
-    const reason = document.getElementById('bcReason')?.value.trim();
-    if (!reason) { toast('请填写修改原因'); return; }
-    // 收集变更项（与 SAP 原始快照比对）
+    // 收集变更项（与原始快照比对）
     const changed = [];
     d.chars.forEach(c => {
       const el = document.getElementById('bcChar_' + c.charCode);
@@ -303,30 +266,29 @@ const BatchChar = {
     this.submitting = true;
     const btn = document.getElementById('bcSubmitBtn');
     if (btn) { btn.disabled = true; btn.textContent = '提交中…'; }
-    SAP_MOCK.showLoading('正在提交 SAP，请稍候…');
+    SAP_MOCK.showLoading('正在提交修改，请稍候…');
     SAP_MOCK.changeBatchChar({
       factory: this.query.factory,
       batchNo: d.batchNo,
       materialCode: d.materialCode,
       materialName: d.materialName,
-      reason,
       changes: changed
     }).then(res => {
       SAP_MOCK.hideLoading();
       this.submitting = false;
-      toast(`SAP 修改成功：${res.changedCount} 项特性已更新，记录号 ${res.logNo}`);
-      // 重新查询，展示 SAP 最新值
-      this.querySap();
+      toast(`修改成功：${res.changedCount} 项特性已更新`);
+      // 重新查询，展示最新值
+      this.queryBatch();
     }).catch(err => {
       SAP_MOCK.hideLoading();
       this.submitting = false;
       const btn2 = document.getElementById('bcSubmitBtn');
-      if (btn2) { btn2.disabled = false; btn2.textContent = '💾 提交修改'; }
+      if (btn2) { btn2.disabled = false; btn2.textContent = '提交修改'; }
       toast((err && err.message) ? err.message : '提交失败，请重试');
     });
   },
 
-  // ==================== Tab2：修改记录（SAP 查询） ====================
+  // ==================== Tab2：修改记录 ====================
 
   loadLogs() {
     this.page = 1;
@@ -335,8 +297,8 @@ const BatchChar = {
     const by = document.getElementById('bcLogBy')?.value.trim() || '';
     const date = document.getElementById('bcLogDate')?.value || '';
     const el = document.getElementById('bcResultArea');
-    if (el) el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:60px 0;color:var(--text-muted);font-size:13px;">正在向 SAP 查询修改记录…</div>`;
-    SAP_MOCK.showLoading('正在向 SAP 查询修改记录…');
+    if (el) el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:60px 0;color:var(--text-muted);font-size:13px;">正在查询修改记录…</div>`;
+    SAP_MOCK.showLoading('正在查询修改记录…');
     SAP_MOCK.getBatchCharLogs({ batch, char: ch, by, date }).then(res => {
       SAP_MOCK.hideLoading();
       this.logData = res.list || [];
@@ -364,7 +326,7 @@ const BatchChar = {
         <th style="width:60px;">序号</th>
         <th style="width:150px;">记录号</th>
         <th style="width:140px;">批次号</th>
-        <th style="width:110px;">物料编码</th>
+        <th style="width:110px;">物料号</th>
         <th style="width:150px;">特性</th>
         <th style="width:200px;">原值 → 新值</th>
         <th style="width:90px;">修改人</th>
