@@ -54,9 +54,9 @@ const SparePartsStock = {
             ${locOptionsHtml}
           </select></div>
           <div class="filter-group"><label>显示类型</label><select id="spDisplayType" onchange="SparePartsStock.onDisplayTypeChange()">
-            <option value="plant">工厂层级</option>
-            <option value="summary" selected>工厂+库存地点（批次汇总）</option>
-            <option value="batch">工厂+库存地点+批次（明细）</option>
+            <option value="" selected>批次库存</option>
+            <option value="1">库位层级库存</option>
+            <option value="2">工厂层级库存</option>
           </select></div>
           <div class="filter-group" id="spWbsGroup"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
@@ -96,8 +96,8 @@ const SparePartsStock = {
     this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
     this.page = 1;
     const displayType = document.getElementById('spDisplayType').value;
-    if (displayType === 'summary') this._aggregate();
-    else if (displayType === 'plant') this._aggregateByPlant();
+    if (displayType === '1') this._aggregate();
+    else if (displayType === '2') this._aggregateByPlant();
     this.renderTable();
     this._syncFilterStates();
   },
@@ -162,8 +162,8 @@ const SparePartsStock = {
     const page = this.filtered.slice(start, start + this.pageSize);
     const totalPages = Math.ceil(this.filtered.length / this.pageSize) || 1;
     const displayType = document.getElementById('spDisplayType').value;
-    const isSummary = displayType === 'summary';
-    const isPlant = displayType === 'plant';
+    const isSummary = displayType === '1';
+    const isPlant = displayType === '2';
     const showExt = this.showExtCols;
     const locDesc = (f, l) => { const k = T001L_STORAGE_LOCATIONS[f+'|'+l]; return k ? k.lgort+' - '+k.desc : l; };
 
@@ -272,7 +272,7 @@ const SparePartsStock = {
 
   // 显示类型联动：工厂层级档隐藏 WBS编号/批次、置灰库存地点；其余档位恢复
   _syncFilterStates() {
-    const isPlant = document.getElementById('spDisplayType').value === 'plant';
+    const isPlant = document.getElementById('spDisplayType').value === '2';
     const locSel = document.getElementById('spStorageLoc');
     const wbsGroup = document.getElementById('spWbsGroup');
     const batchGroup = document.getElementById('spBatchGroup');
@@ -283,7 +283,7 @@ const SparePartsStock = {
 
   // 切换显示类型：切到工厂层级时清空无效筛选值，避免残留值参与查询
   onDisplayTypeChange() {
-    if (document.getElementById('spDisplayType').value === 'plant') {
+    if (document.getElementById('spDisplayType').value === '2') {
       document.getElementById('spStorageLoc').value = '';
       document.getElementById('spWbsNo').value = '';
       document.getElementById('spBatch').value = '';
@@ -309,9 +309,9 @@ const SparePartsStock = {
       return true;
     });
 
-    // Summary / Plant mode: aggregate by different granularity
-    if (displayType === 'summary') this._aggregate();
-    else if (displayType === 'plant') this._aggregateByPlant();
+    // 库位层级/工厂层级：按不同颗粒度聚合
+    if (displayType === '1') this._aggregate();
+    else if (displayType === '2') this._aggregateByPlant();
 
     this.page = 1;
     this.renderTable();
@@ -320,7 +320,7 @@ const SparePartsStock = {
   reset() {
     document.getElementById('spFactory').value = '';
     document.getElementById('spStorageLoc').value = '';
-    document.getElementById('spDisplayType').value = 'summary';
+    document.getElementById('spDisplayType').value = '';
     document.getElementById('spWbsNo').value = '';
     document.getElementById('spMatCode').value = '';
     document.getElementById('spBatch').value = '';
