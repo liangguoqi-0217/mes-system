@@ -90,8 +90,7 @@ const App = {
         },
         {
           title:'库存查询与预警', items: [
-            { id:'sp-stock', label:'库存查询', route:'sp-stock' },
-            { id:'safety-stock-alert', label:'安全库存预警', route:'safety-stock-alert', pageObj:'SafetyStockAlert' }
+            { id:'sp-stock', label:'库存查询', route:'sp-stock' }
           ]
         },
         {
@@ -154,8 +153,7 @@ const App = {
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
-    'cost-object': CostObject,
-    'safety-stock-alert': SafetyStockAlert
+    'cost-object': CostObject
   },
 
   init() {

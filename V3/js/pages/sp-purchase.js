@@ -1474,8 +1474,15 @@ const SpPurchase = {
     ], 'modal-xxl');
   },
 
+  // 从 materialData 查找物料类型（原安全库存预警页方法内联，页面已删除）
+  _getMatTypeFromMaterialData(matCode) {
+    if (!matCode || typeof materialData === 'undefined') return '';
+    const m = materialData.find(x => x.code === matCode && x.deleteFlag !== 'D');
+    return m ? (m.materialType || '') + '-' + (m.materialTypeName || '') : '';
+  },
+
   _buildAlertDataForPurchase() {
-    // 复用安全库存预警逻辑
+    // 聚合备件库存，计算安全库存水位与缺货情况
     const aggMap = new Map();
     sparePartsStockData.forEach(row => {
       const key = `${row.factory}|${row.matCode}`;
@@ -1487,7 +1494,7 @@ const SpPurchase = {
           unit: row.unit,
           unrestrictedQty: 0,
           qualityQty: 0,
-          safetyStock: typeof SafetyStockAlert !== 'undefined' ? SafetyStockAlert._getSafetyStock(row.factory, row.matCode) : 0
+          safetyStock: getSafetyStock(row.factory, row.matCode)
         });
       }
       const agg = aggMap.get(key);
@@ -1498,9 +1505,7 @@ const SpPurchase = {
       row.availableQty = row.unrestrictedQty + row.qualityQty;
       row.status = row.safetyStock > 0 && row.availableQty < row.safetyStock ? 'red' : 'green';
       row.shortfallQty = row.status === 'red' ? Math.max(0, row.safetyStock - row.availableQty) : 0;
-      row.matType = (typeof SafetyStockAlert !== 'undefined')
-        ? SafetyStockAlert._getMatTypeFromMaterialData(row.matCode)
-        : '';
+      row.matType = this._getMatTypeFromMaterialData(row.matCode);
       return row;
     });
   },
