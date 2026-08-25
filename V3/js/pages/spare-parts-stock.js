@@ -73,7 +73,7 @@ const SparePartsStock = {
             <option value="summary" selected>工厂+库存地点（批次汇总）</option>
             <option value="batch">工厂+库存地点+批次（明细）</option>
           </select></div>
-          <div class="filter-group"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
+          <div class="filter-group" id="spWbsGroup"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
           <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
           <div class="filter-actions">
@@ -271,14 +271,14 @@ const SparePartsStock = {
     if (btn) btn.textContent = this.showExtCols ? '收起次要字段' : '展开次要字段';
   },
 
-  // 显示类型联动：工厂层级档置灰库存地点/WBS、隐藏批次；其余档位恢复
+  // 显示类型联动：工厂层级档隐藏 WBS编号/批次、置灰库存地点；其余档位恢复
   _syncFilterStates() {
     const isPlant = document.getElementById('spDisplayType').value === 'plant';
     const locSel = document.getElementById('spStorageLoc');
-    const wbsInput = document.getElementById('spWbsNo');
+    const wbsGroup = document.getElementById('spWbsGroup');
     const batchGroup = document.getElementById('spBatchGroup');
     if (locSel) locSel.disabled = isPlant;
-    if (wbsInput) wbsInput.disabled = isPlant;
+    if (wbsGroup) wbsGroup.style.display = isPlant ? 'none' : '';
     if (batchGroup) batchGroup.style.display = isPlant ? 'none' : '';
   },
 
