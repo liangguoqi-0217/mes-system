@@ -189,23 +189,16 @@ const SpIssue = {
   /* ---------------- 创建方式选择弹窗 ---------------- */
   openNewModal() {
     const typeList = Object.entries(ISSUE_TYPE_MAP).map(([k, v]) => ({ key: k, ...v }));
-    const colors = [
-      { bg1: '#eff6ff', bg2: '#dbeafe', border: '#bfdbfe', hover: '#3b82f6', text: '#1e40af', btn: '#3b82f6', btnText: '#fff' },
-      { bg1: '#ecfdf5', bg2: '#d1fae5', border: '#86efac', hover: '#10b981', text: '#065f46', btn: '#10b981', btnText: '#fff' },
-      { bg1: '#fef3c7', bg2: '#fde68a', border: '#fcd34d', hover: '#f59e0b', text: '#92400e', btn: '#f59e0b', btnText: '#fff' },
-      { bg1: '#f5f3ff', bg2: '#e9d5ff', border: '#c4b5fd', hover: '#8b5cf6', text: '#5b21b6', btn: '#8b5cf6', btnText: '#fff' }
-    ];
     const gridCols = typeList.length <= 3 ? '1fr 1fr 1fr' : '1fr 1fr';
-    const cards = typeList.map((t, i) => {
-      const c = colors[i % colors.length];
+    const cards = typeList.map((t) => {
       return `
         <div onclick="closeModal();SpIssue.openForm('${t.key}')"
-          style="background:linear-gradient(135deg,${c.bg1},${c.bg2});border:2px solid ${c.border};border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
-          onmouseenter="this.style.borderColor='${c.hover}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.12)'"
-          onmouseleave="this.style.borderColor='${c.border}';this.style.transform='translateY(0)';this.style.boxShadow='none'">
-          <div style="font-size:15px;font-weight:700;color:${c.text};margin-bottom:4px;">${esc(t.label)}</div>
+          style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
+          onmouseenter="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 18px rgba(30,58,95,.10)'"
+          onmouseleave="this.style.borderColor='var(--border)';this.style.transform='translateY(0)';this.style.boxShadow='none'">
+          <div style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:4px;">${esc(t.label)}</div>
           <div style="font-size:12px;color:#6b7280;line-height:1.45;">${esc(t.desc)}</div>
-          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:${c.btn};color:${c.btnText};cursor:pointer;">开始填写 →</span></div>
+          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:var(--primary);color:#fff;cursor:pointer;">开始填写 →</span></div>
         </div>`;
     }).join('');
     const body = `
