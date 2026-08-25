@@ -1,21 +1,25 @@
 // ===== Spare Parts Stock Query Page =====
-// 安全库存静态数据（按物料号），与安全库存预警页共享同一数据源
+// 安全库存静态主数据（按 工厂+物料号 维度设置），与安全库存预警页共享同一数据源
 const SAFETY_STOCK_MAP = {
-  '60001018': 50, '60001019': 60, '60001020': 40, '60001021': 30, '60001022': 45,
-  '60001023': 50, '60001024': 35, '60001025': 55, '60001026': 48,
-  '60001012': 20, '60001086': 100, '60001087': 80, '60001088': 90, '60001089': 500,
-  '60001090': 1000, '60001146': 30, '60001147': 25,
-  '60000655': 200, '60000656': 150, '60000657': 100,
-  '60001128': 80, '60001129': 60, '60001131': 40, '60001132': 70,
-  '60001238': 300, '60001271': 20, '60001272': 15, '60001249': 150, '60001207': 10, '60001281': 50,
-  '10000009': 5000, '10000010': 3000, '10000011': 2000,
-  '20000001': 100, '20000002': 80, '20000003': 60, '20000004': 50,
-  '30000001': 20, '30000002': 100, '30000003': 40,
-  '40000001': 100, '40000002': 500,
-  '50000001': 30, '50000002': 20,
-  '60000001': 15
+  '1000': {
+    '60001018': 50, '60001019': 60, '60001020': 40, '60001021': 30, '60001022': 45,
+    '60001023': 50, '60001024': 35, '60001025': 55, '60001026': 48,
+    '60001012': 20, '60001086': 100, '60001087': 80, '60001088': 90, '60001089': 500,
+    '60001090': 1000, '60001146': 30, '60001147': 25,
+    '60000655': 200, '60000656': 150, '60000657': 100,
+    '60001128': 80, '60001129': 60, '60001131': 40, '60001132': 70,
+    '60001238': 300, '60001271': 20, '60001272': 15, '60001249': 150, '60001207': 10, '60001281': 50,
+    '10000009': 5000, '10000010': 3000, '10000011': 2000,
+    '20000001': 100, '20000002': 80, '20000003': 60, '20000004': 50,
+    '30000001': 20, '30000002': 100, '30000003': 40,
+    '40000001': 100, '40000002': 500
+  },
+  '2001': {
+    '50000001': 30, '50000002': 20, '60000001': 15
+  }
 };
-const getSafetyStock = matCode => SAFETY_STOCK_MAP[matCode] || 0;
+const getSafetyStock = (factory, matCode) =>
+  (SAFETY_STOCK_MAP[factory] && SAFETY_STOCK_MAP[factory][matCode]) || 0;
 
 const SparePartsStock = {
   page: 1, pageSize: 15, filtered: [],
@@ -66,6 +70,7 @@ const SparePartsStock = {
           </select></div>
           <div class="filter-group"><label>显示类型</label><select id="spDisplayType">
             <option value="summary" selected>显示汇总库存</option>
+            <option value="plant">显示工厂汇总库存</option>
             <option value="batch">显示批次库存</option>
           </select></div>
           <div class="filter-group"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
@@ -113,9 +118,11 @@ const SparePartsStock = {
     this.page = 1;
     const displayType = document.getElementById('spDisplayType').value;
     if (displayType === 'summary') this._aggregate();
+    else if (displayType === 'plant') this._aggregateByPlant();
     this.renderTable();
   },
 
+  // 库位汇总档：按 工厂|库位|物料号|WBS|特殊库存|客户 聚合；安全库存仅作灰色参考，不参与红绿灯判断
   _aggregate() {
     const aggMap = new Map();
     this.filtered.forEach(row => {
@@ -129,8 +136,27 @@ const SparePartsStock = {
       agg.blockedQty = (agg.blockedQty || 0) + (row.blockedQty || 0);
     });
     this.filtered = [...aggMap.values()].map(r => {
-      // 安全库存对比：可用库存 = 非限制 + 质检；可用 >= 安全库存 = 绿灯，否则红灯
-      r.safetyStock = getSafetyStock(r.matCode);
+      r.safetyStock = getSafetyStock(r.factory, r.matCode);
+      return r;
+    });
+  },
+
+  // 工厂汇总档：按 工厂|物料号 聚合（跨库位合计），安全库存按工厂级判断红绿灯
+  _aggregateByPlant() {
+    const aggMap = new Map();
+    this.filtered.forEach(row => {
+      const key = `${row.factory}|${row.matCode}`;
+      if (!aggMap.has(key)) {
+        aggMap.set(key, { ...row, unrestrictedQty: 0, qualityQty: 0, blockedQty: 0 });
+      }
+      const agg = aggMap.get(key);
+      agg.unrestrictedQty = (agg.unrestrictedQty || 0) + (row.unrestrictedQty || 0);
+      agg.qualityQty = (agg.qualityQty || 0) + (row.qualityQty || 0);
+      agg.blockedQty = (agg.blockedQty || 0) + (row.blockedQty || 0);
+    });
+    this.filtered = [...aggMap.values()].map(r => {
+      // 工厂级安全库存对比：可用库存 = 非限制 + 质检（工厂全库位合计）；可用 >= 安全库存 = 绿灯，否则红灯
+      r.safetyStock = getSafetyStock(r.factory, r.matCode);
       r.availableQty = (r.unrestrictedQty || 0) + (r.qualityQty || 0);
       r.status = r.safetyStock > 0 && r.availableQty < r.safetyStock ? 'red' : 'green';
       return r;
@@ -143,6 +169,7 @@ const SparePartsStock = {
     const totalPages = Math.ceil(this.filtered.length / this.pageSize) || 1;
     const displayType = document.getElementById('spDisplayType').value;
     const isSummary = displayType === 'summary';
+    const isPlant = displayType === 'plant';
     const showExt = this.showExtCols;
     const locDesc = (f, l) => { const k = T001L_STORAGE_LOCATIONS[f+'|'+l]; return k ? k.lgort+' - '+k.desc : l; };
 
@@ -152,9 +179,11 @@ const SparePartsStock = {
     document.getElementById('spNext').disabled = this.page >= totalPages;
     document.getElementById('spPageSizeSel').value = this.pageSize;
     this._syncToggleBtn();
-    // 红绿灯图例只在汇总模式（含安全库存列）下展示
+    // 红绿灯图例只在工厂汇总档展示；展开按钮在工厂汇总档隐藏（无次要字段）
     const legend = document.getElementById('spLegend');
-    if (legend) legend.style.display = isSummary ? 'flex' : 'none';
+    if (legend) legend.style.display = isPlant ? 'flex' : 'none';
+    const toggleBtn = document.getElementById('spToggleExt');
+    if (toggleBtn) toggleBtn.style.display = isPlant ? 'none' : '';
 
     const fmtNum = n => n != null && n !== '' ? Number(n).toLocaleString() : '';
     const extTd = row => `${showExt
@@ -162,16 +191,15 @@ const SparePartsStock = {
       : ''}`;
 
     if (isSummary) {
-      // 汇总模式：主列 + 安全库存/安全状态，次要字段按需展开
+      // 库位汇总档：红绿灯在工厂汇总档判断；本档安全库存仅作灰色参考
       document.getElementById('spTableHead').innerHTML = `<tr>
         <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th>
         <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
-        <th title="物料主数据中预先设置的静态安全库存值，不随库存变动">安全库存 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th><th title="可用库存 = 非限制库存 + 质检库存；可用 ≥ 安全库存为绿灯，否则红灯">库存安全线状态 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th>
+        <th title="工厂级物料主数据中设置的静态安全库存值，仅作参考；红绿灯请在「工厂汇总」档查看">安全库存 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th>
         ${showExt ? '<th>WBS编号</th><th>特殊库存</th><th>客户</th>' : ''}
       </tr>`;
-      document.getElementById('spTableBody').innerHTML = page.map(row => {
-        const isRed = row.status === 'red';
-        return `<tr style="${isRed ? 'background:#fef2f2;' : ''}">
+      document.getElementById('spTableBody').innerHTML = page.map(row => `
+        <tr>
           <td>${esc(row.factory)}</td>
           <td>${esc(locDesc(row.factory, row.storageLoc))}</td>
           <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
@@ -180,9 +208,28 @@ const SparePartsStock = {
           <td style="text-align:right;color:#ca8a04;font-weight:500;">${fmtNum(row.qualityQty)}</td>
           <td style="text-align:right;color:#dc2626;font-weight:500;">${fmtNum(row.blockedQty)}</td>
           <td style="text-align:center;">${esc(row.unit)}</td>
+          <td style="text-align:right;color:#94a3b8;">${fmtNum(row.safetyStock)}</td>
+          ${extTd(row)}
+        </tr>`).join('');
+    } else if (isPlant) {
+      // 工厂汇总档：按 工厂+物料 聚合，红绿灯按工厂级安全库存判断
+      document.getElementById('spTableHead').innerHTML = `<tr>
+        <th>工厂</th><th>物料号</th><th>物料描述</th>
+        <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
+        <th title="工厂级物料主数据中预先设置的静态安全库存值，不随库存变动">安全库存 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th><th title="可用库存 = 非限制库存 + 质检库存（工厂全库位合计）；可用 ≥ 安全库存为绿灯，否则红灯">库存安全线状态 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th>
+      </tr>`;
+      document.getElementById('spTableBody').innerHTML = page.map(row => {
+        const isRed = row.status === 'red';
+        return `<tr style="${isRed ? 'background:#fef2f2;' : ''}">
+          <td>${esc(row.factory)}</td>
+          <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
+          <td>${esc(row.matDesc)}</td>
+          <td style="text-align:right;color:#16a34a;font-weight:500;">${fmtNum(row.unrestrictedQty)}</td>
+          <td style="text-align:right;color:#ca8a04;font-weight:500;">${fmtNum(row.qualityQty)}</td>
+          <td style="text-align:right;color:#dc2626;font-weight:500;">${fmtNum(row.blockedQty)}</td>
+          <td style="text-align:center;">${esc(row.unit)}</td>
           <td style="text-align:right;font-weight:600;${isRed ? 'color:#dc2626;' : 'color:#16a34a;'}">${fmtNum(row.safetyStock)}</td>
           <td style="text-align:center;">${this._getStatusHtml(row.status)}</td>
-          ${extTd(row)}
         </tr>`;
       }).join('');
     } else {
@@ -251,8 +298,9 @@ const SparePartsStock = {
       return true;
     });
 
-    // Summary mode: aggregate by matCode + storageLoc + factory
+    // Summary / Plant mode: aggregate by different granularity
     if (displayType === 'summary') this._aggregate();
+    else if (displayType === 'plant') this._aggregateByPlant();
 
     this.page = 1;
     this.renderTable();

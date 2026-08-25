@@ -1487,7 +1487,7 @@ const SpPurchase = {
           unit: row.unit,
           unrestrictedQty: 0,
           qualityQty: 0,
-          safetyStock: typeof SafetyStockAlert !== 'undefined' ? SafetyStockAlert._getSafetyStock(row.matCode) : 0
+          safetyStock: typeof SafetyStockAlert !== 'undefined' ? SafetyStockAlert._getSafetyStock(row.factory, row.matCode) : 0
         });
       }
       const agg = aggMap.get(key);

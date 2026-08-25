@@ -95,7 +95,7 @@ const SafetyStockAlert = {
           unrestrictedQty: 0,
           qualityQty: 0,
           blockedQty: 0,
-          safetyStock: this._getSafetyStock(row.matCode)
+          safetyStock: this._getSafetyStock(row.factory, row.matCode)
         });
       }
       const agg = aggMap.get(key);
@@ -114,9 +114,9 @@ const SafetyStockAlert = {
     });
   },
 
-  _getSafetyStock(matCode) {
+  _getSafetyStock(factory, matCode) {
     // 安全库存静态数据与库存查询页共享（见 spare-parts-stock.js 顶部 SAFETY_STOCK_MAP）
-    return getSafetyStock(matCode);
+    return getSafetyStock(factory, matCode);
   },
 
   _renderStats(data) {
