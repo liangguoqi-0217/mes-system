@@ -111,9 +111,10 @@
     },
 
     /**
-     * 修改批次特性（模拟 SAP 批次特性维护，成功后 SAP 侧更新特性值并生成修改记录）
+     * 修改批次特性（模拟 SAP 批次特性维护，成功后仅更新 SAP 侧特性值）
+     * 说明：修改记录由 MES 在提交成功后写入 MES 自建表，SAP 不保存修改日志。
      * @param {Object} payload { factory, batchNo, materialCode, materialName, changes:[{charCode,charName,unit,oldValue,newValue}] }
-     * @returns {Promise<{ok:true, logNo:string, changeBy:string, changeTime:string, changedCount:number}>}
+     * @returns {Promise<{ok:true, changeTime:string, changedCount:number}>}
      * @rejects {Promise<{ok:false, code:string, message:string}>}
      */
     changeBatchChar(payload) {
@@ -126,7 +127,6 @@
         const pad = function (n) { return String(n).padStart(2, '0'); };
         const changeTime = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) +
           ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
-        const logNo = 'BCL-' + now.getFullYear() + pad(now.getMonth() + 1) + pad(now.getDate()) + '-' + randomDigits(3);
         const changes = payload.changes || [];
         // SAP 侧更新批次特性当前值
         const batch = me._batchCharDb.find(function (b) { return b.batchNo === payload.batchNo && b.materialCode === payload.materialCode; });
@@ -138,48 +138,7 @@
           batch.updateBy = '当前用户';
           batch.updateTime = changeTime;
         }
-        // SAP 侧生成修改记录
-        changes.forEach(function (ch) {
-          me._batchCharLogDb.unshift({
-            logNo: logNo + '-' + String(me._batchCharLogDb.length + 1).padStart(3, '0'),
-            batchNo: payload.batchNo,
-            materialCode: payload.materialCode,
-            charCode: ch.charCode, charName: ch.charName, unit: ch.unit || '',
-            oldValue: ch.oldValue, newValue: ch.newValue,
-            changeBy: '当前用户', changeTime: changeTime, reason: ''
-          });
-        });
-        return {
-          ok:true,
-          logNo: logNo,
-          changeBy: '当前用户',
-          changeTime: changeTime,
-          changedCount: changes.length
-        };
-      });
-    },
-
-    /**
-     * 查询批次特性修改记录（模拟 SAP 读取修改历史）
-     * @param {Object} payload { batch, char, by, date }
-     * @returns {Promise<{ok:true, list:Array, total:number}>}
-     */
-    getBatchCharLogs(payload) {
-      const me = this;
-      return delay(600).then(function () {
-        const p = payload || {};
-        const batch = String(p.batch || '').trim();
-        const ch = String(p.char || '').trim();
-        const by = String(p.by || '').trim();
-        const date = String(p.date || '').trim();
-        const list = me._batchCharLogDb.filter(function (r) {
-          if (batch && !r.batchNo.includes(batch)) return false;
-          if (ch && !(r.charName.includes(ch) || r.charCode.includes(ch))) return false;
-          if (by && !r.changeBy.includes(by)) return false;
-          if (date && !r.changeTime.startsWith(date)) return false;
-          return true;
-        });
-        return { ok:true, list: list, total: me._batchCharLogDb.length };
+        return { ok:true, changeTime: changeTime, changedCount: changes.length };
       });
     },
 
@@ -309,45 +268,6 @@
         { charCode: 'CHAR04', charName: '微生物限度', charValue: '合格', unit: '' },
         { charCode: 'CHAR05', charName: '性状', charValue: '棕黄色颗粒', unit: '' }
       ]
-    }
-  ];
-
-  SAP_MOCK._batchCharLogDb = [
-    {
-      logNo: 'BCL-20260703-001', batchNo: 'B260601', materialCode: 'M10001',
-      charCode: 'CHAR01', charName: '黄芩苷含量', unit: '%',
-      oldValue: '91.8', newValue: '92.5', changeBy: '刘敏', changeTime: '2026-07-03 10:26',
-      reason: '复检结果更新'
-    },
-    {
-      logNo: 'BCL-20260705-001', batchNo: 'B260602', materialCode: 'M10012',
-      charCode: 'CHAR02', charName: 'pH值', unit: '',
-      oldValue: '5.8', newValue: '5.6', changeBy: '王芳', changeTime: '2026-07-05 14:02',
-      reason: '检验数据修正'
-    },
-    {
-      logNo: 'BCL-20260708-001', batchNo: 'B250812', materialCode: 'M20015',
-      charCode: 'CHAR02', charName: '水分', unit: '%',
-      oldValue: '5.2', newValue: '4.9', changeBy: '刘敏', changeTime: '2026-07-08 11:20',
-      reason: '仓库复检结果更新'
-    },
-    {
-      logNo: 'BCL-20260710-001', batchNo: 'B260608', materialCode: 'M10018',
-      charCode: 'CHAR03', charName: '粒度（通过200目）', unit: '%',
-      oldValue: '90.5', newValue: '92.0', changeBy: '张伟', changeTime: '2026-07-10 16:40',
-      reason: '第三方检测报告确认'
-    },
-    {
-      logNo: 'BCL-20260711-001', batchNo: 'P260610', materialCode: 'F50001',
-      charCode: 'CHAR01', charName: '含量测定', unit: '%',
-      oldValue: '98.2', newValue: '98.7', changeBy: '王芳', changeTime: '2026-07-11 15:30',
-      reason: '成品检验放行数据'
-    },
-    {
-      logNo: 'BCL-20260719-001', batchNo: 'P260618', materialCode: 'F50021',
-      charCode: 'CHAR02', charName: '粒度', unit: '',
-      oldValue: '不合格', newValue: '合格', changeBy: '赵磊', changeTime: '2026-07-19 10:05',
-      reason: '重新取样检验合格'
     }
   ];
 

@@ -1,11 +1,11 @@
 /* ==================== 批次特性管理 ====================
  * 双 Tab 页面：
- *   Tab1「批次特性修改」：输入 工厂 + 物料 + 批次 → 查询 → 读取该批次特性
+ *   Tab1「批次特性修改」：输入 工厂 + 物料号 + 批次 → 查询 → 读取该批次特性
  *                          → 直接修改特性值 → 提交（返回成功/失败）
- *   Tab2「修改记录」：查询修改历史（原值→新值）
- * 架构：MES 全程不涉及数据库增删查改，仅做前端展示与接口调用，
- *       批次特性数据由核心系统（SAP）统一维护。
- * 接口：SAP_MOCK.getBatchChars / SAP_MOCK.changeBatchChar / SAP_MOCK.getBatchCharLogs
+ *   Tab2「修改记录」：MES 查询自建表（批次特性修改记录），展示 特性/旧值/新值/更改日期时间
+ * 架构：批次特性数据由核心系统（SAP）维护；MES 提交成功后把修改记录写入自建表，
+ *       修改记录页签查询的是 MES 自建表，SAP 不保存修改日志。
+ * 接口：SAP_MOCK.getBatchChars / SAP_MOCK.changeBatchChar
  */
 const BatchChar = {
   _version: '1.2-20260825',
@@ -48,7 +48,7 @@ const BatchChar = {
         <!-- Tabs -->
         <div class="tabs" style="margin:0;padding:0 24px;background:white;border-bottom:1px solid var(--border);flex-shrink:0;">
           <div class="tab ${this.activeTab==='modify'?'active':''}" id="bcTabModify" onclick="BatchChar.switchTab('modify')">批次特性修改</div>
-          <div class="tab ${this.activeTab==='log'?'active':''}" id="bcTabLog" onclick="BatchChar.switchTab('log')">修改记录 <span class="badge badge-gray badge-sm" id="bcLogCount" style="margin-left:4px;">0</span></div>
+          <div class="tab ${this.activeTab==='log'?'active':''}" id="bcTabLog" onclick="BatchChar.switchTab('log')">修改记录</div>
         </div>
 
         <!-- 筛选栏 -->
@@ -101,17 +101,34 @@ const BatchChar = {
         </div>
       </div>`;
     } else {
+      const range = this._defaultDateRange();
       el.innerHTML = `<div class="filter-bar">
-        <div class="filter-group"><label>批次号</label><input type="text" id="bcLogBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>特性</label><input type="text" id="bcLogChar" placeholder="特性名称模糊查询"></div>
-        <div class="filter-group"><label>修改人</label><input type="text" id="bcLogBy" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>修改日期</label><input type="date" id="bcLogDate"></div>
+        <div class="filter-group"><label>工厂</label><select id="bcLogFactory">
+          <option value="">全部</option>
+          ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
+        </select></div>
+        <div class="filter-group"><label>修改日期</label>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <input type="date" id="bcLogStart" value="${range.start}">
+            <span style="color:var(--text-muted);">至</span>
+            <input type="date" id="bcLogEnd" value="${range.end}">
+          </div>
+        </div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="BatchChar.search()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="BatchChar.resetFilter()">重置</button>
         </div>
       </div>`;
     }
+  },
+
+  // 默认修改日期范围：当月 1 号 ~ 今天
+  _defaultDateRange() {
+    const today = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const end = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
+    const start = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-01';
+    return { start, end };
   },
 
   search() {
@@ -129,7 +146,7 @@ const BatchChar = {
       if (footer) footer.innerHTML = '';
       this.renderResultArea();
     } else {
-      ['bcLogBatch', 'bcLogChar', 'bcLogBy', 'bcLogDate'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+      this.renderFilterBar();
       this.loadLogs();
     }
   },
@@ -282,6 +299,18 @@ const BatchChar = {
       SAP_MOCK.hideLoading();
       this.submitting = false;
       toast(`修改成功：${res.changedCount} 项特性已更新`);
+      // MES 将本次修改记录写入自建表（修改记录页签查询本表）
+      const changeTime = this._nowStr();
+      changed.forEach(ch => {
+        batchCharLogData.unshift({
+          factory: this.query.factory,
+          batchNo: d.batchNo,
+          materialCode: d.materialCode,
+          charCode: ch.charCode, charName: ch.charName, unit: ch.unit || '',
+          oldValue: ch.oldValue, newValue: ch.newValue,
+          changeBy: '当前用户', changeTime: changeTime
+        });
+      });
       // 重新查询，展示最新值
       this.queryBatch();
     }).catch(err => {
@@ -293,29 +322,30 @@ const BatchChar = {
     });
   },
 
-  // ==================== Tab2：修改记录 ====================
+  // ==================== Tab2：修改记录（查询 MES 自建表） ====================
 
   loadLogs() {
     this.page = 1;
-    const batch = document.getElementById('bcLogBatch')?.value.trim() || '';
-    const ch = document.getElementById('bcLogChar')?.value.trim() || '';
-    const by = document.getElementById('bcLogBy')?.value.trim() || '';
-    const date = document.getElementById('bcLogDate')?.value || '';
-    const el = document.getElementById('bcResultArea');
-    if (el) el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:60px 0;color:var(--text-muted);font-size:13px;">正在查询修改记录…</div>`;
-    SAP_MOCK.showLoading('正在查询修改记录…');
-    SAP_MOCK.getBatchCharLogs({ batch, char: ch, by, date }).then(res => {
-      SAP_MOCK.hideLoading();
-      this.logData = res.list || [];
-      this.logTotal = (typeof res.total === 'number') ? res.total : this.logData.length;
-      const countEl = document.getElementById('bcLogCount');
-      if (countEl) countEl.textContent = this.logTotal;
-      this.renderTable();
-      this.renderPagination();
-    }).catch(err => {
-      SAP_MOCK.hideLoading();
-      toast((err && err.message) ? err.message : '查询失败，请重试');
+    const factory = document.getElementById('bcLogFactory')?.value || '';
+    const start = document.getElementById('bcLogStart')?.value || '';
+    const end = document.getElementById('bcLogEnd')?.value || '';
+    this.logData = batchCharLogData.filter(r => {
+      const d = (r.changeTime || '').slice(0, 10);
+      if (factory && r.factory !== factory) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
     });
+    this.renderTable();
+    this.renderPagination();
+  },
+
+  // 当前时间字符串（YYYY-MM-DD HH:mm）
+  _nowStr() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) +
+      ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
   },
 
   // ==================== 表格（Tab2 修改记录） ====================
@@ -326,33 +356,34 @@ const BatchChar = {
     const el = document.getElementById('bcResultArea');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1300px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1100px;">
       <thead><tr>
         <th style="width:60px;">序号</th>
-        <th style="width:150px;">记录号</th>
         <th style="width:140px;">批次号</th>
         <th style="width:110px;">物料号</th>
-        <th style="width:150px;">特性</th>
-        <th style="width:200px;">原值 → 新值</th>
-        <th style="width:90px;">修改人</th>
-        <th style="width:150px;">修改时间</th>
-        <th>修改原因</th>
+        <th style="width:200px;">特性</th>
+        <th style="width:160px;">旧值</th>
+        <th style="width:160px;">新值</th>
+        <th style="width:110px;">更改日期</th>
+        <th style="width:90px;">更改时间</th>
       </tr></thead>
-      <tbody>${page.length ? page.map((r, i) => this.renderLogRow(r, start + i + 1)).join('') : `<tr><td colspan="9" class="empty-cell">暂无修改记录</td></tr>`}</tbody>
+      <tbody>${page.length ? page.map((r, i) => this.renderLogRow(r, start + i + 1)).join('') : `<tr><td colspan="8" class="empty-cell">暂无修改记录</td></tr>`}</tbody>
     </table>`;
   },
 
   renderLogRow(r, idx) {
+    const t = String(r.changeTime || '').split(' ');
+    const date = t[0] || '-';
+    const time = t[1] || '';
     return `<tr>
       <td>${idx}</td>
-      <td style="font-family:monospace;font-size:12px;">${esc(r.logNo)}</td>
       <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(r.batchNo)}</td>
       <td style="font-family:monospace;font-size:12px;">${esc(r.materialCode)}</td>
       <td>${esc(r.charName)}</td>
-      <td><span style="color:#9ca3af;text-decoration:line-through;">${esc(r.oldValue)}</span> <span style="color:#10b981;font-weight:600;">→ ${esc(r.newValue)}</span>${r.unit ? ` <span style="color:var(--text-muted);font-size:11px;">${esc(r.unit)}</span>` : ''}</td>
-      <td>${esc(r.changeBy)}</td>
-      <td style="font-size:12px;">${r.changeTime}</td>
-      <td>${esc(r.reason || '-')}</td>
+      <td>${esc(r.oldValue)}${r.unit ? ` <span style="color:var(--text-muted);font-size:11px;">${esc(r.unit)}</span>` : ''}</td>
+      <td><strong style="color:#10b981;">${esc(r.newValue)}</strong>${r.unit ? ` <span style="color:var(--text-muted);font-size:11px;">${esc(r.unit)}</span>` : ''}</td>
+      <td style="font-size:12px;">${date}</td>
+      <td style="font-size:12px;">${time}</td>
     </tr>`;
   },
 
@@ -385,3 +416,14 @@ const BatchChar = {
 
   changePageSize(v) { this.pageSize = Number(v); this.page = 1; this.renderTable(); this.renderPagination(); }
 };
+
+// ==================== MES 自建表：批次特性修改记录 ====================
+// 提交成功后由 MES 写入本表，「修改记录」页签查询本表（模拟 MES 数据库表）
+const batchCharLogData = [
+  { factory: '1000', batchNo: 'B260601', materialCode: 'M10001', charCode: 'CHAR01', charName: '黄芩苷含量', unit: '%', oldValue: '91.8', newValue: '92.5', changeBy: '刘敏', changeTime: '2026-08-01 10:26' },
+  { factory: '1000', batchNo: 'B260602', materialCode: 'M10012', charCode: 'CHAR02', charName: 'pH值', unit: '', oldValue: '5.8', newValue: '5.6', changeBy: '王芳', changeTime: '2026-08-03 14:02' },
+  { factory: '1000', batchNo: 'B250812', materialCode: 'M20015', charCode: 'CHAR02', charName: '水分', unit: '%', oldValue: '5.2', newValue: '4.9', changeBy: '刘敏', changeTime: '2026-08-05 11:20' },
+  { factory: '2001', batchNo: 'B260608', materialCode: 'M10018', charCode: 'CHAR03', charName: '粒度（通过200目）', unit: '%', oldValue: '90.5', newValue: '92.0', changeBy: '张伟', changeTime: '2026-08-08 16:40' },
+  { factory: '1000', batchNo: 'P260610', materialCode: 'F50001', charCode: 'CHAR01', charName: '含量测定', unit: '%', oldValue: '98.2', newValue: '98.7', changeBy: '王芳', changeTime: '2026-08-11 15:30' },
+  { factory: '2002', batchNo: 'P260618', materialCode: 'F50021', charCode: 'CHAR02', charName: '粒度', unit: '', oldValue: '不合格', newValue: '合格', changeBy: '赵磊', changeTime: '2026-08-15 10:05' }
+];
