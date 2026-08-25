@@ -173,20 +173,32 @@ const BatchChar = {
       return;
     }
     if (!this.query) {
-      el.innerHTML = this._centerHint('请输入 工厂 + 物料号 + 批次 后点击「查询」', '查询后将展示该批次的特性数据，可直接编辑并提交');
+      el.innerHTML = this._centerHint('请输入 工厂 + 物料号 + 批次 后点击「查询」', '查询后将展示该批次的特性数据，可直接编辑并提交', false, true);
       return;
     }
     if (state === 'error' || !this.current) {
-      el.innerHTML = this._centerHint(errMsg || '未查询到该物料批次的特性数据，请检查工厂/物料/批次后重试。', '可修改查询条件后重新查询', true);
+      el.innerHTML = this._centerHint(errMsg || '未查询到该物料批次的特性数据，请检查工厂/物料/批次后重试。', '可修改查询条件后重新查询，或点击下方按钮查看示例', true, true);
       return;
     }
     el.innerHTML = this._resultHtml(this.current);
   },
 
-  _centerHint(title, sub, isError) {
+  // 填入示例数据并自动查询（便于快速查看原型效果）
+  fillDemo() {
+    const f = document.getElementById('bcFactory');
+    const m = document.getElementById('bcMaterial');
+    const b = document.getElementById('bcBatch');
+    if (f) f.value = '1000';
+    if (m) m.value = 'M10001';
+    if (b) b.value = 'B260601';
+    this.queryBatch();
+  },
+
+  _centerHint(title, sub, isError, showDemo) {
     return `<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted);text-align:center;">
       <div style="font-size:15px;font-weight:600;color:${isError ? '#dc2626' : 'var(--text-secondary)'};">${title}</div>
       ${sub ? `<div style="margin-top:8px;font-size:12px;">${sub}</div>` : ''}
+      ${showDemo ? `<button class="btn btn-primary btn-sm" style="margin-top:20px;" onclick="BatchChar.fillDemo()">填入示例数据并查询</button>` : ''}
     </div>`;
   },
 
