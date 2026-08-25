@@ -43,7 +43,6 @@ const BatchChar = {
             <div style="font-size:18px;font-weight:700;">批次特性</div>
             <div style="font-size:13px;opacity:0.8;">库存管理 → 物料主数据 → 批次特性</div>
           </div>
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="BatchChar.refresh()">刷新数据</button>
         </div>
 
         <!-- Tabs -->
@@ -80,11 +79,6 @@ const BatchChar = {
     document.getElementById('bcTabModify').className = 'tab' + (tab === 'modify' ? ' active' : '');
     document.getElementById('bcTabLog').className = 'tab' + (tab === 'log' ? ' active' : '');
     this.init();
-  },
-
-  refresh() {
-    this.init();
-    toast('数据已刷新');
   },
 
   // ==================== 筛选栏 ====================
@@ -214,7 +208,7 @@ const BatchChar = {
       </div>
 
       <div class="form-section" style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:14px;">
-        <div class="form-section-title">批次特性（可直接编辑，提交后写回）</div>
+        <div class="form-section-title">批次特性</div>
         <table class="data-table data-table-compact" style="min-width:900px;">
           <thead><tr>
             <th style="width:90px;">特性编码</th>
@@ -230,8 +224,7 @@ const BatchChar = {
         </table>
       </div>
 
-      <div style="margin-top:16px;display:flex;justify-content:flex-end;gap:10px;">
-        <button class="btn btn-secondary" onclick="BatchChar.queryBatch()">重新查询</button>
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
         <button class="btn btn-primary" id="bcSubmitBtn" onclick="BatchChar.saveChanges()">提交修改</button>
       </div>`;
   },
