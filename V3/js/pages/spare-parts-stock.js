@@ -66,13 +66,10 @@ const SparePartsStock = {
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
           </div>
         </div>
-        <div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:10px 16px 0;">
-          <div id="spLegend" style="display:none;align-items:center;gap:16px;font-size:12px;color:#64748b;flex-wrap:wrap;">
-            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>绿灯 = 可用库存 ≥ 安全库存</span>
-            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;"></span>红灯 = 可用库存 &lt; 安全库存</span>
-            <span style="color:#94a3b8;">安全库存为物料主数据静态设置值，不随库存变动</span>
-          </div>
-          <button id="spToggleExt" class="btn btn-secondary btn-sm" onclick="SparePartsStock.toggleExtCols()">展开次要字段</button>
+        <div id="spLegendBar" style="flex-shrink:0;display:none;align-items:center;gap:16px;padding:10px 20px 0;font-size:12px;color:#64748b;flex-wrap:wrap;">
+          <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>绿灯 = 可用库存 ≥ 安全库存</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;"></span>红灯 = 可用库存 &lt; 安全库存</span>
+          <span style="color:#94a3b8;">安全库存为物料主数据静态设置值，不随库存变动</span>
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">
@@ -81,7 +78,9 @@ const SparePartsStock = {
           </table>
         </div>
         <div class="list-toolbar" style="flex-shrink:0;">
-          <div class="list-info"><span class="list-count" id="spCount">共 ${this.filtered.length} 条</span></div>
+          <div class="list-info"><span class="list-count" id="spCount">共 ${this.filtered.length} 条</span>
+            <button id="spToggleExt" class="btn btn-secondary btn-sm" onclick="SparePartsStock.toggleExtCols()">展开次要字段</button>
+          </div>
           <div class="pagination">
             <button class="pagination-btn" id="spPrev" disabled onclick="SparePartsStock.prevPage()">‹</button>
             <span class="pagination-info" id="spPageInfo">第 1 / ${Math.ceil(this.filtered.length/this.pageSize)} 页</span>
@@ -171,8 +170,8 @@ const SparePartsStock = {
     document.getElementById('spPageSizeSel').value = this.pageSize;
     this._syncToggleBtn();
     // 红绿灯图例只在工厂汇总档展示；展开按钮在工厂汇总档隐藏（无次要字段）
-    const legend = document.getElementById('spLegend');
-    if (legend) legend.style.display = isPlant ? 'flex' : 'none';
+    const legendBar = document.getElementById('spLegendBar');
+    if (legendBar) legendBar.style.display = isPlant ? 'flex' : 'none';
     const toggleBtn = document.getElementById('spToggleExt');
     if (toggleBtn) toggleBtn.style.display = isPlant ? 'none' : '';
 
