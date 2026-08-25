@@ -21,6 +21,21 @@ const SAFETY_STOCK_MAP = {
 const getSafetyStock = (factory, matCode) =>
   (SAFETY_STOCK_MAP[factory] && SAFETY_STOCK_MAP[factory][matCode]) || 0;
 
+// ===== 物料类型映射（SAP 物料主数据标准类型）=====
+const MAT_TYPE_MAP = {
+  '10000009': 'FERT', '10000010': 'FERT', '10000011': 'FERT',
+  '20000001': 'ROH', '20000002': 'ROH', '20000003': 'ROH', '20000004': 'ROH',
+  '30000001': 'VERP', '30000002': 'VERP', '30000003': 'VERP',
+  '40000001': 'FERT', '40000002': 'FERT',
+  '50000001': 'HALB', '50000002': 'ROH',
+  '60000001': 'HALB',
+  '60001018': 'ERSA', '60001019': 'ERSA', '60001021': 'ERSA',
+  '60001146': 'ERSA', '60001147': 'ERSA',
+  '60000655': 'ERSA', '60000656': 'ERSA', '60001271': 'ERSA',
+  '60001207': 'ERSA', '60001128': 'ERSA', '60001131': 'ERSA'
+};
+const getMatType = matCode => MAT_TYPE_MAP[matCode] || '';
+
 const SparePartsStock = {
   page: 1, pageSize: 15, filtered: [],
   showExtCols: false,
@@ -59,6 +74,14 @@ const SparePartsStock = {
             <option value="2">2 - 库位汇总</option>
           </select></div>
           <div class="filter-group" id="spWbsGroup"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
+          <div class="filter-group"><label>物料类型</label><select id="spMatType">
+            <option value="">全部</option>
+            <option value="FERT">FERT - 成品</option>
+            <option value="HALB">HALB - 半成品</option>
+            <option value="ROH">ROH - 原材料</option>
+            <option value="VERP">VERP - 包装材料</option>
+            <option value="ERSA">ERSA - 备件</option>
+          </select></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
           <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
           <div class="filter-actions">
@@ -290,6 +313,7 @@ const SparePartsStock = {
     const storageLoc = document.getElementById('spStorageLoc').value;
     const displayType = document.getElementById('spDisplayType').value;
     const wbsNo = document.getElementById('spWbsNo').value.trim();
+    const matType = document.getElementById('spMatType').value;
     const matCode = document.getElementById('spMatCode').value.trim();
     const batch = document.getElementById('spBatch').value.trim();
 
@@ -298,6 +322,7 @@ const SparePartsStock = {
       if (factory && row.factory !== factory) return false;
       if (storageLoc && (row.factory+'|'+row.storageLoc) !== storageLoc) return false;
       if (wbsNo && !(row.wbsNo || '').includes(wbsNo)) return false;
+      if (matType && getMatType(row.matCode) !== matType) return false;
       if (matCode && !row.matCode.includes(matCode)) return false;
       if (batch && !row.batch.includes(batch)) return false;
       return true;
@@ -316,6 +341,7 @@ const SparePartsStock = {
     document.getElementById('spStorageLoc').value = '';
     document.getElementById('spDisplayType').value = '';
     document.getElementById('spWbsNo').value = '';
+    document.getElementById('spMatType').value = '';
     document.getElementById('spMatCode').value = '';
     document.getElementById('spBatch').value = '';
     this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
