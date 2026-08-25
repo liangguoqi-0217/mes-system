@@ -1,6 +1,25 @@
 // ===== Spare Parts Stock Query Page =====
+// 安全库存静态数据（按物料号），与安全库存预警页共享同一数据源
+const SAFETY_STOCK_MAP = {
+  '60001018': 50, '60001019': 60, '60001020': 40, '60001021': 30, '60001022': 45,
+  '60001023': 50, '60001024': 35, '60001025': 55, '60001026': 48,
+  '60001012': 20, '60001086': 100, '60001087': 80, '60001088': 90, '60001089': 500,
+  '60001090': 1000, '60001146': 30, '60001147': 25,
+  '60000655': 200, '60000656': 150, '60000657': 100,
+  '60001128': 80, '60001129': 60, '60001131': 40, '60001132': 70,
+  '60001238': 300, '60001271': 20, '60001272': 15, '60001249': 150, '60001207': 10, '60001281': 50,
+  '10000009': 5000, '10000010': 3000, '10000011': 2000,
+  '20000001': 100, '20000002': 80, '20000003': 60, '20000004': 50,
+  '30000001': 20, '30000002': 100, '30000003': 40,
+  '40000001': 100, '40000002': 500,
+  '50000001': 30, '50000002': 20,
+  '60000001': 15
+};
+const getSafetyStock = matCode => SAFETY_STOCK_MAP[matCode] || 0;
+
 const SparePartsStock = {
   page: 1, pageSize: 15, filtered: [],
+  showExtCols: false,
 
   render() {
     this.filtered = [...sparePartsStockData];
@@ -63,14 +82,12 @@ const SparePartsStock = {
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
           </div>
         </div>
+        <div style="flex-shrink:0;display:flex;justify-content:flex-end;padding:10px 16px 0;">
+          <button id="spToggleExt" class="btn btn-secondary btn-sm" onclick="SparePartsStock.toggleExtCols()">展开次要字段</button>
+        </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">
-            <thead id="spTableHead"><tr>
-              <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th>
-              <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
-              <th>WBS编号</th><th>特殊库存</th><th>客户</th><th>供应商</th>
-              <th>供应商批次</th><th>生产日期</th><th>有效期至</th>
-            </tr></thead>
+            <thead id="spTableHead"></thead>
             <tbody id="spTableBody"></tbody>
           </table>
         </div>
@@ -106,7 +123,13 @@ const SparePartsStock = {
       agg.qualityQty = (agg.qualityQty || 0) + (row.qualityQty || 0);
       agg.blockedQty = (agg.blockedQty || 0) + (row.blockedQty || 0);
     });
-    this.filtered = [...aggMap.values()];
+    this.filtered = [...aggMap.values()].map(r => {
+      // 安全库存对比：可用库存 = 非限制 + 质检；可用 >= 安全库存 = 绿灯，否则红灯
+      r.safetyStock = getSafetyStock(r.matCode);
+      r.availableQty = (r.unrestrictedQty || 0) + (r.qualityQty || 0);
+      r.status = r.safetyStock > 0 && r.availableQty < r.safetyStock ? 'red' : 'green';
+      return r;
+    });
   },
 
   renderTable() {
@@ -115,6 +138,7 @@ const SparePartsStock = {
     const totalPages = Math.ceil(this.filtered.length / this.pageSize) || 1;
     const displayType = document.getElementById('spDisplayType').value;
     const isSummary = displayType === 'summary';
+    const showExt = this.showExtCols;
     const locDesc = (f, l) => { const k = T001L_STORAGE_LOCATIONS[f+'|'+l]; return k ? k.lgort+' - '+k.desc : l; };
 
     document.getElementById('spCount').textContent = `共 ${this.filtered.length} 条`;
@@ -122,55 +146,79 @@ const SparePartsStock = {
     document.getElementById('spPrev').disabled = this.page <= 1;
     document.getElementById('spNext').disabled = this.page >= totalPages;
     document.getElementById('spPageSizeSel').value = this.pageSize;
-
-    // Update table head based on display type
-    document.getElementById('spTableHead').innerHTML = isSummary
-      ? `<tr>
-          <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th>
-          <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
-          <th>WBS编号</th><th>特殊库存</th><th>客户</th>
-        </tr>`
-      : `<tr>
-          <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th>
-          <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
-          <th>WBS编号</th><th>特殊库存</th><th>客户</th><th>供应商</th>
-          <th>供应商批次</th><th>生产日期</th><th>有效期至</th>
-        </tr>`;
+    this._syncToggleBtn();
 
     const fmtNum = n => n != null && n !== '' ? Number(n).toLocaleString() : '';
-    document.getElementById('spTableBody').innerHTML = page.map(row => isSummary
-      ? `<tr>
+    const extTd = row => `${showExt
+      ? `<td style="color:#64748b;">${esc(row.wbsNo||'-')}</td><td style="color:#64748b;">${esc(row.specialStock||'-')}</td><td style="color:#64748b;">${esc(row.customer||'-')}</td>`
+      : ''}`;
+
+    if (isSummary) {
+      // 汇总模式：主列 + 安全库存/安全状态，次要字段按需展开
+      document.getElementById('spTableHead').innerHTML = `<tr>
+        <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th>
+        <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
+        <th>安全库存</th><th>库存安全线状态</th>
+        ${showExt ? '<th>WBS编号</th><th>特殊库存</th><th>客户</th>' : ''}
+      </tr>`;
+      document.getElementById('spTableBody').innerHTML = page.map(row => {
+        const isRed = row.status === 'red';
+        return `<tr style="${isRed ? 'background:#fef2f2;' : ''}">
           <td>${esc(row.factory)}</td>
           <td>${esc(locDesc(row.factory, row.storageLoc))}</td>
           <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
           <td>${esc(row.matDesc)}</td>
-          <td style="text-align:right;color:#16a34a;">${fmtNum(row.unrestrictedQty)}</td>
-          <td style="text-align:right;color:#ca8a04;">${fmtNum(row.qualityQty)}</td>
-          <td style="text-align:right;color:#dc2626;">${fmtNum(row.blockedQty)}</td>
+          <td style="text-align:right;color:#16a34a;font-weight:500;">${fmtNum(row.unrestrictedQty)}</td>
+          <td style="text-align:right;color:#ca8a04;font-weight:500;">${fmtNum(row.qualityQty)}</td>
+          <td style="text-align:right;color:#dc2626;font-weight:500;">${fmtNum(row.blockedQty)}</td>
           <td style="text-align:center;">${esc(row.unit)}</td>
-          <td>${esc(row.wbsNo||'-')}</td>
-          <td>${esc(row.specialStock||'-')}</td>
-          <td>${esc(row.customer||'-')}</td>
-        </tr>`
-      : `<tr>
+          <td style="text-align:right;font-weight:600;${isRed ? 'color:#dc2626;' : 'color:#16a34a;'}">${fmtNum(row.safetyStock)}</td>
+          <td style="text-align:center;">${this._getStatusHtml(row.status)}</td>
+          ${extTd(row)}
+        </tr>`;
+      }).join('');
+    } else {
+      // 批次模式：主列固定，次要字段按需展开
+      document.getElementById('spTableHead').innerHTML = `<tr>
+        <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th>
+        <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
+        ${showExt ? '<th>WBS编号</th><th>特殊库存</th><th>客户</th><th>供应商</th><th>供应商批次</th><th>生产日期</th><th>有效期至</th>' : ''}
+      </tr>`;
+      document.getElementById('spTableBody').innerHTML = page.map(row => `
+        <tr>
           <td>${esc(row.factory)}</td>
           <td>${esc(locDesc(row.factory, row.storageLoc))}</td>
           <td><strong style="color:var(--primary);">${esc(row.matCode)}</strong></td>
           <td>${esc(row.matDesc)}</td>
           <td>${esc(row.batch)}</td>
-          <td style="text-align:right;color:#16a34a;">${fmtNum(row.unrestrictedQty)}</td>
-          <td style="text-align:right;color:#ca8a04;">${fmtNum(row.qualityQty)}</td>
-          <td style="text-align:right;color:#dc2626;">${fmtNum(row.blockedQty)}</td>
+          <td style="text-align:right;color:#16a34a;font-weight:500;">${fmtNum(row.unrestrictedQty)}</td>
+          <td style="text-align:right;color:#ca8a04;font-weight:500;">${fmtNum(row.qualityQty)}</td>
+          <td style="text-align:right;color:#dc2626;font-weight:500;">${fmtNum(row.blockedQty)}</td>
           <td style="text-align:center;">${esc(row.unit)}</td>
-          <td>${esc(row.wbsNo||'-')}</td>
-          <td>${esc(row.specialStock||'-')}</td>
-          <td>${esc(row.customer||'-')}</td>
-          <td>${esc(row.vendor||'-')}</td>
-          <td>${esc(row.vendorBatch||'-')}</td>
-          <td style="white-space:nowrap;">${esc(row.prodDate||'-')}</td>
-          <td style="white-space:nowrap;${row.isExpiringSoon ? 'color:#dc2626;font-weight:700;' : ''}">${esc(row.expiryDate||'-')}</td>
-        </tr>`
-    ).join('');
+          ${showExt
+            ? `<td style="color:#64748b;">${esc(row.wbsNo||'-')}</td><td style="color:#64748b;">${esc(row.specialStock||'-')}</td><td style="color:#64748b;">${esc(row.customer||'-')}</td><td style="color:#64748b;">${esc(row.vendor||'-')}</td>
+               <td style="color:#64748b;">${esc(row.vendorBatch||'-')}</td><td style="color:#64748b;white-space:nowrap;">${esc(row.prodDate||'-')}</td>
+               <td style="color:#64748b;white-space:nowrap;${row.isExpiringSoon ? 'color:#dc2626;font-weight:700;' : ''}">${esc(row.expiryDate||'-')}</td>`
+            : ''}
+        </tr>`).join('');
+    }
+  },
+
+  _getStatusHtml(status) {
+    if (status === 'green') {
+      return '<span style="display:inline-flex;align-items:center;gap:4px;color:#16a34a;font-weight:600;"><span style="width:8px;height:8px;background:#16a34a;border-radius:50%;display:inline-block;"></span> 绿灯</span>';
+    }
+    return '<span style="display:inline-flex;align-items:center;gap:4px;color:#dc2626;font-weight:600;"><span style="width:8px;height:8px;background:#dc2626;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;"></span> 红灯</span>';
+  },
+
+  toggleExtCols() {
+    this.showExtCols = !this.showExtCols;
+    this.renderTable();
+  },
+
+  _syncToggleBtn() {
+    const btn = document.getElementById('spToggleExt');
+    if (btn) btn.textContent = this.showExtCols ? '收起次要字段' : '展开次要字段';
   },
 
   search() {
