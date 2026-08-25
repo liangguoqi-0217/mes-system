@@ -116,7 +116,7 @@ const SparePartsStock = {
       .join('');
   },
 
-  // 库位汇总档：按 工厂|库位|物料号|WBS|特殊库存|客户 聚合；安全库存仅作灰色参考，不参与红绿灯判断
+  // 批次汇总档（库位层级）：按 工厂|库位|物料号|WBS|特殊库存|客户 聚合，不展示安全库存
   _aggregate() {
     const aggMap = new Map();
     this.filtered.forEach(row => {
@@ -129,10 +129,7 @@ const SparePartsStock = {
       agg.qualityQty = (agg.qualityQty || 0) + (row.qualityQty || 0);
       agg.blockedQty = (agg.blockedQty || 0) + (row.blockedQty || 0);
     });
-    this.filtered = [...aggMap.values()].map(r => {
-      r.safetyStock = getSafetyStock(r.factory, r.matCode);
-      return r;
-    });
+    this.filtered = [...aggMap.values()];
   },
 
   // 工厂汇总档：按 工厂|物料号 聚合（跨库位合计），安全库存按工厂级判断红绿灯
@@ -185,11 +182,10 @@ const SparePartsStock = {
       : ''}`;
 
     if (isSummary) {
-      // 库位汇总档：红绿灯在工厂汇总档判断；本档安全库存仅作灰色参考
+      // 批次汇总档（库位层级）：不展示安全库存，红绿灯判断见工厂汇总档
       document.getElementById('spTableHead').innerHTML = `<tr>
         <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th>
         <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
-        <th title="工厂级物料主数据中设置的静态安全库存值，仅作参考；红绿灯请在「工厂汇总」档查看">安全库存 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th>
         ${showExt ? '<th>WBS编号</th><th>特殊库存</th><th>客户</th>' : ''}
       </tr>`;
       document.getElementById('spTableBody').innerHTML = page.map(row => `
@@ -202,7 +198,6 @@ const SparePartsStock = {
           <td style="text-align:right;color:#ca8a04;font-weight:500;">${fmtNum(row.qualityQty)}</td>
           <td style="text-align:right;color:#dc2626;font-weight:500;">${fmtNum(row.blockedQty)}</td>
           <td style="text-align:center;">${esc(row.unit)}</td>
-          <td style="text-align:right;color:#94a3b8;">${fmtNum(row.safetyStock)}</td>
           ${extTd(row)}
         </tr>`).join('');
     } else if (isPlant) {
