@@ -26,8 +26,9 @@ const SparePartsStock = {
   showExtCols: false,
 
   render() {
-    this.filtered = [...sparePartsStockData];
+    this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
     this.page = 1;
+    const locOptionsHtml = this._getLocOptionsHtml();
     return `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
@@ -50,23 +51,7 @@ const SparePartsStock = {
             <option value="2007">2007 (通化天实制药工厂)</option>
           </select></div>
           <div class="filter-group"><label>库位</label><select id="spStorageLoc">
-            <option value="">全部</option>
-            <option value="1000|1001">1001 (综合库-成品库)</option>
-            <option value="1000|1002">1002 (稳心-成品库)</option>
-            <option value="1000|2001">2001 (中药材阴凉库1-提取1车间)</option>
-            <option value="1000|2002">2002 (中药材阴凉库2-提取1车间)</option>
-            <option value="1000|3001">3001 (综合库-辅料库)</option>
-            <option value="1000|3002">3002 (综合库-辅料阴凉库)</option>
-            <option value="1000|2018">2018 (前处理中心-冷库)</option>
-            <option value="1000|4001">4001 (综合库-内包材库)</option>
-            <option value="1000|4002">4002 (综合库-外包材库)</option>
-            <option value="1000|5004">5004 (稳心东区五金库)</option>
-            <option value="1000|5005">5005 (稳心二期五金库)</option>
-            <option value="2001|1001">1001 (陕西-成品库-25119)</option>
-            <option value="2001|2031">2031 (陕西-辅料库-25104)</option>
-            <option value="2001|3001">3001 (陕西-备品备件库-25135)</option>
-            <option value="2002|5001">5001 (丹红-五金库)</option>
-            <option value="2003|2001">2001 (神州-五金劳保库)</option>
+            ${locOptionsHtml}
           </select></div>
           <div class="filter-group"><label>显示类型</label><select id="spDisplayType" onchange="SparePartsStock.onDisplayTypeChange()">
             <option value="plant">工厂层级</option>
@@ -108,13 +93,27 @@ const SparePartsStock = {
   },
 
   init() {
-    this.filtered = [...sparePartsStockData];
+    this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
     this.page = 1;
     const displayType = document.getElementById('spDisplayType').value;
     if (displayType === 'summary') this._aggregate();
     else if (displayType === 'plant') this._aggregateByPlant();
     this.renderTable();
     this._syncFilterStates();
+  },
+
+  // 保密库位判断（factory|storageLoc 与 CONFIDENTIAL_STORAGE_LOCS 匹配）
+  _isConfidential(factory, storageLoc) {
+    return CONFIDENTIAL_STORAGE_LOCS.includes(factory + '|' + storageLoc);
+  },
+
+  // 生成库位下拉选项 HTML（过滤保密库位；STORAGE_LOC_OPTIONS 来自 data.js 主数据全量生成）
+  _getLocOptionsHtml() {
+    return ['<option value="">全部</option>']
+      .concat(STORAGE_LOC_OPTIONS
+        .filter(o => !this._isConfidential(o.value.split('|')[0], o.value.split('|')[1]))
+        .map(o => `<option value="${o.value}">${o.label}</option>`))
+      .join('');
   },
 
   // 库位汇总档：按 工厂|库位|物料号|WBS|特殊库存|客户 聚合；安全库存仅作灰色参考，不参与红绿灯判断
@@ -301,6 +300,7 @@ const SparePartsStock = {
     const batch = document.getElementById('spBatch').value.trim();
 
     this.filtered = sparePartsStockData.filter(row => {
+      if (this._isConfidential(row.factory, row.storageLoc)) return false;
       if (factory && row.factory !== factory) return false;
       if (storageLoc && (row.factory+'|'+row.storageLoc) !== storageLoc) return false;
       if (wbsNo && !(row.wbsNo || '').includes(wbsNo)) return false;
@@ -324,7 +324,7 @@ const SparePartsStock = {
     document.getElementById('spWbsNo').value = '';
     document.getElementById('spMatCode').value = '';
     document.getElementById('spBatch').value = '';
-    this.filtered = [...sparePartsStockData];
+    this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
     this._aggregate();
     this.page = 1;
     this.renderTable();

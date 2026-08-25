@@ -1,3 +1,7 @@
+// ===== 保密库位配置（权限不下放给 MES，库存查询页完全不可见）=====
+// TODO: 示例占位，后续替换为真实保密库位清单
+const CONFIDENTIAL_STORAGE_LOCS = ['1000|2010', '1000|3003'];
+
 // ===== Mock Data =====
 const equipmentData = [
   { id:'EQ001',code:'EQ-F001-001',name:'CNC加工中心',model:'DMG-MORI-NVX5000',manufacturer:'DMG MORI',serialNo:'SN-2024-001',type:'cnc',typeName:'CNC加工中心',location:'F001-L01-W01',locationName:'片剂生产线A-压片工位',workCenter:'WC001',workCenterName:'机械加工中心',status:'running',statusName:'运行中',power:'37 kW',cleanLevel:'C级',gmpClass:'关键设备',syncStatus:'synced',factoryDate:'2024-01-15',purchaseDate:'2023-12-20',warrantyEnd:'2026-12-20',leader:'张工',team:'维修一班',teamName:'维修一班',category:'生产设备',group:'机械加工设备',priority:'高',maintenanceStrategy:'月保养',voltage:'380V',capacity:'500kg',material:'铸铁/合金钢',envReq:'温度20-25°C, 湿度40-60%',assetNo:'AS-2024-001',disposalDate:null,disposalReason:null,disposalApprovalNo:null,disposalAttachment:null },
