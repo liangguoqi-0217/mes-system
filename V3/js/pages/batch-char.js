@@ -230,7 +230,6 @@ const BatchChar = {
           <thead><tr>
             <th style="width:90px;">特性编码</th>
             <th style="width:180px;">特性名称</th>
-            <th style="width:90px;">单位</th>
             <th style="width:220px;">当前值（可编辑）</th>
             <th style="width:150px;">原值</th>
             <th style="width:110px;">修改状态</th>
@@ -250,7 +249,6 @@ const BatchChar = {
     return `<tr id="bcRow_${c.charCode}">
       <td style="font-family:monospace;font-size:12px;">${esc(c.charCode)}</td>
       <td>${esc(c.charName)}</td>
-      <td>${esc(c.unit || '-')}</td>
       <td><input type="text" id="bcChar_${c.charCode}" value="${esc(c.charValue)}" oninput="BatchChar.onCharInput('${c.charCode}')" style="width:160px;font-weight:600;color:#2563eb;border:1px solid var(--border);border-radius:4px;padding:4px 8px;"></td>
       <td style="font-size:12px;color:var(--text-secondary);">${esc(c.charValue)}</td>
       <td><span id="bcBadge_${c.charCode}"><span class="badge badge-gray">未修改</span></span></td>
@@ -280,7 +278,7 @@ const BatchChar = {
       const oldValue = snap ? snap.charValue : c.charValue;
       const newValue = el ? el.value.trim() : c.charValue;
       if (newValue !== oldValue) {
-        changed.push({ charCode: c.charCode, charName: c.charName, unit: c.unit, oldValue, newValue });
+        changed.push({ charCode: c.charCode, charName: c.charName, oldValue, newValue });
       }
     });
     if (!changed.length) { toast('没有修改任何特性值'); return; }
@@ -306,7 +304,7 @@ const BatchChar = {
           factory: this.query.factory,
           batchNo: d.batchNo,
           materialCode: d.materialCode,
-          charCode: ch.charCode, charName: ch.charName, unit: ch.unit || '',
+          charCode: ch.charCode, charName: ch.charName,
           oldValue: ch.oldValue, newValue: ch.newValue,
           changeBy: '当前用户', changeTime: changeTime
         });
@@ -380,8 +378,8 @@ const BatchChar = {
       <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(r.batchNo)}</td>
       <td style="font-family:monospace;font-size:12px;">${esc(r.materialCode)}</td>
       <td>${esc(r.charName)}</td>
-      <td>${esc(r.oldValue)}${r.unit ? ` <span style="color:var(--text-muted);font-size:11px;">${esc(r.unit)}</span>` : ''}</td>
-      <td><strong style="color:#10b981;">${esc(r.newValue)}</strong>${r.unit ? ` <span style="color:var(--text-muted);font-size:11px;">${esc(r.unit)}</span>` : ''}</td>
+      <td>${esc(r.oldValue)}</td>
+      <td><strong style="color:#10b981;">${esc(r.newValue)}</strong></td>
       <td style="font-size:12px;">${date}</td>
       <td style="font-size:12px;">${time}</td>
     </tr>`;
@@ -420,10 +418,10 @@ const BatchChar = {
 // ==================== MES 自建表：批次特性修改记录 ====================
 // 提交成功后由 MES 写入本表，「修改记录」页签查询本表（模拟 MES 数据库表）
 const batchCharLogData = [
-  { factory: '1000', batchNo: 'B260601', materialCode: 'M10001', charCode: 'CHAR01', charName: '黄芩苷含量', unit: '%', oldValue: '91.8', newValue: '92.5', changeBy: '刘敏', changeTime: '2026-08-01 10:26' },
-  { factory: '1000', batchNo: 'B260602', materialCode: 'M10012', charCode: 'CHAR02', charName: 'pH值', unit: '', oldValue: '5.8', newValue: '5.6', changeBy: '王芳', changeTime: '2026-08-03 14:02' },
-  { factory: '1000', batchNo: 'B250812', materialCode: 'M20015', charCode: 'CHAR02', charName: '水分', unit: '%', oldValue: '5.2', newValue: '4.9', changeBy: '刘敏', changeTime: '2026-08-05 11:20' },
-  { factory: '2001', batchNo: 'B260608', materialCode: 'M10018', charCode: 'CHAR03', charName: '粒度（通过200目）', unit: '%', oldValue: '90.5', newValue: '92.0', changeBy: '张伟', changeTime: '2026-08-08 16:40' },
-  { factory: '1000', batchNo: 'P260610', materialCode: 'F50001', charCode: 'CHAR01', charName: '含量测定', unit: '%', oldValue: '98.2', newValue: '98.7', changeBy: '王芳', changeTime: '2026-08-11 15:30' },
-  { factory: '2002', batchNo: 'P260618', materialCode: 'F50021', charCode: 'CHAR02', charName: '粒度', unit: '', oldValue: '不合格', newValue: '合格', changeBy: '赵磊', changeTime: '2026-08-15 10:05' }
+  { factory: '1000', batchNo: 'B260601', materialCode: 'M10001', charCode: 'CHAR01', charName: '黄芩苷含量', oldValue: '91.8', newValue: '92.5', changeBy: '刘敏', changeTime: '2026-08-01 10:26' },
+  { factory: '1000', batchNo: 'B260602', materialCode: 'M10012', charCode: 'CHAR02', charName: 'pH值', oldValue: '5.8', newValue: '5.6', changeBy: '王芳', changeTime: '2026-08-03 14:02' },
+  { factory: '1000', batchNo: 'B250812', materialCode: 'M20015', charCode: 'CHAR02', charName: '水分', oldValue: '5.2', newValue: '4.9', changeBy: '刘敏', changeTime: '2026-08-05 11:20' },
+  { factory: '2001', batchNo: 'B260608', materialCode: 'M10018', charCode: 'CHAR03', charName: '粒度（通过200目）', oldValue: '90.5', newValue: '92.0', changeBy: '张伟', changeTime: '2026-08-08 16:40' },
+  { factory: '1000', batchNo: 'P260610', materialCode: 'F50001', charCode: 'CHAR01', charName: '含量测定', oldValue: '98.2', newValue: '98.7', changeBy: '王芳', changeTime: '2026-08-11 15:30' },
+  { factory: '2002', batchNo: 'P260618', materialCode: 'F50021', charCode: 'CHAR02', charName: '粒度', oldValue: '不合格', newValue: '合格', changeBy: '赵磊', changeTime: '2026-08-15 10:05' }
 ];

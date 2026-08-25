@@ -104,7 +104,7 @@
           batchNo: d.batchNo, materialCode: d.materialCode, materialName: d.materialName,
           factory: d.factory, location: d.location,
           chars: d.chars.map(function (c) {
-            return { charCode: c.charCode, charName: c.charName, charValue: c.charValue, unit: c.unit };
+            return { charCode: c.charCode, charName: c.charName, charValue: c.charValue };
           })
         } };
       });
@@ -113,7 +113,7 @@
     /**
      * 修改批次特性（模拟 SAP 批次特性维护，成功后仅更新 SAP 侧特性值）
      * 说明：修改记录由 MES 在提交成功后写入 MES 自建表，SAP 不保存修改日志。
-     * @param {Object} payload { factory, batchNo, materialCode, materialName, changes:[{charCode,charName,unit,oldValue,newValue}] }
+     * @param {Object} payload { factory, batchNo, materialCode, materialName, changes:[{charCode,charName,oldValue,newValue}] }
      * @returns {Promise<{ok:true, changeTime:string, changedCount:number}>}
      * @rejects {Promise<{ok:false, code:string, message:string}>}
      */
@@ -193,11 +193,11 @@
       factory: '1000', location: 'A01原料仓',
       updateBy: '刘敏', updateTime: '2026-07-03 10:26',
       chars: [
-        { charCode: 'CHAR01', charName: '黄芩苷含量', charValue: '92.5', unit: '%' },
-        { charCode: 'CHAR02', charName: '水分', charValue: '4.2', unit: '%' },
-        { charCode: 'CHAR03', charName: '粒度（通过100目）', charValue: '96.0', unit: '%' },
-        { charCode: 'CHAR04', charName: '性状', charValue: '棕黄色粉末', unit: '' },
-        { charCode: 'CHAR05', charName: '灰分', charValue: '3.1', unit: '%' }
+        { charCode: 'CHAR01', charName: '黄芩苷含量', charValue: '92.5' },
+        { charCode: 'CHAR02', charName: '水分', charValue: '4.2' },
+        { charCode: 'CHAR03', charName: '粒度（通过100目）', charValue: '96.0' },
+        { charCode: 'CHAR04', charName: '性状', charValue: '棕黄色粉末' },
+        { charCode: 'CHAR05', charName: '灰分', charValue: '3.1' }
       ]
     },
     {
@@ -205,10 +205,10 @@
       factory: '1000', location: 'A01原料仓',
       updateBy: '王芳', updateTime: '2026-07-05 14:02',
       chars: [
-        { charCode: 'CHAR01', charName: '干燥失重', charValue: '11.8', unit: '%' },
-        { charCode: 'CHAR02', charName: 'pH值', charValue: '5.6', unit: '' },
-        { charCode: 'CHAR03', charName: '粒度', charValue: '合格', unit: '' },
-        { charCode: 'CHAR04', charName: '性状', charValue: '白色粉末', unit: '' }
+        { charCode: 'CHAR01', charName: '干燥失重', charValue: '11.8' },
+        { charCode: 'CHAR02', charName: 'pH值', charValue: '5.6' },
+        { charCode: 'CHAR03', charName: '粒度', charValue: '合格' },
+        { charCode: 'CHAR04', charName: '性状', charValue: '白色粉末' }
       ]
     },
     {
@@ -216,11 +216,11 @@
       factory: '1000', location: 'B01线边仓',
       updateBy: '赵磊', updateTime: '2026-07-21 09:15',
       chars: [
-        { charCode: 'CHAR01', charName: '黄芩苷含量', charValue: '91.8', unit: '%' },
-        { charCode: 'CHAR02', charName: '水分', charValue: '4.5', unit: '%' },
-        { charCode: 'CHAR03', charName: '粒度（通过100目）', charValue: '95.2', unit: '%' },
-        { charCode: 'CHAR04', charName: '性状', charValue: '棕黄色粉末', unit: '' },
-        { charCode: 'CHAR05', charName: '灰分', charValue: '3.4', unit: '%' }
+        { charCode: 'CHAR01', charName: '黄芩苷含量', charValue: '91.8' },
+        { charCode: 'CHAR02', charName: '水分', charValue: '4.5' },
+        { charCode: 'CHAR03', charName: '粒度（通过100目）', charValue: '95.2' },
+        { charCode: 'CHAR04', charName: '性状', charValue: '棕黄色粉末' },
+        { charCode: 'CHAR05', charName: '灰分', charValue: '3.4' }
       ]
     },
     {
@@ -228,10 +228,10 @@
       factory: '2001', location: 'A02辅料仓',
       updateBy: '张伟', updateTime: '2026-07-10 16:40',
       chars: [
-        { charCode: 'CHAR01', charName: '含量', charValue: '98.6', unit: '%' },
-        { charCode: 'CHAR02', charName: '干燥失重', charValue: '3.8', unit: '%' },
-        { charCode: 'CHAR03', charName: '粒度（通过200目）', charValue: '92.0', unit: '%' },
-        { charCode: 'CHAR04', charName: '性状', charValue: '白色疏松粉末', unit: '' }
+        { charCode: 'CHAR01', charName: '含量', charValue: '98.6' },
+        { charCode: 'CHAR02', charName: '干燥失重', charValue: '3.8' },
+        { charCode: 'CHAR03', charName: '粒度（通过200目）', charValue: '92.0' },
+        { charCode: 'CHAR04', charName: '性状', charValue: '白色疏松粉末' }
       ]
     },
     {
@@ -239,10 +239,10 @@
       factory: '1000', location: 'A02辅料仓',
       updateBy: '刘敏', updateTime: '2026-07-08 11:20',
       chars: [
-        { charCode: 'CHAR01', charName: '含量', charValue: '99.2', unit: '%' },
-        { charCode: 'CHAR02', charName: '水分', charValue: '4.9', unit: '%' },
-        { charCode: 'CHAR03', charName: '比旋度', charValue: '+52.3', unit: '°' },
-        { charCode: 'CHAR04', charName: '性状', charValue: '白色结晶性粉末', unit: '' }
+        { charCode: 'CHAR01', charName: '含量', charValue: '99.2' },
+        { charCode: 'CHAR02', charName: '水分', charValue: '4.9' },
+        { charCode: 'CHAR03', charName: '比旋度', charValue: '+52.3' },
+        { charCode: 'CHAR04', charName: '性状', charValue: '白色结晶性粉末' }
       ]
     },
     {
@@ -250,11 +250,11 @@
       factory: '1000', location: 'C02成品暂存间',
       updateBy: '王芳', updateTime: '2026-07-11 15:30',
       chars: [
-        { charCode: 'CHAR01', charName: '含量测定', charValue: '98.7', unit: '%' },
-        { charCode: 'CHAR02', charName: '崩解时限', charValue: '18', unit: 'min' },
-        { charCode: 'CHAR03', charName: '装量差异', charValue: '合格', unit: '' },
-        { charCode: 'CHAR04', charName: '微生物限度', charValue: '合格', unit: '' },
-        { charCode: 'CHAR05', charName: '性状', charValue: '内容物为棕黄色粉末', unit: '' }
+        { charCode: 'CHAR01', charName: '含量测定', charValue: '98.7' },
+        { charCode: 'CHAR02', charName: '崩解时限', charValue: '18' },
+        { charCode: 'CHAR03', charName: '装量差异', charValue: '合格' },
+        { charCode: 'CHAR04', charName: '微生物限度', charValue: '合格' },
+        { charCode: 'CHAR05', charName: '性状', charValue: '内容物为棕黄色粉末' }
       ]
     },
     {
@@ -262,11 +262,11 @@
       factory: '2002', location: 'C01暂存间',
       updateBy: '赵磊', updateTime: '2026-07-19 10:05',
       chars: [
-        { charCode: 'CHAR01', charName: '含量测定', charValue: '99.1', unit: '%' },
-        { charCode: 'CHAR02', charName: '粒度', charValue: '合格', unit: '' },
-        { charCode: 'CHAR03', charName: '溶化性', charValue: '合格', unit: '' },
-        { charCode: 'CHAR04', charName: '微生物限度', charValue: '合格', unit: '' },
-        { charCode: 'CHAR05', charName: '性状', charValue: '棕黄色颗粒', unit: '' }
+        { charCode: 'CHAR01', charName: '含量测定', charValue: '99.1' },
+        { charCode: 'CHAR02', charName: '粒度', charValue: '合格' },
+        { charCode: 'CHAR03', charName: '溶化性', charValue: '合格' },
+        { charCode: 'CHAR04', charName: '微生物限度', charValue: '合格' },
+        { charCode: 'CHAR05', charName: '性状', charValue: '棕黄色颗粒' }
       ]
     }
   ];
