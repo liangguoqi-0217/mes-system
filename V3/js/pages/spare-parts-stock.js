@@ -82,7 +82,12 @@ const SparePartsStock = {
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
           </div>
         </div>
-        <div style="flex-shrink:0;display:flex;justify-content:flex-end;padding:10px 16px 0;">
+        <div style="flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:10px 16px 0;">
+          <div id="spLegend" style="display:none;align-items:center;gap:16px;font-size:12px;color:#64748b;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>绿灯 = 可用库存 ≥ 安全库存</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;"></span>红灯 = 可用库存 &lt; 安全库存</span>
+            <span style="color:#94a3b8;">安全库存为物料主数据静态设置值，不随库存变动</span>
+          </div>
           <button id="spToggleExt" class="btn btn-secondary btn-sm" onclick="SparePartsStock.toggleExtCols()">展开次要字段</button>
         </div>
         <div class="table-wrapper" style="flex:1;">
@@ -147,6 +152,9 @@ const SparePartsStock = {
     document.getElementById('spNext').disabled = this.page >= totalPages;
     document.getElementById('spPageSizeSel').value = this.pageSize;
     this._syncToggleBtn();
+    // 红绿灯图例只在汇总模式（含安全库存列）下展示
+    const legend = document.getElementById('spLegend');
+    if (legend) legend.style.display = isSummary ? 'flex' : 'none';
 
     const fmtNum = n => n != null && n !== '' ? Number(n).toLocaleString() : '';
     const extTd = row => `${showExt
@@ -158,7 +166,7 @@ const SparePartsStock = {
       document.getElementById('spTableHead').innerHTML = `<tr>
         <th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th>
         <th>非限制库存</th><th>质检库存</th><th>冻结库存</th><th>单位</th>
-        <th>安全库存</th><th>库存安全线状态</th>
+        <th title="物料主数据中预先设置的静态安全库存值，不随库存变动">安全库存 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th><th title="可用库存 = 非限制库存 + 质检库存；可用 ≥ 安全库存为绿灯，否则红灯">库存安全线状态 <span style="color:#94a3b8;cursor:help;">ⓘ</span></th>
         ${showExt ? '<th>WBS编号</th><th>特殊库存</th><th>客户</th>' : ''}
       </tr>`;
       document.getElementById('spTableBody').innerHTML = page.map(row => {
