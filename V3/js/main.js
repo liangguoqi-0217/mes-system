@@ -84,13 +84,13 @@ const App = {
       groups: [
         {
           title:'物料主数据', items: [
-            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' },
-            { id:'batch-char', label:'批次特性', route:'batch-char', pageObj:'BatchChar' }
+            { id:'material', label:'物料主数据', route:'material-master', pageObj:'MaterialMaster' }
           ]
         },
         {
           title:'库存查询与预警', items: [
-            { id:'sp-stock', label:'库存查询', route:'sp-stock' }
+            { id:'sp-stock', label:'库存查询', route:'sp-stock' },
+            { id:'batch-char', label:'批次特性', route:'batch-char', pageObj:'BatchChar' }
           ]
         },
         {

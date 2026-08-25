@@ -357,8 +357,8 @@ const BatchChar = {
     el.innerHTML = `<table class="data-table" style="min-width:1100px;">
       <thead><tr>
         <th style="width:60px;">序号</th>
-        <th style="width:140px;">批次号</th>
         <th style="width:110px;">物料号</th>
+        <th style="width:140px;">批次号</th>
         <th style="width:200px;">特性</th>
         <th style="width:160px;">旧值</th>
         <th style="width:160px;">新值</th>
@@ -375,8 +375,8 @@ const BatchChar = {
     const time = t[1] || '';
     return `<tr>
       <td>${idx}</td>
-      <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(r.batchNo)}</td>
       <td style="font-family:monospace;font-size:12px;">${esc(r.materialCode)}</td>
+      <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(r.batchNo)}</td>
       <td>${esc(r.charName)}</td>
       <td>${esc(r.oldValue)}</td>
       <td><strong style="color:#10b981;">${esc(r.newValue)}</strong></td>
