@@ -189,18 +189,23 @@ const SpIssue = {
   /* ---------------- 创建方式选择弹窗 ---------------- */
   openNewModal() {
     const typeList = Object.entries(ISSUE_TYPE_MAP).map(([k, v]) => ({ key: k, ...v }));
+    const colors = [
+      { bg1: '#eef2f7', bg2: '#dbe3ec', border: '#b7c6d8', hover: '#1E3A5F', text: '#23344c', btn: '#2d5a87', btnText: '#fff' },
+      { bg1: '#edf2ee', bg2: '#dae5dc', border: '#b2c6b6', hover: '#3d6b4f', text: '#2b4033', btn: '#3d6b4f', btnText: '#fff' },
+      { bg1: '#f7f2e8', bg2: '#eee2ca', border: '#d5bf9b', hover: '#86693a', text: '#4b3c27', btn: '#86693a', btnText: '#fff' },
+      { bg1: '#f3f2f7', bg2: '#e3dfee', border: '#c0b8d6', hover: '#584b85', text: '#3a3452', btn: '#584b85', btnText: '#fff' }
+    ];
     const gridCols = typeList.length <= 3 ? '1fr 1fr 1fr' : '1fr 1fr';
     const cards = typeList.map((t, i) => {
-      const num = String(i + 1).padStart(2, '0');
+      const c = colors[i % colors.length];
       return `
         <div onclick="closeModal();SpIssue.openForm('${t.key}')"
-          style="background:#f8fafc;border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:8px;padding:18px 16px;cursor:pointer;transition:all .22s;text-align:left;"
-          onmouseenter="this.style.borderColor='var(--primary)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 18px rgba(30,58,95,.10)'"
-          onmouseleave="this.style.borderColor='var(--border)';this.style.transform='translateY(0)';this.style.boxShadow='none'">
-          <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#94a3b8;margin-bottom:6px;">${num}</div>
-          <div style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:4px;">${esc(t.label)}</div>
+          style="background:linear-gradient(135deg,${c.bg1},${c.bg2});border:2px solid ${c.border};border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
+          onmouseenter="this.style.borderColor='${c.hover}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,.12)'"
+          onmouseleave="this.style.borderColor='${c.border}';this.style.transform='translateY(0)';this.style.boxShadow='none'">
+          <div style="font-size:15px;font-weight:700;color:${c.text};margin-bottom:4px;">${esc(t.label)}</div>
           <div style="font-size:12px;color:#6b7280;line-height:1.45;">${esc(t.desc)}</div>
-          <div style="margin-top:12px;text-align:right;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:var(--primary);color:#fff;cursor:pointer;">开始填写 →</span></div>
+          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:${c.btn};color:${c.btnText};cursor:pointer;">开始填写 →</span></div>
         </div>`;
     }).join('');
     const body = `
