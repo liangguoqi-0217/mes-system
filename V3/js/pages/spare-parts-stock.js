@@ -89,11 +89,6 @@ const SparePartsStock = {
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
           </div>
         </div>
-        <div id="spLegendBar" style="flex-shrink:0;display:none;align-items:center;gap:16px;padding:10px 20px 0;font-size:12px;color:#64748b;flex-wrap:wrap;">
-          <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block;"></span>绿灯 = 可用库存 ≥ 安全库存</span>
-          <span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block;"></span>红灯 = 可用库存 &lt; 安全库存</span>
-          <span style="color:#94a3b8;">安全库存为物料主数据静态设置值，不随库存变动</span>
-        </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">
             <thead id="spTableHead"></thead>
@@ -192,9 +187,7 @@ const SparePartsStock = {
     document.getElementById('spNext').disabled = this.page >= totalPages;
     document.getElementById('spPageSizeSel').value = this.pageSize;
     this._syncToggleBtn();
-    // 红绿灯图例只在工厂汇总档展示；展开按钮在工厂汇总档隐藏（无次要字段）
-    const legendBar = document.getElementById('spLegendBar');
-    if (legendBar) legendBar.style.display = isPlant ? 'flex' : 'none';
+    // 展开按钮在工厂汇总档隐藏（无次要字段）
     const toggleBtn = document.getElementById('spToggleExt');
     if (toggleBtn) toggleBtn.style.display = isPlant ? 'none' : '';
 
