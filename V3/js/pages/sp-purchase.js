@@ -767,7 +767,7 @@ const SpPurchase = {
       applyDate: f('prFCreateDate') || new Date().toISOString().slice(0, 10),
       createDate: f('prFCreateDate') || new Date().toISOString().slice(0, 10),
       createTime: f('prFCreateTime') || new Date().toTimeString().slice(0, 5),
-      applicant: f('prFApplicant') || (window.currentUserId || 'admin'),
+      applicant: window.currentUserId || 'admin',
       plant: f('prFPlant'),
       dept: f('prFDept'),
       notes: '',
@@ -798,10 +798,14 @@ const SpPurchase = {
       const supplier = getVal('supplier');
       const supplierMatCode = getVal('supplierMatCode');
       const notes = getVal('notes');
+      const applicant = getVal('applicant');
       const deliveryDate = fromDateInputValue(getVal('deliveryDate'));
 
       // Skip empty rows
       if (!mc && !st && !q) continue;
+
+      // 申请人姓名必填（下沉到行项目后每个行项目都必须填写）
+      if (!applicant) { toast(`第 ${i+1} 行：申请人姓名必填`); return; }
 
       // Z01 validation（KNTTP=K 费用化采购：物料号置灰，物料组与短文本必填；其余：物料号必填）
       if (isZ01) {
@@ -847,7 +851,7 @@ const SpPurchase = {
       hasValidLine = true;
       prData.lines.push({
         itemNo: (i + 1) * 10,
-        matCode: mc, shortText: st,
+        matCode: mc, shortText: st, applicant,
         poNo: existingPoData?.poNo || '',
         poLineItem: existingPoData?.poLineItem || '',
         supplier: supplier || (existingPoData?.supplier || ''),
@@ -937,7 +941,6 @@ const SpPurchase = {
       return { ...l, _pos:pos };
     });
 
-    const applicant = pr.applicant || (pr.lines.length ? pr.lines[0].applicant : '-');
     const createDate = pr.createDate || pr.applyDate;
     const createTime = pr.createTime || '';
 
@@ -956,7 +959,6 @@ const SpPurchase = {
                 <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}</dd></div>
                 <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong></dd></div>
                 <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}</dd></div>
-                <div class="detail-item"><dt>申请人姓名</dt><dd>${esc(applicant)}</dd></div>
                 <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}</dd></div>
                 <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}</dd></div>
                 <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
@@ -971,6 +973,7 @@ const SpPurchase = {
                   <th>科目分配类别</th>
                   <th>物料编号</th>
                   <th>短文本</th>
+                  <th>申请人</th>
                   <th style="text-align:right;">数量</th>
                   <th style="width:42px;">单位</th>
                   <th style="text-align:right;">评价价格</th>
@@ -996,6 +999,7 @@ const SpPurchase = {
                   <td>${esc(acctLabel?acctLabel.label:l.acctAssCategory||'-')}</td>
                   <td><strong>${esc(l.matCode)}</strong></td>
                   <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(l.shortText)}">${esc(l.shortText)}</td>
+                  <td>${esc(l.applicant||'-')}</td>
                   <td style="text-align:right;">${Number(l.reqQty).toLocaleString()}</td>
                   <td style="text-align:center;">${esc(l.unit)}</td>
                   <td style="text-align:right;"><span class="price-cell" data-tip="需求部门填写的预估单价，供采购人员参考">${Number(l.price).toFixed(2)}</span></td>
@@ -1065,7 +1069,6 @@ const SpPurchase = {
     const isNew = !this.editMode;
     const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew)).join('');
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o => o.value === purchaseType);
-    const applicant = pr.applicant || (pr.lines[0] && pr.lines[0].applicant) || window.currentUserId || 'admin';
     const createDate = pr.createDate || pr.applyDate || new Date().toISOString().slice(0,10);
     const createTime = pr.createTime || (this.editMode ? '' : new Date().toTimeString().slice(0,5));
     const plantOptions = `<option value="1000"${pr.plant==='1000'?' selected':''}>1000 - 山东步长制药工厂</option>
@@ -1091,7 +1094,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}<input type="hidden" id="prFPlant" value="${esc(pr.plant)}"></dd></div>
         <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}<input type="hidden" id="prFPurchaseType" value="${esc(purchaseType)}"></dd></div>
-        <div class="detail-item"><dt>申请人姓名</dt><dd>${esc(applicant)}<input type="hidden" id="prFApplicant" value="${esc(applicant)}"></dd></div>
         <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}<input type="hidden" id="prFCreateDate" value="${esc(createDate)}"></dd></div>
         <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}<input type="hidden" id="prFCreateTime" value="${esc(createTime)}"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}<input type="hidden" id="prFDept" value="${esc(pr.dept)}"></dd></div>
@@ -1100,7 +1102,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>工厂</dt><dd><select id="prFPlant" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${plantOptions}</select></dd></div>
         <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo||'(自动生成)')}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd><select id="prFPurchaseType" onchange="SpPurchase.onPurchaseTypeChange()" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${PURCHASE_TYPE_OPTIONS.map(o=>`<option value="${o.value}"${purchaseType===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></dd></div>
-        <div class="detail-item"><dt>申请人姓名</dt><dd><input type="text" id="prFApplicant" value="${esc(applicant)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>创建日期</dt><dd><input type="date" id="prFCreateDate" value="${esc(createDate)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>创建时间</dt><dd><input type="text" id="prFCreateTime" value="${esc(createTime)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd><select id="prFDept" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${deptOptions}</select></dd></div>
@@ -1134,6 +1135,7 @@ const SpPurchase = {
                     <th style="min-width:80px;" id="prThAcctAss">科目分配类别</th>
                     <th style="min-width:100px;" id="prThMatCode"><span class="req">*</span> 物料编号</th>
                     <th style="min-width:180px;" id="prThShortText"><span class="req">*</span> 短文本</th>
+                    <th style="min-width:80px;"><span class="req">*</span> 申请人</th>
                     <th style="min-width:75px;text-align:right;"><span class="req">*</span> 数量</th>
                     <th style="width:52px;">单位</th>
                     <th style="min-width:80px;text-align:right;" id="prThPrice">评价价格</th>
@@ -1190,6 +1192,9 @@ const SpPurchase = {
       ? `<td><input type="text" data-field="shortText" value="${esc(line.shortText||'')}" placeholder="费用性采购内容描述"${dis} style="padding:5px 8px;width:100%;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()" required></td>`
       : `<td><input type="text" data-field="shortText" value="${esc(line.shortText||'')}" placeholder="物料描述" readonly${dis} style="padding:5px 8px;width:100%;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;background:#f1f5f9;color:#64748b;" oninput="SpPurchase.recalcTotal()"></td>`;
 
+    // Applicant cell（申请人姓名，必填）
+    const applicantCell = `<td style="padding:5px;"><input type="text" data-field="applicant" value="${esc(line.applicant||'')}" placeholder="申请人姓名"${dis} style="width:90px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" required></td>`;
+
     // AcctAssCategory cell（Z01/Z02 均可下拉选择；锁定行 disabled）
     const acctAssCell = `<td style="padding:5px;"><select data-field="acctAssCategory"${dis} onchange="SpPurchase.onAcctAssChange(this)" style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;">${ACCT_ASS_CATEGORY_OPTIONS.map(o=>`<option value="${o.value}"${knttp===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
 
@@ -1217,6 +1222,7 @@ const SpPurchase = {
       ${acctAssCell}
       ${matCodeCell}
       ${shortTextCell}
+      ${applicantCell}
       <td style="padding:5px;"><input type="number" data-field="reqQty" value="${line.reqQty||''}" min="0" step="any"${dis} style="width:72px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;" oninput="SpPurchase.recalcTotal()" required></td>
       <td style="padding:5px;"><select data-field="unit"${dis} style="width:48px;padding:4px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;" onchange="SpPurchase.recalcTotal()">
         <option value="个"${line.unit==='个'?' selected':''}>个</option><option value="KG"${line.unit==='KG'?' selected':''}>KG</option><option value="套"${line.unit==='套'?' selected':''}>套</option><option value="袋"${line.unit==='袋'?' selected':''}>袋</option><option value="件"${line.unit==='件'?' selected':''}>件</option><option value="台"${line.unit==='台'?' selected':''}>台</option><option value="支"${line.unit==='支'?' selected':''}>支</option><option value="桶"${line.unit==='桶'?' selected':''}>桶</option><option value="组"${line.unit==='组'?' selected':''}>组</option><option value="箱"${line.unit==='箱'?' selected':''}>箱</option><option value="卷"${line.unit==='卷'?' selected':''}>卷</option><option value="瓶"${line.unit==='瓶'?' selected':''}>瓶</option><option value="盒"${line.unit==='盒'?' selected':''}>盒</option><option value="张"${line.unit==='张'?' selected':''}>张</option>
@@ -1469,7 +1475,7 @@ const SpPurchase = {
     const idx = tbody.rows.length;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant: window.currentUserId || '', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
   },
