@@ -982,7 +982,7 @@ const SpPurchase = {
                   <th>成本中心</th>
                   <th style="width:100px;text-align:center;">处理状态</th>
                   <th style="width:60px;text-align:center;">已结算</th>
-                  <th style="width:110px;text-align:center;">照片</th>
+                  <th style="width:110px;text-align:center;">图片</th>
                   <th>备注</th>
                   <th style="width:50px;text-align:center;">操作</th>
                 </tr></thead>
@@ -1144,7 +1144,7 @@ const SpPurchase = {
                     <th style="min-width:105px;">供应商物料编号</th>
                     <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
                     ${isNew ? '' : '<th style="width:100px;text-align:center;">处理状态</th><th style="width:60px;text-align:center;">已结算</th>'}
-                    <th style="min-width:110px;text-align:center;">照片</th>
+                    <th style="min-width:110px;text-align:center;">图片</th>
                     <th style="min-width:70px;">备注</th>
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
@@ -1235,9 +1235,9 @@ const SpPurchase = {
     </tr>`;
   },
 
-  // ---- 行项目照片（每个行项目可上传多张照片） ----
+  // ---- 行项目图片（每个行项目可上传多张图片） ----
 
-  /** 从行 DOM 读回照片数组 */
+  /** 从行 DOM 读回图片数组 */
   _getRowPhotos(tr) {
     if (!tr) return [];
     return Array.from(tr.querySelectorAll('img.line-photo-img')).map(img => ({ name: img.dataset.name || '', dataUrl: img.src }));
@@ -1249,7 +1249,7 @@ const SpPurchase = {
     return (tbody && tbody.rows[rowIdx]) ? tbody.rows[rowIdx] : null;
   },
 
-  /** 生成行内照片单元格 */
+  /** 生成行内图片单元格 */
   _photoCellHTML(photos, idx, locked) {
     const list = photos || [];
     const n = list.length;
@@ -1258,13 +1258,13 @@ const SpPurchase = {
     const more = n > 4 ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;">+${n-4}</span>` : '';
     const btn = locked
       ? (n ? '' : '<span style="color:var(--text-muted);font-size:11px;">-</span>')
-      : `<button type="button" class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">📷 照片${n?`(${n})`:''}</button>`;
+      : `<button type="button" class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">📷 图片${n?`(${n})`:''}</button>`;
     return `<td class="line-photo-cell" style="padding:5px;min-width:110px;">
       <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${btn}${thumbs}${more}</div>
     </td>`;
   },
 
-  /** 打开行项目照片管理弹窗 */
+  /** 打开行项目图片管理弹窗 */
   openLinePhotoModal(rowIdx) {
     const tr = this._getLineRowTr(rowIdx);
     if (!tr) return;
@@ -1282,7 +1282,7 @@ const SpPurchase = {
     backdrop.innerHTML = `
       <div class="modal" style="width:90vw;max-width:1200px;max-height:92vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()">
         <div class="modal-header">
-          <div class="modal-title">行项目照片 <span id="prLinePhotoTitle" style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">· ${esc(titleInfo)}</span><span id="prLinePhotoCount" style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">共 0 张</span></div>
+          <div class="modal-title">行项目图片 <span id="prLinePhotoTitle" style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">· ${esc(titleInfo)}</span><span id="prLinePhotoCount" style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">共 0 张</span></div>
           <button class="modal-close" onclick="SpPurchase._closeLinePhotoModal()">×</button>
         </div>
         <div class="modal-body" id="prLinePhotoBody" style="max-height:none;overflow-y:auto;flex:1;"></div>
@@ -1299,7 +1299,7 @@ const SpPurchase = {
     if (bd) bd.remove();
   },
 
-  /** 渲染弹窗内容：grid=照片网格，preview=大图预览 */
+  /** 渲染弹窗内容：grid=图片网格，preview=大图预览 */
   _renderLinePhotoModal(rowIdx, mode) {
     const tr = this._getLineRowTr(rowIdx);
     const body = document.getElementById('prLinePhotoBody');
@@ -1330,12 +1330,12 @@ const SpPurchase = {
           ${locked ? '' : `<button type="button" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;" title="删除" onclick="SpPurchase._removeLinePhoto(${rowIdx},${i})">✕</button>`}
         </div>
       </div>`).join('')
-      : '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:8px;">该行项目暂无照片，点击上方按钮上传</div>';
+      : '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:8px;">该行项目暂无图片，点击上方按钮上传</div>';
     body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
-        ${locked ? '<span style="font-size:12px;color:var(--text-muted);">该行已创建采购订单，照片为只读查看</span>' : `
+        ${locked ? '<span style="font-size:12px;color:var(--text-muted);">该行已创建采购订单，图片为只读查看</span>' : `
         <label class="btn btn-primary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:6px;">
-          + 上传照片（可多选）
+          + 上传图片（可多选）
           <input type="file" accept="image/*" multiple style="display:none;" onchange="SpPurchase._onLinePhotoSelected(this, ${rowIdx})">
         </label>`}
         <span style="font-size:12px;color:var(--text-muted);">支持 JPG / PNG / WEBP / GIF，自动压缩；点击缩略图可查看大图</span>
@@ -1343,7 +1343,7 @@ const SpPurchase = {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">${gridHTML}</div>`;
   },
 
-  /** 选择图片文件 → 压缩 → 追加到该行照片列表 */
+  /** 选择图片文件 → 压缩 → 追加到该行图片列表 */
   _onLinePhotoSelected(input, rowIdx) {
     const files = Array.from(input.files || []);
     if (input) input.value = '';
@@ -1364,7 +1364,7 @@ const SpPurchase = {
     });
   },
 
-  /** 将照片数组写回行 DOM 并刷新行内缩略图 */
+  /** 将图片数组写回行 DOM 并刷新行内缩略图 */
   _applyRowPhotos(rowIdx, photos) {
     const tr = this._getLineRowTr(rowIdx);
     if (!tr) return;
@@ -1412,7 +1412,7 @@ const SpPurchase = {
     reader.readAsDataURL(file);
   },
 
-  /** 查看弹窗内：行项目照片单元格（缩略图，点击查看大图） */
+  /** 查看弹窗内：行项目图片单元格（缩略图，点击查看大图） */
   _detailPhotoHTML(photos, docNo, itemNo) {
     const list = photos || [];
     if (!list.length) return '<span style="color:var(--text-muted);font-size:11px;">-</span>';
@@ -1429,7 +1429,7 @@ const SpPurchase = {
     const line = pr.lines.find(l => String(l.itemNo) === String(itemNo));
     const p = line && line.photos ? line.photos[photoIdx] : null;
     if (!p) return;
-    showModal(`照片 - ${esc(line.matCode||'')} ${esc(line.shortText||'')}`,
+    showModal(`图片 - ${esc(line.matCode||'')} ${esc(line.shortText||'')}`,
       `<img src="${p.dataUrl}" style="max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:6px;">`,
       [{ text:'关闭', cls:'btn-secondary', action: closeModal }]);
   },
