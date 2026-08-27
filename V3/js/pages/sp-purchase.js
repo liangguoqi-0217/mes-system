@@ -766,7 +766,7 @@ const SpPurchase = {
       docNo: this.editMode ? this.editId : ('21' + String(Math.floor(Math.random()*900000000+100000000))),
       applyDate: f('prFCreateDate') || new Date().toISOString().slice(0, 10),
       createDate: f('prFCreateDate') || new Date().toISOString().slice(0, 10),
-      createTime: f('prFCreateTime') || new Date().toTimeString().slice(0, 5),
+      createTime: this.editMode ? (spPurchaseData.find(r => r.docNo === this.editId)?.createTime || '') : new Date().toTimeString().slice(0, 5),
       applicant: window.currentUserId || 'admin',
       plant: f('prFPlant'),
       dept: f('prFDept'),
@@ -942,7 +942,6 @@ const SpPurchase = {
     });
 
     const createDate = pr.createDate || pr.applyDate;
-    const createTime = pr.createTime || '';
 
     const html = `
       <div class="modal-backdrop" id="prDetailBackdrop" onclick="SpPurchase.closeDetail()">
@@ -960,7 +959,6 @@ const SpPurchase = {
                 <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong></dd></div>
                 <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}</dd></div>
                 <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}</dd></div>
-                <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}</dd></div>
                 <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}</dd></div>
               </div>
             </div>
@@ -1070,7 +1068,6 @@ const SpPurchase = {
     const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew)).join('');
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o => o.value === purchaseType);
     const createDate = pr.createDate || pr.applyDate || new Date().toISOString().slice(0,10);
-    const createTime = pr.createTime || (this.editMode ? '' : new Date().toTimeString().slice(0,5));
     const plantOptions = `<option value="1000"${pr.plant==='1000'?' selected':''}>1000 - 山东步长制药工厂</option>
                   <option value="2001"${pr.plant==='2001'?' selected':''}>2001 - 陕西步长制药工厂</option>
                   <option value="2002"${pr.plant==='2002'?' selected':''}>2002 - 山东丹红制药工厂</option>
@@ -1095,7 +1092,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}<input type="hidden" id="prFPurchaseType" value="${esc(purchaseType)}"></dd></div>
         <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}<input type="hidden" id="prFCreateDate" value="${esc(createDate)}"></dd></div>
-        <div class="detail-item"><dt>创建时间</dt><dd>${esc(createTime||'-')}<input type="hidden" id="prFCreateTime" value="${esc(createTime)}"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}<input type="hidden" id="prFDept" value="${esc(pr.dept)}"></dd></div>
       </div>` : `
       <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
@@ -1103,7 +1099,6 @@ const SpPurchase = {
         <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo||'(自动生成)')}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd><select id="prFPurchaseType" onchange="SpPurchase.onPurchaseTypeChange()" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${PURCHASE_TYPE_OPTIONS.map(o=>`<option value="${o.value}"${purchaseType===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></dd></div>
         <div class="detail-item"><dt>创建日期</dt><dd><input type="date" id="prFCreateDate" value="${esc(createDate)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
-        <div class="detail-item"><dt>创建时间</dt><dd><input type="text" id="prFCreateTime" value="${esc(createTime)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd><select id="prFDept" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${deptOptions}</select></dd></div>
       </div>`;
     return `
