@@ -715,7 +715,13 @@ const SpPurchase = {
 
       // 示例行：系统自动忽略，不参与校验
       if (notes.includes('示例') || shortText.includes('示例') || matCode.includes('示例')) {
-        rowReports.push({ rn, matCode, shortText: shortText || '（示例行）', sample: true, issues: [] });
+        rowReports.push({
+          rn, matCode, shortText: shortText || '（示例行）', sample: true, issues: [],
+          reqQty: String(cell(row, 'reqQty') ?? '').trim(),
+          unit: String(cell(row, 'unit')).trim() || '个',
+          price: String(cell(row, 'price') ?? '').trim(),
+          deliveryDate: cell(row, 'deliveryDate') || ''
+        });
         continue;
       }
 
@@ -772,7 +778,13 @@ const SpPurchase = {
         deliveryDate = ds;
       }
 
-      rowReports.push({ rn, matCode, shortText: effShortText || '（未填写）', sample: false, issues });
+      rowReports.push({
+        rn, matCode, shortText: effShortText || '（未填写）', sample: false, issues,
+        reqQty: reqQtyStr,
+        unit: String(cell(row, 'unit')).trim() || '个',
+        price: priceRaw,
+        deliveryDate
+      });
       if (issues.length) continue; // 该行存在问题，不计入可导入行
       lines.push({
         matCode,
@@ -805,7 +817,7 @@ const SpPurchase = {
     this._renderBatchRowResults(rowReports, file.name, { noData: true });
   },
 
-  // ---- 逐行校验结果清单（每行一个明确状态）----
+  // ---- 逐行校验结果表格（与创建表单的行项目表样式一致）----
   _renderBatchRowResults(rows, fileName, extra) {
     const info = document.getElementById('batchUploadInfo');
     if (info) info.innerHTML = `<span style="color:#16a34a;font-weight:600;">✅ 文件已读取：${esc(fileName)}</span>`;
@@ -825,26 +837,28 @@ const SpPurchase = {
     box.style.padding = '12px 14px';
 
     const shown = rows.slice(0, 100);
-    const rowHtml = shown.map(r => {
-      const badge = r.sample
-        ? `<span style="display:inline-block;flex:none;padding:1px 8px;border-radius:10px;background:#e5e7eb;color:#4b5563;font-size:12px;font-weight:600;">自动忽略（示例行）</span>`
+    const tbody = shown.map(r => {
+      const statusBadge = r.sample
+        ? `<span class="badge" style="background:#e5e7eb;color:#4b5563;font-size:11px;">自动忽略</span>`
         : (r.issues.length
-          ? `<span style="display:inline-block;flex:none;padding:1px 8px;border-radius:10px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:600;">✗ 数据校验未通过</span>`
-          : `<span style="display:inline-block;flex:none;padding:1px 8px;border-radius:10px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;">✓ 数据校验正确</span>`);
-      const issuesHtml = r.issues.length
-        ? `<div style="margin-top:4px;padding-left:2px;">${r.issues.map(t => `<div style="color:#b91c1c;font-size:12px;line-height:1.7;">• ${esc(t)}</div>`).join('')}</div>`
-        : '';
-      return `<div style="border-bottom:1px solid #f1f5f9;padding:8px 0;">
-        <div style="display:flex;align-items:flex-start;gap:10px;">
-          <span style="flex:none;min-width:64px;font-weight:700;color:#64748b;font-size:12px;line-height:1.7;">第 ${r.rn} 行</span>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:600;color:#1f2937;word-break:break-all;">${esc(r.shortText)}</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:1px;">物料编号：${r.matCode ? esc(r.matCode) : '<span style="color:#b91c1c;">未填写</span>'}</div>
-          </div>
-          ${badge}
-        </div>
-        ${issuesHtml}
-      </div>`;
+          ? `<span class="badge" style="background:#fee2e2;color:#b91c1c;font-size:11px;">✗ 校验未通过</span>`
+          : `<span class="badge" style="background:#dcfce7;color:#166534;font-size:11px;">✓ 校验正确</span>`);
+      const issueText = r.sample
+        ? '<span style="color:#6b7280;font-size:12px;">示例行，已自动忽略</span>'
+        : (r.issues.length
+          ? `<div style="color:#b91c1c;font-size:12px;line-height:1.5;">${r.issues.map(t => `• ${esc(t)}`).join('<br>')}</div>`
+          : '<span style="color:#9ca3af;font-size:12px;">-</span>');
+      return `<tr>
+        <td style="text-align:center;font-size:12px;color:#64748b;font-weight:600;">${r.rn}</td>
+        <td style="font-size:12px;">${esc(r.matCode || '')}</td>
+        <td style="font-size:12px;">${esc(r.shortText)}</td>
+        <td style="text-align:right;font-size:12px;">${esc(r.reqQty || '')}</td>
+        <td style="text-align:center;font-size:12px;color:#6b7280;">${esc(r.unit || '')}</td>
+        <td style="text-align:right;font-size:12px;">${esc(r.price || '')}</td>
+        <td style="text-align:center;font-size:12px;">${r.deliveryDate ? esc(String(r.deliveryDate)) : '<span style="color:#9ca3af;">-</span>'}</td>
+        <td style="text-align:center;">${statusBadge}</td>
+        <td style="min-width:180px;">${issueText}</td>
+      </tr>`;
     }).join('');
 
     let notice = '';
@@ -856,17 +870,32 @@ const SpPurchase = {
     }
 
     box.innerHTML = `
-      <div style="font-size:14px;font-weight:700;color:#1f2937;">📋 逐行校验结果</div>
+      <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:4px;">📋 逐行校验结果</div>
       <div style="font-size:12px;color:#374151;margin:6px 0 4px;">
         共识别 <strong>${rows.length}</strong> 行数据：
         ✓ 数据校验正确 <strong style="color:#166534;">${okCount}</strong> 行 ｜
         ✗ 校验未通过 <strong style="color:#b91c1c;">${errCount}</strong> 行${skipCount ? ` ｜ 自动忽略（示例行）<strong>${skipCount}</strong> 行` : ''}
       </div>
       ${notice}
-      <div style="max-height:320px;overflow-y:auto;padding-right:4px;">
-        ${rowHtml || '<div style="color:#6b7280;font-size:12px;padding:10px 0;">未识别到任何数据行。</div>'}
-        ${rows.length > shown.length ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">…… 其余 ${rows.length - shown.length} 行未展示</div>` : ''}
-      </div>`;
+      <div style="max-height:340px;overflow:auto;border:1px solid #e5e7eb;border-radius:6px;background:#fff;">
+        <table class="data-table data-table-compact" style="min-width:900px;margin:0;">
+          <thead>
+            <tr>
+              <th style="width:60px;text-align:center;">Excel 行号</th>
+              <th style="min-width:100px;">物料编号</th>
+              <th style="min-width:140px;">短文本</th>
+              <th style="width:55px;text-align:right;">数量</th>
+              <th style="width:45px;text-align:center;">单位</th>
+              <th style="width:75px;text-align:right;">评价价格</th>
+              <th style="width:90px;text-align:center;">交货日期</th>
+              <th style="width:100px;text-align:center;">校验状态</th>
+              <th style="min-width:180px;">错误说明</th>
+            </tr>
+          </thead>
+          <tbody>${tbody || '<tr><td colspan="9" style="text-align:center;color:#6b7280;font-size:12px;padding:16px;">未识别到任何数据行。</td></tr>'}</tbody>
+        </table>
+      </div>
+      ${rows.length > shown.length ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">…… 其余 ${rows.length - shown.length} 行未展示</div>` : ''}`;
   },
 
   // ---- 通用错误提示（红色信息块）----
