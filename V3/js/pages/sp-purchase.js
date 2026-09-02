@@ -798,6 +798,9 @@ const SpPurchase = {
       const notes = getVal('notes');
       const applicant = getVal('applicant');
       const deliveryDate = fromDateInputValue(getVal('deliveryDate'));
+      const purchaseReason = getVal('purchaseReason');
+      const usageType = getVal('usageType');
+      const budgetSource = getVal('budgetSource');
 
       // Skip empty rows
       if (!mc && !st && !q) continue;
@@ -858,6 +861,7 @@ const SpPurchase = {
         deliveryDate: deliveryDate,
         price: p, totalValue: q * p, status: lineStatus, isSettled,
         acctAssCategory: acct, matGroup: mg, costCenter: costCtr, notes: notes,
+        purchaseReason: purchaseReason, usageType: usageType, budgetSource: budgetSource,
         photos: this._getRowPhotos(row),
         _pos: existingPoData?._pos || []
       });
@@ -961,7 +965,7 @@ const SpPurchase = {
             <!-- 行项目 -->
             <div class="form-section" style="margin-top:16px;">
               <div class="form-section-title">行项目 (${pr.lines.length} 项，合计 ¥${grandTotal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})})</div>
-              <table class="data-table data-table-compact" style="min-width:${isZ02?'1300px':'1600px'};">
+              <table class="data-table data-table-compact" style="min-width:${isZ02?'1500px':'1800px'};">
                 <thead><tr>
                   <th style="width:60px;text-align:center;">行项目</th>
                   <th>科目分配类别</th>
@@ -975,6 +979,9 @@ const SpPurchase = {
                   <th>物料组</th>
                   <th>交货日期</th>
                   <th>成本中心</th>
+                  <th>采购原因</th>
+                  <th>使用/库存</th>
+                  <th>预算出处</th>
                   <th style="width:100px;text-align:center;">处理状态</th>
                   <th style="width:60px;text-align:center;">已结算</th>
                   <th style="width:110px;text-align:center;">图片</th>
@@ -999,6 +1006,9 @@ const SpPurchase = {
                   <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
                   <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
                   <td>${esc(l.costCenter||'-')}</td>
+                  <td>${esc(l.purchaseReason||'-')}</td>
+                  <td>${esc(l.usageType||'-')}</td>
+                  <td>${esc(l.budgetSource||'-')}</td>
                   <td style="text-align:center;"><span class="badge ${hasPO?'badge-blue':'badge-gray'}">${hasPO?'B-已创建采购订单':'N-未编辑'}</span></td>
                   <td style="text-align:center;"><span class="badge ${settled==='Y'?'badge-green':'badge-gray'}">${settled==='Y'?'是':'否'}</span></td>
                   <td style="text-align:center;">${this._detailPhotoHTML(l.photos||[], pr.docNo, l.itemNo)}</td>
@@ -1006,7 +1016,7 @@ const SpPurchase = {
                   <td style="text-align:center;">${hasPO ? '<span class="po-toggle-arrow" style="font-size:10px;color:var(--primary);cursor:pointer;display:inline-block;padding:2px 6px;border-radius:4px;background:#eff6ff;">▼</span>' : '<span style="color:var(--text-muted);font-size:11px;">-</span>'}</td>
                 </tr>
                 ${hasPO ? `<tr class="po-detail-row" id="po_${pr.docNo}_${l.itemNo}" style="display:none;">
-                  <td colspan="18" style="padding:4px 0;">
+                  <td colspan="21" style="padding:4px 0;">
                     <div style="margin:4px 10px;">
                       <table style="width:100%;border-collapse:collapse;font-size:12px;background:#f0f4f8;border-radius:6px;overflow:hidden;">
                         <thead><tr style="background:#e2e8f0;">
@@ -1116,7 +1126,7 @@ const SpPurchase = {
                 </div>
               </div>
               <div style="overflow-x:auto;">
-                <table class="data-table data-table-compact" id="prLinesTable" style="min-width:${purchaseType==='Z02'?'1300px':'1600px'};">
+                <table class="data-table data-table-compact" id="prLinesTable" style="min-width:${purchaseType==='Z02'?'1500px':'1800px'};">
                   <thead><tr>
                     <th style="width:60px;text-align:center;">行项目</th>
                     <th style="min-width:80px;" id="prThAcctAss">科目分配类别</th>
@@ -1130,6 +1140,9 @@ const SpPurchase = {
                     <th style="min-width:85px;" id="prThMatGroup">物料组</th>
                     <th style="min-width:95px;">交货日期</th>
                     <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
+                    <th style="min-width:100px;">采购原因</th>
+                    <th style="min-width:85px;">使用/库存</th>
+                    <th style="min-width:105px;">预算出处</th>
                     ${isNew ? '' : '<th style="width:100px;text-align:center;">处理状态</th><th style="width:60px;text-align:center;">已结算</th>'}
                     <th style="min-width:110px;text-align:center;">图片</th>
                     <th style="min-width:70px;">备注</th>
@@ -1217,6 +1230,9 @@ const SpPurchase = {
       ${matGroupCell}
       <td style="padding:5px;"><input type="date" data-field="deliveryDate" value="${esc(toDateInputValue(line.deliveryDate))}"${dis} style="width:130px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${costCenterCell}
+      <td style="padding:5px;"><input type="text" data-field="purchaseReason" value="${esc(line.purchaseReason||'')}" placeholder="采购原因"${dis} style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><select data-field="usageType"${dis} style="width:80px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;"><option value="">请选择</option><option value="使用"${line.usageType==='使用'?' selected':''}>使用</option><option value="库存"${line.usageType==='库存'?' selected':''}>库存</option></select></td>
+      <td style="padding:5px;"><input type="text" data-field="budgetSource" value="${esc(line.budgetSource||'')}" placeholder="预算出处"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${isNew ? '' : '<td style="text-align:center;padding:5px;"><span class="badge ' + (locked?'badge-blue':'badge-gray') + '" style="font-size:11px;">' + (locked?'B-已创建采购订单':'N-未编辑') + '</span></td>'}
       ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
       ${this._photoCellHTML(line.photos||[], idx, locked)}
@@ -1433,8 +1449,8 @@ const SpPurchase = {
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const newAcct = selectEl.value;
     const getEl = f => tr.querySelector(`[data-field="${f}"]`);
-    const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', isSettled:'N', notes:'', deliveryDate:'' };
-    ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','isSettled','notes','deliveryDate'].forEach(f => {
+    const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', isSettled:'N', notes:'', deliveryDate:'', purchaseReason:'', usageType:'', budgetSource:'' };
+    ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','isSettled','notes','deliveryDate','purchaseReason','usageType','budgetSource'].forEach(f => {
       const el = getEl(f);
       if (el) {
         let v = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent)));
@@ -1458,7 +1474,7 @@ const SpPurchase = {
     const idx = tbody.rows.length;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant: window.currentUserId || '', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', isSettled:'N', notes:'' }, idx, purchaseType);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant: window.currentUserId || '', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', isSettled:'N', notes:'', purchaseReason:'', usageType:'', budgetSource:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
   },
@@ -1509,8 +1525,8 @@ const SpPurchase = {
     rows.forEach((tr, i) => {
       // Collect existing data via data-field
       const getEl = field => tr.querySelector(`[data-field="${field}"]`);
-      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', isSettled:'N', notes:'', deliveryDate:'' };
-      ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','isSettled','notes','deliveryDate'].forEach(f => {
+      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', isSettled:'N', notes:'', deliveryDate:'', purchaseReason:'', usageType:'', budgetSource:'' };
+      ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','isSettled','notes','deliveryDate','purchaseReason','usageType','budgetSource'].forEach(f => {
         const el = getEl(f);
         if (el) {
           let v = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent)));
