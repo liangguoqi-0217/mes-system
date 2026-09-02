@@ -700,67 +700,80 @@ const SpPurchase = {
     if (headerIdx < 0) { this._showBatchErrorMsg('未找到「物料编号」表头行，请使用下载的 Excel 模板填写后上传。'); return; }
 
     const cell = (row, name) => (colMap[name] === undefined ? '' : (row[colMap[name]] ?? ''));
-    const errors = [];
     const lines = [];
-    const skippedSample = [];
+    const rowReports = []; // 逐行校验结果（每行一个状态，错误一次性列全）
 
     // 3) 逐行解析 + 校验
     for (let i = headerIdx + 1; i < aoa.length; i++) {
       const row = aoa[i] || [];
-      if (!row.some(c => String(c ?? '').trim() !== '')) continue;
+      if (!row.some(c => String(c ?? '').trim() !== '')) continue; // 整行为空的行跳过
       const rn = i + 1;
       const matCode = String(cell(row, 'matCode')).trim();
       const reqQtyStr = String(cell(row, 'reqQty') ?? '').trim();
       const shortText = String(cell(row, 'shortText')).trim();
       const notes = String(cell(row, 'notes')).trim();
-      if (!matCode && !reqQtyStr) continue; // 空白/纯文字行忽略
+
+      // 示例行：系统自动忽略，不参与校验
       if (notes.includes('示例') || shortText.includes('示例') || matCode.includes('示例')) {
-        skippedSample.push(rn);
+        rowReports.push({ rn, matCode, shortText: shortText || '（示例行）', sample: true, issues: [] });
         continue;
       }
 
-      // 数量
-      const qty = parseFloat(reqQtyStr.replace(/,/g, ''));
-      if (reqQtyStr === '' || Number.isNaN(qty)) { errors.push(`第 ${rn} 行：申请数量必须为大于 0 的数字`); continue; }
-      if (!(qty > 0)) { errors.push(`第 ${rn} 行：申请数量必须大于 0`); continue; }
+      const issues = [];
+      let qty = NaN, mat = null, effShortText = '', price = 0, deliveryDate = '';
+
+      // 数量：留空或非正数均报错
+      if (reqQtyStr === '') issues.push('申请数量未填写');
+      else {
+        qty = parseFloat(reqQtyStr.replace(/,/g, ''));
+        if (Number.isNaN(qty) || !(qty > 0)) issues.push(`申请数量「${reqQtyStr}」必须为大于 0 的数字`);
+      }
 
       // 物料：Z01 必填且须存在于物料主数据；Z02 费用化可不填物料
-      if (purchaseType !== 'Z02' && !matCode) { errors.push(`第 ${rn} 行：物料编号不能为空（凭证类型 Z01）`); continue; }
-      let mat = null;
-      if (matCode) {
+      if (purchaseType !== 'Z02' && !matCode) issues.push('物料编号未填写（凭证类型 Z01 必填）');
+      else if (matCode) {
         mat = findMatMaster(matCode);
-        if (!mat) errors.push(`第 ${rn} 行：物料编号「${matCode}」不存在于物料主数据`);
+        if (!mat) issues.push(`物料编号「${matCode}」不存在于物料主数据`);
       }
-      const effShortText = shortText || (mat ? mat.shortText : '');
-      if (!effShortText) { errors.push(`第 ${rn} 行：短文本（物料描述）不能为空`); continue; }
 
-      // 价格
+      // 短文本（物料描述）
+      effShortText = shortText || (mat ? mat.shortText : '');
+      if (!effShortText) issues.push('短文本（物料描述）未填写');
+
+      // 价格（允许留空，默认 0）
       const priceRaw = String(cell(row, 'price') ?? '').replace(/,/g, '').trim();
-      let price = 0;
       if (priceRaw !== '') {
-        if (!/^-?\d*\.?\d+$/.test(priceRaw)) { errors.push(`第 ${rn} 行：评价价格「${priceRaw}」不是有效数字`); continue; }
-        price = parseFloat(priceRaw);
-        if (price < 0) { errors.push(`第 ${rn} 行：评价价格不能为负数`); continue; }
+        if (!/^-?\d*\.?\d+$/.test(priceRaw)) issues.push(`评价价格「${priceRaw}」不是有效数字`);
+        else {
+          price = parseFloat(priceRaw);
+          if (price < 0) issues.push(`评价价格「${priceRaw}」不能为负数`);
+        }
       }
 
-      // 日期
-      const toDate = (v, label) => {
-        if (v === '' || v === null || v === undefined) return '';
-        if (v instanceof Date && !isNaN(v.getTime())) {
-          return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+      // 交货日期（允许留空）
+      const rawDate = cell(row, 'deliveryDate');
+      if (rawDate !== '' && rawDate !== null && rawDate !== undefined) {
+        let ds = '';
+        if (rawDate instanceof Date && !isNaN(rawDate.getTime())) {
+          ds = `${rawDate.getFullYear()}-${String(rawDate.getMonth() + 1).padStart(2, '0')}-${String(rawDate.getDate()).padStart(2, '0')}`;
+        } else {
+          const s = String(rawDate).trim();
+          let m = null;
+          if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+          else if (/^\d{8}$/.test(s)) m = [null, s.slice(0, 4), s.slice(4, 6), s.slice(6, 8)];
+          else if (/^\d{4}\.\d{1,2}\.\d{1,2}$/.test(s)) m = s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+          if (!m) issues.push(`「交货日期」格式不正确（示例：2026-07-15，实际：${esc(s)}）`);
+          else {
+            const yy = +m[1], mo = +m[2], dd = +m[3];
+            if (mo < 1 || mo > 12 || dd < 1 || dd > 31) issues.push(`「交货日期」${yy}-${mo}-${dd} 无效`);
+            else ds = `${String(yy).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+          }
         }
-        const s = String(v).trim();
-        let m = null;
-        if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-        else if (/^\d{8}$/.test(s)) m = [null, s.slice(0, 4), s.slice(4, 6), s.slice(6, 8)];
-        else if (/^\d{4}\.\d{1,2}\.\d{1,2}$/.test(s)) m = s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
-        if (!m) { errors.push(`第 ${rn} 行：「${label}」格式不正确（示例：2026-07-15）`); return ''; }
-        const yy = +m[1], mo = +m[2], dd = +m[3];
-        if (mo < 1 || mo > 12 || dd < 1 || dd > 31) { errors.push(`第 ${rn} 行：「${label}」日期无效`); return ''; }
-        return `${String(yy).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
-      };
-      const deliveryDate = toDate(cell(row, 'deliveryDate'), '交货日期');
+        deliveryDate = ds;
+      }
 
+      rowReports.push({ rn, matCode, shortText: effShortText || '（未填写）', sample: false, issues });
+      if (issues.length) continue; // 该行存在问题，不计入可导入行
       lines.push({
         matCode,
         shortText: effShortText,
@@ -777,32 +790,82 @@ const SpPurchase = {
       });
     }
 
-    if (errors.length) { this._renderBatchErrors(errors, file.name); return; }
-    if (!lines.length) { this._showBatchErrorMsg('Excel 中没有可导入的有效行数据，请填写后重新上传。'); return; }
-
-    // 校验通过：关闭批导弹窗，打开与手工填写一致的表单并预填数据
-    this.closeModal();
-    this.openManualForm({ plant, purchaseType, lines, fromBatch: true });
+    // 存在校验未通过的行：逐行展示状态清单，不创建申请
+    if (rowReports.some(r => !r.sample && r.issues.length)) {
+      this._renderBatchRowResults(rowReports, file.name);
+      return;
+    }
+    if (lines.length) {
+      // 校验全部通过：关闭批导弹窗，打开与手工填写一致的表单并预填数据
+      this.closeModal();
+      this.openManualForm({ plant, purchaseType, lines, fromBatch: true });
+      return;
+    }
+    // 没有可导入的数据行（全部为空白行 / 示例行等）
+    this._renderBatchRowResults(rowReports, file.name, { noData: true });
   },
 
-  // ---- 校验错误清单展示 ----
-  _renderBatchErrors(errors, fileName) {
+  // ---- 逐行校验结果清单（每行一个明确状态）----
+  _renderBatchRowResults(rows, fileName, extra) {
     const info = document.getElementById('batchUploadInfo');
     if (info) info.innerHTML = `<span style="color:#16a34a;font-weight:600;">✅ 文件已读取：${esc(fileName)}</span>`;
     const box = document.getElementById('batchErrorBox');
     if (!box) return;
-    const shown = errors.slice(0, 60);
+
+    const okCount = rows.filter(r => !r.sample && !r.issues.length).length;
+    const errCount = rows.filter(r => !r.sample && r.issues.length).length;
+    const skipCount = rows.filter(r => r.sample).length;
+    const hasError = errCount > 0;
+    const noData = !!(extra && extra.noData);
+
     box.style.display = 'block';
-    box.style.border = '1px solid #fecaca';
-    box.style.background = '#fef2f2';
+    box.style.border = hasError ? '1px solid #fecaca' : '1px solid #bfdbfe';
+    box.style.background = hasError ? '#fef2f2' : '#f8fafc';
     box.style.borderRadius = '8px';
     box.style.padding = '12px 14px';
+
+    const shown = rows.slice(0, 100);
+    const rowHtml = shown.map(r => {
+      const badge = r.sample
+        ? `<span style="display:inline-block;flex:none;padding:1px 8px;border-radius:10px;background:#e5e7eb;color:#4b5563;font-size:12px;font-weight:600;">自动忽略（示例行）</span>`
+        : (r.issues.length
+          ? `<span style="display:inline-block;flex:none;padding:1px 8px;border-radius:10px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:600;">✗ 数据校验未通过</span>`
+          : `<span style="display:inline-block;flex:none;padding:1px 8px;border-radius:10px;background:#dcfce7;color:#166534;font-size:12px;font-weight:600;">✓ 数据校验正确</span>`);
+      const issuesHtml = r.issues.length
+        ? `<div style="margin-top:4px;padding-left:2px;">${r.issues.map(t => `<div style="color:#b91c1c;font-size:12px;line-height:1.7;">• ${esc(t)}</div>`).join('')}</div>`
+        : '';
+      return `<div style="border-bottom:1px solid #f1f5f9;padding:8px 0;">
+        <div style="display:flex;align-items:flex-start;gap:10px;">
+          <span style="flex:none;min-width:64px;font-weight:700;color:#64748b;font-size:12px;line-height:1.7;">第 ${r.rn} 行</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#1f2937;word-break:break-all;">${esc(r.shortText)}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:1px;">物料编号：${r.matCode ? esc(r.matCode) : '<span style="color:#b91c1c;">未填写</span>'}</div>
+          </div>
+          ${badge}
+        </div>
+        ${issuesHtml}
+      </div>`;
+    }).join('');
+
+    let notice = '';
+    if (noData) {
+      notice = `<div style="font-size:12px;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;margin:6px 0 8px;line-height:1.7;">
+        ⚠️ 未能识别到可导入的数据行，请检查：① 数据需写在含「物料编号」表头行的<strong>下方</strong>；② 每行至少填写「物料编号」与「申请数量」；③ 不要修改表头文字，上传后如示例行未删除会被系统自动忽略。</div>`;
+    } else if (hasError) {
+      notice = `<div style="font-size:12px;color:#7f1d1d;margin-bottom:8px;">存在未通过的行，本次<strong>未创建任何申请</strong>。请按下方逐行状态修正后重新上传。</div>`;
+    }
+
     box.innerHTML = `
-      <div style="font-size:14px;font-weight:700;color:#b91c1c;margin-bottom:6px;">⚠️ 数据校验未通过（共 ${errors.length} 处问题）</div>
-      <div style="font-size:12px;color:#7f1d1d;margin-bottom:8px;">本次未创建任何申请。请按下列问题修改 Excel 后重新上传：</div>
-      <div style="max-height:220px;overflow-y:auto;font-size:12px;color:#991b1b;line-height:1.7;">
-        ${shown.map(e => `<div style="padding:2px 0;">• ${esc(e)}</div>`).join('')}
-        ${errors.length > shown.length ? `<div style="color:#7f1d1d;margin-top:4px;">…… 其余 ${errors.length - shown.length} 处问题略，请逐项修正</div>` : ''}
+      <div style="font-size:14px;font-weight:700;color:#1f2937;">📋 逐行校验结果</div>
+      <div style="font-size:12px;color:#374151;margin:6px 0 4px;">
+        共识别 <strong>${rows.length}</strong> 行数据：
+        ✓ 数据校验正确 <strong style="color:#166534;">${okCount}</strong> 行 ｜
+        ✗ 校验未通过 <strong style="color:#b91c1c;">${errCount}</strong> 行${skipCount ? ` ｜ 自动忽略（示例行）<strong>${skipCount}</strong> 行` : ''}
+      </div>
+      ${notice}
+      <div style="max-height:320px;overflow-y:auto;padding-right:4px;">
+        ${rowHtml || '<div style="color:#6b7280;font-size:12px;padding:10px 0;">未识别到任何数据行。</div>'}
+        ${rows.length > shown.length ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">…… 其余 ${rows.length - shown.length} 行未展示</div>` : ''}
       </div>`;
   },
 
