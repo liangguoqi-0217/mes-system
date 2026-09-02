@@ -935,9 +935,9 @@ const SpPurchase = {
                   <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
                   <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
                   <td>${esc(l.costCenter||'-')}</td>
-                  <td>${esc(l.purchaseReason||'-')}</td>
-                  <td>${esc(l.usageType||'-')}</td>
-                  <td>${esc(l.budgetSource||'-')}</td>
+                  <td title="${esc(l.purchaseReason||'')}">${esc(l.purchaseReason||'-')}</td>
+                  <td title="${esc(l.usageType||'')}">${esc(l.usageType||'-')}</td>
+                  <td title="${esc(l.budgetSource||'')}">${esc(l.budgetSource||'-')}</td>
                   <td style="text-align:center;"><span class="badge ${hasPO?'badge-blue':'badge-gray'}">${hasPO?'B-已创建采购订单':'N-未编辑'}</span></td>
                   <td style="text-align:center;"><span class="badge ${settled==='Y'?'badge-green':'badge-gray'}">${settled==='Y'?'是':'否'}</span></td>
                   <td style="text-align:center;">${this._detailPhotoHTML(l.photos||[], pr.docNo, l.itemNo)}</td>
@@ -1159,9 +1159,9 @@ const SpPurchase = {
       ${matGroupCell}
       <td style="padding:5px;"><input type="date" data-field="deliveryDate" value="${esc(toDateInputValue(line.deliveryDate))}"${dis} style="width:130px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${costCenterCell}
-      <td style="padding:5px;"><input type="text" data-field="purchaseReason" value="${esc(line.purchaseReason||'')}" placeholder="采购原因"${dis} style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:5px;"><select data-field="usageType"${dis} style="width:80px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#f0f9ff;"><option value="">请选择</option><option value="使用"${line.usageType==='使用'?' selected':''}>使用</option><option value="库存"${line.usageType==='库存'?' selected':''}>库存</option></select></td>
-      <td style="padding:5px;"><input type="text" data-field="budgetSource" value="${esc(line.budgetSource||'')}" placeholder="预算出处"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><input type="text" data-field="purchaseReason" value="${esc(line.purchaseReason||'')}" placeholder="采购原因"${dis} title="${esc(line.purchaseReason||'')}" style="width:94px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><input type="text" data-field="usageType" value="${esc(line.usageType||'')}" placeholder="使用/库存"${dis} title="${esc(line.usageType||'')}" style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      <td style="padding:5px;"><input type="text" data-field="budgetSource" value="${esc(line.budgetSource||'')}" placeholder="预算出处"${dis} title="${esc(line.budgetSource||'')}" style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${isNew ? '' : '<td style="text-align:center;padding:5px;"><span class="badge ' + (locked?'badge-blue':'badge-gray') + '" style="font-size:11px;">' + (locked?'B-已创建采购订单':'N-未编辑') + '</span></td>'}
       ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
       ${this._photoCellHTML(line.photos||[], idx, locked)}
