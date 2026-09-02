@@ -362,49 +362,45 @@ const SpPurchase = {
     this.renderTable();
   },
 
-  // ---- 新建采购申请：选择创建方式弹窗（对齐维修工单风格）----
+  // ---- 新建采购申请：选择创建方式弹窗 ----
   openNewModal() {
     const body = `
     <div style="padding:4px 0;">
-      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;text-align:center;">
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;text-align:center;">
         请选择一种方式创建采购申请
       </div>
 
-      <!-- 1×2 网格布局 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto;">
+      <!-- 1×2 紧凑网格 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:520px;margin:0 auto;">
 
         <!-- 卡片一：手工填写 -->
         <div onclick="closeModal();SpPurchase.openManualForm()"
-          style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #bfdbfe;border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
-          onmouseenter="this.style.borderColor='#3b82f6';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,.15)'"
+          style="background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #bfdbfe;border-radius:10px;padding:14px 10px;cursor:pointer;transition:all .22s;text-align:center;"
+          onmouseenter="this.style.borderColor='#3b82f6';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 14px rgba(59,130,246,.12)'"
           onmouseleave="this.style.borderColor='#bfdbfe';this.style.transform='translateY(0)';this.style.boxShadow='none'">
-          <div style="font-size:36px;margin-bottom:8px;">📝</div>
-          <div style="font-size:15px;font-weight:700;color:#1e40af;margin-bottom:4px;">手工填写</div>
-          <div style="font-size:12px;color:#6b7280;line-height:1.45;">逐项填写物料信息，适合单次少量采购申请</div>
-          <div style="margin-top:12px;"><span class="badge badge-blue" style="padding:5px 16px;border-radius:16px;font-size:12px;cursor:pointer;">开始填写 →</span></div>
+          <div style="font-size:28px;margin-bottom:4px;">📝</div>
+          <div style="font-size:14px;font-weight:700;color:#1e40af;margin-bottom:2px;">手工填写</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.4;">逐项填写物料信息，适合单次少量采购申请</div>
+          <div style="margin-top:8px;"><span class="badge badge-blue" style="padding:4px 12px;border-radius:14px;font-size:11px;cursor:pointer;">开始填写 →</span></div>
         </div>
 
         <!-- 卡片二：模板批导 -->
         <div onclick="closeModal();SpPurchase.openBatchImportModal()"
-          style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #86efac;border-radius:12px;padding:20px 16px;cursor:pointer;transition:all .22s;text-align:center;"
-          onmouseenter="this.style.borderColor='#10b981';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(16,185,129,.15)'"
+          style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:1.5px solid #86efac;border-radius:10px;padding:14px 10px;cursor:pointer;transition:all .22s;text-align:center;"
+          onmouseenter="this.style.borderColor='#10b981';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 14px rgba(16,185,129,.12)'"
           onmouseleave="this.style.borderColor='#86efac';this.style.transform='translateY(0)';this.style.boxShadow='none'">
-          <div style="font-size:36px;margin-bottom:8px;">📋</div>
-          <div style="font-size:15px;font-weight:700;color:#065f46;margin-bottom:4px;">模板批导</div>
-          <div style="font-size:12px;color:#6b7280;line-height:1.45;">下载模板批量填写后上传，适合大批量采购申请</div>
-          <div style="margin-top:12px;"><span class="badge" style="padding:5px 16px;border-radius:16px;font-size:12px;background:#10b981;color:#fff;cursor:pointer;">开始批导 →</span></div>
+          <div style="font-size:28px;margin-bottom:4px;">📋</div>
+          <div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:2px;">模板批导</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.4;">下载模板批量填写后上传，适合大批量采购申请</div>
+          <div style="margin-top:8px;"><span class="badge" style="padding:4px 12px;border-radius:14px;font-size:11px;background:#10b981;color:#fff;cursor:pointer;">开始批导 →</span></div>
         </div>
 
-      </div>
-
-      <div style="margin-top:14px;padding:8px 12px;background:#f9fafb;border-radius:8px;font-size:12px;color:var(--text-muted);text-align:center;border:1px dashed var(--border);">
-        💡 提示：也可从已有采购申请复制创建
       </div>
     </div>`;
 
     showModal('📌 选择创建方式', body, [
       { text: '取消', cls: 'btn-secondary', action: closeModal }
-    ], 'modal-xl');
+    ], 'modal-md');
   },
 
   // ---- 手工填写表单（原逻辑）----
