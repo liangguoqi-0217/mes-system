@@ -802,9 +802,10 @@ const SpPurchase = {
       });
     }
 
-    // 存在校验未通过的行：逐行展示状态清单，不创建申请
+    // 存在校验未通过的行：关闭批导弹窗，在新弹窗展示逐行状态清单
     if (rowReports.some(r => !r.sample && r.issues.length)) {
-      this._renderBatchRowResults(rowReports, file.name);
+      this.closeModal();
+      this._openBatchResultModal(rowReports, file.name);
       return;
     }
     if (lines.length) {
@@ -814,27 +815,17 @@ const SpPurchase = {
       return;
     }
     // 没有可导入的数据行（全部为空白行 / 示例行等）
-    this._renderBatchRowResults(rowReports, file.name, { noData: true });
+    this.closeModal();
+    this._openBatchResultModal(rowReports, file.name, { noData: true });
   },
 
-  // ---- 逐行校验结果表格（与创建表单的行项目表样式一致）----
-  _renderBatchRowResults(rows, fileName, extra) {
-    const info = document.getElementById('batchUploadInfo');
-    if (info) info.innerHTML = `<span style="color:#16a34a;font-weight:600;">✅ 文件已读取：${esc(fileName)}</span>`;
-    const box = document.getElementById('batchErrorBox');
-    if (!box) return;
-
+  // ---- 打开校验结果弹窗（关闭旧弹窗后在新弹窗展示逐行结果）----
+  _openBatchResultModal(rows, fileName, extra) {
     const okCount = rows.filter(r => !r.sample && !r.issues.length).length;
     const errCount = rows.filter(r => !r.sample && r.issues.length).length;
     const skipCount = rows.filter(r => r.sample).length;
     const hasError = errCount > 0;
     const noData = !!(extra && extra.noData);
-
-    box.style.display = 'block';
-    box.style.border = hasError ? '1px solid #fecaca' : '1px solid #bfdbfe';
-    box.style.background = hasError ? '#fef2f2' : '#f8fafc';
-    box.style.borderRadius = '8px';
-    box.style.padding = '12px 14px';
 
     const shown = rows.slice(0, 100);
     const tbody = shown.map(r => {
@@ -869,7 +860,7 @@ const SpPurchase = {
       notice = `<div style="font-size:12px;color:#7f1d1d;margin-bottom:8px;">存在未通过的行，本次<strong>未创建任何申请</strong>。请按下方逐行状态修正后重新上传。</div>`;
     }
 
-    box.innerHTML = `
+    const bodyHtml = `
       <div style="font-size:14px;font-weight:700;color:#1f2937;margin-bottom:4px;">📋 逐行校验结果</div>
       <div style="font-size:12px;color:#374151;margin:6px 0 4px;">
         共识别 <strong>${rows.length}</strong> 行数据：
@@ -877,7 +868,7 @@ const SpPurchase = {
         ✗ 校验未通过 <strong style="color:#b91c1c;">${errCount}</strong> 行${skipCount ? ` ｜ 自动忽略（示例行）<strong>${skipCount}</strong> 行` : ''}
       </div>
       ${notice}
-      <div style="max-height:340px;overflow:auto;border:1px solid #e5e7eb;border-radius:6px;background:#fff;">
+      <div style="max-height:60vh;overflow:auto;border:1px solid #e5e7eb;border-radius:6px;background:#fff;">
         <table class="data-table data-table-compact" style="min-width:900px;margin:0;">
           <thead>
             <tr>
@@ -895,21 +886,22 @@ const SpPurchase = {
           <tbody>${tbody || '<tr><td colspan="9" style="text-align:center;color:#6b7280;font-size:12px;padding:16px;">未识别到任何数据行。</td></tr>'}</tbody>
         </table>
       </div>
-      ${rows.length > shown.length ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">…… 其余 ${rows.length - shown.length} 行未展示</div>` : ''}`;
+      ${rows.length > shown.length ? `<div style="color:#6b7280;font-size:12px;margin-top:4px;">…… 其余 ${rows.length - shown.length} 行未展示</div>` : ''}
+    `;
+
+    showModal('📋 批量导入校验结果', bodyHtml, [
+      { text: '关闭', cls: 'btn-secondary', action: closeModal },
+      { text: '重新上传', cls: 'btn-primary', action: () => { closeModal(); SpPurchase.openBatchImportModal(); } }
+    ], 'modal-xl');
   },
 
-  // ---- 通用错误提示（红色信息块）----
+  // ---- 通用错误提示（关闭旧弹窗后在新弹窗提示）----
   _showBatchErrorMsg(msg) {
-    const info = document.getElementById('batchUploadInfo');
-    if (info) info.innerHTML = '';
-    const box = document.getElementById('batchErrorBox');
-    if (!box) return;
-    box.style.display = 'block';
-    box.style.border = '1px solid #fecaca';
-    box.style.background = '#fef2f2';
-    box.style.borderRadius = '8px';
-    box.style.padding = '12px 14px';
-    box.innerHTML = `<div style="font-size:14px;font-weight:700;color:#b91c1c;">⚠️ ${esc(msg)}</div>`;
+    this.closeModal();
+    showModal('⚠️ 导入失败', `<div style="font-size:14px;color:#b91c1c;line-height:1.7;">${esc(msg)}</div>`, [
+      { text: '关闭', cls: 'btn-secondary', action: closeModal },
+      { text: '重新上传', cls: 'btn-primary', action: () => { closeModal(); SpPurchase.openBatchImportModal(); } }
+    ], 'modal-md');
   },
 
   closeModal() { document.getElementById('prModalContainer').innerHTML = ''; },
