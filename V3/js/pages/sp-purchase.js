@@ -505,6 +505,13 @@ const SpPurchase = {
                   部门、申请日期由系统按当前用户自动带出，无需填写。
                 </div>
               </div>
+              <div style="margin-top:4px;padding:10px 0 6px;border-top:1px dashed var(--border);font-size:12px;color:var(--text-muted);line-height:1.9;">
+                暂无真实数据想快速体验？可下载
+                <a href="javascript:;" onclick="SpPurchase.downloadDemoData('ok')" style="color:var(--primary);font-weight:600;text-decoration:underline;">规范演示数据</a>
+                （上传即可体验导入全流程），或下载
+                <a href="javascript:;" onclick="SpPurchase.downloadDemoData('error')" style="color:var(--primary);font-weight:600;text-decoration:underline;">含错误演示数据</a>
+                （查看系统校验拦截与错误提示）。
+              </div>
             </div>
 
             <!-- 第二步：上传文件 -->
@@ -542,9 +549,23 @@ const SpPurchase = {
     setTimeout(() => this.onPurchaseTypeChange(), 50);
   },
 
-  // ---- 下载 Excel 模板（SheetJS 生成 .xlsx）----
-  downloadTemplate() {
+  // ---- SheetJS 通用保存：数据 sheet + 可选的填写说明 sheet ----
+  _saveBatchXlsx(fileName, dataAoa, descAoa) {
     if (typeof XLSX === 'undefined') { toast('Excel 组件未加载，请刷新页面后重试'); return; }
+    const ws = XLSX.utils.aoa_to_sheet(dataAoa);
+    ws['!cols'] = BATCH_TEMPLATE_HEADER.map((_, i) => ({ wch: i === 1 ? 40 : (i === 9 || i === 11 ? 24 : 15) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '采购申请模板');
+    if (descAoa && descAoa.length) {
+      const wsDesc = XLSX.utils.aoa_to_sheet(descAoa);
+      wsDesc['!cols'] = [{ wch: 110 }];
+      XLSX.utils.book_append_sheet(wb, wsDesc, '填写说明');
+    }
+    XLSX.writeFile(wb, fileName);
+  },
+
+  // ---- 下载 Excel 模板 ----
+  downloadTemplate() {
     const currentUser = window.currentUserId || 'admin';
     const today = new Date().toISOString().slice(0, 10);
 
@@ -554,32 +575,62 @@ const SpPurchase = {
       ['部门', '（系统自动带出，无需填写）', '申请日期', today, '（系统自动取当天，无需填写）'],
       [],
       BATCH_TEMPLATE_HEADER.slice(),
-      ['60001018', '高效过滤器-MIIPDF-635*520*93-27-AAF', '48', '个', '850.00', '2026-07-15', '60405', '', '', '', '', '← 示例行，上传前请删除'],
-      ['60001023', '高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', '24', '个', '820.00', '2026-07-20', '60405', '', '过滤器到寿更换', '使用', '年度设备维修预算', '← 示例行，上传前请删除']
+      ['60001018', '高效过滤器-MIIPDF-635*520*93-27-AAF', '48', '个', '850.00', '2026-09-15', '60405', '', '', '', '', '← 示例行，上传前请删除'],
+      ['60001023', '高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', '24', '个', '820.00', '2026-09-20', '60405', '', '过滤器到寿更换', '使用', '年度设备维修预算', '← 示例行，上传前请删除']
     ];
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = BATCH_TEMPLATE_HEADER.map((_, i) => ({ wch: i === 1 ? 36 : (i === 9 || i === 11 ? 22 : 14) }));
-
     const descAoa = [
       ['填写说明'],
       [''],
       ['1. 抬头区（第2~3行）需填写：申请人、工厂、采购申请凭证类型；部门、申请日期由系统按当前用户自动确定，无需填写。'],
       ['2. 一个物料占一行，从第5行表头下面开始填写；不要修改表头行文字。'],
       ['3. 必填校验：物料编号（须存在于物料主数据）、短文本、申请数量（大于 0 的数字）。'],
-      ['4. 日期格式：2026-07-15 或 20260715；评价价格为非负数字，不填默认 0。'],
+      ['4. 日期格式：2026-09-15 或 20260915；评价价格为非负数字，不填默认 0。'],
       ['5. 采购原因 / 使用库存 / 预算出处 / 备注为自由文本；成本中心仅费用性采购需要。'],
       ['6. 第6~7行为示例（行末有“示例”标识），上传前请删除；系统也会自动忽略含“示例”标识的行。'],
       ['7. 系统校验不通过时不会创建申请，会列出问题行号与原因，请修改 Excel 后重新上传。'],
       ['8. 校验通过后将打开采购申请表单（与手工填写一致），核对抬头与行项目后点【提交】即可创建。']
     ];
-    const wsDesc = XLSX.utils.aoa_to_sheet(descAoa);
-    wsDesc['!cols'] = [{ wch: 110 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '采购申请模板');
-    XLSX.utils.book_append_sheet(wb, wsDesc, '填写说明');
-    XLSX.writeFile(wb, '采购申请导入模板.xlsx');
+    this._saveBatchXlsx('采购申请导入模板.xlsx', aoa, descAoa);
     toast('Excel 模板已下载，请按模板填写后上传');
+  },
+
+  // ---- 下载演示数据（原型演示用；数据均取自系统内物料主数据）----
+  downloadDemoData(kind) {
+    const currentUser = window.currentUserId || 'admin';
+    const today = new Date().toISOString().slice(0, 10);
+    const head = [
+      ['采购申请批量导入 - 演示数据'],
+      ['申请人', currentUser, '工厂', '1000', '采购申请凭证类型', 'Z01 - 生产性采购申请'],
+      ['部门', '（系统自动带出，无需填写）', '申请日期', today, '（系统自动取当天，无需填写）'],
+      [],
+      BATCH_TEMPLATE_HEADER.slice()
+    ];
+
+    if (kind === 'ok') {
+      // 规范演示数据：全部校验通过，可直接上传体验导入流程
+      const rows = [
+        ['60001018', '高效过滤器-MIIPDF-635*520*93-27-AAF', '48', '个', '850.00', '2026-09-15', '60405', '', '车间高效过滤器到寿更换', '使用', '年度设备维修预算', '计划9月中旬净化车间停产检修期间更换'],
+        ['60001023', '高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', '24', '个', '820.00', '2026-09-20', '60405', '', '送排风系统高效过滤器压差报警更换', '库存', '年度设备维修预算', '同批次4套同时到寿，需一次性领用'],
+        ['60001146', '隔膜阀膜片-尺寸:DN15-材质:PTFE/EPDM-宝帝', '6', '个', '180.00', '2026-09-12', '60405', '', '纯化水循环间隔膜阀维修备件', '库存', '备件采购预算', '制水间3台隔膜阀各备2片'],
+        ['60001089', 'O型圈-Φ44*3-材质:氟橡胶', '50', '个', '8.00', '2026-09-10', '60405', '', '灌装机密封件周期性更换', '库存', '备件采购预算', ''],
+        ['60000657', 'LED灯泡-100W', '10', '个', '45.00', '2026-09-18', '60402', '', '洁净区照明灯具故障更换', '使用', '年度零星维修预算', '含洁净区天花灯具内更换安装'],
+        ['60001281', '压力表-0-2.5MPa', '4', '个', '85.00', '2026-09-25', '60405', '', '纯化水分配系统压力表年度校验更换', '使用', '计量器具更新预算', '随货需附检定证书']
+      ];
+      this._saveBatchXlsx('采购申请-演示数据-规范版.xlsx', head.concat(rows), null);
+      toast('已下载规范演示数据，直接上传即可体验完整导入流程');
+    } else {
+      // 含错误演示数据：展示系统逐行校验与错误清单拦截（不会创建申请）
+      const rows = [
+        ['60001999', '演示：不存在的物料编号', '2', '个', '100.00', '2026-09-10', '60405', '', '', '', '', ''],
+        ['', '演示：缺少物料编号的行', '5', '个', '50.00', '2026-09-11', '', '', '', '', '', ''],
+        ['60001020', '演示：数量填成负数的行', '-8', '个', '680.00', '2026-09-12', '60405', '', '', '', '', ''],
+        ['60001086', '演示：价格填成文字的行', '10', '个', '待询价', '2026-09-13', '60405', '', '', '', '', ''],
+        ['60001022', '演示：日期格式错误的行', '6', '个', '750.00', '2026年9月1日', '60405', '', '', '', '', ''],
+        ['60001025', '高效过滤器-MIIPDF-635*1030*93-27-AAF', '12', '个', '1100.00', '2026-09-20', '60405', '', '正常行（供对照）', '库存', '年度设备维修预算', '修复以上错误行后整单方可导入']
+      ];
+      this._saveBatchXlsx('采购申请-演示数据-含错误版.xlsx', head.concat(rows), null);
+      toast('已下载含错误演示数据，上传可查看系统校验拦截与错误提示');
+    }
   },
 
   // ---- 文件拖拽/选择 ----
