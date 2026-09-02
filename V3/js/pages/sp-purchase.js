@@ -795,8 +795,6 @@ const SpPurchase = {
       const costCtr = getSel('costCenter');
       const mgEl = row.querySelector('[data-field="matGroup"]');
       const mg = mgEl ? (mgEl.value !== undefined ? mgEl.value : ((mgEl.textContent||'').trim())) : '';
-      const supplier = getVal('supplier');
-      const supplierMatCode = getVal('supplierMatCode');
       const notes = getVal('notes');
       const applicant = getVal('applicant');
       const deliveryDate = fromDateInputValue(getVal('deliveryDate'));
@@ -842,7 +840,7 @@ const SpPurchase = {
         if (existing && existing.lines[i]) {
           lineStatus = existing.lines[i].status || 'N';
           existingPoData = { poNo: existing.lines[i].poNo, poLineItem: existing.lines[i].poLineItem,
-            orderQty: existing.lines[i].orderQty, supplier: existing.lines[i].supplier,
+            orderQty: existing.lines[i].orderQty,
             deliveredQty: existing.lines[i].deliveredQty,
             _pos: existing.lines[i]._pos };
         }
@@ -854,8 +852,6 @@ const SpPurchase = {
         matCode: mc, shortText: st, applicant,
         poNo: existingPoData?.poNo || '',
         poLineItem: existingPoData?.poLineItem || '',
-        supplier: supplier || (existingPoData?.supplier || ''),
-        supplierMatCode: supplierMatCode,
         reqQty: q, unit: u || '个',
         orderQty: existingPoData?.orderQty || parseFloat(getVal('orderQty')) || 0,
         deliveredQty: existingPoData?.deliveredQty,
@@ -978,8 +974,6 @@ const SpPurchase = {
                   <th style="text-align:right;">预估总金额</th>
                   <th>物料组</th>
                   <th>交货日期</th>
-                  <th>建议供应商</th>
-                  <th>供应商物料编号</th>
                   <th>成本中心</th>
                   <th style="width:100px;text-align:center;">处理状态</th>
                   <th style="width:60px;text-align:center;">已结算</th>
@@ -1004,8 +998,6 @@ const SpPurchase = {
                   <td style="text-align:right;color:#1f2937;">${((Number(l.reqQty)||0)*(Number(l.price)||0)).toFixed(2)}</td>
                   <td>${esc(mgLabel?mgLabel.label:l.matGroup||'-')}</td>
                   <td style="white-space:nowrap;">${esc(l.deliveryDate||'-')}</td>
-                  <td>${esc(l.supplier||'-')}</td>
-                  <td>${esc(l.supplierMatCode||'-')}</td>
                   <td>${esc(l.costCenter||'-')}</td>
                   <td style="text-align:center;"><span class="badge ${hasPO?'badge-blue':'badge-gray'}">${hasPO?'B-已创建采购订单':'N-未编辑'}</span></td>
                   <td style="text-align:center;"><span class="badge ${settled==='Y'?'badge-green':'badge-gray'}">${settled==='Y'?'是':'否'}</span></td>
@@ -1137,8 +1129,6 @@ const SpPurchase = {
                     <th style="min-width:110px;text-align:right;">预估总金额</th>
                     <th style="min-width:85px;" id="prThMatGroup">物料组</th>
                     <th style="min-width:95px;">交货日期</th>
-                    <th style="min-width:105px;">建议供应商</th>
-                    <th style="min-width:105px;">供应商物料编号</th>
                     <th style="min-width:90px;" id="prThCostCenter">成本中心</th>
                     ${isNew ? '' : '<th style="width:100px;text-align:center;">处理状态</th><th style="width:60px;text-align:center;">已结算</th>'}
                     <th style="min-width:110px;text-align:center;">图片</th>
@@ -1226,8 +1216,6 @@ const SpPurchase = {
       <td style="padding:5px;text-align:right;"><span class="line-total" style="color:#1f2937;font-size:12px;">${((Number(line.reqQty)||0)*(Number(line.price)||0)).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</span></td>
       ${matGroupCell}
       <td style="padding:5px;"><input type="date" data-field="deliveryDate" value="${esc(toDateInputValue(line.deliveryDate))}"${dis} style="width:130px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:5px;"><input type="text" data-field="supplier" value="${esc(line.supplier||'')}" placeholder="建议供应商"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td style="padding:5px;"><input type="text" data-field="supplierMatCode" value="${esc(line.supplierMatCode||'')}" placeholder="供应商物料号"${dis} style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${costCenterCell}
       ${isNew ? '' : '<td style="text-align:center;padding:5px;"><span class="badge ' + (locked?'badge-blue':'badge-gray') + '" style="font-size:11px;">' + (locked?'B-已创建采购订单':'N-未编辑') + '</span></td>'}
       ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
@@ -1445,8 +1433,8 @@ const SpPurchase = {
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const newAcct = selectEl.value;
     const getEl = f => tr.querySelector(`[data-field="${f}"]`);
-    const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
-    ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
+    const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory:'', matGroup:'', costCenter:'', isSettled:'N', notes:'', deliveryDate:'' };
+    ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','isSettled','notes','deliveryDate'].forEach(f => {
       const el = getEl(f);
       if (el) {
         let v = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent)));
@@ -1470,7 +1458,7 @@ const SpPurchase = {
     const idx = tbody.rows.length;
     const purchaseType = document.getElementById('prFPurchaseType')?.value || 'Z01';
     const tr = document.createElement('tr');
-    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant: window.currentUserId || '', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'' }, idx, purchaseType);
+    tr.innerHTML = this.renderLineRow({ itemNo:(idx+1)*10, matCode:'', shortText:'', applicant: window.currentUserId || '', reqQty:'', unit:'个', deliveryDate:'', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', isSettled:'N', notes:'' }, idx, purchaseType);
     tbody.appendChild(tr);
     this.reindexRows();
   },
@@ -1521,8 +1509,8 @@ const SpPurchase = {
     rows.forEach((tr, i) => {
       // Collect existing data via data-field
       const getEl = field => tr.querySelector(`[data-field="${field}"]`);
-      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', supplier:'', supplierMatCode:'', isSettled:'N', notes:'', deliveryDate:'' };
-      ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','supplier','supplierMatCode','isSettled','notes','deliveryDate'].forEach(f => {
+      const opts = { matCode:'', shortText:'', reqQty:'', unit:'个', price:0, acctAssCategory: purchaseType === 'Z02' ? 'K' : '', matGroup:'', costCenter:'', isSettled:'N', notes:'', deliveryDate:'' };
+      ['matCode','shortText','reqQty','unit','price','acctAssCategory','matGroup','costCenter','isSettled','notes','deliveryDate'].forEach(f => {
         const el = getEl(f);
         if (el) {
           let v = (el.type==='checkbox' ? (el.checked?'Y':'N') : (el.value !== undefined ? el.value : (el.dataset && el.dataset.value !== undefined ? el.dataset.value : el.textContent)));
