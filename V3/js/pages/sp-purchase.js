@@ -31,6 +31,27 @@ const MAT_GROUP_OPTIONS = [
   { value: '502', label: '502-包装材料-外包材' }
 ];
 
+// ---- 系统登录用户 → 部门 映射（接入真实用户体系前维护于此）----
+const USER_DEPT_MAP = {
+  admin: '设备部',
+  '赵志强': '设备部',
+  '张工': '设备部',
+  '李君': '设备部'
+};
+function currentUserDept() {
+  const u = window.currentUserId || 'admin';
+  return USER_DEPT_MAP[u] || '';
+}
+
+// ---- 批量导入模板的列定义 ----
+const BATCH_TEMPLATE_HEADER = ['物料编号','短文本(物料描述)','申请数量','单位','评价价格','交货日期','物料组','成本中心','采购原因','使用/库存','预算出处','备注'];
+// Excel 列名 → 行项目字段
+const BATCH_COL_FIELD = {
+  '物料编号':'matCode','短文本':'shortText','申请数量':'reqQty','单位':'unit','评价价格':'price',
+  '交货日期':'deliveryDate','物料组':'matGroup','成本中心':'costCenter','采购原因':'purchaseReason',
+  '使用/库存':'usageType','预算出处':'budgetSource','备注':'notes'
+};
+
 // ---- 日期工具：内部数据格式 YYYYMMDD <-> 日期控件 YYYY-MM-DD ----
 function toDateInputValue(v) {
   if (!v) return '';
@@ -404,18 +425,60 @@ const SpPurchase = {
   },
 
   // ---- 手工填写表单（原逻辑）----
-  openManualForm() {
+  // ---- 手工填写表单 ----
+  // prefill 可选：{ plant, dept, purchaseType, lines, fromBatch }，用于模板批导预填行项目与抬头
+  openManualForm(prefill) {
     this.editMode = false;
     this.editId = null;
     this._batchImport = false;
-    const emptyPr = {
-      docNo: '', applyDate: new Date().toISOString().slice(0,10),
-      plant: '1000', dept: '',
-      notes: '',
-      purchaseType: 'Z01',
-      lines: Array.from({ length: 10 }, (_, i) => ({ itemNo:(i+1)*10, matCode:'', shortText:'', applicant:window.currentUserId||'admin', poNo:'', reqQty:'', unit:'个', orderQty:0, deliveryDate:'', requiredDate:'', deliveryDate2:'', price:0, totalValue:0, status:'N', acctAssCategory:'', matGroup:'', storageLocation:'', costCenter:'' }))
+    const today = new Date().toISOString().slice(0, 10);
+    const plant = (prefill && prefill.plant) || '1000';
+    const purchaseType = (prefill && prefill.purchaseType) || 'Z01';
+    const dept = (prefill && prefill.dept) || currentUserDept();
+
+    const lineSeed = () => ({
+      itemNo: 0, matCode: '', shortText: '', applicant: window.currentUserId || 'admin',
+      poNo: '', reqQty: '', unit: '个', orderQty: 0, deliveryDate: '', requiredDate: '',
+      deliveryDate2: '', price: 0, totalValue: 0, status: 'N',
+      acctAssCategory: purchaseType === 'Z02' ? 'K' : '',
+      matGroup: '', storageLocation: '', costCenter: '',
+      purchaseReason: '', usageType: '', budgetSource: '', notes: '', photos: []
+    });
+
+    const lines = (prefill && prefill.lines && prefill.lines.length)
+      ? prefill.lines.map((l, i) => {
+          const q = Number(l.reqQty) || 0;
+          const p = Number(l.price) || 0;
+          const seed = lineSeed();
+          return Object.assign(seed, {
+            itemNo: (i + 1) * 10,
+            matCode: l.matCode || '',
+            shortText: l.shortText || '',
+            reqQty: q > 0 ? q : '',
+            unit: l.unit || seed.unit,
+            deliveryDate: l.deliveryDate || '',
+            deliveryDate2: (l.deliveryDate || ''),
+            price: p,
+            totalValue: q * p,
+            matGroup: l.matGroup || '',
+            costCenter: l.costCenter || '',
+            purchaseReason: l.purchaseReason || '',
+            usageType: l.usageType || '',
+            budgetSource: l.budgetSource || '',
+            notes: l.notes || ''
+          });
+        })
+      : Array.from({ length: 10 }, (_, i) => Object.assign(lineSeed(), { itemNo: (i + 1) * 10 }));
+
+    const pr = {
+      docNo: '', applyDate: today, createDate: today,
+      plant, dept, notes: '',
+      purchaseType,
+      lines
     };
-    document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(emptyPr);
+    document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(pr);
+    if (purchaseType !== 'Z01') setTimeout(() => this.onPurchaseTypeChange(), 50);
+    if (prefill && prefill.fromBatch) toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，请核对抬头与行项目后提交`);
   },
 
   // ---- 模板批导弹框 ----
@@ -424,84 +487,45 @@ const SpPurchase = {
     this._batchRawData = [];
     document.getElementById('prModalContainer').innerHTML = `
       <div class="modal-backdrop" onclick="SpPurchase.closeModal()">
-        <div class="modal" style="max-width:960px;" onclick="event.stopPropagation()">
+        <div class="modal" style="max-width:700px;" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">模板批导 - 批量导入采购申请</div>
             <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:calc(85vh-140px);">
-            <!-- Step 1: 下载模板并填写 -->
+            <!-- 第一步：下载模板 -->
             <div class="form-section">
-              <div class="form-section-title">第一步：下载模板并填写</div>
-              <div style="display:flex;align-items:center;gap:12px;padding:12px 0;">
-                <button class="btn btn-primary" onclick="SpPurchase.downloadTemplate()" style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:18px;">⬇</span> 下载CSV模板
+              <div class="form-section-title">第一步：下载 Excel 模板并填写</div>
+              <div style="display:flex;align-items:flex-start;gap:16px;padding:12px 0;">
+                <button class="btn btn-primary" onclick="SpPurchase.downloadTemplate()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
+                  <span style="font-size:18px;">⬇</span> 下载 Excel 模板
                 </button>
-                <span style="font-size:12px;color:var(--text-muted);">模板包含表头行和示例，请严格按照模板格式填写数据</span>
+                <div style="font-size:12px;color:var(--text-muted);line-height:1.8;">
+                  模板中需填写：<strong>申请人、工厂、采购申请凭证类型</strong>（表头区）以及<strong>行项目明细</strong>；<br>
+                  部门、申请日期由系统按当前用户自动带出，无需填写。
+                </div>
               </div>
             </div>
 
-            <!-- Step 2: 上传文件 -->
+            <!-- 第二步：上传文件 -->
             <div class="form-section" style="margin-top:14px;">
-              <div class="form-section-title">第二步：上传填好的文件</div>
-              <div id="batchUploadArea" style="border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all 0.2s;"
+              <div class="form-section-title">第二步：上传填好的 Excel 文件</div>
+              <div id="batchUploadArea" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all 0.2s;"
                 onclick="document.getElementById('batchFileInput').click()"
                 ondragover="this.style.borderColor='var(--primary)';this.style.background='#eff6ff';"
                 ondragleave="this.style.borderColor='var(--border)';this.style.background='transparent';"
                 ondrop="event.preventDefault();this.style.borderColor='var(--border)';this.style.background='transparent';SpPurchase.handleBatchFileDrop(event)">
-                <div style="font-size:40px;margin-bottom:8px;">📂</div>
+                <div style="font-size:38px;margin-bottom:6px;">📂</div>
                 <div style="font-weight:600;color:var(--text-primary);">点击选择文件或拖拽文件到此处</div>
-                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">支持 .csv 文件，编码 UTF-8</div>
-                <input type="file" id="batchFileInput" accept=".csv" style="display:none;" onchange="SpPurchase.handleBatchFileSelect(event)">
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">支持 .xlsx / .xls 文件（请使用下载的模板填写）</div>
+                <input type="file" id="batchFileInput" accept=".xlsx,.xls" style="display:none;" onchange="SpPurchase.handleBatchFileSelect(event)">
               </div>
               <div id="batchUploadInfo" style="margin-top:10px;font-size:13px;"></div>
-            </div>
-
-            <!-- Step 3: 预览数据 -->
-            <div id="batchPreviewSection" class="form-section" style="margin-top:14px;display:none;">
-              <div class="form-section-title">第三步：预览数据（共 <span id="batchRowCount">0</span> 行）</div>
-              <div style="overflow-x:auto;max-height:320px;">
-                <table class="data-table" style="min-width:900px;font-size:12px;">
-                  <thead><tr>
-                    <th>#</th><th>物料</th><th>短文本</th><th>申请人</th><th style="text-align:right;">数量</th><th>单位</th>
-                    <th>交货日期</th><th>需求日期</th><th style="text-align:right;">价格</th>
-                    <th style="text-align:right;">总价值</th>
-                  </tr></thead>
-                  <tbody id="batchPreviewBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- 表头信息 -->
-            <div class="form-section" style="margin-top:14px;">
-              <div class="form-section-title">表头信息（统一应用于所有行）</div>
-              <div class="form-grid">
-                <div class="form-group"><label><span class="req">*</span> 部门</label><select id="prFDept"><option value="">请选择</option><option value="设备部">设备部</option><option value="生产部">生产部</option><option value="质量部">质量部</option><option value="仓储物流部">仓储物流部</option></select></div>
-                <div class="form-group"><label>工厂</label><select id="prFPlant">
-                  <option value="1000">1000 - 山东步长制药工厂</option>
-                  <option value="2001">2001 - 陕西步长制药工厂</option>
-                  <option value="2002">2002 - 山东丹红制药工厂</option>
-                  <option value="2003">2003 - 山东神州制药工厂</option>
-                  <option value="2004">2004 - 山东康爱制药工厂</option>
-                  <option value="2005">2005 - 通化谷红制药工厂</option>
-                  <option value="2006">2006 - 吉林天成制药工厂</option>
-                  <option value="2007">2007 - 通化天实制药工厂</option>
-                  <option value="2009">2009 - 辽宁奥达制药工厂</option>
-                  <option value="2010">2010 - 保定天浩制药工厂</option>
-                  <option value="2011">2011 - 邛崃天银制药工厂</option>
-                  <option value="2012">2012 - 陕西步长高新制药工厂</option>
-                  <option value="2013">2013 - 杨凌步长制药工厂</option>
-                  <option value="2014">2014 - 重庆市医济堂生物制品工厂</option>
-                  <option value="3001">3001 - 泸州步长生物工厂</option>
-                </select></div>
-                <div class="form-group"><label>申请日期</label><input type="date" id="prFApplyDate" value="${new Date().toISOString().slice(0,10)}"></div>
-
-              </div>
+              <div id="batchErrorBox" style="margin-top:10px;display:none;"></div>
             </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="SpPurchase.closeModal()">取消</button>
-            <button class="btn btn-primary" id="batchSubmitBtn" disabled onclick="SpPurchase.submitBatchImport()">确认导入</button>
           </div>
         </div>
       </div>`;
@@ -518,164 +542,231 @@ const SpPurchase = {
     setTimeout(() => this.onPurchaseTypeChange(), 50);
   },
 
-  // ---- 下载CSV模板 ----
+  // ---- 下载 Excel 模板（SheetJS 生成 .xlsx）----
   downloadTemplate() {
-    const headers = ['物料号','短文本(物料描述)','申请人','申请数量','单位','交货日期(YYYYMMDD)','需求日期(YYYY.MM.DD)','评价价格'];
-    const exampleRow = ['60001018','高效过滤器-MIIPDF-635*520*93','李君','48','个','20260715','2026.06.20','850.00'];
-    const instructionsRow = ['# 说明：请保留表头行，按格式填写数据；物料号和申请人为必填；采购订单号由系统自动返回，无需填写；单位可选：个/KG/套/袋/件/台/支/桶/组/箱/卷/瓶/盒/方/张'];
-    const csvContent = '\uFEFF' + [headers.join(','), exampleRow.join(','), instructionsRow.join(',')].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '采购申请模板.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast('模板已下载，请按格式填写后上传');
+    if (typeof XLSX === 'undefined') { toast('Excel 组件未加载，请刷新页面后重试'); return; }
+    const currentUser = window.currentUserId || 'admin';
+    const today = new Date().toISOString().slice(0, 10);
+
+    const aoa = [
+      ['采购申请批量导入模板'],
+      ['申请人', currentUser, '工厂', '1000', '采购申请凭证类型', 'Z01 - 生产性采购申请'],
+      ['部门', '（系统自动带出，无需填写）', '申请日期', today, '（系统自动取当天，无需填写）'],
+      [],
+      BATCH_TEMPLATE_HEADER.slice(),
+      ['60001018', '高效过滤器-MIIPDF-635*520*93-27-AAF', '48', '个', '850.00', '2026-07-15', '60405', '', '', '', '', '← 示例行，上传前请删除'],
+      ['60001023', '高效过滤器-GSF-LS-631*758*95-01/22-康斐尔', '24', '个', '820.00', '2026-07-20', '60405', '', '过滤器到寿更换', '使用', '年度设备维修预算', '← 示例行，上传前请删除']
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = BATCH_TEMPLATE_HEADER.map((_, i) => ({ wch: i === 1 ? 36 : (i === 9 || i === 11 ? 22 : 14) }));
+
+    const descAoa = [
+      ['填写说明'],
+      [''],
+      ['1. 抬头区（第2~3行）需填写：申请人、工厂、采购申请凭证类型；部门、申请日期由系统按当前用户自动确定，无需填写。'],
+      ['2. 一个物料占一行，从第5行表头下面开始填写；不要修改表头行文字。'],
+      ['3. 必填校验：物料编号（须存在于物料主数据）、短文本、申请数量（大于 0 的数字）。'],
+      ['4. 日期格式：2026-07-15 或 20260715；评价价格为非负数字，不填默认 0。'],
+      ['5. 采购原因 / 使用库存 / 预算出处 / 备注为自由文本；成本中心仅费用性采购需要。'],
+      ['6. 第6~7行为示例（行末有“示例”标识），上传前请删除；系统也会自动忽略含“示例”标识的行。'],
+      ['7. 系统校验不通过时不会创建申请，会列出问题行号与原因，请修改 Excel 后重新上传。'],
+      ['8. 校验通过后将打开采购申请表单（与手工填写一致），核对抬头与行项目后点【提交】即可创建。']
+    ];
+    const wsDesc = XLSX.utils.aoa_to_sheet(descAoa);
+    wsDesc['!cols'] = [{ wch: 110 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '采购申请模板');
+    XLSX.utils.book_append_sheet(wb, wsDesc, '填写说明');
+    XLSX.writeFile(wb, '采购申请导入模板.xlsx');
+    toast('Excel 模板已下载，请按模板填写后上传');
   },
 
-  // ---- 文件拖拽处理 ----
+  // ---- 文件拖拽/选择 ----
   handleBatchFileDrop(e) {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file) this._parseBatchCSV(file);
+    if (file) this._openBatchExcel(file);
   },
 
   handleBatchFileSelect(e) {
     const file = e.target.files[0];
-    if (file) this._parseBatchCSV(file);
+    if (file) this._openBatchExcel(file);
     e.target.value = '';
   },
 
-  // ---- 解析CSV文件 ----
-  _parseBatchCSV(file) {
+  // ---- 读取 Excel 文件（SheetJS）----
+  _openBatchExcel(file) {
+    if (typeof XLSX === 'undefined') { toast('Excel 组件未加载，请刷新页面后重试'); return; }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['xlsx', 'xls'].includes(ext)) { toast('文件格式不支持，请上传 .xlsx 或 .xls 文件'); return; }
     const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target.result;
-      const lines = text.split(/\r?\n/).filter(l => l.trim() && !l.trim().startsWith('#'));
-      if (lines.length < 2) { toast('文件内容为空或格式不正确'); return; }
-
-      const headers = this._parseCSVLine(lines[0]);
-      if (headers.length < 8) { toast('表头列数与模板不符，请使用下载的模板'); return; }
-
-      const dataRows = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = this._parseCSVLine(lines[i]);
-        if (cols.length < 7) continue;
-        const matCode = (cols[0] || '').trim();
-        const shortText = (cols[1] || '').trim();
-        const applicant = (cols[2] || '').trim();
-        const reqQty = parseFloat(cols[3]) || 0;
-        if (!matCode || !shortText || !applicant || reqQty <= 0) continue;
-        const price = parseFloat(cols[7]) || 0;
-        dataRows.push({
-          matCode, shortText, applicant, poNo:'', reqQty,
-          unit: (cols[4] || '个').trim(),
-          deliveryDate: (cols[6] || '').trim(),
-          requiredDate: (cols[7] || '').trim(),
-          price, totalValue: reqQty * price
-        });
+    reader.onload = (ev) => {
+      try {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array', cellDates: true });
+        this._parseBatchExcel(wb, file);
+      } catch (err) {
+        console.error(err);
+        toast('Excel 读取失败：文件可能已损坏或不是有效的 Excel 文件');
       }
-
-      if (!dataRows.length) { toast('未解析到有效数据行，请检查文件内容'); return; }
-
-      this._batchRawData = dataRows;
-      this._renderBatchPreview(dataRows);
-
-      const info = document.getElementById('batchUploadInfo');
-      if (info) info.innerHTML = '<span style="color:#16a34a;font-weight:600;">✅ 已成功解析 ' + dataRows.length + ' 行物料数据（文件名：' + esc(file.name) + '）</span>';
-      const section = document.getElementById('batchPreviewSection');
-      if (section) section.style.display = 'block';
-      const btn = document.getElementById('batchSubmitBtn');
-      if (btn) btn.disabled = false;
     };
-    reader.readAsText(file, 'UTF-8');
+    reader.readAsArrayBuffer(file);
   },
 
-  _parseCSVLine(line) {
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
-        else { inQuotes = !inQuotes; }
-      } else if (ch === ',' && !inQuotes) {
-        result.push(current);
-        current = '';
-      } else {
-        current += ch;
+  // ---- 解析 Excel：读取抬头区 + 定位表头行 + 逐行校验 ----
+  _parseBatchExcel(wb, file) {
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    if (!ws) { this._showBatchErrorMsg('Excel 中没有可读取的工作表'); return; }
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+    // 1) 读取模板抬头区（前几行的 名称/值 对）
+    const meta = {};
+    for (let i = 0; i < Math.min(6, aoa.length); i++) {
+      const row = aoa[i] || [];
+      const key = String(row[0] || '').trim();
+      if (['申请人', '工厂', '采购申请凭证类型', '部门'].includes(key)) meta[key] = String(row[1] ?? '').trim();
+    }
+    let purchaseType = 'Z01';
+    if ((meta['采购申请凭证类型'] || '').toUpperCase().includes('Z02')) purchaseType = 'Z02';
+    const plantMatch = (meta['工厂'] || '').match(/^\s*(\d+)/);
+    const plant = plantMatch ? plantMatch[1] : '1000';
+
+    // 2) 定位数据表头行并建立 列名→列号 映射
+    let headerIdx = -1;
+    const colMap = {};
+    for (let i = 0; i < aoa.length; i++) {
+      const row = aoa[i] || [];
+      if (row.some(c => String(c || '').trim() === '物料编号')) {
+        headerIdx = i;
+        Object.keys(BATCH_COL_FIELD).forEach(name => {
+          const norm = name.replace(/[\s()*]/g, '');
+          const ci = row.findIndex(c => String(c || '').trim().replace(/[\s()*]/g, '') === norm);
+          if (ci >= 0) colMap[name] = ci;
+        });
+        break;
       }
     }
-    result.push(current);
-    return result;
-  },
+    if (headerIdx < 0) { this._showBatchErrorMsg('未找到「物料编号」表头行，请使用下载的 Excel 模板填写后上传。'); return; }
 
-  _renderBatchPreview(rows) {
-    const tbody = document.getElementById('batchPreviewBody');
-    const countEl = document.getElementById('batchRowCount');
-    if (!tbody) return;
-    if (countEl) countEl.textContent = rows.length;
-    tbody.innerHTML = rows.map((r, i) => `<tr>
-      <td style="text-align:center;">${i + 1}</td>
-      <td><strong>${esc(r.matCode)}</strong></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(r.shortText)}">${esc(r.shortText)}</td>
-      <td>${esc(r.applicant)}</td>
-      <td style="font-size:12px;color:var(--primary-lighter);">${esc(r.poNo)}</td>
-      <td style="text-align:right;">${Number(r.reqQty).toLocaleString()}</td>
-      <td style="text-align:center;">${esc(r.unit)}</td>
-      <td style="white-space:nowrap;">${esc(r.deliveryDate || '-')}</td>
-      <td style="white-space:nowrap;">${esc(r.requiredDate || '-')}</td>
-      <td style="text-align:right;">${Number(r.price).toFixed(2)}</td>
-      <td style="text-align:right;font-weight:700;color:var(--danger);">${Number(r.totalValue).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-    </tr>`).join('');
-  },
+    const cell = (row, name) => (colMap[name] === undefined ? '' : (row[colMap[name]] ?? ''));
+    const errors = [];
+    const lines = [];
+    const skippedSample = [];
 
-  // ---- 批量导入提交 ----
-  submitBatchImport() {
-    const f = id => document.getElementById(id)?.value ?? '';
-    const dept = f('prFDept');
+    // 3) 逐行解析 + 校验
+    for (let i = headerIdx + 1; i < aoa.length; i++) {
+      const row = aoa[i] || [];
+      if (!row.some(c => String(c ?? '').trim() !== '')) continue;
+      const rn = i + 1;
+      const matCode = String(cell(row, 'matCode')).trim();
+      const reqQtyStr = String(cell(row, 'reqQty') ?? '').trim();
+      const shortText = String(cell(row, 'shortText')).trim();
+      const notes = String(cell(row, 'notes')).trim();
+      if (!matCode && !reqQtyStr) continue; // 空白/纯文字行忽略
+      if (notes.includes('示例') || shortText.includes('示例') || matCode.includes('示例')) {
+        skippedSample.push(rn);
+        continue;
+      }
 
-    if (!dept) { toast('请填写必填字段：部门'); return; }
-    if (!this._batchRawData || !this._batchRawData.length) { toast('未解析到物料数据，请先上传文件'); return; }
+      // 数量
+      const qty = parseFloat(reqQtyStr.replace(/,/g, ''));
+      if (reqQtyStr === '' || Number.isNaN(qty)) { errors.push(`第 ${rn} 行：申请数量必须为大于 0 的数字`); continue; }
+      if (!(qty > 0)) { errors.push(`第 ${rn} 行：申请数量必须大于 0`); continue; }
 
-    const prData = {
-      docNo: '21' + String(Math.floor(Math.random() * 900000000 + 100000000)),
-      applyDate: f('prFApplyDate') || new Date().toISOString().slice(0, 10),
-      plant: f('prFPlant') || '1000',
-      dept,
-      notes: '',
-      purchaseType: 'Z01',
-      lines: this._batchRawData.map((r, i) => ({
-        itemNo: (i + 1) * 10,
-        matCode: r.matCode,
-        shortText: r.shortText,
-        applicant: r.applicant,
-        poNo: r.poNo,
-        reqQty: r.reqQty,
-        unit: r.unit,
-        orderQty: r.reqQty,
-        deliveryDate: r.deliveryDate,
-        requiredDate: r.requiredDate,
-        deliveryDate2: r.deliveryDate,
-        price: r.price,
-        totalValue: r.totalValue,
-        status: 'N',
-        acctAssCategory: '',
-        matGroup: '',
-        storageLocation: ''
-      }))
-    };
+      // 物料：Z01 必填且须存在于物料主数据；Z02 费用化可不填物料
+      if (purchaseType !== 'Z02' && !matCode) { errors.push(`第 ${rn} 行：物料编号不能为空（凭证类型 Z01）`); continue; }
+      let mat = null;
+      if (matCode) {
+        mat = findMatMaster(matCode);
+        if (!mat) errors.push(`第 ${rn} 行：物料编号「${matCode}」不存在于物料主数据`);
+      }
+      const effShortText = shortText || (mat ? mat.shortText : '');
+      if (!effShortText) { errors.push(`第 ${rn} 行：短文本（物料描述）不能为空`); continue; }
 
-    spPurchaseData.unshift(prData);
-    toast('批量导入成功！已创建采购申请 ' + prData.docNo + '（' + prData.lines.length + ' 行物料）');
+      // 价格
+      const priceRaw = String(cell(row, 'price') ?? '').replace(/,/g, '').trim();
+      let price = 0;
+      if (priceRaw !== '') {
+        if (!/^-?\d*\.?\d+$/.test(priceRaw)) { errors.push(`第 ${rn} 行：评价价格「${priceRaw}」不是有效数字`); continue; }
+        price = parseFloat(priceRaw);
+        if (price < 0) { errors.push(`第 ${rn} 行：评价价格不能为负数`); continue; }
+      }
 
+      // 日期
+      const toDate = (v, label) => {
+        if (v === '' || v === null || v === undefined) return '';
+        if (v instanceof Date && !isNaN(v.getTime())) {
+          return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, '0')}-${String(v.getDate()).padStart(2, '0')}`;
+        }
+        const s = String(v).trim();
+        let m = null;
+        if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+        else if (/^\d{8}$/.test(s)) m = [null, s.slice(0, 4), s.slice(4, 6), s.slice(6, 8)];
+        else if (/^\d{4}\.\d{1,2}\.\d{1,2}$/.test(s)) m = s.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})$/);
+        if (!m) { errors.push(`第 ${rn} 行：「${label}」格式不正确（示例：2026-07-15）`); return ''; }
+        const yy = +m[1], mo = +m[2], dd = +m[3];
+        if (mo < 1 || mo > 12 || dd < 1 || dd > 31) { errors.push(`第 ${rn} 行：「${label}」日期无效`); return ''; }
+        return `${String(yy).padStart(4, '0')}-${String(mo).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+      };
+      const deliveryDate = toDate(cell(row, 'deliveryDate'), '交货日期');
+
+      lines.push({
+        matCode,
+        shortText: effShortText,
+        reqQty: qty,
+        unit: String(cell(row, 'unit')).trim() || '个',
+        price: price,
+        deliveryDate,
+        matGroup: String(cell(row, 'matGroup')).trim() || (mat ? mat.matGroup : ''),
+        costCenter: String(cell(row, 'costCenter')).trim(),
+        purchaseReason: String(cell(row, 'purchaseReason')).trim(),
+        usageType: String(cell(row, 'usageType')).trim(),
+        budgetSource: String(cell(row, 'budgetSource')).trim(),
+        notes
+      });
+    }
+
+    if (errors.length) { this._renderBatchErrors(errors, file.name); return; }
+    if (!lines.length) { this._showBatchErrorMsg('Excel 中没有可导入的有效行数据，请填写后重新上传。'); return; }
+
+    // 校验通过：关闭批导弹窗，打开与手工填写一致的表单并预填数据
     this.closeModal();
-    this.flatRows = this.flattenData();
-    this.filteredFlat = [...this.flatRows];
-    this.page = 1;
-    this.renderTable();
+    this.openManualForm({ plant, purchaseType, lines, fromBatch: true });
+  },
+
+  // ---- 校验错误清单展示 ----
+  _renderBatchErrors(errors, fileName) {
+    const info = document.getElementById('batchUploadInfo');
+    if (info) info.innerHTML = `<span style="color:#16a34a;font-weight:600;">✅ 文件已读取：${esc(fileName)}</span>`;
+    const box = document.getElementById('batchErrorBox');
+    if (!box) return;
+    const shown = errors.slice(0, 60);
+    box.style.display = 'block';
+    box.style.border = '1px solid #fecaca';
+    box.style.background = '#fef2f2';
+    box.style.borderRadius = '8px';
+    box.style.padding = '12px 14px';
+    box.innerHTML = `
+      <div style="font-size:14px;font-weight:700;color:#b91c1c;margin-bottom:6px;">⚠️ 数据校验未通过（共 ${errors.length} 处问题）</div>
+      <div style="font-size:12px;color:#7f1d1d;margin-bottom:8px;">本次未创建任何申请。请按下列问题修改 Excel 后重新上传：</div>
+      <div style="max-height:220px;overflow-y:auto;font-size:12px;color:#991b1b;line-height:1.7;">
+        ${shown.map(e => `<div style="padding:2px 0;">• ${esc(e)}</div>`).join('')}
+        ${errors.length > shown.length ? `<div style="color:#7f1d1d;margin-top:4px;">…… 其余 ${errors.length - shown.length} 处问题略，请逐项修正</div>` : ''}
+      </div>`;
+  },
+
+  // ---- 通用错误提示（红色信息块）----
+  _showBatchErrorMsg(msg) {
+    const info = document.getElementById('batchUploadInfo');
+    if (info) info.innerHTML = '';
+    const box = document.getElementById('batchErrorBox');
+    if (!box) return;
+    box.style.display = 'block';
+    box.style.border = '1px solid #fecaca';
+    box.style.background = '#fef2f2';
+    box.style.borderRadius = '8px';
+    box.style.padding = '12px 14px';
+    box.innerHTML = `<div style="font-size:14px;font-weight:700;color:#b91c1c;">⚠️ ${esc(msg)}</div>`;
   },
 
   closeModal() { document.getElementById('prModalContainer').innerHTML = ''; },
