@@ -435,6 +435,8 @@ const SpPurchase = {
     const plant = (prefill && prefill.plant) || '1000';
     const purchaseType = (prefill && prefill.purchaseType) || 'Z01';
     const dept = (prefill && prefill.dept) || currentUserDept();
+    const hasBatchErrors = !!(prefill && prefill.hasBatchErrors);
+    const batchErrorSummary = (prefill && prefill.batchErrorSummary) || null;
 
     const lineSeed = () => ({
       itemNo: 0, matCode: '', shortText: '', applicant: window.currentUserId || 'admin',
@@ -465,7 +467,8 @@ const SpPurchase = {
             purchaseReason: l.purchaseReason || '',
             usageType: l.usageType || '',
             budgetSource: l.budgetSource || '',
-            notes: l.notes || ''
+            notes: l.notes || '',
+            _batchErrors: l._batchErrors || []
           });
         })
       : Array.from({ length: 10 }, (_, i) => Object.assign(lineSeed(), { itemNo: (i + 1) * 10 }));
@@ -474,11 +477,19 @@ const SpPurchase = {
       docNo: '', applyDate: today, createDate: today,
       plant, dept, notes: '',
       purchaseType,
-      lines
+      lines,
+      hasBatchErrors,
+      batchErrorSummary
     };
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(pr);
     if (purchaseType !== 'Z01') setTimeout(() => this.onPurchaseTypeChange(), 50);
-    if (prefill && prefill.fromBatch) toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，请核对抬头与行项目后提交`);
+    if (prefill && prefill.fromBatch) {
+      if (hasBatchErrors) {
+        toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，其中 ${batchErrorSummary.errCount} 行存在错误，请修正后提交`);
+      } else {
+        toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，请核对抬头与行项目后提交`);
+      }
+    }
   },
 
   // ---- 模板批导弹框 ----
@@ -787,6 +798,7 @@ const SpPurchase = {
       });
       if (issues.length) continue; // 该行存在问题，不计入可导入行
       lines.push({
+        rn,
         matCode,
         shortText: effShortText,
         reqQty: qty,
@@ -802,21 +814,45 @@ const SpPurchase = {
       });
     }
 
-    // 存在校验未通过的行：关闭批导弹窗，在新弹窗展示逐行状态清单
-    if (rowReports.some(r => !r.sample && r.issues.length)) {
-      this.closeModal();
-      this._openBatchResultModal(rowReports, file.name);
-      return;
-    }
-    if (lines.length) {
-      // 校验全部通过：关闭批导弹窗，打开与手工填写一致的表单并预填数据
-      this.closeModal();
-      this.openManualForm({ plant, purchaseType, lines, fromBatch: true });
-      return;
-    }
-    // 没有可导入的数据行（全部为空白行 / 示例行等）
+    // 汇总所有非空非示例行（包括校验通过和未通过的），统一打开采购申请表单
+    const lineByRn = new Map();
+    lines.forEach(l => lineByRn.set(l.rn, l));
+    const allLines = rowReports
+      .filter(r => !r.sample)
+      .map(r => {
+        const matched = lineByRn.get(r.rn);
+        if (matched) {
+          const { rn, ...rest } = matched;
+          return { ...rest, _batchErrors: [] };
+        }
+        const q = Number(String(r.reqQty).replace(/,/g, '')) || 0;
+        const pRaw = String(r.price ?? '').replace(/,/g, '').trim();
+        const p = pRaw !== '' ? parseFloat(pRaw) : 0;
+        return {
+          matCode: r.matCode === '（未填写）' ? '' : r.matCode,
+          shortText: r.shortText === '（未填写）' ? '' : r.shortText,
+          reqQty: q > 0 ? q : '',
+          unit: r.unit || '个',
+          price: p,
+          deliveryDate: r.deliveryDate,
+          matGroup: '', costCenter: '', purchaseReason: '',
+          usageType: '', budgetSource: '', notes: '',
+          _batchErrors: r.issues
+        };
+      });
+    const hasBatchErrors = allLines.some(l => l._batchErrors && l._batchErrors.length);
+    const okCount = allLines.filter(l => !l._batchErrors.length).length;
+    const errCount = allLines.filter(l => l._batchErrors.length).length;
+
     this.closeModal();
-    this._openBatchResultModal(rowReports, file.name, { noData: true });
+    this.openManualForm({
+      plant,
+      purchaseType,
+      lines: allLines,
+      fromBatch: true,
+      hasBatchErrors,
+      batchErrorSummary: { okCount, errCount }
+    });
   },
 
   // ---- 打开校验结果弹窗（关闭旧弹窗后在新弹窗展示逐行结果）----
@@ -1254,6 +1290,11 @@ const SpPurchase = {
         <div class="detail-item"><dt>创建日期</dt><dd><input type="date" id="prFCreateDate" value="${esc(createDate)}" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd><select id="prFDept" style="width:100%;border:none;background:transparent;font-size:14px;font-weight:600;color:inherit;padding:0;outline:none;">${deptOptions}</select></dd></div>
       </div>`;
+    const batchErrorBanner = (pr.hasBatchErrors && pr.batchErrorSummary)
+      ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#991b1b;">
+           <span style="font-weight:700;">⚠️ 数据校验未通过：</span>共 ${pr.batchErrorSummary.okCount + pr.batchErrorSummary.errCount} 行，其中 <strong style="color:#dc2626;">${pr.batchErrorSummary.errCount}</strong> 行存在错误，请修正后提交。
+         </div>`
+      : '';
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
         <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
@@ -1262,6 +1303,7 @@ const SpPurchase = {
             <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:none;">
+            ${batchErrorBanner}
             <${''}!-- Header ${''}-->
             <div class="form-section">
               <div class="form-section-title">抬头信息</div>
@@ -1309,7 +1351,7 @@ const SpPurchase = {
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="SpPurchase.closeModal()">取消</button>
-            <button class="btn btn-primary" onclick="SpPurchase.submitForm()">提交</button>
+            <button class="btn btn-primary" ${pr.hasBatchErrors ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} onclick="SpPurchase.submitForm()">提交</button>
           </div>
         </div>
       </div>`;
@@ -1324,7 +1366,10 @@ const SpPurchase = {
     // 处理状态：B=已创建采购订单（整行锁定，所有字段不可编辑）；N=未编辑（所有字段可编辑）
     const lineStatus = line.status || (line.poNo ? 'B' : 'N');
     const locked = this.editMode && lineStatus === 'B';
-    const rowClass = locked ? ' class="locked"' : '';
+    const batchErrors = line._batchErrors || [];
+    const hasBatchErrors = batchErrors.length > 0;
+    const rowClass = locked ? ' class="locked"' : (hasBatchErrors ? ' class="batch-error-row"' : '');
+    const rowStyle = hasBatchErrors ? ' style="background:#fef2f2;border-left:3px solid #dc2626;"' : '';
     const dis = locked ? ' disabled' : '';
     // 科目分配类别（KNTTP）：空=正常物料采购 K=费用化采购 F=订单采购；Z01 默认空，Z02 默认 K
     const knttp = (line.acctAssCategory !== undefined && line.acctAssCategory !== null) ? line.acctAssCategory : (isZ01 ? '' : 'K');
@@ -1366,8 +1411,9 @@ const SpPurchase = {
     // Price cell (评估价格始终可编辑，不受处理状态锁定)
     const priceCell = `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01"${isZ01?'':' required'} style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()"></td>`;
 
-    return `<tr${rowClass} data-row="${idx}">
-      <td style="text-align:center;color:var(--text-muted);font-weight:600;">${line.itemNo || ((idx+1)*10)}</td>
+    return `<tr${rowClass}${rowStyle} data-row="${idx}">
+      <td style="text-align:center;color:var(--text-muted);font-weight:600;" title="${hasBatchErrors ? esc(batchErrors.join('；')) : ''}">
+        ${hasBatchErrors ? `<span style="color:#dc2626;font-size:14px;">●</span> ` : ''}${line.itemNo || ((idx+1)*10)}</td>
       ${acctAssCell}
       ${matCodeCell}
       ${shortTextCell}
