@@ -1254,7 +1254,8 @@ const SpPurchase = {
   getFormModalHTML(pr) {
     const purchaseType = pr.purchaseType || 'Z01';
     const isNew = !this.editMode;
-    const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew)).join('');
+    const showBatchCol = !!pr.hasBatchErrors;
+    const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew, showBatchCol)).join('');
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o => o.value === purchaseType);
     const createDate = pr.createDate || pr.applyDate || new Date().toISOString().slice(0,10);
     const plantOptions = `<option value="1000"${pr.plant==='1000'?' selected':''}>1000 - 山东步长制药工厂</option>
@@ -1339,6 +1340,7 @@ const SpPurchase = {
                     ${isNew ? '' : '<th style="width:100px;text-align:center;">处理状态</th><th style="width:60px;text-align:center;">已结算</th>'}
                     <th style="min-width:110px;text-align:center;">图片</th>
                     <th style="min-width:70px;">备注</th>
+                    ${showBatchCol ? '<th style="min-width:200px;">校验说明</th>' : ''}
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
                 </table>
@@ -1357,7 +1359,8 @@ const SpPurchase = {
       </div>`;
   },
 
-  renderLineRow(line, idx, purchaseType, isNew) {
+  renderLineRow(line, idx, purchaseType, isNew, showBatchCol) {
+    if (showBatchCol === undefined) showBatchCol = false;
     const pt = purchaseType || 'Z01';
     const isZ01 = pt === 'Z01';
     const isZ02 = pt === 'Z02';
@@ -1371,6 +1374,12 @@ const SpPurchase = {
     const rowClass = locked ? ' class="locked"' : (hasBatchErrors ? ' class="batch-error-row"' : '');
     const rowStyle = hasBatchErrors ? ' style="background:#fef2f2;border-left:3px solid #dc2626;"' : '';
     const dis = locked ? ' disabled' : '';
+    const batchCol = showBatchCol
+      ? (hasBatchErrors
+        ? `<td style="padding:5px;"><div style="color:#b91c1c;font-size:12px;line-height:1.6;">${batchErrors.map(e => `• ${esc(e)}`).join('<br>')}</div></td>`
+        : `<td style="padding:5px;"><span style="color:#166534;font-size:12px;">✓ 校验正确</span></td>`)
+      : '';
+
     // 科目分配类别（KNTTP）：空=正常物料采购 K=费用化采购 F=订单采购；Z01 默认空，Z02 默认 K
     const knttp = (line.acctAssCategory !== undefined && line.acctAssCategory !== null) ? line.acctAssCategory : (isZ01 ? '' : 'K');
     const knttpK = knttp === 'K';
@@ -1434,6 +1443,7 @@ const SpPurchase = {
       ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
       ${this._photoCellHTML(line.photos||[], idx, locked)}
       <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注"${dis} style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
+      ${batchCol}
     </tr>`;
   },
 
