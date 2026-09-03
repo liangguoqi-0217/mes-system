@@ -1474,18 +1474,24 @@ const SpPurchase = {
     return (tbody && tbody.rows[rowIdx]) ? tbody.rows[rowIdx] : null;
   },
 
-  /** 生成行内图片单元格 */
+  /** 生成行内图片单元格（每行项目限 1 张图片） */
   _photoCellHTML(photos, idx, locked) {
     const list = photos || [];
     const n = list.length;
-    const thumbs = list.slice(0, 4).map(p =>
-      `<img class="line-photo-img" data-name="${esc(p.name||'')}" src="${p.dataUrl}" title="${esc(p.name||'')}" style="width:34px;height:34px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--border);flex-shrink:0;" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">`).join('');
-    const more = n > 4 ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;">+${n-4}</span>` : '';
-    const btn = locked
-      ? (n ? '' : '<span style="color:var(--text-muted);font-size:11px;">-</span>')
-      : `<button type="button" class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">📷 图片${n?`(${n})`:''}</button>`;
+    const p = list[0];
+    const img = p
+      ? `<img class="line-photo-img" data-name="${esc(p.name||'')}" src="${p.dataUrl}" title="点击查看/更换图片" style="width:34px;height:34px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--border);flex-shrink:0;" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">`
+      : '';
+    let btn;
+    if (locked) {
+      btn = n ? '' : '<span style="color:var(--text-muted);font-size:11px;">-</span>';
+    } else if (n) {
+      btn = `<button type="button" class="btn btn-sm btn-outline" style="padding:2px 6px;font-size:11px;flex-shrink:0;line-height:1.4;" title="查看 / 更换 / 删除" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">📷</button>`;
+    } else {
+      btn = `<button type="button" class="btn btn-sm btn-outline" style="padding:2px 8px;font-size:11px;flex-shrink:0;" onclick="event.stopPropagation();SpPurchase.openLinePhotoModal(${idx})">📷 上传图片</button>`;
+    }
     return `<td class="line-photo-cell" style="padding:5px;min-width:110px;">
-      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${btn}${thumbs}${more}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${btn}${img}</div>
     </td>`;
   },
 
@@ -1560,32 +1566,27 @@ const SpPurchase = {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
         ${locked ? '<span style="font-size:12px;color:var(--text-muted);">该行已创建采购订单，图片为只读查看</span>' : `
         <label class="btn btn-primary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;gap:6px;">
-          + 上传图片（可多选）
-          <input type="file" accept="image/*" multiple style="display:none;" onchange="SpPurchase._onLinePhotoSelected(this, ${rowIdx})">
+          ${photos.length ? '+ 更换图片' : '+ 上传图片'}
+          <input type="file" accept="image/*" style="display:none;" onchange="SpPurchase._onLinePhotoSelected(this, ${rowIdx})">
         </label>`}
-        <span style="font-size:12px;color:var(--text-muted);">支持 JPG / PNG / WEBP / GIF，自动压缩；点击缩略图可查看大图</span>
+        <span style="font-size:12px;color:var(--text-muted);">每个行项目限 <strong>1</strong> 张图片，上传新图将替换原图；支持 JPG / PNG / WEBP / GIF，自动压缩；点击图片可查看大图</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">${gridHTML}</div>`;
   },
 
-  /** 选择图片文件 → 压缩 → 追加到该行图片列表 */
+  /** 选择图片文件 → 压缩 → 写回该行（每行限 1 张：新图直接替换原图） */
   _onLinePhotoSelected(input, rowIdx) {
     const files = Array.from(input.files || []);
     if (input) input.value = '';
     if (!files.length) return;
     const tr = this._getLineRowTr(rowIdx);
     if (!tr || tr.classList.contains('locked')) return;
-    const photos = this._getRowPhotos(tr);
-    let pending = files.length;
-    files.forEach(file => {
-      if (!file.type || !file.type.startsWith('image/')) { pending--; return; }
-      this._compressImage(file, (dataUrl, name) => {
-        photos.push({ name, dataUrl });
-        if (--pending <= 0) {
-          this._applyRowPhotos(rowIdx, photos);
-          this._renderLinePhotoModal(rowIdx);
-        }
-      });
+    const file = files.find(f => f.type && f.type.startsWith('image/'));
+    if (!file) { toast('请选择图片文件'); return; }
+    this._compressImage(file, (dataUrl, name) => {
+      const photos = [{ name, dataUrl }];  // 单图模式：只保留一张
+      this._applyRowPhotos(rowIdx, photos);
+      this._renderLinePhotoModal(rowIdx);
     });
   },
 
