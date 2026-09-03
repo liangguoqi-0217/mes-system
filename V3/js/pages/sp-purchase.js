@@ -1376,7 +1376,7 @@ const SpPurchase = {
     const dis = locked ? ' disabled' : '';
     const batchCol = showBatchCol
       ? (hasBatchErrors
-        ? `<td style="padding:5px;"><div style="color:#b91c1c;font-size:12px;line-height:1.6;">${batchErrors.map(e => `• ${esc(e)}`).join('<br>')}</div></td>`
+        ? `<td style="padding:5px;"><div style="color:#b91c1c;font-size:12px;line-height:1.6;" title="${batchErrors.length > 1 ? esc(batchErrors.join('；')) : ''}">${batchErrors.length > 1 ? `${esc(batchErrors[0])}（等 ${batchErrors.length} 项）` : `• ${esc(batchErrors[0])}`}</div></td>`
         : `<td style="padding:5px;"><span style="color:#166534;font-size:12px;">✓ 校验正确</span></td>`)
       : '';
 
