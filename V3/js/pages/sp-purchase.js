@@ -437,6 +437,9 @@ const SpPurchase = {
     const dept = (prefill && prefill.dept) || currentUserDept();
     const hasBatchErrors = !!(prefill && prefill.hasBatchErrors);
     const batchErrorSummary = (prefill && prefill.batchErrorSummary) || null;
+    // 模板批导场景：打开的表单为只读预览，数据不可编辑，需修改须重新上传 Excel
+    const viewOnly = !!(prefill && prefill.fromBatch);
+    this._viewOnly = viewOnly;
 
     const lineSeed = () => ({
       itemNo: 0, matCode: '', shortText: '', applicant: window.currentUserId || 'admin',
@@ -479,15 +482,17 @@ const SpPurchase = {
       purchaseType,
       lines,
       hasBatchErrors,
-      batchErrorSummary
+      batchErrorSummary,
+      viewOnly
     };
     document.getElementById('prModalContainer').innerHTML = this.getFormModalHTML(pr);
     if (purchaseType !== 'Z01') setTimeout(() => this.onPurchaseTypeChange(), 50);
+    setTimeout(() => this.recalcTotal(), 60);
     if (prefill && prefill.fromBatch) {
       if (hasBatchErrors) {
-        toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，其中 ${batchErrorSummary.errCount} 行存在错误，请修正后提交`);
+        toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，其中 ${batchErrorSummary.errCount} 行存在错误。此表单为只读预览，请修改 Excel 后重新上传`);
       } else {
-        toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，请核对抬头与行项目后提交`);
+        toast(`已从 Excel 导入 ${prefill.lines.length} 行数据，请核对抬头与行项目，确认无误后点击提交`);
       }
     }
   },
@@ -553,6 +558,7 @@ const SpPurchase = {
     const pr = spPurchaseData.find(r => r.docNo === docNo);
     if (!pr) return;
     this.editMode = true;
+    this._viewOnly = false;
     this.editId = docNo;
     const prClone = JSON.parse(JSON.stringify(pr));
     prClone.lines = prClone.lines.map(l => { l.status = l.status || (l.poNo ? 'B' : 'N'); return l; });
@@ -1254,8 +1260,9 @@ const SpPurchase = {
   getFormModalHTML(pr) {
     const purchaseType = pr.purchaseType || 'Z01';
     const isNew = !this.editMode;
+    const viewOnly = !!pr.viewOnly;
     const showBatchCol = !!pr.hasBatchErrors;
-    const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew, showBatchCol)).join('');
+    const linesHTML = pr.lines.map((l, i) => SpPurchase.renderLineRow(l, i, purchaseType, isNew, showBatchCol, viewOnly)).join('');
     const ptLabel = PURCHASE_TYPE_OPTIONS.find(o => o.value === purchaseType);
     const createDate = pr.createDate || pr.applyDate || new Date().toISOString().slice(0,10);
     const plantOptions = `<option value="1000"${pr.plant==='1000'?' selected':''}>1000 - 山东步长制药工厂</option>
@@ -1276,10 +1283,10 @@ const SpPurchase = {
     const deptOptions = `<option value="">请选择</option><option value="设备部"${pr.dept==='设备部'?' selected':''}>设备部</option><option value="生产部"${pr.dept==='生产部'?' selected':''}>生产部</option><option value="质量部"${pr.dept==='质量部'?' selected':''}>质量部</option><option value="仓储物流部"${pr.dept==='仓储物流部'?' selected':''}>仓储物流部</option>`;
     // 编辑模式：抬头与查看弹窗完全一致（纯文本展示），值通过 hidden input 保留以便提交
     // 新建模式：抬头为可编辑控件
-    const headerHTML = this.editMode ? `
+    const headerHTML = (this.editMode || viewOnly) ? `
       <div class="detail-grid" style="grid-template-columns:repeat(8,minmax(0,1fr));">
         <div class="detail-item"><dt>工厂</dt><dd>${esc(pr.plant)}<input type="hidden" id="prFPlant" value="${esc(pr.plant)}"></dd></div>
-        <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo)}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
+        <div class="detail-item"><dt>采购申请</dt><dd><strong>${esc(pr.docNo || (viewOnly ? '(自动生成)' : ''))}</strong><input type="hidden" id="prFDocNo" value="${esc(pr.docNo||'')}"></dd></div>
         <div class="detail-item"><dt>采购申请凭证类型</dt><dd>${esc(ptLabel?ptLabel.label:pr.purchaseType||'-')}<input type="hidden" id="prFPurchaseType" value="${esc(purchaseType)}"></dd></div>
         <div class="detail-item"><dt>创建日期</dt><dd>${esc(createDate)}<input type="hidden" id="prFCreateDate" value="${esc(createDate)}"></dd></div>
         <div class="detail-item"><dt>部门</dt><dd>${esc(pr.dept)}<input type="hidden" id="prFDept" value="${esc(pr.dept)}"></dd></div>
@@ -1293,14 +1300,18 @@ const SpPurchase = {
       </div>`;
     const batchErrorBanner = (pr.hasBatchErrors && pr.batchErrorSummary)
       ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#991b1b;">
-           <span style="font-weight:700;">⚠️ 数据校验未通过：</span>共 ${pr.batchErrorSummary.okCount + pr.batchErrorSummary.errCount} 行，其中 <strong style="color:#dc2626;">${pr.batchErrorSummary.errCount}</strong> 行存在错误，请修正后提交。
+           <span style="font-weight:700;">⚠️ 数据校验未通过：</span>共 ${pr.batchErrorSummary.okCount + pr.batchErrorSummary.errCount} 行，其中 <strong style="color:#dc2626;">${pr.batchErrorSummary.errCount}</strong> 行存在错误。<br>此表单为<strong>只读预览</strong>，请检查左侧「校验说明」，修改 Excel 后点击底部「重新上传」。
          </div>`
-      : '';
+      : (viewOnly
+        ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1e40af;">
+             <span style="font-weight:700;">ℹ️ 只读预览：</span>数据校验全部通过，表单不可编辑。核对无误后点击「提交」创建申请；如需修改请先关闭，调整 Excel 后再上传。
+           </div>`
+        : '');
     return `
       <div class="modal-backdrop" id="prModalBackdrop" onclick="SpPurchase.closeModal()">
         <div class="modal" style="width:98vw;max-width:98vw;max-height:98vh;" onclick="event.stopPropagation()">
           <div class="modal-header">
-            <div class="modal-title">${this.editMode?'修改':'新建'}采购申请 - ${esc(pr.docNo||'(自动生成)')} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(ptLabel?ptLabel.label:'')}</span></div>
+            <div class="modal-title">${this.editMode?'修改':(viewOnly?'模板批导预览':'新建')}采购申请 - ${esc(pr.docNo||'(自动生成)')} <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(ptLabel?ptLabel.label:'')}</span></div>
             <button class="modal-close" onclick="SpPurchase.closeModal()">✕</button>
           </div>
           <div class="modal-body" style="max-height:none;">
@@ -1316,7 +1327,7 @@ const SpPurchase = {
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                 <div class="form-section-title" style="margin-bottom:0;">行项目 <span id="prPurchaseTypeHint" style="font-size:12px;color:var(--primary);margin-left:8px;">${purchaseType==='Z02'?'— 费用性采购（无物料号）':''}</span></div>
                 <div style="display:flex;gap:6px;">
-                  <button class="btn btn-sm btn-outline" onclick="SpPurchase.addLineRow()" style="padding:4px 12px;font-size:12px;">+ 添加行</button>
+                  ${viewOnly ? `<span style="font-size:12px;color:var(--text-secondary);line-height:26px;">批导数据行数：${pr.lines.length} 行（只读）</span>` : '<button class="btn btn-sm btn-outline" onclick="SpPurchase.addLineRow()" style="padding:4px 12px;font-size:12px;">+ 添加行</button>'}
                 </div>
               </div>
               <div style="overflow-x:auto;">
@@ -1346,21 +1357,23 @@ const SpPurchase = {
                 </table>
               </div>
               <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--text-secondary);">
-                <span>提示：点击 "+" 可添加多行物料；留空的行将被忽略</span>
+                <span>${viewOnly ? '只读预览：此表单由 Excel 模板批导生成，不可编辑。修改数据请调整 Excel 后重新上传。' : '提示：点击 "+" 可添加多行物料；留空的行将被忽略'}</span>
                 <span id="prGrandTotal" style="font-weight:700;color:var(--danger);font-size:15px;">合计: ¥ 0.00</span>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="SpPurchase.closeModal()">取消</button>
+            <button class="btn btn-secondary" onclick="SpPurchase.closeModal()">${viewOnly ? '关闭' : '取消'}</button>
+            ${pr.viewOnly && pr.hasBatchErrors ? '<button class="btn btn-blue" onclick="SpPurchase.closeModal();SpPurchase.openBatchImportModal()">重新上传</button>' : ''}
             <button class="btn btn-primary" ${pr.hasBatchErrors ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} onclick="SpPurchase.submitForm()">提交</button>
           </div>
         </div>
       </div>`;
   },
 
-  renderLineRow(line, idx, purchaseType, isNew, showBatchCol) {
+  renderLineRow(line, idx, purchaseType, isNew, showBatchCol, viewOnly) {
     if (showBatchCol === undefined) showBatchCol = false;
+    if (viewOnly === undefined) viewOnly = !!this._viewOnly;
     const pt = purchaseType || 'Z01';
     const isZ01 = pt === 'Z01';
     const isZ02 = pt === 'Z02';
@@ -1373,7 +1386,7 @@ const SpPurchase = {
     const hasBatchErrors = batchErrors.length > 0;
     const rowClass = locked ? ' class="locked"' : (hasBatchErrors ? ' class="batch-error-row"' : '');
     const rowStyle = hasBatchErrors ? ' style="background:#fef2f2;border-left:3px solid #dc2626;"' : '';
-    const dis = locked ? ' disabled' : '';
+    const dis = (locked || viewOnly) ? ' disabled' : '';
     const batchCol = showBatchCol
       ? (hasBatchErrors
         ? `<td style="padding:5px;"><div style="color:#b91c1c;font-size:12px;line-height:1.6;" title="${batchErrors.length > 1 ? esc(batchErrors.join('；')) : ''}">${batchErrors.length > 1 ? `${esc(batchErrors[0])}（等 ${batchErrors.length} 项）` : `• ${esc(batchErrors[0])}`}</div></td>`
@@ -1417,8 +1430,8 @@ const SpPurchase = {
       ? `<td style="padding:5px;"><span style="color:var(--text-muted);font-size:11px;">-</span></td>`
       : `<td style="padding:5px;"><select data-field="costCenter"${dis}${knttpK?' required':''} style="width:100%;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;background:#fffbe6;"><option value="">请选择</option>${COST_CENTER_OPTIONS.map(o=>`<option value="${o.value}"${line.costCenter===o.value?' selected':''}>${esc(o.label)}</option>`).join('')}</select></td>`;
 
-    // Price cell (评估价格始终可编辑，不受处理状态锁定)
-    const priceCell = `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01"${isZ01?'':' required'} style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()"></td>`;
+    // Price cell (评估价格：普通新建/修改模式始终可编辑；批导预览或整行锁定时禁用)
+    const priceCell = `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01"${dis}${isZ01?'':' required'} style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()"></td>`;
 
     return `<tr${rowClass}${rowStyle} data-row="${idx}">
       ${batchCol}
@@ -1442,7 +1455,7 @@ const SpPurchase = {
       <td style="padding:5px;"><input type="text" data-field="budgetSource" value="${esc(line.budgetSource||'')}" placeholder="预算出处"${dis} title="${esc(line.budgetSource||'')}" style="width:98px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
       ${isNew ? '' : '<td style="text-align:center;padding:5px;"><span class="badge ' + (locked?'badge-blue':'badge-gray') + '" style="font-size:11px;">' + (locked?'B-已创建采购订单':'N-未编辑') + '</span></td>'}
       ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
-      ${this._photoCellHTML(line.photos||[], idx, locked)}
+      ${this._photoCellHTML(line.photos||[], idx, locked || viewOnly)}
       <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注"${dis} style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
     </tr>`;
   },
