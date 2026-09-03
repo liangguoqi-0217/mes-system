@@ -1322,6 +1322,7 @@ const SpPurchase = {
               <div style="overflow-x:auto;">
                 <table class="data-table data-table-compact" id="prLinesTable" style="min-width:${purchaseType==='Z02'?'1500px':'1800px'};">
                   <thead><tr>
+                    ${showBatchCol ? '<th style="min-width:200px;">校验说明</th>' : ''}
                     <th style="width:60px;text-align:center;">行项目</th>
                     <th style="min-width:80px;" id="prThAcctAss">科目分配类别</th>
                     <th style="min-width:100px;" id="prThMatCode"><span class="req">*</span> 物料编号</th>
@@ -1340,7 +1341,6 @@ const SpPurchase = {
                     ${isNew ? '' : '<th style="width:100px;text-align:center;">处理状态</th><th style="width:60px;text-align:center;">已结算</th>'}
                     <th style="min-width:110px;text-align:center;">图片</th>
                     <th style="min-width:70px;">备注</th>
-                    ${showBatchCol ? '<th style="min-width:200px;">校验说明</th>' : ''}
                   </tr></thead>
                   <tbody id="prLinesBody">${linesHTML}</tbody>
                 </table>
@@ -1421,6 +1421,7 @@ const SpPurchase = {
     const priceCell = `<td style="padding:5px;"><input type="number" data-field="price" value="${line.price||''}" min="0" step="0.01"${isZ01?'':' required'} style="width:68px;text-align:right;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fffbe6;" oninput="SpPurchase.recalcTotal()"></td>`;
 
     return `<tr${rowClass}${rowStyle} data-row="${idx}">
+      ${batchCol}
       <td style="text-align:center;color:var(--text-muted);font-weight:600;" title="${hasBatchErrors ? esc(batchErrors.join('；')) : ''}">
         ${hasBatchErrors ? `<span style="color:#dc2626;font-size:14px;">●</span> ` : ''}${line.itemNo || ((idx+1)*10)}</td>
       ${acctAssCell}
@@ -1443,7 +1444,6 @@ const SpPurchase = {
       ${isNew ? '' : '<td style="padding:4px;text-align:center;"><input type="checkbox" data-field="isSettled" ' + (line.isSettled==='Y'?'checked':'') + ' style="width:16px;height:16px;cursor:pointer;" title="勾选表示此行已结算"></td>'}
       ${this._photoCellHTML(line.photos||[], idx, locked)}
       <td style="padding:5px;"><input type="text" data-field="notes" value="${esc(line.notes||'')}" placeholder="备注"${dis} style="width:80px;padding:5px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      ${batchCol}
     </tr>`;
   },
 
