@@ -115,6 +115,18 @@ const App = {
       ]
     },
     {
+      id:'system-management', label:'系统管理', icon:'🛠', adminOnly:true,
+      groups: [
+        {
+          title:'定时任务', items: [
+            { id:'job-list', label:'任务清单', route:'job-list', pageObj:'ScheduledJob', type:'list' },
+            { id:'job-log', label:'执行日志', route:'job-log', pageObj:'ScheduledJob', type:'log' },
+            { id:'job-interface', label:'接口注册', route:'job-interface', pageObj:'ScheduledJob', type:'interface' }
+          ]
+        }
+      ]
+    },
+    {
       id:'miniapp-mgmt', label:'小程序管理', icon:'📱',
       groups: [
         {
@@ -153,7 +165,45 @@ const App = {
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
-    'cost-object': CostObject
+    'cost-object': CostObject,
+    'job-list': ScheduledJob,
+    'job-log': ScheduledJob,
+    'job-interface': ScheduledJob
+  },
+
+  /* ===== 权限：定时任务仅系统管理员可见 ===== */
+  isAdmin() {
+    return (window.currentUserId === 'admin') || (window.currentUserRole === 'admin');
+  },
+
+  findMenuItem(route) {
+    var found = null;
+    this.menu.forEach(function (m) {
+      (m.groups || []).forEach(function (g) {
+        (g.items || []).forEach(function (it) {
+          if (it.route === route) found = { menu: m, item: it };
+        });
+      });
+    });
+    return found;
+  },
+
+  canAccess(route) {
+    var hit = this.findMenuItem(route);
+    if (!hit) return true;
+    if (hit.menu.adminOnly || hit.item.adminOnly) return this.isAdmin();
+    return true;
+  },
+
+  renderNoPermission(label) {
+    return `
+      <div style="min-height:calc(100vh - 96px);display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;">
+        <div style="text-align:center;padding:40px;">
+          <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+          <div style="font-size:18px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">无访问权限</div>
+          <div style="font-size:13px;color:var(--text-muted);">${esc(label || '')} 仅对系统管理员开放，请联系管理员。</div>
+        </div>
+      </div>`;
   },
 
   init() {
@@ -562,8 +612,9 @@ const App = {
     let html = '';
     // 首页（独立项，不参与hover面板）
     html += '<div class="g-left-item" data-menu="home" onclick="App.navigateTo(\'home\',\'\',\'home\',\'首页\')">首页</div>';
-    // 渲染一级菜单项
+    // 渲染一级菜单项（adminOnly 的菜单仅管理员可见）
     this.menu.forEach(item => {
+      if (item.adminOnly && !this.isAdmin()) return;
       html += '<div class="g-left-item" data-menu="' + item.id + '"'
         + ' onmouseenter="App.openGPanel(this)"'
         + ' onmouseleave="App.checkGPanelLeave(event)"'
@@ -675,6 +726,15 @@ const App = {
     if (!contentArea || !topbarTitle) return;
 
     topbarTitle.textContent = label || '';
+    if (!this.canAccess(route)) {
+      contentArea.className = 'content-area full-width';
+      contentArea.innerHTML = this.renderNoPermission(label);
+      var gp = document.getElementById('gHoverPanel');
+      if (gp) gp.classList.remove('open');
+      this.renderSidebar();
+      this.closeMobileSidebar();
+      return;
+    }
     var pageObj = this.pageMap[route];
     if (pageObj) {
       try {
@@ -745,6 +805,13 @@ const App = {
     }
 
     topbarTitle.textContent = label || '';
+    if (!this.canAccess(route)) {
+      contentArea.className = 'content-area full-width';
+      contentArea.innerHTML = this.renderNoPermission(label);
+      this.renderSidebar();
+      this.closeMobileSidebar();
+      return;
+    }
     const pageObj = this.pageMap[route];
     if (pageObj) {
       try {
