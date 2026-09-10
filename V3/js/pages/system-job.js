@@ -138,7 +138,7 @@ function ifaceLabel(code) {
 
 const JOB_DEFS = [
   {
-    id: 'JOB-0001', code: 'JOB_PP0004_MATDOC_10M', name: 'SAP物料凭证同步（10分钟）',
+    id: 'JOB-0001', code: 'JOB_PP0004_001', name: 'SAP物料凭证同步（10分钟）',
     iface: 'PP0004', cron: '*/10 * * * *', cronText: '每 10 分钟',
     status: '运行中', owner: '系统管理员', createdAt: '2026-03-12 09:20',
     params: {
@@ -148,7 +148,7 @@ const JOB_DEFS = [
     remark: '主同步任务，按增量水位每 10 分钟拉取一次'
   },
   {
-    id: 'JOB-0002', code: 'JOB_PP0032_PR_STATUS_D1', name: 'SAP采购申请状态同步（每日）',
+    id: 'JOB-0002', code: 'JOB_PP0032_001', name: 'SAP采购申请状态同步（每日）',
     iface: 'PP0032', cron: '0 8 * * *', cronText: '每天 08:00',
     status: '运行中', owner: '系统管理员', createdAt: '2026-05-06 14:05',
     params: {
@@ -158,7 +158,7 @@ const JOB_DEFS = [
     remark: '每天上班前同步一次昨日申请状态'
   },
   {
-    id: 'JOB-0003', code: 'JOB_PP0011_STOCK_30M', name: 'SAP库存同步（30分钟）',
+    id: 'JOB-0003', code: 'JOB_PP0011_001', name: 'SAP库存同步（30分钟）',
     iface: 'PP0011', cron: '*/30 * * * *', cronText: '每 30 分钟',
     status: '运行中', owner: '系统管理员', createdAt: '2026-06-18 10:40',
     params: {
@@ -167,7 +167,7 @@ const JOB_DEFS = [
     remark: '该接口近期有超时情况，需关注'
   },
   {
-    id: 'JOB-0004', code: 'JOB_PP0004_MATDOC_BACKFILL', name: '物料凭证历史补拉（每日）',
+    id: 'JOB-0004', code: 'JOB_PP0004_002', name: '物料凭证历史补拉（每日）',
     iface: 'PP0004', cron: '0 2 * * *', cronText: '每天 02:00',
     status: '已暂停', owner: '系统管理员', createdAt: '2026-04-02 11:10',
     params: {
@@ -275,13 +275,16 @@ const ScheduledJob = {
   renderListPage() {
     return `
     <div style="padding:20px 24px;background:#f6f8fb;min-height:calc(100vh - 56px);">
+      <div style="padding:0 4px 10px;font-size:12px;color:var(--text-muted);">
+        提示：点击「查看」进入任务详情，可在弹窗内修改查询条件、立即执行、暂停或终止任务。
+      </div>
       <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
         <div class="filter-bar">
           <div class="filter-group">
             <label>SAP 接口</label>
             <select id="jobFltIface">
               <option value="">全部接口</option>
-              ${SAP_INTERFACES.map(i => `<option value="${esc(i.code)}" ${this.listFilter.iface === i.code ? 'selected' : ''}>${esc(i.name)}</option>`).join('')}
+              ${SAP_INTERFACES.map(i => `<option value="${esc(i.code)}" ${this.listFilter.iface === i.code ? 'selected' : ''}>${esc(ifaceLabel(i.code))}</option>`).join('')}
             </select>
           </div>
           <div class="filter-group">
@@ -331,9 +334,6 @@ const ScheduledJob = {
           <div class="list-info"><span class="pagination-info" id="jobPageInfo">第 1 页</span></div>
           <div class="pagination" id="jobPagination"></div>
         </div>
-      </div>
-      <div style="padding:10px 4px;font-size:12px;color:var(--text-muted);">
-        提示：点击「查看」进入任务详情，可在弹窗内修改查询条件、立即执行、暂停或终止任务。
       </div>
     </div>`;
   },
@@ -780,8 +780,9 @@ const ScheduledJob = {
               <option value="每天 02:00|0 2 * * *">每天 02:00</option>
               <option value="每天 08:00|0 8 * * *">每天 08:00</option>
             </select></div>
-          <div class="form-group"><label>任务编码<span class="req">*</span></label>
-            <input id="newJobCode" placeholder="如 JOB_SAP_MATDOC_10M"></div>
+          <div class="form-group"><label>任务编码</label>
+            <input id="newJobCode" value="选择接口后自动生成" readonly style="background:#f8fafc;color:var(--text-secondary);">
+            <div class="form-help">按「JOB_接口编号_序号」自动编号，如 JOB_PP0004_001</div></div>
           <div class="form-group"><label>任务名称<span class="req">*</span></label>
             <input id="newJobName" placeholder="如 SAP物料凭证同步（10分钟）"></div>
           <div class="form-group"><label>创建后状态</label>
@@ -805,6 +806,24 @@ const ScheduledJob = {
     ], 'modal-xxl');
   },
 
+  /* 任务编码自动生成：JOB_接口编号_序号（同一接口内递增） */
+  nextJobCode(ifaceCode) {
+    const prefix = 'JOB_' + ifaceCode + '_';
+    let max = 0;
+    JOB_DEFS.forEach(function (j) {
+      if (String(j.code).indexOf(prefix) === 0) {
+        const n = parseInt(String(j.code).slice(prefix.length), 10);
+        if (!isNaN(n) && n > max) max = n;
+      }
+    });
+    let code = prefix + String(max + 1).padStart(3, '0');
+    while (JOB_DEFS.some(j => j.code === code)) {
+      max += 1;
+      code = prefix + String(max + 1).padStart(3, '0');
+    }
+    return code;
+  },
+
   /* 选中接口后，局部刷新入参区域（不关闭弹窗） */
   onSelectIface(code) {
     const area = document.getElementById('newJobParams');
@@ -821,6 +840,8 @@ const ScheduledJob = {
     if (desc) {
       desc.textContent = (iface.protocol || '') + ' · ' + (iface.direction || '') + ' · ' + (iface.desc || '');
     }
+    const codeEl = document.getElementById('newJobCode');
+    if (codeEl) codeEl.value = this.nextJobCode(code);
     const defs = {};
     (iface.params || []).forEach(p => { defs[p.key] = p.def; });
     if (area) {
@@ -846,12 +867,10 @@ const ScheduledJob = {
     const ifaceEl = document.getElementById('newJobIface');
     const ifaceCode = ifaceEl ? ifaceEl.value : '';
     if (!ifaceCode) { toast('请先选择 SAP 接口'); return; }
-    const codeEl = document.getElementById('newJobCode');
     const nameEl = document.getElementById('newJobName');
-    const code = codeEl ? codeEl.value.trim() : '';
     const name = nameEl ? nameEl.value.trim() : '';
-    if (!code || !name) { toast('任务编码与任务名称为必填项'); return; }
-    if (JOB_DEFS.some(j => j.code === code)) { toast('任务编码已存在：' + code); return; }
+    if (!name) { toast('任务名称为必填项'); return; }
+    const code = this.nextJobCode(ifaceCode);
 
     const cronSel = document.getElementById('newJobCron');
     const cronVal = cronSel ? cronSel.value : '每 10 分钟|*/10 * * * *';
@@ -862,8 +881,13 @@ const ScheduledJob = {
     const tmpJob = { iface: ifaceCode, params: {} };
     const params = this.readParamsForm(tmpJob, true);
 
+    const maxId = JOB_DEFS.reduce(function (m, j) {
+      const n = parseInt(String(j.id).replace('JOB-', ''), 10);
+      return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+
     JOB_DEFS.push({
-      id: 'JOB-' + String(JOB_DEFS.length + 1).padStart(4, '0'),
+      id: 'JOB-' + String(maxId + 1).padStart(4, '0'),
       code: code, name: name, iface: ifaceCode, cron: cron, cronText: cronText,
       status: status, owner: (document.getElementById('newJobOwner') || {}).value || 'admin',
       createdAt: jobHMStr(new Date()), params: params,
@@ -871,7 +895,7 @@ const ScheduledJob = {
     });
 
     closeModal();
-    toast('任务已创建：' + name);
+    toast('任务已创建：' + name + '（' + code + '）');
     if (this.type === 'list') { this.renderListTable(); }
     else {
       const ca = document.getElementById('contentArea');
