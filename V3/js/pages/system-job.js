@@ -38,75 +38,93 @@ function jobAddMinutes(base, mins) {
 /* ==================== 1. SAP 接口注册表（参数模板 = 元数据核心） ==================== */
 const SAP_INTERFACES = [
   {
-    code: 'ZMM_MATDOC_001',
-    name: '物料凭证查询',
+    code: 'PP0004',
+    name: '查询SAP物料凭证接口',
     protocol: 'RFC',
     direction: 'SAP → MES（拉）',
     biz: '库存管理',
     enabled: true,
     desc: '按工厂 + 过账日期增量拉取 SAP 物料凭证（MKPF/MSEG），写入 MES 镜像库，供库存查询、领退料、凭证冲销使用。',
     params: [
-      { key: 'plant', label: '工厂', type: 'select', required: true, def: '1000',
+      { key: 'WERKS', label: '工厂', type: 'select', required: true, def: '1000',
         options: ['1000-上海工厂', '2000-苏州工厂'], help: 'SAP 工厂代码' },
-      { key: 'postDate', label: '过账日期区间', type: 'daterange', required: true, def: { from: '', to: '' },
+      { key: 'BUDAT', label: '过账日期区间', type: 'daterange', required: true, def: { from: '', to: '' },
         help: '留空时按「增量水位」自动推算。手工补拉时填区间，例如查前天就填 前天 ~ 前天' },
-      { key: 'docType', label: '凭证类型', type: 'select', def: '全部',
-        options: ['全部', 'WE-收货', 'WA-发货', 'WI-盘盈盘亏', 'WL-领退料'] },
-      { key: 'moveTypes', label: '移动类型', type: 'text', def: '101,102,201,261,311,551,561',
+      { key: 'MATNR', label: '物料编号', type: 'text', def: '', help: '留空表示不限' },
+      { key: 'BWART', label: '移动类型', type: 'text', def: '101,102,201,261,311,551,561',
         help: '多个以英文逗号分隔，留空表示不限' },
-      { key: 'waterMark', label: '增量水位（时间戳）', type: 'text', def: '20260909103000',
+      { key: 'WATERMARK', label: '增量水位（时间戳）', type: 'text', def: '20260909103000',
         help: '上次成功同步的时间点；清空后按日期区间全量拉取' },
-      { key: 'maxRows', label: '单次最大条数', type: 'number', def: '5000', help: '防止单次拉取过大拖垮接口' }
+      { key: 'MAXROWS', label: '单次最大条数', type: 'number', def: '5000', help: '防止单次拉取过大拖垮接口' }
     ]
   },
   {
-    code: 'ZMM_PR_STATUS_001',
-    name: '采购申请状态查询',
-    protocol: 'OData',
+    code: 'PP0011',
+    name: '查询SAP库存接口',
+    protocol: 'RFC',
     direction: 'SAP → MES（拉）',
-    biz: '采购申请',
+    biz: '库存管理',
     enabled: true,
-    desc: '拉取 SAP 采购申请（EBAN）的审批状态与转单情况，回写 MES 采购申请单据状态。',
+    desc: '按工厂/库存地点/物料/批次查询 SAP 当前库存（MM-BE），定时刷新 MES 库存镜像与库存红绿灯。',
     params: [
-      { key: 'prType', label: '申请类型', type: 'select', required: true, def: '全部',
-        options: ['全部', 'Z01-生产性采购申请', 'Z02-非生产性采购申请'] },
-      { key: 'applyDate', label: '申请日期区间', type: 'daterange', required: true, def: { from: '', to: '' } },
-      { key: 'plant', label: '工厂', type: 'select', def: '全部', options: ['全部', '1000-上海工厂', '2000-苏州工厂'] },
-      { key: 'purGroup', label: '采购组', type: 'text', def: '', help: 'SAP 采购组编码，留空不限' },
-      { key: 'onlyOpen', label: '仅拉取未关闭单据', type: 'switch', def: true },
-      { key: 'maxRows', label: '单次最大条数', type: 'number', def: '2000' }
+      { key: 'WERKS', label: '工厂', type: 'select', required: true, def: '1000',
+        options: ['1000-上海工厂', '2000-苏州工厂'], help: 'SAP 工厂代码' },
+      { key: 'LGORT', label: '库存地点', type: 'text', def: '', help: '留空表示全部库存地点' },
+      { key: 'MATNR', label: '物料编号', type: 'text', def: '', help: '留空表示不限' },
+      { key: 'CHARG', label: '批次', type: 'text', def: '', help: '留空表示不限' },
+      { key: 'ONLY_NONZERO', label: '仅查非零库存', type: 'switch', def: true }
     ]
   },
   {
-    code: 'ZMM_PO_STATUS_001',
-    name: '采购订单状态查询',
+    code: 'PP0019',
+    name: '查看SAP预留信息接口',
+    protocol: 'RFC',
+    direction: 'SAP → MES（拉）',
+    biz: '库存管理',
+    enabled: true,
+    desc: '查看 SAP 预留单信息，同步预留状态与领料进度到 MES 预留单据。',
+    params: [
+      { key: 'RSNUM', label: '预留编号', type: 'text', def: '', help: '指定单号时忽略日期区间' },
+      { key: 'WERKS', label: '工厂', type: 'select', def: '全部',
+        options: ['全部', '1000-上海工厂', '2000-苏州工厂'] },
+      { key: 'ERSDAT', label: '创建日期区间', type: 'daterange', required: true, def: { from: '', to: '' } },
+      { key: 'ONLY_OPEN', label: '仅查未清预留', type: 'switch', def: true }
+    ]
+  },
+  {
+    code: 'PP0024',
+    name: '特性查询接口',
+    protocol: 'RFC',
+    direction: 'SAP → MES（拉）',
+    biz: '质量管理',
+    enabled: true,
+    desc: '查询 SAP 批次特性（分类视图），供 MES 批次特性页面展示。',
+    params: [
+      { key: 'MATNR', label: '物料编号', type: 'text', def: '', help: '留空表示不限' },
+      { key: 'CHARG', label: '批次编号', type: 'text', def: '', help: '留空表示不限' },
+      { key: 'WERKS', label: '工厂', type: 'select', def: '1000',
+        options: ['1000-上海工厂', '2000-苏州工厂'] },
+      { key: 'MAXROWS', label: '单次最大条数', type: 'number', def: '2000' }
+    ]
+  },
+  {
+    code: 'PP0032',
+    name: '查看SAP采购申请信息接口',
     protocol: 'RFC',
     direction: 'SAP → MES（拉）',
     biz: '采购申请',
     enabled: true,
-    desc: '拉取 SAP 采购订单（EKKO/EKPO）的收货、发票校验与关闭状态，回写 MES 采购订单跟踪表。',
+    desc: '查看 SAP 采购申请信息（EBAN），同步审批状态与转单进度到 MES 采购申请单据。',
     params: [
-      { key: 'purOrg', label: '采购组织', type: 'select', required: true, def: '1000', options: ['1000', '2000'] },
-      { key: 'vendor', label: '供应商编码', type: 'text', def: '', help: '留空不限' },
-      { key: 'poNo', label: '采购订单号', type: 'text', def: '', help: '指定单号时忽略日期区间' },
-      { key: 'docDate', label: '订单日期区间', type: 'daterange', def: { from: '', to: '' } },
-      { key: 'onlyOpen', label: '仅拉取未清订单', type: 'switch', def: true },
-      { key: 'maxRows', label: '单次最大条数', type: 'number', def: '3000' }
-    ]
-  },
-  {
-    code: 'ZPP_ORDER_STATUS_001',
-    name: '生产订单状态查询',
-    protocol: 'IDoc',
-    direction: 'SAP → MES（推+拉）',
-    biz: '生产管理',
-    enabled: false,
-    desc: '预留接口（未启用）：同步生产订单下达、完工、关闭状态。',
-    params: [
-      { key: 'plant', label: '工厂', type: 'select', required: true, def: '1000', options: ['1000', '2000'] },
-      { key: 'orderType', label: '订单类型', type: 'select', def: '全部', options: ['全部', 'PP01-流程订单', 'PP02-内部订单'] },
-      { key: 'relDate', label: '下达日期区间', type: 'daterange', def: { from: '', to: '' } },
-      { key: 'maxRows', label: '单次最大条数', type: 'number', def: '2000' }
+      { key: 'BANFN', label: '申请编号', type: 'text', def: '', help: '指定单号时忽略日期区间' },
+      { key: 'BSART', label: '申请类型', type: 'select', required: true, def: '全部',
+        options: ['全部', 'Z01-生产性采购申请', 'Z02-非生产性采购申请'] },
+      { key: 'BADAT', label: '申请日期区间', type: 'daterange', required: true, def: { from: '', to: '' } },
+      { key: 'WERKS', label: '工厂', type: 'select', def: '全部',
+        options: ['全部', '1000-上海工厂', '2000-苏州工厂'] },
+      { key: 'EKGRP', label: '采购组', type: 'text', def: '', help: 'SAP 采购组编码，留空不限' },
+      { key: 'ONLY_OPEN', label: '仅拉取未关闭单据', type: 'switch', def: true },
+      { key: 'MAXROWS', label: '单次最大条数', type: 'number', def: '2000' }
     ]
   }
 ];
@@ -114,42 +132,41 @@ const SAP_INTERFACES = [
 /* ==================== 2. 任务定义（Job 实例） ==================== */
 const JOB_DEFS = [
   {
-    id: 'JOB-0001', code: 'JOB_SAP_MATDOC_10M', name: 'SAP物料凭证同步（10分钟）',
-    iface: 'ZMM_MATDOC_001', cron: '*/10 * * * *', cronText: '每 10 分钟',
+    id: 'JOB-0001', code: 'JOB_PP0004_MATDOC_10M', name: 'SAP物料凭证同步（10分钟）',
+    iface: 'PP0004', cron: '*/10 * * * *', cronText: '每 10 分钟',
     status: '运行中', owner: '系统管理员', createdAt: '2026-03-12 09:20',
     params: {
-      plant: '1000', postDate: { from: '', to: '' }, docType: '全部',
-      moveTypes: '101,102,201,261,311,551,561', waterMark: '20260909103000', maxRows: '5000'
+      WERKS: '1000', BUDAT: { from: '', to: '' }, MATNR: '',
+      BWART: '101,102,201,261,311,551,561', WATERMARK: '20260909103000', MAXROWS: '5000'
     },
     remark: '主同步任务，按增量水位每 10 分钟拉取一次'
   },
   {
-    id: 'JOB-0002', code: 'JOB_SAP_PR_STATUS_D1', name: '采购申请状态同步（每日）',
-    iface: 'ZMM_PR_STATUS_001', cron: '0 8 * * *', cronText: '每天 08:00',
+    id: 'JOB-0002', code: 'JOB_PP0032_PR_STATUS_D1', name: 'SAP采购申请状态同步（每日）',
+    iface: 'PP0032', cron: '0 8 * * *', cronText: '每天 08:00',
     status: '运行中', owner: '系统管理员', createdAt: '2026-05-06 14:05',
     params: {
-      prType: '全部', applyDate: { from: '', to: '' }, plant: '全部',
-      purGroup: '', onlyOpen: true, maxRows: '2000'
+      BANFN: '', BSART: '全部', BADAT: { from: '', to: '' }, WERKS: '全部',
+      EKGRP: '', ONLY_OPEN: true, MAXROWS: '2000'
     },
     remark: '每天上班前同步一次昨日申请状态'
   },
   {
-    id: 'JOB-0003', code: 'JOB_SAP_PO_STATUS_30M', name: '采购订单状态同步（30分钟）',
-    iface: 'ZMM_PO_STATUS_001', cron: '*/30 * * * *', cronText: '每 30 分钟',
+    id: 'JOB-0003', code: 'JOB_PP0011_STOCK_30M', name: 'SAP库存同步（30分钟）',
+    iface: 'PP0011', cron: '*/30 * * * *', cronText: '每 30 分钟',
     status: '运行中', owner: '系统管理员', createdAt: '2026-06-18 10:40',
     params: {
-      purOrg: '1000', vendor: '', poNo: '', docDate: { from: '', to: '' },
-      onlyOpen: true, maxRows: '3000'
+      WERKS: '1000', LGORT: '', MATNR: '', CHARG: '', ONLY_NONZERO: true
     },
     remark: '该接口近期有超时情况，需关注'
   },
   {
-    id: 'JOB-0004', code: 'JOB_SAP_MATDOC_BACKFILL', name: '物料凭证历史补拉（每日）',
-    iface: 'ZMM_MATDOC_001', cron: '0 2 * * *', cronText: '每天 02:00',
+    id: 'JOB-0004', code: 'JOB_PP0004_MATDOC_BACKFILL', name: '物料凭证历史补拉（每日）',
+    iface: 'PP0004', cron: '0 2 * * *', cronText: '每天 02:00',
     status: '已暂停', owner: '系统管理员', createdAt: '2026-04-02 11:10',
     params: {
-      plant: '1000', postDate: { from: '2026-09-07', to: '2026-09-07' }, docType: '全部',
-      moveTypes: '', waterMark: '', maxRows: '5000'
+      WERKS: '1000', BUDAT: { from: '2026-09-07', to: '2026-09-07' }, MATNR: '',
+      BWART: '', WATERMARK: '', MAXROWS: '5000'
     },
     remark: '已暂停：用于补拉历史凭证，按需手工触发即可'
   }
@@ -185,7 +202,7 @@ const JOB_RUN_LOGS = [
   mkLog('JOB-0001', '定时', '2026-09-09 10:20:00', 5.9, '成功', 96, 70, 26, '系统', ''),
   mkLog('JOB-0001', '手动', '2026-09-09 10:12:31', 7.8, '成功', 210, 188, 22, 'admin', '临时补拉 09-07 ~ 09-08 凭证'),
   mkLog('JOB-0001', '定时', '2026-09-09 10:10:00', 6.1, '成功', 88, 60, 28, '系统', ''),
-  mkLog('JOB-0001', '定时', '2026-09-09 10:00:00', 30.0, '失败', 0, 0, 0, '系统', 'SAP 连接超时：RFC ZMM_MATDOC_001 在 30000ms 内未响应'),
+  mkLog('JOB-0001', '定时', '2026-09-09 10:00:00', 30.0, '失败', 0, 0, 0, '系统', 'SAP 连接超时：RFC PP0004 在 30000ms 内未响应'),
   mkLog('JOB-0002', '定时', '2026-09-09 08:00:00', 12.1, '成功', 46, 8, 38, '系统', ''),
   mkLog('JOB-0002', '手动', '2026-09-08 16:22:05', 9.6, '成功', 33, 4, 29, 'admin', '临时查询 Z01 类型申请状态'),
   mkLog('JOB-0003', '定时', '2026-09-09 10:00:00', 30.0, '失败', 0, 0, 0, '系统', 'SAP 连接超时：CPIC 通信失败，错误码 RFC_COMMUNICATION_FAILURE'),
@@ -452,7 +469,7 @@ const ScheduledJob = {
           条件由接口 <strong>${esc(iface.name || '')}</strong>（${esc(job.iface)}）的参数模板生成，可直接修改。<br>
           点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（不保存则仅本次生效）。
         </div>
-        <div class="form-grid" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
+        <div class="form-grid col-1" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
       </div>
       <div class="form-section">
         <div class="form-section-title">备注</div>
@@ -805,7 +822,7 @@ const ScheduledJob = {
       if (!iface.params.length) {
         area.innerHTML = '<div class="form-help">该接口未定义参数模板，请先到「接口注册」维护。</div>';
       } else {
-        area.innerHTML = '<div class="form-grid">' + this.renderParamsForm(iface, defs, true) + '</div>';
+        area.innerHTML = '<div class="form-grid col-1">' + this.renderParamsForm(iface, defs, true) + '</div>';
       }
     }
   },
