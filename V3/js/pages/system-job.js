@@ -437,24 +437,30 @@ const ScheduledJob = {
   },
 
   renderOverviewTab(job, iface) {
-    const rows = [
-      ['任务编码', job.code], ['任务名称', job.name],
-      ['SAP 接口', ifaceLabel(job.iface)],
-      ['接口协议 / 方向', (iface.protocol || '—') + ' · ' + (iface.direction || '—')],
-      ['所属业务', iface.biz || '—'],
-      ['执行周期', job.cronText + '（' + job.cron + '）'],
-      ['任务状态', job.status || '—'],
-      ['负责人', job.owner], ['创建时间', job.createdAt]
-    ];
+    const field = (label, valueHtml, full) => `
+      <div class="form-group${full ? ' full' : ''}">
+        <label>${label}</label>
+        <div style="padding:9px 0;font-size:13.5px;font-weight:600;color:#1f2937;">${valueHtml}</div>
+      </div>`;
     return `
       <div class="form-section">
-        <div class="detail-grid">
-          ${rows.map(r => `<div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">${esc(r[0])}</div><div style="font-size:13.5px;font-weight:600;">${esc(String(r[1]))}</div></div>`).join('')}
+        <div class="form-section-title">基本信息</div>
+        <div class="form-grid">
+          ${field('SAP 接口', esc(ifaceLabel(job.iface)))}
+          ${field('执行周期', esc(job.cronText) + '（' + esc(job.cron) + '）')}
+          ${field('任务编码', esc(job.code))}
+          ${field('任务名称', esc(job.name))}
+          ${field('状态', this.jobStatusBadge(job.status))}
+          ${field('负责人', esc(job.owner))}
+          ${field('备注', esc(job.remark || '—'), true)}
         </div>
       </div>
       <div class="form-section">
         <div class="form-section-title">接口说明</div>
         <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">${esc(iface.desc || '—')}</div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);">
+          创建时间：${esc(job.createdAt)} · ${esc(iface.protocol || '')} · ${esc(iface.direction || '')} · ${esc(iface.biz || '')}
+        </div>
       </div>
       <div class="form-section">
         <div class="form-section-title">查询条件</div>
@@ -464,10 +470,6 @@ const ScheduledJob = {
           点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（不保存则仅本次生效）。
         </div>
         <div id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
-      </div>
-      <div class="form-section">
-        <div class="form-section-title">备注</div>
-        <div style="font-size:13px;color:var(--text-secondary);">${esc(job.remark || '—')}</div>
       </div>`;
   },
 
