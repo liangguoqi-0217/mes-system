@@ -48,8 +48,8 @@ const SAP_INTERFACES = [
     params: [
       { key: 'WERKS', label: '工厂', type: 'select', required: true, def: '1000',
         options: ['1000-上海工厂', '2000-苏州工厂'], help: 'SAP 工厂代码' },
-      { key: 'BUDAT', label: '过账日期区间', type: 'daterange', required: true, def: { from: '', to: '' },
-        help: '留空时按「增量水位」自动推算。手工补拉时填区间，例如查前天就填 前天 ~ 前天' },
+      { key: 'BUDAT', label: '过账日期', type: 'date', required: true, def: '',
+        help: '留空时按「增量水位」自动推算。手工补拉时选「介于」并填起止日期，例如查前天就填 前天 ~ 前天' },
       { key: 'MATNR', label: '物料编号', type: 'text', def: '', help: '留空表示不限' },
       { key: 'BWART', label: '移动类型', type: 'text', def: '101,102,201,261,311,551,561',
         help: '多个以英文逗号分隔，留空表示不限' },
@@ -87,7 +87,7 @@ const SAP_INTERFACES = [
       { key: 'RSNUM', label: '预留编号', type: 'text', def: '', help: '指定单号时忽略日期区间' },
       { key: 'WERKS', label: '工厂', type: 'select', def: '全部',
         options: ['全部', '1000-上海工厂', '2000-苏州工厂'] },
-      { key: 'ERSDAT', label: '创建日期区间', type: 'daterange', required: true, def: { from: '', to: '' } },
+      { key: 'ERSDAT', label: '创建日期', type: 'date', required: true, def: '' },
       { key: 'ONLY_OPEN', label: '仅查未清预留', type: 'switch', def: true }
     ]
   },
@@ -119,7 +119,7 @@ const SAP_INTERFACES = [
       { key: 'BANFN', label: '申请编号', type: 'text', def: '', help: '指定单号时忽略日期区间' },
       { key: 'BSART', label: '申请类型', type: 'select', required: true, def: '全部',
         options: ['全部', 'Z01-生产性采购申请', 'Z02-非生产性采购申请'] },
-      { key: 'BADAT', label: '申请日期区间', type: 'daterange', required: true, def: { from: '', to: '' } },
+      { key: 'BADAT', label: '申请日期', type: 'date', required: true, def: '' },
       { key: 'WERKS', label: '工厂', type: 'select', def: '全部',
         options: ['全部', '1000-上海工厂', '2000-苏州工厂'] },
       { key: 'EKGRP', label: '采购组', type: 'text', def: '', help: 'SAP 采购组编码，留空不限' },
@@ -142,8 +142,12 @@ const JOB_DEFS = [
     iface: 'PP0004', cron: '*/10 * * * *', cronText: '每 10 分钟',
     status: '运行中', owner: '系统管理员', createdAt: '2026-03-12 09:20',
     params: {
-      WERKS: '1000', BUDAT: { from: '', to: '' }, MATNR: '',
-      BWART: '101,102,201,261,311,551,561', WATERMARK: '20260909103000', MAXROWS: '5000'
+      WERKS: { mode: 'EQ', value: '1000', value2: '' },
+      BUDAT: { mode: 'BT', value: '', value2: '' },
+      MATNR: { mode: 'EQ', value: '', value2: '' },
+      BWART: { mode: 'EQ', value: '101,102,201,261,311,551,561', value2: '' },
+      WATERMARK: { mode: 'EQ', value: '20260909103000', value2: '' },
+      MAXROWS: { mode: 'EQ', value: '5000', value2: '' }
     },
     remark: '主同步任务，按增量水位每 10 分钟拉取一次'
   },
@@ -152,8 +156,13 @@ const JOB_DEFS = [
     iface: 'PP0032', cron: '0 8 * * *', cronText: '每天 08:00',
     status: '运行中', owner: '系统管理员', createdAt: '2026-05-06 14:05',
     params: {
-      BANFN: '', BSART: '全部', BADAT: { from: '', to: '' }, WERKS: '全部',
-      EKGRP: '', ONLY_OPEN: true, MAXROWS: '2000'
+      BANFN: { mode: 'EQ', value: '', value2: '' },
+      BSART: { mode: 'EQ', value: '全部', value2: '' },
+      BADAT: { mode: 'BT', value: '', value2: '' },
+      WERKS: { mode: 'EQ', value: '全部', value2: '' },
+      EKGRP: { mode: 'EQ', value: '', value2: '' },
+      ONLY_OPEN: { mode: 'EQ', value: true, value2: '' },
+      MAXROWS: { mode: 'EQ', value: '2000', value2: '' }
     },
     remark: '每天上班前同步一次昨日申请状态'
   },
@@ -162,7 +171,11 @@ const JOB_DEFS = [
     iface: 'PP0011', cron: '*/30 * * * *', cronText: '每 30 分钟',
     status: '运行中', owner: '系统管理员', createdAt: '2026-06-18 10:40',
     params: {
-      WERKS: '1000', LGORT: '', MATNR: '', CHARG: '', ONLY_NONZERO: true
+      WERKS: { mode: 'EQ', value: '1000', value2: '' },
+      LGORT: { mode: 'EQ', value: '', value2: '' },
+      MATNR: { mode: 'EQ', value: '', value2: '' },
+      CHARG: { mode: 'EQ', value: '', value2: '' },
+      ONLY_NONZERO: { mode: 'EQ', value: true, value2: '' }
     },
     remark: '该接口近期有超时情况，需关注'
   },
@@ -171,8 +184,12 @@ const JOB_DEFS = [
     iface: 'PP0004', cron: '0 2 * * *', cronText: '每天 02:00',
     status: '已暂停', owner: '系统管理员', createdAt: '2026-04-02 11:10',
     params: {
-      WERKS: '1000', BUDAT: { from: '2026-09-07', to: '2026-09-07' }, MATNR: '',
-      BWART: '', WATERMARK: '', MAXROWS: '5000'
+      WERKS: { mode: 'EQ', value: '1000', value2: '' },
+      BUDAT: { mode: 'BT', value: '2026-09-07', value2: '2026-09-07' },
+      MATNR: { mode: 'EQ', value: '', value2: '' },
+      BWART: { mode: 'EQ', value: '', value2: '' },
+      WATERMARK: { mode: 'EQ', value: '', value2: '' },
+      MAXROWS: { mode: 'EQ', value: '5000', value2: '' }
     },
     remark: '已暂停：用于补拉历史凭证，按需手工触发即可'
   }
@@ -443,6 +460,7 @@ const ScheduledJob = {
         <div class="form-section-title">查询条件</div>
         <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
           条件由接口 <strong>${esc(ifaceLabel(job.iface))}</strong> 的参数模板生成，可直接修改。<br>
+          每个条件可选比较方式：<strong>等于（单值）</strong>、<strong>不等于</strong>、<strong>介于（区间）</strong>、<strong>不属于区间</strong>。<br>
           点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（不保存则仅本次生效）。
         </div>
         <div class="form-grid col-1" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
@@ -454,67 +472,131 @@ const ScheduledJob = {
   },
 
   /* ---------- 动态参数表单 ---------- */
+  /* 比较方式：EQ 等于(单值) / NE 不等于 / BT 介于(区间) / NB 不属于区间 */
+  isRangeMode(mode) { return mode === 'BT' || mode === 'NB'; },
+
+  normParamValue(p, raw) {
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      if (raw.from !== undefined || raw.to !== undefined) {
+        return { mode: 'BT', value: raw.from || '', value2: raw.to || '' };
+      }
+      return {
+        mode: raw.mode || 'EQ',
+        value: raw.value === undefined ? '' : raw.value,
+        value2: raw.value2 === undefined ? '' : raw.value2
+      };
+    }
+    const base = (raw === undefined || raw === null) ? (p.def === undefined ? '' : p.def) : raw;
+    return { mode: 'EQ', value: base, value2: '' };
+  },
+
+  modeOptions(p) {
+    if (p.type === 'select') return [{ v: 'EQ', t: '等于' }, { v: 'NE', t: '不等于' }];
+    return [
+      { v: 'EQ', t: '等于（单值）' },
+      { v: 'NE', t: '不等于' },
+      { v: 'BT', t: '介于（区间）' },
+      { v: 'NB', t: '不属于区间' }
+    ];
+  },
+
+  valueCtrl(p, val, part, show) {
+    const key = esc(p.key);
+    const v = part === 1 ? val.value : val.value2;
+    const style = 'flex:1;' + (show ? '' : 'display:none;');
+    if (p.type === 'select') {
+      return `<select data-pkey="${key}" data-part="v${part}" style="${style}">
+        ${(p.options || []).map(o => `<option value="${esc(o)}" ${String(v) === String(o) ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+      </select>`;
+    }
+    if (p.type === 'date') {
+      return `<input type="date" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" style="${style}">`;
+    }
+    if (p.type === 'number') {
+      return `<input type="number" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" style="${style}">`;
+    }
+    return `<input type="text" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" placeholder="留空不限" style="${style}">`;
+  },
+
   renderParamsForm(iface, values, selectable) {
     const list = (iface && iface.params) || [];
     if (!list.length) return '<div class="form-help">该接口未定义参数模板，请先到「接口注册」维护。</div>';
+    const self = this;
     return list.map(p => {
       const condBox = selectable
         ? `<span style="display:flex;align-items:center;gap:5px;margin-left:auto;font-weight:400;font-size:12px;color:var(--text-secondary);">
              <input type="checkbox" data-cond="${esc(p.key)}" checked onchange="ScheduledJob.toggleCond('${esc(p.key)}')" style="width:14px;height:14px;">作为条件
            </span>`
         : '';
-      const v = (values && values[p.key] !== undefined) ? values[p.key] : p.def;
+      const val = this.normParamValue(p, (values && values[p.key] !== undefined) ? values[p.key] : p.def);
       const req = p.required ? '<span class="req">*</span>' : '';
       const help = p.help ? '<div class="form-help">' + esc(p.help) + '</div>' : '';
-      const full = (p.type === 'daterange') ? ' full' : '';
+      const range = this.isRangeMode(val.mode);
+
       let ctrl = '';
-      if (p.type === 'select') {
-        ctrl = `<select data-pkey="${esc(p.key)}">
-          ${(p.options || []).map(o => `<option value="${esc(o)}" ${String(v) === String(o) ? 'selected' : ''}>${esc(o)}</option>`).join('')}
-        </select>`;
-      } else if (p.type === 'daterange') {
-        const from = (v && v.from) || '';
-        const to = (v && v.to) || '';
-        ctrl = `<div style="display:flex;align-items:center;gap:10px;">
-            <input type="date" data-pkey="${esc(p.key)}" data-part="from" value="${esc(from)}" style="flex:1;">
-            <span style="color:var(--text-muted);">至</span>
-            <input type="date" data-pkey="${esc(p.key)}" data-part="to" value="${esc(to)}" style="flex:1;">
-          </div>`;
-      } else if (p.type === 'switch') {
+      if (p.type === 'switch') {
         ctrl = `<label style="display:flex;align-items:center;gap:8px;font-weight:400;font-size:13px;">
-            <input type="checkbox" data-pkey="${esc(p.key)}" ${v ? 'checked' : ''} style="width:16px;height:16px;"> 启用
+            <input type="checkbox" data-pkey="${esc(p.key)}" data-part="v1" ${val.value ? 'checked' : ''} style="width:16px;height:16px;"> 是
           </label>`;
-      } else if (p.type === 'number') {
-        ctrl = `<input type="number" data-pkey="${esc(p.key)}" value="${esc(v)}">`;
       } else {
-        ctrl = `<input type="text" data-pkey="${esc(p.key)}" value="${esc(v)}" placeholder="留空不限">`;
+        ctrl = self.valueCtrl(p, val, 1, true)
+          + `<span data-sep="${esc(p.key)}" style="color:var(--text-muted);${range ? '' : 'display:none;'}">至</span>`
+          + self.valueCtrl(p, val, 2, range);
       }
-      return `<div class="form-group${full}"><label>${esc(p.label)}${req}${condBox}</label>${ctrl}${help}</div>`;
+
+      const modeSel = (p.type === 'switch') ? '' : `
+        <select data-mode="${esc(p.key)}" onchange="ScheduledJob.toggleMode('${esc(p.key)}')" style="width:150px;flex-shrink:0;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:#fff;">
+          ${this.modeOptions(p).map(m => `<option value="${m.v}" ${val.mode === m.v ? 'selected' : ''}>${m.t}</option>`).join('')}
+        </select>`;
+
+      return `<div class="form-group">
+        <label>${esc(p.label)}${req}${condBox}</label>
+        <div style="display:flex;align-items:center;gap:10px;">${modeSel}${ctrl}</div>
+        ${help}
+      </div>`;
     }).join('');
+  },
+
+  /* 切换比较方式：单值 / 区间 */
+  toggleMode(key) {
+    const sel = document.querySelector('[data-mode="' + key + '"]');
+    const range = sel ? this.isRangeMode(sel.value) : false;
+    const v1 = document.querySelector('[data-pkey="' + key + '"][data-part="v1"]');
+    const v2 = document.querySelector('[data-pkey="' + key + '"][data-part="v2"]');
+    const sep = document.querySelector('[data-sep="' + key + '"]');
+    if (v1) v1.style.flex = range ? '1' : '1';
+    if (v2) v2.style.display = range ? 'block' : 'none';
+    if (sep) sep.style.display = range ? 'inline' : 'none';
   },
 
   readParamsForm(job, selectable) {
     const iface = SAP_INTERFACES.find(i => i.code === job.iface) || {};
     const out = {};
+    const self = this;
     (iface.params || []).forEach(p => {
       if (selectable) {
         const box = document.querySelector('[data-cond="' + p.key + '"]');
         if (box && !box.checked) {
-          out[p.key] = p.type === 'daterange' ? { from: '', to: '' } : (p.type === 'switch' ? false : '');
+          out[p.key] = { mode: 'EQ', value: p.type === 'switch' ? false : '', value2: '' };
           return;
         }
       }
-      const els = document.querySelectorAll('[data-pkey="' + p.key + '"]');
-      if (!els.length) { out[p.key] = (job.params && job.params[p.key] !== undefined) ? job.params[p.key] : p.def; return; }
-      if (p.type === 'daterange') {
-        let from = '', to = '';
-        els.forEach(el => { if (el.dataset.part === 'from') from = el.value; else to = el.value; });
-        out[p.key] = { from: from, to: to };
-      } else if (p.type === 'switch') {
-        out[p.key] = els[0].checked;
-      } else {
-        out[p.key] = els[0].value;
+      const v1 = document.querySelector('[data-pkey="' + p.key + '"][data-part="v1"]');
+      if (!v1) {
+        out[p.key] = self.normParamValue(p, (job.params && job.params[p.key] !== undefined) ? job.params[p.key] : p.def);
+        return;
       }
+      if (p.type === 'switch') {
+        out[p.key] = { mode: 'EQ', value: v1.checked, value2: '' };
+        return;
+      }
+      const modeEl = document.querySelector('[data-mode="' + p.key + '"]');
+      const v2 = document.querySelector('[data-pkey="' + p.key + '"][data-part="v2"]');
+      out[p.key] = {
+        mode: modeEl ? modeEl.value : 'EQ',
+        value: v1.value,
+        value2: v2 ? v2.value : ''
+      };
     });
     return out;
   },
@@ -523,15 +605,17 @@ const ScheduledJob = {
     const list = (iface && iface.params) || [];
     if (!list.length) return '—';
     return '<table style="width:100%;border-collapse:collapse;">' + list.map(p => {
-      const v = (values && values[p.key] !== undefined) ? values[p.key] : p.def;
+      const val = this.normParamValue(p, (values && values[p.key] !== undefined) ? values[p.key] : p.def);
       let txt;
-      if (p.type === 'daterange') {
-        const f = (v && v.from) || '', t = (v && v.to) || '';
-        txt = (f || t) ? ((f || '不限') + ' ~ ' + (t || '不限')) : '不限（按增量水位自动推算）';
-      } else if (p.type === 'switch') {
-        txt = v ? '是' : '否';
+      if (p.type === 'switch') {
+        txt = val.value ? '是' : '否';
+      } else if (val.mode === 'BT') {
+        txt = '介于 ' + (val.value || '不限') + ' ~ ' + (val.value2 || '不限');
+      } else if (val.mode === 'NB') {
+        txt = '不属于 ' + (val.value || '不限') + ' ~ ' + (val.value2 || '不限');
       } else {
-        txt = (v === '' || v === undefined || v === null) ? '不限' : String(v);
+        const empty = (val.value === '' || val.value === undefined || val.value === null);
+        txt = empty ? '不限' : ((val.mode === 'NE' ? '≠ ' : '') + val.value);
       }
       return `<tr><td style="padding:4px 0;width:200px;color:var(--text-secondary);">${esc(p.label)}</td>
         <td style="padding:4px 0;font-weight:600;">${esc(txt)}</td></tr>`;
@@ -828,8 +912,10 @@ const ScheduledJob = {
   toggleCond(key) {
     const box = document.querySelector('[data-cond="' + key + '"]');
     const els = document.querySelectorAll('[data-pkey="' + key + '"]');
+    const modeEl = document.querySelector('[data-mode="' + key + '"]');
     const on = box ? box.checked : true;
     els.forEach(el => { el.disabled = !on; });
+    if (modeEl) modeEl.disabled = !on;
     const group = box ? box.closest('.form-group') : null;
     if (group) group.style.opacity = on ? '1' : '0.45';
   },
@@ -1254,8 +1340,8 @@ const ScheduledJob = {
   },
 
   paramRow(iface, p, idx, edit) {
-    const typeOpts = ['text', 'number', 'daterange', 'select', 'switch'];
-    const typeText = { text: '文本', number: '数字', daterange: '日期区间', select: '下拉选择', switch: '开关' };
+    const typeOpts = ['text', 'number', 'date', 'select', 'switch'];
+    const typeText = { text: '文本', number: '数字', date: '日期', select: '下拉选择', switch: '开关' };
     if (!edit) {
       let opt = p.help || '';
       if (p.type === 'select') opt = (p.options || []).join(' / ');
@@ -1284,9 +1370,6 @@ const ScheduledJob = {
   },
 
   paramDefText(p) {
-    if (p.type === 'daterange') {
-      return ((p.def && p.def.from) || '') + ((p.def && (p.def.from || p.def.to)) ? ' ~ ' : '') + ((p.def && p.def.to) || '');
-    }
     if (p.type === 'switch') return p.def ? '是' : '否';
     return (p.def === undefined || p.def === null) ? '' : String(p.def);
   },
@@ -1331,8 +1414,7 @@ const ScheduledJob = {
         label: get('label') || '未命名字段',
         type: type,
         required: (tr.querySelector('[data-f="required"]') || {}).checked || false,
-        def: type === 'switch' ? (get('def') === '是' || get('def') === 'true')
-          : (type === 'daterange' ? this.parseRange(get('def')) : get('def')),
+        def: type === 'switch' ? (get('def') === '是' || get('def') === 'true') : get('def'),
         help: type === 'select' ? '' : helpRaw
       };
       if (type === 'select') p.options = helpRaw.split(',').map(s => s.trim()).filter(Boolean);
@@ -1345,11 +1427,5 @@ const ScheduledJob = {
     if (ca && this.type === 'interface') { ca.innerHTML = this.renderIfacePage(); this.bindIface(); }
   },
 
-  parseRange(s) {
-    const t = String(s || '').trim();
-    if (!t) return { from: '', to: '' };
-    const parts = t.split('~');
-    return { from: (parts[0] || '').trim(), to: (parts[1] || '').trim() };
-  }
 };
 
