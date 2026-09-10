@@ -249,6 +249,8 @@ const ScheduledJob = {
   type: 'list',
   currentJobId: '',
   viewTab: 'overview',
+  editMode: false,
+  _editDraft: null,
   _runParams: null,
   _runMode: 'once',
 
@@ -409,6 +411,8 @@ const ScheduledJob = {
   openJobView(jobId) {
     this.currentJobId = jobId;
     this.viewTab = 'overview';
+    this.editMode = false;
+    this._editDraft = null;
     this.renderJobView(jobId);
   },
 
@@ -416,48 +420,121 @@ const ScheduledJob = {
     const job = JOB_DEFS.find(j => j.id === jobId);
     if (!job) return;
     const iface = SAP_INTERFACES.find(i => i.code === job.iface) || {};
+    const edit = this.editMode && job.status !== '已终止';
     const body = `
       <div style="min-height:60vh;">
-        ${this.renderOverviewTab(job, iface)}
+        ${this.renderOverviewTab(job, iface, edit)}
       </div>`;
 
     const footer = [];
     if (job.status === '已终止') {
-      footer.push({ text: '已终止，不可操作', cls: 'btn-secondary', action: closeModal });
+      footer.push({ text: '已终止，不可编辑', cls: 'btn-secondary', action: closeModal });
+    } else if (edit) {
+      footer.push({ text: '取消编辑', cls: 'btn-secondary', action: new Function('ScheduledJob.cancelEdit()') });
+      footer.push({ text: '保存', cls: 'btn-primary', action: new Function('ScheduledJob.saveJobEdit("' + jobId + '")') });
     } else {
       footer.push({ text: job.status === '运行中' ? '暂停任务' : '启用任务', cls: 'btn-secondary', action: new Function('ScheduledJob.setJobStatus("' + jobId + '", "' + (job.status === '运行中' ? '已暂停' : '运行中') + '")') });
       footer.push({ text: '终止任务', cls: 'btn-secondary', action: new Function('ScheduledJob.terminateJob("' + jobId + '")') });
-      footer.push({ text: '保存查询条件', cls: 'btn-secondary', action: new Function('ScheduledJob.saveParams("' + jobId + '", false)') });
-      footer.push({ text: '立即执行', cls: 'btn-primary', action: new Function('ScheduledJob.runJob("' + jobId + '", "once")') });
+      footer.push({ text: '立即执行', cls: 'btn-secondary', action: new Function('ScheduledJob.runJob("' + jobId + '", "once")') });
+      footer.push({ text: '编辑', cls: 'btn-primary', action: new Function('ScheduledJob.startEdit("' + jobId + '")') });
     }
-    footer.push({ text: '关闭', cls: 'btn-secondary', action: closeModal });
 
     showModal('定时任务详情 · ' + esc(job.name), body, footer, 'modal-xxl');
   },
 
-  renderOverviewTab(job, iface) {
-    const field = (label, valueHtml, full) => `
+  startEdit(jobId) {
+    this.editMode = true;
+    this._editDraft = null;
+    this.renderJobView(jobId);
+  },
+
+  cancelEdit() {
+    this.editMode = false;
+    this._editDraft = null;
+    this.renderJobView(this.currentJobId);
+  },
+
+  /* 进入编辑前把当前界面上的输入暂存，避免重绘丢失 */
+  collectEditDraft() {
+    const job = JOB_DEFS.find(j => j.id === this.currentJobId);
+    if (!job || !this.editMode) return;
+    const nameEl = document.getElementById('editJobName');
+    const statusEl = document.getElementById('editJobStatus');
+    const remarkEl = document.getElementById('editJobRemark');
+    const d = this._editDraft || {};
+    this._editDraft = {
+      name: nameEl ? nameEl.value : (d.name !== undefined ? d.name : job.name),
+      status: statusEl ? statusEl.value : (d.status !== undefined ? d.status : job.status),
+      remark: remarkEl ? remarkEl.value : (d.remark !== undefined ? d.remark : job.remark),
+      params: document.getElementById('jobParamsForm') ? this.readParamsForm(job) : (d.params || job.params)
+    };
+  },
+
+  saveJobEdit(jobId) {
+    const job = JOB_DEFS.find(j => j.id === jobId);
+    if (!job) return;
+    this.collectEditDraft();
+    const d = this._editDraft || {};
+    job.name = (d.name || '').trim() || job.name;
+    job.status = d.status || job.status;
+    job.remark = d.remark || '';
+    job.params = d.params || job.params;
+    this.editMode = false;
+    this._editDraft = null;
+    toast('任务已保存');
+    this.renderJobView(jobId);
+    this.renderListTable();
+  },
+
+  renderOverviewTab(job, iface, edit) {
+    const d = this._editDraft || {};
+    const val = (key, fallback) => (d[key] !== undefined ? d[key] : fallback);
+    const viewField = (label, valueHtml, full) => `
       <div class="form-group${full ? ' full' : ''}">
         <label>${label}</label>
         <div style="padding:9px 0;font-size:13.5px;font-weight:600;color:#1f2937;">${valueHtml}</div>
       </div>`;
+    const editField = (label, ctrlHtml, full) => `
+      <div class="form-group${full ? ' full' : ''}">
+        <label>${label}</label>${ctrlHtml}
+      </div>`;
+
+    const cronBlock = `
+      <div class="form-group full">
+        <label>执行周期 ${edit ? '<button type="button" class="btn btn-secondary btn-sm" style="margin-left:8px;padding:3px 10px;" onclick="ScheduledJob.collectEditDraft();ScheduledJob.openCronPicker(\'' + job.id + '\')">设置</button>' : ''}</label>
+        <div style="padding:9px 0;font-size:13.5px;font-weight:600;color:#1f2937;">
+          ${esc(job.cronText)}
+          <div style="margin-top:4px;font-family:monospace;font-size:11.5px;font-weight:400;color:var(--text-muted);">cron：${esc(this.cronFullText(job))}</div>
+        </div>
+      </div>`;
+
+    const basic = edit
+      ? viewField('SAP 接口', esc(ifaceLabel(job.iface)))
+        + viewField('任务编码', esc(job.code))
+        + editField('任务名称', `<input id="editJobName" value="${esc(val('name', job.name))}">`)
+        + editField('状态', `<select id="editJobStatus">
+            <option value="运行中" ${val('status', job.status) === '运行中' ? 'selected' : ''}>运行中</option>
+            <option value="已暂停" ${val('status', job.status) === '已暂停' ? 'selected' : ''}>已暂停</option>
+          </select>`)
+        + editField('备注', `<input id="editJobRemark" value="${esc(val('remark', job.remark))}" placeholder="选填">`, true)
+        + cronBlock
+      : viewField('SAP 接口', esc(ifaceLabel(job.iface)))
+        + viewField('任务编码', esc(job.code))
+        + viewField('任务名称', esc(job.name))
+        + viewField('状态', this.jobStatusBadge(job.status))
+        + viewField('备注', esc(job.remark || '—'), true)
+        + cronBlock;
+
+    const condBlock = edit
+      ? `${this.renderParamsForm(iface, val('params', job.params))}`
+      : `<div style="font-size:13px;line-height:1.9;background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:14px 16px;">
+          ${this.paramsSummary(iface, job.params)}
+        </div>`;
+
     return `
       <div class="form-section">
-        <div class="form-section-title">基本信息</div>
-        <div class="form-grid">
-          ${field('SAP 接口', esc(ifaceLabel(job.iface)))}
-          ${field('任务编码', esc(job.code))}
-          ${field('任务名称', esc(job.name))}
-          ${field('状态', this.jobStatusBadge(job.status))}
-          ${field('备注', esc(job.remark || '—'), true)}
-          <div class="form-group full">
-            <label>执行周期 ${job.status === '已终止' ? '' : '<button type="button" class="btn btn-secondary btn-sm" style="margin-left:8px;padding:3px 10px;" onclick="ScheduledJob.openCronPicker(\'' + job.id + '\')">修改</button>'}</label>
-            <div style="padding:9px 0;font-size:13.5px;font-weight:600;color:#1f2937;">
-              ${esc(job.cronText)}
-              <div style="margin-top:4px;font-family:monospace;font-size:11.5px;font-weight:400;color:var(--text-muted);">cron：${esc(this.cronFullText(job))}</div>
-            </div>
-          </div>
-        </div>
+        <div class="form-section-title">基本信息${edit ? '（编辑中）' : ''}</div>
+        <div class="form-grid">${basic}</div>
       </div>
       <div class="form-section">
         <div class="form-section-title">接口说明</div>
@@ -468,12 +545,10 @@ const ScheduledJob = {
       </div>
       <div class="form-section">
         <div class="form-section-title">查询条件</div>
-        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
-          条件由接口 <strong>${esc(ifaceLabel(job.iface))}</strong> 的参数模板生成，可直接修改。<br>
-          每个条件可选比较方式：<strong>等于（单值）</strong>、<strong>不等于</strong>、<strong>介于（区间）</strong>、<strong>不属于区间</strong>。<br>
-          点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（不保存则仅本次生效）。
-        </div>
-        <div id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
+        ${edit ? `<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
+            条件由接口 <strong>${esc(ifaceLabel(job.iface))}</strong> 的参数模板生成。每个条件可选比较方式：<strong>等于（单值）</strong>、<strong>不等于</strong>、<strong>介于</strong>、<strong>不属于区间</strong>。
+          </div>` : ''}
+        <div${edit ? ' id="jobParamsForm"' : ''}>${condBlock}</div>
       </div>`;
   },
 
