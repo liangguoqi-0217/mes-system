@@ -371,7 +371,7 @@ const ScheduledJob = {
           <td style="font-family:monospace;font-size:12px;">${esc(j.code)}</td>
           <td>${esc(j.name)}</td>
           <td style="font-size:12px;">${esc(ifaceLabel(j.iface))}</td>
-          <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(this.cronFullText(j))}</div></td>
+          <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(self.cronFullText(j))}</div></td>
           <td>${self.jobStatusBadge(j.status)}</td>
           <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openJobView('${j.id}')">查看</button></div></td>
         </tr>`;
