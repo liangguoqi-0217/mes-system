@@ -407,27 +407,9 @@ const ScheduledJob = {
     const job = JOB_DEFS.find(j => j.id === jobId);
     if (!job) return;
     const iface = SAP_INTERFACES.find(i => i.code === job.iface) || {};
-    const tab = this.viewTab;
-
     const body = `
       <div style="min-height:60vh;">
-        <div class="tabs" style="margin-bottom:18px;">
-          <div class="tab ${tab === 'overview' ? 'active' : ''}" onclick="ScheduledJob.switchViewTab('overview')">任务概览</div>
-          <div class="tab ${tab === 'params' ? 'active' : ''}" onclick="ScheduledJob.switchViewTab('params')">查询条件</div>
-          <div class="tab ${tab === 'logs' ? 'active' : ''}" onclick="ScheduledJob.switchViewTab('logs')">执行日志</div>
-        </div>
-
-        <div class="tab-panel ${tab === 'overview' ? 'active' : ''}">${this.renderOverviewTab(job, iface)}</div>
-
-        <div class="tab-panel ${tab === 'params' ? 'active' : ''}">
-          <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
-            当前接口：<strong>${esc(iface.name || '')}</strong>（${esc(job.iface)}）· 查询条件由该接口的参数模板动态生成，不同接口字段不同。<br>
-            改完点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（若不保存则仅本次生效）。
-          </div>
-          <div class="form-grid" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
-        </div>
-
-        <div class="tab-panel ${tab === 'logs' ? 'active' : ''}">${this.renderJobLogsTab(job)}</div>
+        ${this.renderOverviewTab(job, iface)}
       </div>`;
 
     const footer = [];
@@ -442,15 +424,6 @@ const ScheduledJob = {
     footer.push({ text: '关闭', cls: 'btn-secondary', action: closeModal });
 
     showModal('定时任务详情 · ' + esc(job.name), body, footer, 'modal-xxl');
-  },
-
-  switchViewTab(tab) {
-    const job = JOB_DEFS.find(j => j.id === this.currentJobId);
-    if (!job) return;
-    const form = document.getElementById('jobParamsForm');
-    if (form) job.params = this.readParamsForm(job);
-    this.viewTab = tab;
-    this.renderJobView(this.currentJobId);
   },
 
   renderOverviewTab(job, iface) {
@@ -474,48 +447,16 @@ const ScheduledJob = {
         <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">${esc(iface.desc || '—')}</div>
       </div>
       <div class="form-section">
-        <div class="form-section-title">当前查询条件（只读预览）</div>
-        <div style="font-size:13px;line-height:1.9;background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:14px 16px;">
-          ${this.paramsSummary(iface, job.params)}
+        <div class="form-section-title">查询条件</div>
+        <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
+          条件由接口 <strong>${esc(iface.name || '')}</strong>（${esc(job.iface)}）的参数模板生成，可直接修改。<br>
+          点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（不保存则仅本次生效）。
         </div>
+        <div class="form-grid" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
       </div>
       <div class="form-section">
         <div class="form-section-title">备注</div>
         <div style="font-size:13px;color:var(--text-secondary);">${esc(job.remark || '—')}</div>
-      </div>`;
-  },
-
-  renderJobLogsTab(job) {
-    const all = JOB_RUN_LOGS.filter(l => l.jobId === job.id);
-    const logs = all.slice(0, 8);
-    return `
-      <div class="list-toolbar" style="padding:8px 0;border-bottom:1px solid var(--border);">
-        <div class="list-info"><span class="list-count">最近 ${logs.length} 次执行（共 ${all.length} 次）</span></div>
-        <button class="btn btn-secondary btn-sm" onclick="ScheduledJob.openLogPage('${job.id}')">查看该任务全部日志</button>
-      </div>
-      <div class="table-wrapper" style="max-height:42vh;">
-        <table class="data-table data-table-compact">
-          <thead>
-            <tr>
-              <th>执行编号</th><th>触发方式</th><th>开始时间</th><th>耗时</th>
-              <th>结果</th><th>拉取 / 新增 / 更新</th><th>操作人</th><th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${logs.length ? logs.map(l => `
-              <tr>
-                <td style="font-family:monospace;font-size:12px;">${esc(l.runId)}</td>
-                <td>${l.trigger === '手动' ? '<span class="badge badge-blue badge-sm">手动</span>' : '<span class="badge badge-gray badge-sm">定时</span>'}</td>
-                <td style="font-size:12px;">${esc(l.startAt)}</td>
-                <td style="font-size:12px;">${esc(l.duration)}</td>
-                <td>${this.statusBadge(l.status)}</td>
-                <td style="font-size:12px;">${l.fetched} / ${l.inserted} / ${l.updated}</td>
-                <td style="font-size:12px;">${esc(l.operator)}</td>
-                <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openLogDetail('${l.runId}')">查看</button></div></td>
-              </tr>`).join('')
-              : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">暂无执行记录</td></tr>'}
-          </tbody>
-        </table>
       </div>`;
   },
 
@@ -716,7 +657,7 @@ const ScheduledJob = {
 
     closeModal();
     this.currentJobId = jobId;
-    this.viewTab = 'logs';
+    this.viewTab = 'overview';
     this.renderJobView(jobId);
     this.renderListTable();
     this.showRunning(jobId, runId);
