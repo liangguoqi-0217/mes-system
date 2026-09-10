@@ -274,11 +274,11 @@ const ScheduledJob = {
   /* ==================== 一、任务清单 ==================== */
   renderListPage() {
     return `
-    <div style="padding:20px 24px;background:#f6f8fb;min-height:calc(100vh - 56px);">
+    <div style="padding:20px 24px 0;background:#f6f8fb;min-height:calc(100vh - 56px);display:flex;flex-direction:column;">
       <div style="padding:0 4px 10px;font-size:12px;color:var(--text-muted);">
         提示：点击「查看」进入任务详情，可在弹窗内修改查询条件、立即执行、暂停或终止任务。
       </div>
-      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;flex:1;">
         <div class="filter-bar">
           <div class="filter-group">
             <label>SAP 接口</label>
@@ -330,9 +330,18 @@ const ScheduledJob = {
           </table>
         </div>
 
-        <div class="list-toolbar" style="border-bottom:none;border-top:1px solid var(--border);">
-          <div class="list-info"><span class="pagination-info" id="jobPageInfo">第 1 页</span></div>
+      </div>
+
+      <div style="background:#fff;border:1px solid var(--border);border-top:2px solid var(--border);border-radius:0 0 var(--radius) var(--radius);margin-top:-1px;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div class="list-info"><span class="list-count" id="jobListCount">共 0 条</span></div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="pagination-info" id="jobPageInfo">第 1 页</span>
           <div class="pagination" id="jobPagination"></div>
+          <select class="page-size-select" onchange="ScheduledJob.setPageSize(this.value)">
+            <option value="10" ${this.listFilter.pageSize === 10 ? 'selected' : ''}>10条/页</option>
+            <option value="20" ${this.listFilter.pageSize === 20 ? 'selected' : ''}>20条/页</option>
+            <option value="50" ${this.listFilter.pageSize === 50 ? 'selected' : ''}>50条/页</option>
+          </select>
         </div>
       </div>
     </div>`;
@@ -417,6 +426,12 @@ const ScheduledJob = {
   },
 
   goListPage(p) { this.listFilter.page = p; this.renderListTable(); },
+
+  setPageSize(v) {
+    this.listFilter.pageSize = parseInt(v, 10) || 10;
+    this.listFilter.page = 1;
+    this.renderListTable();
+  },
 
   /* ==================== 二、任务查看大弹窗 ==================== */
   openJobView(jobId) {
