@@ -275,37 +275,7 @@ const ScheduledJob = {
   renderListPage() {
     return `
     <div style="padding:20px 24px 0;background:#f6f8fb;min-height:calc(100vh - 56px);display:flex;flex-direction:column;">
-      <div style="padding:0 4px 10px;font-size:12px;color:var(--text-muted);">
-        提示：点击「查看」进入任务详情，可在弹窗内修改查询条件、立即执行、暂停或终止任务。
-      </div>
       <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;flex:1;">
-        <div class="filter-bar">
-          <div class="filter-group">
-            <label>SAP 接口</label>
-            <select id="jobFltIface">
-              <option value="">全部接口</option>
-              ${SAP_INTERFACES.map(i => `<option value="${esc(i.code)}" ${this.listFilter.iface === i.code ? 'selected' : ''}>${esc(ifaceLabel(i.code))}</option>`).join('')}
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>任务状态</label>
-            <select id="jobFltStatus">
-              <option value="">全部</option>
-              <option value="运行中" ${this.listFilter.status === '运行中' ? 'selected' : ''}>运行中</option>
-              <option value="已暂停" ${this.listFilter.status === '已暂停' ? 'selected' : ''}>已暂停</option>
-              <option value="已终止" ${this.listFilter.status === '已终止' ? 'selected' : ''}>已终止</option>
-            </select>
-          </div>
-          <div class="filter-group" style="min-width:220px;">
-            <label>关键字</label>
-            <input id="jobFltKeyword" placeholder="任务编码 / 名称" value="${esc(this.listFilter.keyword)}">
-          </div>
-          <div class="filter-actions">
-            <button class="btn btn-secondary btn-sm" id="jobBtnReset">重置</button>
-            <button class="btn btn-primary btn-sm" id="jobBtnQuery">查询</button>
-          </div>
-        </div>
-
         <div class="list-toolbar">
           <div class="list-info"><span class="list-count" id="jobListCount">共 0 条</span></div>
           <div style="display:flex;gap:8px;">
@@ -349,20 +319,6 @@ const ScheduledJob = {
 
   bindList() {
     const self = this;
-    const q = document.getElementById('jobBtnQuery');
-    const r = document.getElementById('jobBtnReset');
-    const kw = document.getElementById('jobFltKeyword');
-    if (q) q.addEventListener('click', function () { self.listFilter.keyword = (kw ? kw.value : ''); self.listFilter.page = 1; self.renderListTable(); });
-    if (r) r.addEventListener('click', function () {
-      self.listFilter = { iface: '', status: '', keyword: '', page: 1, pageSize: 10 };
-      const ca = document.getElementById('contentArea');
-      if (ca) { ca.innerHTML = self.renderListPage(); self.bindList(); }
-    });
-    if (kw) kw.addEventListener('keydown', function (e) { if (e.key === 'Enter' && q) q.click(); });
-    const ifc = document.getElementById('jobFltIface');
-    const st = document.getElementById('jobFltStatus');
-    if (ifc) ifc.addEventListener('change', function () { self.listFilter.iface = this.value; self.listFilter.page = 1; self.renderListTable(); });
-    if (st) st.addEventListener('change', function () { self.listFilter.status = this.value; self.listFilter.page = 1; self.renderListTable(); });
     const refresh = document.getElementById('jobBtnRefresh');
     if (refresh) refresh.addEventListener('click', function () { self.renderListTable(); toast('已刷新'); });
     const create = document.getElementById('jobBtnCreate');
