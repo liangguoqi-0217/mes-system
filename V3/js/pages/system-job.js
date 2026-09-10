@@ -116,53 +116,41 @@ const JOB_DEFS = [
   {
     id: 'JOB-0001', code: 'JOB_SAP_MATDOC_10M', name: 'SAP物料凭证同步（10分钟）',
     iface: 'ZMM_MATDOC_001', cron: '*/10 * * * *', cronText: '每 10 分钟',
-    enabled: true, owner: '系统管理员', createdAt: '2026-03-12 09:20',
+    status: '运行中', owner: '系统管理员', createdAt: '2026-03-12 09:20',
     params: {
       plant: '1000', postDate: { from: '', to: '' }, docType: '全部',
       moveTypes: '101,102,201,261,311,551,561', waterMark: '20260909103000', maxRows: '5000'
     },
-    lastRunAt: '2026-09-09 10:30', lastStatus: '成功', lastDuration: '6.4s',
-    lastRows: { fetched: 128, inserted: 96, updated: 32 },
-    nextRunAt: '2026-09-09 10:40',
     remark: '主同步任务，按增量水位每 10 分钟拉取一次'
   },
   {
     id: 'JOB-0002', code: 'JOB_SAP_PR_STATUS_D1', name: '采购申请状态同步（每日）',
     iface: 'ZMM_PR_STATUS_001', cron: '0 8 * * *', cronText: '每天 08:00',
-    enabled: true, owner: '系统管理员', createdAt: '2026-05-06 14:05',
+    status: '运行中', owner: '系统管理员', createdAt: '2026-05-06 14:05',
     params: {
       prType: '全部', applyDate: { from: '', to: '' }, plant: '全部',
       purGroup: '', onlyOpen: true, maxRows: '2000'
     },
-    lastRunAt: '2026-09-09 08:00', lastStatus: '成功', lastDuration: '12.1s',
-    lastRows: { fetched: 46, inserted: 8, updated: 38 },
-    nextRunAt: '2026-09-10 08:00',
     remark: '每天上班前同步一次昨日申请状态'
   },
   {
     id: 'JOB-0003', code: 'JOB_SAP_PO_STATUS_30M', name: '采购订单状态同步（30分钟）',
     iface: 'ZMM_PO_STATUS_001', cron: '*/30 * * * *', cronText: '每 30 分钟',
-    enabled: true, owner: '系统管理员', createdAt: '2026-06-18 10:40',
+    status: '运行中', owner: '系统管理员', createdAt: '2026-06-18 10:40',
     params: {
       purOrg: '1000', vendor: '', poNo: '', docDate: { from: '', to: '' },
       onlyOpen: true, maxRows: '3000'
     },
-    lastRunAt: '2026-09-09 10:00', lastStatus: '失败', lastDuration: '30.0s',
-    lastRows: { fetched: 0, inserted: 0, updated: 0 },
-    nextRunAt: '2026-09-09 10:30',
-    remark: '最近一次因 SAP 连接超时失败，需关注'
+    remark: '该接口近期有超时情况，需关注'
   },
   {
     id: 'JOB-0004', code: 'JOB_SAP_MATDOC_BACKFILL', name: '物料凭证历史补拉（每日）',
     iface: 'ZMM_MATDOC_001', cron: '0 2 * * *', cronText: '每天 02:00',
-    enabled: false, owner: '系统管理员', createdAt: '2026-04-02 11:10',
+    status: '已暂停', owner: '系统管理员', createdAt: '2026-04-02 11:10',
     params: {
       plant: '1000', postDate: { from: '2026-09-07', to: '2026-09-07' }, docType: '全部',
       moveTypes: '', waterMark: '', maxRows: '5000'
     },
-    lastRunAt: '2026-09-09 02:00', lastStatus: '成功', lastDuration: '48.7s',
-    lastRows: { fetched: 512, inserted: 512, updated: 0 },
-    nextRunAt: '—',
     remark: '已暂停：用于补拉历史凭证，按需手工触发即可'
   }
 ];
@@ -253,38 +241,18 @@ const ScheduledJob = {
     return '<span class="badge badge-gray">' + (status || '未执行') + '</span>';
   },
 
+  jobStatusBadge(status) {
+    if (status === '运行中') return '<span class="badge badge-green">运行中</span>';
+    if (status === '已暂停') return '<span class="badge badge-gray">已暂停</span>';
+    if (status === '已终止') return '<span class="badge badge-red">已终止</span>';
+    return '<span class="badge badge-gray">' + (status || '—') + '</span>';
+  },
+
   /* ==================== 一、任务清单 ==================== */
   renderListPage() {
-    const total = JOB_DEFS.length;
-    const running = JOB_DEFS.filter(j => j.enabled).length;
-    const failed = JOB_DEFS.filter(j => j.lastStatus === '失败').length;
-
     return `
     <div style="padding:20px 24px;background:#f6f8fb;min-height:calc(100vh - 56px);">
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(30,58,95,.08);color:#1E3A5F;">🗂</div>
-          <div><div style="font-size:22px;font-weight:700;">${total}</div><div style="font-size:12px;color:var(--text-secondary);">定时任务总数</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(16,185,129,.1);color:#065f46;">▶</div>
-          <div><div style="font-size:22px;font-weight:700;">${running}</div><div style="font-size:12px;color:var(--text-secondary);">运行中</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#f3f4f6;color:#6b7280;">⏸</div>
-          <div><div style="font-size:22px;font-weight:700;">${total - running}</div><div style="font-size:12px;color:var(--text-secondary);">已暂停</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(220,38,38,.1);color:#991b1b;">✖</div>
-          <div><div style="font-size:22px;font-weight:700;">${failed}</div><div style="font-size:12px;color:var(--text-secondary);">最近执行失败</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(30,58,95,.08);color:#1E3A5F;">🔌</div>
-          <div><div style="font-size:22px;font-weight:700;">${SAP_INTERFACES.filter(i => i.enabled).length}</div><div style="font-size:12px;color:var(--text-secondary);">已启用 SAP 接口</div></div>
-        </div>
-      </div>
-
-      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin-top:16px;overflow:hidden;">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
         <div class="filter-bar">
           <div class="filter-group">
             <label>SAP 接口</label>
@@ -297,8 +265,9 @@ const ScheduledJob = {
             <label>任务状态</label>
             <select id="jobFltStatus">
               <option value="">全部</option>
-              <option value="enabled" ${this.listFilter.status === 'enabled' ? 'selected' : ''}>运行中</option>
-              <option value="disabled" ${this.listFilter.status === 'disabled' ? 'selected' : ''}>已暂停</option>
+              <option value="运行中" ${this.listFilter.status === '运行中' ? 'selected' : ''}>运行中</option>
+              <option value="已暂停" ${this.listFilter.status === '已暂停' ? 'selected' : ''}>已暂停</option>
+              <option value="已终止" ${this.listFilter.status === '已终止' ? 'selected' : ''}>已终止</option>
             </select>
           </div>
           <div class="filter-group" style="min-width:220px;">
@@ -323,14 +292,11 @@ const ScheduledJob = {
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width:170px;">任务编码</th>
-                <th style="width:230px;">任务名称</th>
-                <th style="width:170px;">SAP 接口</th>
-                <th style="width:130px;">执行周期</th>
-                <th style="width:90px;">状态</th>
-                <th style="width:150px;">上次执行</th>
-                <th style="width:180px;">上次结果</th>
-                <th style="width:150px;">下次执行</th>
+                <th style="width:210px;">任务编码</th>
+                <th style="width:280px;">任务名称</th>
+                <th style="width:200px;">SAP 接口</th>
+                <th style="width:160px;">执行周期</th>
+                <th style="width:110px;">状态</th>
                 <th style="width:100px;">操作</th>
               </tr>
             </thead>
@@ -344,7 +310,7 @@ const ScheduledJob = {
         </div>
       </div>
       <div style="padding:10px 4px;font-size:12px;color:var(--text-muted);">
-        提示：点击「查看」进入任务详情，可在弹窗内修改查询条件并手工立即触发；「仅保存条件」影响后续定时执行，「仅本次执行」不改配置。
+        提示：点击「查看」进入任务详情，可在弹窗内修改查询条件、立即执行、暂停或终止任务。
       </div>
     </div>`;
   },
@@ -377,8 +343,7 @@ const ScheduledJob = {
     const kw = (f.keyword || '').trim().toLowerCase();
     return JOB_DEFS.filter(function (j) {
       if (f.iface && j.iface !== f.iface) return false;
-      if (f.status === 'enabled' && !j.enabled) return false;
-      if (f.status === 'disabled' && j.enabled) return false;
+      if (f.status && j.status !== f.status) return false;
       if (kw && (j.code + j.name).toLowerCase().indexOf(kw) < 0) return false;
       return true;
     });
@@ -404,15 +369,10 @@ const ScheduledJob = {
           <td>${esc(j.name)}</td>
           <td>${esc(iface.name || j.iface)}<div style="font-size:11px;color:var(--text-muted);">${esc(j.iface)}</div></td>
           <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(j.cron)}</div></td>
-          <td>${j.enabled ? '<span class="badge badge-green">运行中</span>' : '<span class="badge badge-gray">已暂停</span>'}</td>
-          <td style="font-size:12px;">${esc(j.lastRunAt || '—')}</td>
-          <td>${self.statusBadge(j.lastStatus)}
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${esc(j.lastDuration || '')} · 拉取 ${j.lastRows ? j.lastRows.fetched : 0} 条</div>
-          </td>
-          <td style="font-size:12px;">${esc(j.nextRunAt || '—')}</td>
+          <td>${self.jobStatusBadge(j.status)}</td>
           <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openJobView('${j.id}')">查看</button></div></td>
         </tr>`;
-      }).join('') : '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted);">没有符合条件的定时任务</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">没有符合条件的定时任务</td></tr>';
     }
 
     const cnt = document.getElementById('jobListCount');
@@ -462,7 +422,7 @@ const ScheduledJob = {
         <div class="tab-panel ${tab === 'params' ? 'active' : ''}">
           <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:18px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
             当前接口：<strong>${esc(iface.name || '')}</strong>（${esc(job.iface)}）· 查询条件由该接口的参数模板动态生成，不同接口字段不同。<br>
-            「仅保存条件」→ 下次定时执行生效；「保存并立即执行」→ 立即用新条件跑一次；「仅本次执行」→ 用当前表单值临时跑一次，不改动任务配置。
+            改完点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（若不保存则仅本次生效）。
           </div>
           <div class="form-grid" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
         </div>
@@ -470,13 +430,16 @@ const ScheduledJob = {
         <div class="tab-panel ${tab === 'logs' ? 'active' : ''}">${this.renderJobLogsTab(job)}</div>
       </div>`;
 
-    const footer = [
-      { text: job.enabled ? '暂停任务' : '启用任务', cls: 'btn-secondary', action: new Function('ScheduledJob.toggleEnabled("' + jobId + '")') },
-      { text: '仅保存条件', cls: 'btn-secondary', action: new Function('ScheduledJob.saveParams("' + jobId + '", false)') },
-      { text: '仅本次执行', cls: 'btn-outline', action: new Function('ScheduledJob.runJob("' + jobId + '", "once")') },
-      { text: '保存并立即执行', cls: 'btn-primary', action: new Function('ScheduledJob.saveParams("' + jobId + '", true)') },
-      { text: '关闭', cls: 'btn-secondary', action: closeModal }
-    ];
+    const footer = [];
+    if (job.status === '已终止') {
+      footer.push({ text: '已终止，不可操作', cls: 'btn-secondary', action: closeModal });
+    } else {
+      footer.push({ text: job.status === '运行中' ? '暂停任务' : '启用任务', cls: 'btn-secondary', action: new Function('ScheduledJob.setJobStatus("' + jobId + '", "' + (job.status === '运行中' ? '已暂停' : '运行中') + '")') });
+      footer.push({ text: '终止任务', cls: 'btn-secondary', action: new Function('ScheduledJob.terminateJob("' + jobId + '")') });
+      footer.push({ text: '保存查询条件', cls: 'btn-secondary', action: new Function('ScheduledJob.saveParams("' + jobId + '", false)') });
+      footer.push({ text: '立即执行', cls: 'btn-primary', action: new Function('ScheduledJob.runJob("' + jobId + '", "once")') });
+    }
+    footer.push({ text: '关闭', cls: 'btn-secondary', action: closeModal });
 
     showModal('定时任务详情 · ' + esc(job.name), body, footer, 'modal-xxl');
   },
@@ -497,12 +460,8 @@ const ScheduledJob = {
       ['接口协议 / 方向', (iface.protocol || '—') + ' · ' + (iface.direction || '—')],
       ['所属业务', iface.biz || '—'],
       ['执行周期', job.cronText + '（' + job.cron + '）'],
-      ['任务状态', job.enabled ? '运行中' : '已暂停'],
-      ['负责人', job.owner], ['创建时间', job.createdAt],
-      ['上次执行时间', job.lastRunAt || '—'],
-      ['上次执行结果', (job.lastStatus || '—') + '（耗时 ' + (job.lastDuration || '—') + '）'],
-      ['上次同步条数', job.lastRows ? ('拉取 ' + job.lastRows.fetched + ' / 新增 ' + job.lastRows.inserted + ' / 更新 ' + job.lastRows.updated) : '—'],
-      ['下次执行时间', job.nextRunAt || '—']
+      ['任务状态', job.status || '—'],
+      ['负责人', job.owner], ['创建时间', job.createdAt]
     ];
     return `
       <div class="form-section">
@@ -648,12 +607,37 @@ const ScheduledJob = {
     }
   },
 
-  toggleEnabled(jobId) {
+  setJobStatus(jobId, status) {
     const job = JOB_DEFS.find(j => j.id === jobId);
     if (!job) return;
-    job.enabled = !job.enabled;
-    job.nextRunAt = job.enabled ? jobHMStr(jobAddMinutes(null, 10)) : '—';
-    toast(job.enabled ? '任务已启用' : '任务已暂停');
+    job.status = status;
+    toast(status === '运行中' ? '任务已启用' : '任务已暂停');
+    this.renderJobView(jobId);
+    this.renderListTable();
+  },
+
+  terminateJob(jobId) {
+    const job = JOB_DEFS.find(j => j.id === jobId);
+    if (!job) return;
+    const body = `
+      <div>
+        <div style="font-size:14px;line-height:1.8;margin-bottom:12px;">确定要终止任务 <strong>${esc(job.name)}</strong>（${esc(job.code)}）吗？</div>
+        <div style="font-size:13px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:10px 12px;">
+          终止后任务不再被调度，且不可恢复；如需继续使用请新建任务。
+        </div>
+      </div>`;
+    showModal('终止任务', body, [
+      { text: '取消', cls: 'btn-secondary', action: new Function('ScheduledJob.renderJobView("' + jobId + '")') },
+      { text: '确认终止', cls: 'btn-primary', action: new Function('ScheduledJob.doTerminate("' + jobId + '")') }
+    ], 'modal-sm');
+  },
+
+  doTerminate(jobId) {
+    const job = JOB_DEFS.find(j => j.id === jobId);
+    if (!job) return;
+    job.status = '已终止';
+    closeModal();
+    toast('任务已终止：' + job.name);
     this.renderJobView(jobId);
     this.renderListTable();
   },
@@ -728,8 +712,6 @@ const ScheduledJob = {
     };
     JOB_RUN_LOGS.unshift(log);
 
-    job.lastStatus = '执行中';
-    job.lastRunAt = jobNowStr(startAt);
     this._runParams = null;
 
     closeModal();
@@ -789,15 +771,6 @@ const ScheduledJob = {
       ? '{"RETURN":"S","TOTAL":' + fetched + ',"INSERTED":' + inserted + ',"UPDATED":' + log.updated + '}'
       : '{"RETURN":"E","MESSAGE":"' + log.errorMsg + '"}';
 
-    job.lastStatus = log.status;
-    job.lastDuration = log.duration;
-    job.lastRows = { fetched: fetched, inserted: inserted, updated: log.updated };
-    job.lastRunAt = log.startAt;
-    if (job.enabled) {
-      const nextTxt = job.cronText.indexOf('10 分钟') >= 0 ? 10 : (job.cronText.indexOf('30 分钟') >= 0 ? 30 : 1440);
-      job.nextRunAt = jobHMStr(jobAddMinutes(null, nextTxt));
-    }
-
     closeModal();
     toast(log.status === '成功'
       ? '执行成功：拉取 ' + fetched + ' 条，新增 ' + inserted + ' 条，更新 ' + log.updated + ' 条（耗时 ' + log.duration + '）'
@@ -853,7 +826,7 @@ const ScheduledJob = {
               <option value="每天 08:00|0 8 * * *">每天 08:00</option>
             </select></div>
           <div class="form-group"><label>创建后状态</label>
-            <select id="newJobEnabled"><option value="1">启用</option><option value="0">暂停</option></select></div>
+            <select id="newJobStatus"><option value="运行中">运行中</option><option value="已暂停">已暂停</option></select></div>
           <div class="form-group"><label>负责人</label><input id="newJobOwner" value="${esc(window.currentUserId || 'admin')}"></div>
           <div class="form-group full"><label>备注</label><input id="newJobRemark" placeholder="选填"></div>
         </div>
@@ -882,7 +855,7 @@ const ScheduledJob = {
     const cronVal = cronSel ? cronSel.value : '每 10 分钟|*/10 * * * *';
     const cronText = cronVal.split('|')[0];
     const cron = cronVal.split('|')[1];
-    const enabled = (document.getElementById('newJobEnabled') || {}).value !== '0';
+    const status = (document.getElementById('newJobStatus') || {}).value || '运行中';
 
     const tmpJob = { iface: ifaceCode, params: {} };
     const params = this.readParamsForm(tmpJob);
@@ -890,10 +863,8 @@ const ScheduledJob = {
     JOB_DEFS.push({
       id: 'JOB-' + String(JOB_DEFS.length + 1).padStart(4, '0'),
       code: code, name: name, iface: ifaceCode, cron: cron, cronText: cronText,
-      enabled: enabled, owner: (document.getElementById('newJobOwner') || {}).value || 'admin',
+      status: status, owner: (document.getElementById('newJobOwner') || {}).value || 'admin',
       createdAt: jobHMStr(new Date()), params: params,
-      lastRunAt: '—', lastStatus: '', lastDuration: '', lastRows: { fetched: 0, inserted: 0, updated: 0 },
-      nextRunAt: enabled ? jobHMStr(jobAddMinutes(null, 10)) : '—',
       remark: (document.getElementById('newJobRemark') || {}).value || ''
     });
 
@@ -965,37 +936,9 @@ const ScheduledJob = {
   },
 
   renderLogPage() {
-    const total = JOB_RUN_LOGS.length;
-    const fail = JOB_RUN_LOGS.filter(l => l.status === '失败').length;
-    const manual = JOB_RUN_LOGS.filter(l => l.trigger === '手动').length;
-    const fetched = JOB_RUN_LOGS.reduce((s, l) => s + (l.fetched || 0), 0);
-
     return `
     <div style="padding:20px 24px;background:#f6f8fb;min-height:calc(100vh - 56px);">
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(30,58,95,.08);color:#1E3A5F;">📋</div>
-          <div><div style="font-size:22px;font-weight:700;">${total}</div><div style="font-size:12px;color:var(--text-secondary);">执行总次数</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(16,185,129,.1);color:#065f46;">✔</div>
-          <div><div style="font-size:22px;font-weight:700;">${total - fail}</div><div style="font-size:12px;color:var(--text-secondary);">成功次数</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(220,38,38,.1);color:#991b1b;">✖</div>
-          <div><div style="font-size:22px;font-weight:700;">${fail}</div><div style="font-size:12px;color:var(--text-secondary);">失败次数</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:rgba(59,130,246,.1);color:#1e40af;">✋</div>
-          <div><div style="font-size:22px;font-weight:700;">${manual}</div><div style="font-size:12px;color:var(--text-secondary);">手工触发次数</div></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon" style="background:#f3f4f6;color:#6b7280;">📦</div>
-          <div><div style="font-size:22px;font-weight:700;">${fetched}</div><div style="font-size:12px;color:var(--text-secondary);">累计同步数据条数</div></div>
-        </div>
-      </div>
-
-      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);margin-top:16px;overflow:hidden;">
+      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
         <div class="filter-bar">
           <div class="filter-group">
             <label>定时任务</label>
