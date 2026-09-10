@@ -430,13 +430,14 @@ const ScheduledJob = {
     if (job.status === '已终止') {
       footer.push({ text: '已终止，不可编辑', cls: 'btn-secondary', action: closeModal });
     } else if (edit) {
-      footer.push({ text: '取消编辑', cls: 'btn-secondary', action: new Function('ScheduledJob.cancelEdit()') });
-      footer.push({ text: '保存', cls: 'btn-primary', action: new Function('ScheduledJob.saveJobEdit("' + jobId + '")') });
+      footer.push({ text: '取消编辑', cls: 'btn-secondary', action: new Function("ScheduledJob.cancelEdit()") });
+      footer.push({ text: '保存', cls: 'btn-primary', action: new Function("ScheduledJob.saveJobEdit('" + jobId + "')") });
     } else {
-      footer.push({ text: job.status === '运行中' ? '暂停任务' : '启用任务', cls: 'btn-secondary', action: new Function('ScheduledJob.setJobStatus("' + jobId + '", "' + (job.status === '运行中' ? '已暂停' : '运行中') + '")') });
-      footer.push({ text: '终止任务', cls: 'btn-secondary', action: new Function('ScheduledJob.terminateJob("' + jobId + '")') });
-      footer.push({ text: '立即执行', cls: 'btn-secondary', action: new Function('ScheduledJob.runJob("' + jobId + '", "once")') });
-      footer.push({ text: '编辑', cls: 'btn-primary', action: new Function('ScheduledJob.startEdit("' + jobId + '")') });
+      const nextStatus = job.status === '运行中' ? '已暂停' : '运行中';
+      footer.push({ text: job.status === '运行中' ? '暂停任务' : '启用任务', cls: 'btn-secondary', action: new Function("ScheduledJob.setJobStatus('" + jobId + "', '" + nextStatus + "')") });
+      footer.push({ text: '终止任务', cls: 'btn-secondary', action: new Function("ScheduledJob.terminateJob('" + jobId + "')") });
+      footer.push({ text: '立即执行', cls: 'btn-secondary', action: new Function("ScheduledJob.runJob('" + jobId + "', 'once')") });
+      footer.push({ text: '编辑', cls: 'btn-primary', action: new Function("ScheduledJob.startEdit('" + jobId + "')") });
     }
 
     showModal('定时任务详情 · ' + esc(job.name), body, footer, 'modal-xxl');
@@ -634,7 +635,7 @@ const ScheduledJob = {
 
     showModal('设置执行周期', body, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
-      { text: '确定', cls: 'btn-primary', action: new Function('ScheduledJob.applyCron()') }
+      { text: '确定', cls: 'btn-primary', action: new Function("ScheduledJob.applyCron()") }
     ], 'modal-md');
 
     this.renderCronPreview();
@@ -941,8 +942,8 @@ const ScheduledJob = {
         </div>
       </div>`;
     showModal('终止任务', body, [
-      { text: '取消', cls: 'btn-secondary', action: new Function('ScheduledJob.renderJobView("' + jobId + '")') },
-      { text: '确认终止', cls: 'btn-primary', action: new Function('ScheduledJob.doTerminate("' + jobId + '")') }
+      { text: '取消', cls: 'btn-secondary', action: new Function("ScheduledJob.renderJobView('" + jobId + "')") },
+      { text: '确认终止', cls: 'btn-primary', action: new Function("ScheduledJob.doTerminate('" + jobId + "')") }
     ], 'modal-sm');
   },
 
@@ -994,8 +995,8 @@ const ScheduledJob = {
       </div>`;
 
     showModal('确认执行', body, [
-      { text: '取消', cls: 'btn-secondary', action: new Function('ScheduledJob.cancelRun()') },
-      { text: '确认执行', cls: 'btn-primary', action: new Function('ScheduledJob.doRun("' + jobId + '")') }
+      { text: '取消', cls: 'btn-secondary', action: new Function("ScheduledJob.cancelRun()") },
+      { text: '确认执行', cls: 'btn-primary', action: new Function("ScheduledJob.doRun('" + jobId + "')") }
     ], 'modal-md');
   },
 
@@ -1138,7 +1139,7 @@ const ScheduledJob = {
 
     showModal('新建定时任务', body, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
-      { text: '保存', cls: 'btn-primary', action: new Function('ScheduledJob.saveNewJob()') }
+      { text: '保存', cls: 'btn-primary', action: new Function("ScheduledJob.saveNewJob()") }
     ], 'modal-xxl');
   },
 
