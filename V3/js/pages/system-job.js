@@ -140,7 +140,8 @@ const JOB_DEFS = [
   {
     id: 'JOB-0001', code: 'JOB_PP0004_001', name: 'SAP物料凭证同步（10分钟）',
     iface: 'PP0004', cron: '*/10 * * * *', cronText: '每 10 分钟',
-    status: '运行中', owner: '系统管理员', createdAt: '2026-03-12 09:20',
+    cronConf: { type: 'interval', interval: 10, unit: 'minute' },
+    status: '运行中', createdAt: '2026-03-12 09:20',
     params: {
       WERKS: { mode: 'EQ', value: '1000', value2: '' },
       BUDAT: { mode: 'BT', value: '', value2: '' },
@@ -154,7 +155,8 @@ const JOB_DEFS = [
   {
     id: 'JOB-0002', code: 'JOB_PP0032_001', name: 'SAP采购申请状态同步（每日）',
     iface: 'PP0032', cron: '0 8 * * *', cronText: '每天 08:00',
-    status: '运行中', owner: '系统管理员', createdAt: '2026-05-06 14:05',
+    cronConf: { type: 'daily', time: '08:00' },
+    status: '运行中', createdAt: '2026-05-06 14:05',
     params: {
       BANFN: { mode: 'EQ', value: '', value2: '' },
       BSART: { mode: 'EQ', value: '全部', value2: '' },
@@ -167,9 +169,11 @@ const JOB_DEFS = [
     remark: '每天上班前同步一次昨日申请状态'
   },
   {
-    id: 'JOB-0003', code: 'JOB_PP0011_001', name: 'SAP库存同步（30分钟）',
-    iface: 'PP0011', cron: '*/30 * * * *', cronText: '每 30 分钟',
-    status: '运行中', owner: '系统管理员', createdAt: '2026-06-18 10:40',
+    id: 'JOB-0003', code: 'JOB_PP0011_001', name: 'SAP库存同步（工作时间每10分钟）',
+    iface: 'PP0011', cron: '*/10 8-16 * * *', cronExtra: '0 17 * * *',
+    cronText: '每天 08:00–17:00 期间每 10 分钟',
+    cronConf: { type: 'window', interval: 10, unit: 'minute', time: '08:00', timeTo: '17:00' },
+    status: '运行中', createdAt: '2026-06-18 10:40',
     params: {
       WERKS: { mode: 'EQ', value: '1000', value2: '' },
       LGORT: { mode: 'EQ', value: '', value2: '' },
@@ -182,7 +186,8 @@ const JOB_DEFS = [
   {
     id: 'JOB-0004', code: 'JOB_PP0004_002', name: '物料凭证历史补拉（每日）',
     iface: 'PP0004', cron: '0 2 * * *', cronText: '每天 02:00',
-    status: '已暂停', owner: '系统管理员', createdAt: '2026-04-02 11:10',
+    cronConf: { type: 'daily', time: '02:00' },
+    status: '已暂停', createdAt: '2026-04-02 11:10',
     params: {
       WERKS: { mode: 'EQ', value: '1000', value2: '' },
       BUDAT: { mode: 'BT', value: '2026-09-07', value2: '2026-09-07' },
@@ -366,7 +371,7 @@ const ScheduledJob = {
           <td style="font-family:monospace;font-size:12px;">${esc(j.code)}</td>
           <td>${esc(j.name)}</td>
           <td style="font-size:12px;">${esc(ifaceLabel(j.iface))}</td>
-          <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(j.cron)}</div></td>
+          <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(this.cronFullText(j))}</div></td>
           <td>${self.jobStatusBadge(j.status)}</td>
           <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openJobView('${j.id}')">查看</button></div></td>
         </tr>`;
@@ -441,12 +446,17 @@ const ScheduledJob = {
         <div class="form-section-title">基本信息</div>
         <div class="form-grid">
           ${field('SAP 接口', esc(ifaceLabel(job.iface)))}
-          ${field('执行周期', esc(job.cronText) + '（' + esc(job.cron) + '）')}
           ${field('任务编码', esc(job.code))}
           ${field('任务名称', esc(job.name))}
           ${field('状态', this.jobStatusBadge(job.status))}
-          ${field('负责人', esc(job.owner))}
           ${field('备注', esc(job.remark || '—'), true)}
+          <div class="form-group full">
+            <label>执行周期 ${job.status === '已终止' ? '' : '<button type="button" class="btn btn-secondary btn-sm" style="margin-left:8px;padding:3px 10px;" onclick="ScheduledJob.openCronPicker(\'' + job.id + '\')">修改</button>'}</label>
+            <div style="padding:9px 0;font-size:13.5px;font-weight:600;color:#1f2937;">
+              ${esc(job.cronText)}
+              <div style="margin-top:4px;font-family:monospace;font-size:11.5px;font-weight:400;color:var(--text-muted);">cron：${esc(this.cronFullText(job))}</div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="form-section">
@@ -465,6 +475,190 @@ const ScheduledJob = {
         </div>
         <div id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
       </div>`;
+  },
+
+  /* ==================== 执行周期设置器 ==================== */
+  /* 周期类型：interval 固定频率 / daily 每天 / window 时间窗内频率 / weekly 每周 / monthly 每月 */
+  defaultCronConf() {
+    return { type: 'interval', interval: 10, unit: 'minute', time: '08:00', timeTo: '17:00', days: [1], dayOfMonth: 1 };
+  },
+
+  buildCron(c) {
+    const n = parseInt(c.interval, 10) || 1;
+    const WEEK = { 0: '周日', 1: '周一', 2: '周二', 3: '周三', 4: '周四', 5: '周五', 6: '周六' };
+    if (c.type === 'interval') {
+      if (c.unit === 'hour') return { cron: '0 */' + n + ' * * *', cronExtra: '', cronText: '每 ' + n + ' 小时' };
+      if (c.unit === 'day') return { cron: '0 0 */' + n + ' * *', cronExtra: '', cronText: '每 ' + n + ' 天' };
+      return { cron: '*/' + n + ' * * * *', cronExtra: '', cronText: '每 ' + n + ' 分钟' };
+    }
+    if (c.type === 'daily') {
+      const p = (c.time || '08:00').split(':');
+      return { cron: Number(p[1]) + ' ' + Number(p[0]) + ' * * *', cronExtra: '', cronText: '每天 ' + c.time };
+    }
+    if (c.type === 'window') {
+      const h1 = Number((c.time || '08:00').split(':')[0]);
+      const h2 = Number((c.timeTo || '17:00').split(':')[0]);
+      const lastHour = Math.max(h1, h2 - 1);
+      const unitTxt = c.unit === 'hour' ? '小时' : '分钟';
+      const cron = (c.unit === 'hour' ? '0 ' : '*/' + n + ' ') + h1 + '-' + lastHour + ' * * *';
+      return {
+        cron: cron,
+        cronExtra: '0 ' + h2 + ' * * *',
+        cronText: '每天 ' + c.time + '–' + c.timeTo + ' 期间每 ' + n + ' ' + unitTxt
+      };
+    }
+    if (c.type === 'weekly') {
+      const p = (c.time || '08:00').split(':');
+      const days = (c.days || []).slice().sort();
+      return {
+        cron: Number(p[1]) + ' ' + Number(p[0]) + ' * * ' + days.join(','),
+        cronExtra: '',
+        cronText: '每周 ' + (days.map(d => WEEK[d]).join('、') || '—') + ' ' + c.time
+      };
+    }
+    const pm = (c.time || '08:00').split(':');
+    return {
+      cron: Number(pm[1]) + ' ' + Number(pm[0]) + ' ' + (c.dayOfMonth || 1) + ' * *',
+      cronExtra: '',
+      cronText: '每月 ' + (c.dayOfMonth || 1) + ' 日 ' + (c.time || '08:00')
+    };
+  },
+
+  cronFullText(job) {
+    return job.cronExtra ? (job.cron + '；' + job.cronExtra) : job.cron;
+  },
+
+  /* 打开周期设置器：target = 'new' 表示新建表单，或传入 jobId 表示修改任务 */
+  openCronPicker(target) {
+    this._cronTarget = target;
+    let conf = this.defaultCronConf();
+    if (target !== 'new') {
+      const job = JOB_DEFS.find(j => j.id === target);
+      if (job && job.cronConf) conf = Object.assign(this.defaultCronConf(), job.cronConf);
+    }
+    this._cronDraft = conf;
+
+    const body = `
+      <div class="form-section">
+        <div class="form-group">
+          <label>周期类型</label>
+          <select id="cronTypeSel" onchange="ScheduledJob.onCronTypeChange(this.value)">
+            <option value="interval" ${conf.type === 'interval' ? 'selected' : ''}>固定频率（全天循环）</option>
+            <option value="daily" ${conf.type === 'daily' ? 'selected' : ''}>每天固定时间</option>
+            <option value="window" ${conf.type === 'window' ? 'selected' : ''}>时间窗内固定频率（如 08:00–17:00 每 10 分钟）</option>
+            <option value="weekly" ${conf.type === 'weekly' ? 'selected' : ''}>每周指定日</option>
+            <option value="monthly" ${conf.type === 'monthly' ? 'selected' : ''}>每月指定日</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-section" id="cronOptionArea">${this.renderCronOptions(conf)}</div>
+      <div class="form-section">
+        <div class="form-section-title">预览</div>
+        <div id="cronPreview" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;"></div>
+      </div>`;
+
+    showModal('设置执行周期', body, [
+      { text: '取消', cls: 'btn-secondary', action: closeModal },
+      { text: '确定', cls: 'btn-primary', action: new Function('ScheduledJob.applyCron()') }
+    ], 'modal-md');
+
+    this.renderCronPreview();
+  },
+
+  renderCronOptions(c) {
+    const num = n => `<input type="number" id="cronInterval" value="${n}" min="1" style="width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);">`;
+    const unitSel = u => `<select id="cronUnit" onchange="ScheduledJob.renderCronPreview()" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);">
+        <option value="minute" ${u === 'minute' ? 'selected' : ''}>分钟</option>
+        <option value="hour" ${u === 'hour' ? 'selected' : ''}>小时</option>
+        <option value="day" ${u === 'day' ? 'selected' : ''}>天</option>
+      </select>`;
+    const timeInput = (id, v) => `<input type="time" id="${id}" value="${esc(v)}" onchange="ScheduledJob.renderCronPreview()" style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);">`;
+    const row = (html) => `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">${html}</div>`;
+
+    if (c.type === 'interval') {
+      return row(`每 ${num(c.interval)} ${unitSel(c.unit)} 执行一次`);
+    }
+    if (c.type === 'daily') {
+      return row(`每天 ${timeInput('cronTime', c.time)} 执行一次`);
+    }
+    if (c.type === 'window') {
+      return `<div style="display:flex;flex-direction:column;gap:12px;">
+        <div>${row(`开始时间 ${timeInput('cronTime', c.time)} &nbsp;&nbsp; 结束时间 ${timeInput('cronTimeTo', c.timeTo)}`)}</div>
+        <div>${row(`期间每 ${num(c.interval)} ${unitSel(c.unit)} 执行一次`)}</div>
+      </div>`;
+    }
+    if (c.type === 'weekly') {
+      const WEEK = [[1, '周一'], [2, '周二'], [3, '周三'], [4, '周四'], [5, '周五'], [6, '周六'], [0, '周日']];
+      const boxes = WEEK.map(w => `<label style="display:flex;align-items:center;gap:5px;font-size:13px;margin:0;cursor:pointer;">
+          <input type="checkbox" class="cronDay" value="${w[0]}" ${(c.days || []).indexOf(w[0]) >= 0 ? 'checked' : ''} onchange="ScheduledJob.renderCronPreview()" style="width:15px;height:15px;">${w[1]}
+        </label>`).join('');
+      return `<div style="display:flex;flex-direction:column;gap:12px;">
+        <div>${row(boxes)}</div>
+        <div>${row(`${timeInput('cronTime', c.time)} 执行`)}</div>
+      </div>`;
+    }
+    return row(`每月 <input type="number" id="cronDayOfMonth" value="${c.dayOfMonth || 1}" min="1" max="31" style="width:90px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);"> 日 ${timeInput('cronTime', c.time)} 执行`);
+  },
+
+  onCronTypeChange(type) {
+    const area = document.getElementById('cronOptionArea');
+    const conf = Object.assign(this._cronDraft || this.defaultCronConf(), { type: type });
+    this._cronDraft = conf;
+    if (area) area.innerHTML = this.renderCronOptions(conf);
+    this.renderCronPreview();
+  },
+
+  readCronConf() {
+    const typeEl = document.getElementById('cronTypeSel');
+    const conf = Object.assign(this._cronDraft || this.defaultCronConf(), { type: typeEl ? typeEl.value : 'interval' });
+    const iv = document.getElementById('cronInterval');
+    if (iv) conf.interval = parseInt(iv.value, 10) || 1;
+    const un = document.getElementById('cronUnit');
+    if (un) conf.unit = un.value;
+    const t = document.getElementById('cronTime');
+    if (t) conf.time = t.value || conf.time;
+    const t2 = document.getElementById('cronTimeTo');
+    if (t2) conf.timeTo = t2.value || conf.timeTo;
+    const dom = document.getElementById('cronDayOfMonth');
+    if (dom) conf.dayOfMonth = parseInt(dom.value, 10) || 1;
+    const days = [];
+    document.querySelectorAll('.cronDay').forEach(el => { if (el.checked) days.push(parseInt(el.value, 10)); });
+    if (days.length) conf.days = days;
+    return conf;
+  },
+
+  renderCronPreview() {
+    const conf = this.readCronConf();
+    this._cronDraft = conf;
+    const r = this.buildCron(conf);
+    const el = document.getElementById('cronPreview');
+    if (el) {
+      el.innerHTML = '<div style="margin-bottom:6px;"><strong>' + esc(r.cronText) + '</strong></div>'
+        + '<div style="font-family:monospace;font-size:12px;color:var(--text-muted);">cron：' + esc(r.cron)
+        + (r.cronExtra ? '；' + esc(r.cronExtra) : '') + '</div>';
+    }
+  },
+
+  applyCron() {
+    const conf = this.readCronConf();
+    const r = this.buildCron(conf);
+    if (this._cronTarget === 'new') {
+      this._newCron = { cron: r.cron, cronExtra: r.cronExtra, cronText: r.cronText, cronConf: conf };
+      const el = document.getElementById('newJobCronText');
+      if (el) el.value = r.cronText;
+      closeModal();
+    } else {
+      const job = JOB_DEFS.find(j => j.id === this._cronTarget);
+      if (job) {
+        job.cron = r.cron;
+        job.cronExtra = r.cronExtra;
+        job.cronText = r.cronText;
+        job.cronConf = conf;
+      }
+      closeModal();
+      toast('执行周期已更新：' + r.cronText);
+      this.renderJobView(this._cronTarget);
+    }
   },
 
   /* ---------- 动态参数表单 ---------- */
@@ -827,6 +1021,7 @@ const ScheduledJob = {
 
   /* ==================== 三、新建任务 ==================== */
   openCreate() {
+    this._newCron = { cron: '*/10 * * * *', cronExtra: '', cronText: '每 10 分钟', cronConf: this.defaultCronConf() };
     const options = SAP_INTERFACES.filter(i => i.enabled)
       .map(i => `<option value="${esc(i.code)}">${esc(ifaceLabel(i.code))}</option>`).join('');
 
@@ -842,13 +1037,11 @@ const ScheduledJob = {
             <div class="form-help" id="newJobIfaceDesc">选择接口后，下方会自动带出该接口的全部入参，可逐项勾选并设置条件。</div>
           </div>
           <div class="form-group"><label>执行周期<span class="req">*</span></label>
-            <select id="newJobCron">
-              <option value="每 10 分钟|*/10 * * * *">每 10 分钟</option>
-              <option value="每 30 分钟|*/30 * * * *">每 30 分钟</option>
-              <option value="每小时|0 * * * *">每小时</option>
-              <option value="每天 02:00|0 2 * * *">每天 02:00</option>
-              <option value="每天 08:00|0 8 * * *">每天 08:00</option>
-            </select></div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input id="newJobCronText" value="${this._newCron ? esc(this._newCron.cronText) : '每 10 分钟'}" readonly style="flex:1;background:#f8fafc;color:#1f2937;">
+              <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="ScheduledJob.openCronPicker('new')">设置</button>
+            </div>
+            <div class="form-help">支持固定频率、每天固定时间、时间窗内频率（如 08:00–17:00 每 10 分钟）、每周/每月</div></div>
           <div class="form-group"><label>任务编码</label>
             <input id="newJobCode" value="选择接口后自动生成" readonly style="background:#f8fafc;color:var(--text-secondary);">
             <div class="form-help">按「JOB_接口编号_序号」自动编号，如 JOB_PP0004_001</div></div>
@@ -856,7 +1049,6 @@ const ScheduledJob = {
             <input id="newJobName" placeholder="如 SAP物料凭证同步（10分钟）"></div>
           <div class="form-group"><label>创建后状态</label>
             <select id="newJobStatus"><option value="运行中">运行中</option><option value="已暂停">已暂停</option></select></div>
-          <div class="form-group"><label>负责人</label><input id="newJobOwner" value="${esc(window.currentUserId || 'admin')}"></div>
           <div class="form-group full"><label>备注</label><input id="newJobRemark" placeholder="选填"></div>
         </div>
       </div>
@@ -943,10 +1135,11 @@ const ScheduledJob = {
     if (!name) { toast('任务名称为必填项'); return; }
     const code = this.nextJobCode(ifaceCode);
 
-    const cronSel = document.getElementById('newJobCron');
-    const cronVal = cronSel ? cronSel.value : '每 10 分钟|*/10 * * * *';
-    const cronText = cronVal.split('|')[0];
-    const cron = cronVal.split('|')[1];
+    const cronSet = this._newCron || { cron: '*/10 * * * *', cronExtra: '', cronText: '每 10 分钟', cronConf: this.defaultCronConf() };
+    const cron = cronSet.cron;
+    const cronExtra = cronSet.cronExtra || '';
+    const cronText = cronSet.cronText;
+    const cronConf = cronSet.cronConf;
     const status = (document.getElementById('newJobStatus') || {}).value || '运行中';
 
     const tmpJob = { iface: ifaceCode, params: {} };
@@ -959,14 +1152,15 @@ const ScheduledJob = {
 
     JOB_DEFS.push({
       id: 'JOB-' + String(maxId + 1).padStart(4, '0'),
-      code: code, name: name, iface: ifaceCode, cron: cron, cronText: cronText,
-      status: status, owner: (document.getElementById('newJobOwner') || {}).value || 'admin',
-      createdAt: jobHMStr(new Date()), params: params,
+      code: code, name: name, iface: ifaceCode,
+      cron: cron, cronExtra: cronExtra, cronText: cronText, cronConf: cronConf,
+      status: status, createdAt: jobHMStr(new Date()), params: params,
       remark: (document.getElementById('newJobRemark') || {}).value || ''
     });
 
     closeModal();
     toast('任务已创建：' + name + '（' + code + '）');
+    this._newCron = null;
     this.setType('list');
     this.renderListTable();
   }
