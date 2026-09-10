@@ -130,6 +130,12 @@ const SAP_INTERFACES = [
 ];
 
 /* ==================== 2. 任务定义（Job 实例） ==================== */
+/* 统一展示格式：接口编号-接口描述，如 PP0004-查询SAP物料凭证接口 */
+function ifaceLabel(code) {
+  const i = SAP_INTERFACES.find(x => x.code === code);
+  return i ? (i.code + '-' + i.name) : (code || '');
+}
+
 const JOB_DEFS = [
   {
     id: 'JOB-0001', code: 'JOB_PP0004_MATDOC_10M', name: 'SAP物料凭证同步（10分钟）',
@@ -379,12 +385,11 @@ const ScheduledJob = {
     const body = document.getElementById('jobTableBody');
     if (body) {
       body.innerHTML = pageRows.length ? pageRows.map(function (j) {
-        const iface = SAP_INTERFACES.find(i => i.code === j.iface) || {};
         return `
         <tr>
           <td style="font-family:monospace;font-size:12px;">${esc(j.code)}</td>
           <td>${esc(j.name)}</td>
-          <td>${esc(iface.name || j.iface)}<div style="font-size:11px;color:var(--text-muted);">${esc(j.iface)}</div></td>
+          <td style="font-size:12px;">${esc(ifaceLabel(j.iface))}</td>
           <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(j.cron)}</div></td>
           <td>${self.jobStatusBadge(j.status)}</td>
           <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openJobView('${j.id}')">查看</button></div></td>
@@ -446,7 +451,7 @@ const ScheduledJob = {
   renderOverviewTab(job, iface) {
     const rows = [
       ['任务编码', job.code], ['任务名称', job.name],
-      ['SAP 接口', (iface.name || job.iface) + '（' + job.iface + '）'],
+      ['SAP 接口', ifaceLabel(job.iface)],
       ['接口协议 / 方向', (iface.protocol || '—') + ' · ' + (iface.direction || '—')],
       ['所属业务', iface.biz || '—'],
       ['执行周期', job.cronText + '（' + job.cron + '）'],
@@ -466,7 +471,7 @@ const ScheduledJob = {
       <div class="form-section">
         <div class="form-section-title">查询条件</div>
         <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
-          条件由接口 <strong>${esc(iface.name || '')}</strong>（${esc(job.iface)}）的参数模板生成，可直接修改。<br>
+          条件由接口 <strong>${esc(ifaceLabel(job.iface))}</strong> 的参数模板生成，可直接修改。<br>
           点「保存查询条件」→ 后续定时执行按新条件；点「立即执行」→ 用当前填写的条件立刻跑一次（不保存则仅本次生效）。
         </div>
         <div class="form-grid col-1" id="jobParamsForm">${this.renderParamsForm(iface, job.params)}</div>
@@ -639,7 +644,7 @@ const ScheduledJob = {
       <div>
         <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;">
           <div style="font-size:13px;margin-bottom:6px;"><strong>任务：</strong>${esc(job.name)}（${esc(job.code)}）</div>
-          <div style="font-size:13px;margin-bottom:6px;"><strong>接口：</strong>${esc(iface.name || job.iface)} · ${esc(iface.protocol || '')} · ${esc(iface.direction || '')}</div>
+          <div style="font-size:13px;margin-bottom:6px;"><strong>接口：</strong>${esc(ifaceLabel(job.iface))} · ${esc(iface.protocol || '')} · ${esc(iface.direction || '')}</div>
           <div style="font-size:13px;"><strong>执行方式：</strong>${modeText}</div>
         </div>
         <div class="form-section-title" style="font-size:14px;">本次将使用的查询条件</div>
@@ -754,7 +759,7 @@ const ScheduledJob = {
   /* ==================== 三、新建任务 ==================== */
   openCreate() {
     const options = SAP_INTERFACES.filter(i => i.enabled)
-      .map(i => `<option value="${esc(i.code)}">${esc(i.name)}（${esc(i.code)}）</option>`).join('');
+      .map(i => `<option value="${esc(i.code)}">${esc(ifaceLabel(i.code))}</option>`).join('');
 
     const body = `
       <div class="form-section">
@@ -1055,12 +1060,11 @@ const ScheduledJob = {
     const body = document.getElementById('logTableBody');
     if (body) {
       body.innerHTML = pageRows.length ? pageRows.map(l => {
-        const iface = SAP_INTERFACES.find(i => i.code === l.iface) || {};
         return `
         <tr>
           <td style="font-family:monospace;font-size:12px;">${esc(l.runId)}</td>
           <td>${esc(l.jobName)}</td>
-          <td>${esc(iface.name || l.iface)}</td>
+          <td style="font-size:12px;">${esc(ifaceLabel(l.iface))}</td>
           <td>${l.trigger === '手动' ? '<span class="badge badge-blue badge-sm">手工</span>' : '<span class="badge badge-gray badge-sm">定时</span>'}</td>
           <td style="font-size:12px;">${esc(l.startAt)}</td>
           <td style="font-size:12px;">${esc(l.duration)}</td>
