@@ -119,9 +119,7 @@ const App = {
       groups: [
         {
           title:'定时任务', items: [
-            { id:'job-list', label:'任务清单', route:'job-list', pageObj:'ScheduledJob', type:'list' },
-            { id:'job-log', label:'执行日志', route:'job-log', pageObj:'ScheduledJob', type:'log' },
-            { id:'job-interface', label:'接口注册', route:'job-interface', pageObj:'ScheduledJob', type:'interface' }
+            { id:'job-list', label:'任务清单', route:'job-list', pageObj:'ScheduledJob', type:'list' }
           ]
         }
       ]
@@ -166,9 +164,7 @@ const App = {
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
     'cost-object': CostObject,
-    'job-list': ScheduledJob,
-    'job-log': ScheduledJob,
-    'job-interface': ScheduledJob
+    'job-list': ScheduledJob
   },
 
   /* ===== 权限：定时任务仅系统管理员可见 ===== */

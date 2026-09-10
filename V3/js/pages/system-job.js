@@ -1,9 +1,9 @@
 /* ==================== 系统管理 · 定时任务 ====================
  * 统一管理所有轮询 SAP 的后台定时 Job：
- *   1) 任务清单 —— 有哪些 Job、跑的什么接口、查询条件、周期、最近结果
- *   2) 执行日志 —— 每次执行的触发方式/参数快照/耗时/成功失败/条数
- *   3) 接口注册 —— SAP 接口目录及其「查询条件参数模板」（元数据驱动，
- *                  不同接口查询条件不同，新增接口只需在此登记字段）
+ *   任务清单 —— 定义 Job（选 SAP 接口并逐项设置查询条件）、暂停/终止、
+ *               修改查询条件、手工立即执行
+ *   注：接口的「查询条件参数模板」由 SAP_INTERFACES 维护（元数据驱动），
+ *       不同接口查询条件不同，新增接口只需在该数组登记字段
  * 权限：仅管理员可见（菜单与路由双重控制，见 js/main.js）
  * 数据：纯 mock，存放于内存数组，刷新页面后重置
  * ============================================================ */
@@ -241,18 +241,16 @@ const JOB_RUN_LOGS = [
 /* ==================== 页面对象 ==================== */
 const ScheduledJob = {
   _version: '1.0-20260909',
-  type: 'list',            // list | log | interface
+  type: 'list',
   currentJobId: '',
-  viewTab: 'overview',     // overview | params | logs
+  viewTab: 'overview',
   _runParams: null,
   _runMode: 'once',
 
   listFilter: { iface: '', status: '', keyword: '', page: 1, pageSize: 10 },
-  logFilter: { jobId: '', status: '', trigger: '', keyword: '', page: 1, pageSize: 10 },
-  ifaceFilter: { keyword: '', status: '' },
 
   setType(t) {
-    if (t === 'log' || t === 'interface' || t === 'list') this.type = t;
+    if (t === 'list') this.type = t;
   },
 
   /* ==================== 渲染入口 ==================== */
@@ -263,15 +261,11 @@ const ScheduledJob = {
         + '<div style="font-size:18px;font-weight:700;color:var(--text);">无访问权限</div>'
         + '<div style="font-size:13px;margin-top:6px;">定时任务管理仅对系统管理员开放。</div></div>';
     }
-    if (this.type === 'log') return this.renderLogPage();
-    if (this.type === 'interface') return this.renderIfacePage();
     return this.renderListPage();
   },
 
   init() {
-    if (this.type === 'log') this.bindLog();
-    else if (this.type === 'interface') this.bindIface();
-    else this.bindList();
+    this.bindList();
   },
 
   statusBadge(status) {
@@ -524,7 +518,7 @@ const ScheduledJob = {
 
   renderParamsForm(iface, values, selectable) {
     const list = (iface && iface.params) || [];
-    if (!list.length) return '<div class="form-help">该接口未定义参数模板，请先到「接口注册」维护。</div>';
+    if (!list.length) return '<div class="form-help">该接口未定义参数模板，请联系系统管理员维护。</div>';
     const self = this;
     const head = `
       <div style="display:flex;align-items:center;gap:14px;padding:0 16px 6px;font-size:12px;color:var(--text-muted);font-weight:600;">
@@ -727,7 +721,7 @@ const ScheduledJob = {
         <div style="font-size:13px;line-height:1.9;background:#fff;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;">
           ${this.paramsSummary(iface, params)}
         </div>
-        <div class="form-help" style="margin-top:14px;">执行过程会在「执行日志」中留痕，包含参数快照、耗时与结果。</div>
+        <div class="form-help" style="margin-top:14px;">执行完成后会提示本次结果（拉取 / 新增 / 更新条数与耗时）。</div>
       </div>`;
 
     showModal('确认执行', body, [
@@ -829,7 +823,6 @@ const ScheduledJob = {
 
     if (this.currentJobId === jobId) this.renderJobView(jobId);
     this.renderListTable();
-    if (this.type === 'log') this.renderLogTable();
   },
 
   /* ==================== 三、新建任务 ==================== */
@@ -922,7 +915,7 @@ const ScheduledJob = {
     (iface.params || []).forEach(p => { defs[p.key] = p.def; });
     if (area) {
       if (!iface.params.length) {
-        area.innerHTML = '<div class="form-help">该接口未定义参数模板，请先到「接口注册」维护。</div>';
+        area.innerHTML = '<div class="form-help">该接口未定义参数模板，请联系系统管理员维护。</div>';
       } else {
         area.innerHTML = this.renderParamsForm(iface, defs, true);
       }
@@ -974,479 +967,7 @@ const ScheduledJob = {
 
     closeModal();
     toast('任务已创建：' + name + '（' + code + '）');
-    if (this.type === 'list') { this.renderListTable(); }
-    else {
-      const ca = document.getElementById('contentArea');
-      if (ca) { this.setType('list'); ca.innerHTML = this.renderListPage(); this.bindList(); }
-    }
-  },
-
-  /* ==================== 四、执行日志明细弹窗 ==================== */
-  openLogDetail(runId) {
-    const l = JOB_RUN_LOGS.find(x => x.runId === runId);
-    if (!l) return;
-    const iface = SAP_INTERFACES.find(i => i.code === l.iface) || {};
-    const body = `
-      <div style="min-height:52vh;">
-        <div class="detail-grid" style="margin-bottom:20px;">
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">执行编号</div><div style="font-weight:600;">${esc(l.runId)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">任务</div><div style="font-weight:600;">${esc(l.jobName)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">触发方式</div><div style="font-weight:600;">${l.trigger === '手动' ? '手工触发' : '定时调度'}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">执行结果</div><div style="font-weight:600;">${this.statusBadge(l.status)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">开始时间</div><div style="font-weight:600;">${esc(l.startAt)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">结束时间</div><div style="font-weight:600;">${esc(l.endAt)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">耗时</div><div style="font-weight:600;">${esc(l.duration)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">操作人</div><div style="font-weight:600;">${esc(l.operator)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">拉取 / 新增 / 更新</div><div style="font-weight:600;">${l.fetched} / ${l.inserted} / ${l.updated}</div></div>
-        </div>
-
-        <div class="form-section">
-          <div class="form-section-title">本次执行的参数快照</div>
-          <div style="font-size:13px;line-height:1.9;background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:14px 16px;">
-            ${this.paramsSummary(iface, l.paramsSnapshot)}
-          </div>
-        </div>
-
-        ${l.message ? `<div class="form-section"><div class="form-section-title">说明</div><div style="font-size:13px;color:var(--text-secondary);">${esc(l.message)}</div></div>` : ''}
-
-        ${l.errorMsg ? `<div class="form-section"><div class="form-section-title" style="color:var(--danger);border-color:var(--danger);">错误信息</div>
-          <div style="font-size:13px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-sm);padding:12px 14px;">${esc(l.errorMsg)}</div></div>` : ''}
-
-        <div class="form-section">
-          <div class="form-section-title">接口报文</div>
-          <div style="font-size:12px;font-family:monospace;background:#0f1b2d;color:#cbd5e1;border-radius:var(--radius-sm);padding:14px 16px;white-space:pre-wrap;word-break:break-all;line-height:1.7;">请求：${esc(l.request)}
-
-响应：${esc(l.response || '—')}</div>
-        </div>
-      </div>`;
-
-    showModal('执行日志明细 · ' + esc(l.runId), body, [
-      { text: '关闭', cls: 'btn-secondary', action: new Function('ScheduledJob.closeLogDetail()') }
-    ], 'modal-xxl');
-  },
-
-  closeLogDetail() {
-    closeModal();
-    if (this.currentJobId) this.renderJobView(this.currentJobId);
-  },
-
-  /* ==================== 五、执行日志子页 ==================== */
-  openLogPage(jobId) {
-    this.logFilter.jobId = jobId || '';
-    this.logFilter.page = 1;
-    if (typeof App !== 'undefined' && App.navigateGItem) {
-      App.navigateGItem('system-management', 'job-log', 'job-log', '执行日志');
-    }
-  },
-
-  renderLogPage() {
-    return `
-    <div style="padding:20px 24px;background:#f6f8fb;min-height:calc(100vh - 56px);">
-      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
-        <div class="filter-bar">
-          <div class="filter-group">
-            <label>定时任务</label>
-            <select id="logFltJob">
-              <option value="">全部任务</option>
-              ${JOB_DEFS.map(j => `<option value="${esc(j.id)}" ${this.logFilter.jobId === j.id ? 'selected' : ''}>${esc(j.name)}</option>`).join('')}
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>执行结果</label>
-            <select id="logFltStatus">
-              <option value="">全部</option>
-              <option value="成功" ${this.logFilter.status === '成功' ? 'selected' : ''}>成功</option>
-              <option value="失败" ${this.logFilter.status === '失败' ? 'selected' : ''}>失败</option>
-              <option value="执行中" ${this.logFilter.status === '执行中' ? 'selected' : ''}>执行中</option>
-            </select>
-          </div>
-          <div class="filter-group">
-            <label>触发方式</label>
-            <select id="logFltTrigger">
-              <option value="">全部</option>
-              <option value="定时" ${this.logFilter.trigger === '定时' ? 'selected' : ''}>定时调度</option>
-              <option value="手动" ${this.logFilter.trigger === '手动' ? 'selected' : ''}>手工触发</option>
-            </select>
-          </div>
-          <div class="filter-group" style="min-width:180px;">
-            <label>关键字</label>
-            <input id="logFltKeyword" placeholder="执行编号 / 操作人" value="${esc(this.logFilter.keyword)}">
-          </div>
-          <div class="filter-actions">
-            <button class="btn btn-secondary btn-sm" id="logBtnReset">重置</button>
-            <button class="btn btn-primary btn-sm" id="logBtnQuery">查询</button>
-          </div>
-        </div>
-
-        <div class="list-toolbar">
-          <div class="list-info"><span class="list-count" id="logListCount">共 0 条</span></div>
-          <button class="btn btn-secondary btn-sm" id="logBtnRefresh">刷新</button>
-        </div>
-
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:110px;">执行编号</th>
-                <th style="width:200px;">任务名称</th>
-                <th style="width:150px;">SAP 接口</th>
-                <th style="width:100px;">触发方式</th>
-                <th style="width:160px;">开始时间</th>
-                <th style="width:90px;">耗时</th>
-                <th style="width:90px;">结果</th>
-                <th style="width:150px;">拉取 / 新增 / 更新</th>
-                <th style="width:100px;">操作人</th>
-                <th style="width:100px;">操作</th>
-              </tr>
-            </thead>
-            <tbody id="logTableBody"></tbody>
-          </table>
-        </div>
-
-        <div class="list-toolbar" style="border-bottom:none;border-top:1px solid var(--border);">
-          <div class="list-info"><span class="pagination-info" id="logPageInfo">第 1 页</span></div>
-          <div class="pagination" id="logPagination"></div>
-        </div>
-      </div>
-    </div>`;
-  },
-
-  bindLog() {
-    const self = this;
-    const q = document.getElementById('logBtnQuery');
-    const kw = document.getElementById('logFltKeyword');
-    if (q) q.addEventListener('click', function () { self.logFilter.keyword = kw ? kw.value : ''; self.logFilter.page = 1; self.renderLogTable(); });
-    if (kw) kw.addEventListener('keydown', function (e) { if (e.key === 'Enter' && q) q.click(); });
-    const r = document.getElementById('logBtnReset');
-    if (r) r.addEventListener('click', function () {
-      self.logFilter = { jobId: '', status: '', trigger: '', keyword: '', page: 1, pageSize: 10 };
-      const ca = document.getElementById('contentArea');
-      if (ca) { ca.innerHTML = self.renderLogPage(); self.bindLog(); }
-    });
-    ['logFltJob', 'logFltStatus', 'logFltTrigger'].forEach(function (id, idx) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('change', function () {
-        const key = idx === 0 ? 'jobId' : (idx === 1 ? 'status' : 'trigger');
-        self.logFilter[key] = this.value;
-        self.logFilter.page = 1;
-        self.renderLogTable();
-      });
-    });
-    const refresh = document.getElementById('logBtnRefresh');
-    if (refresh) refresh.addEventListener('click', function () { self.renderLogTable(); toast('已刷新'); });
-    this.renderLogTable();
-  },
-
-  filteredLogs() {
-    const f = this.logFilter;
-    const kw = (f.keyword || '').trim().toLowerCase();
-    return JOB_RUN_LOGS.filter(function (l) {
-      if (f.jobId && l.jobId !== f.jobId) return false;
-      if (f.status && l.status !== f.status) return false;
-      if (f.trigger && l.trigger !== f.trigger) return false;
-      if (kw && (l.runId + l.operator).toLowerCase().indexOf(kw) < 0) return false;
-      return true;
-    });
-  },
-
-  renderLogTable() {
-    const rows = this.filteredLogs();
-    const total = rows.length;
-    const pageSize = this.logFilter.pageSize;
-    const maxPage = Math.max(1, Math.ceil(total / pageSize));
-    if (this.logFilter.page > maxPage) this.logFilter.page = maxPage;
-    const page = this.logFilter.page;
-    const pageRows = rows.slice((page - 1) * pageSize, page * pageSize);
-
-    const body = document.getElementById('logTableBody');
-    if (body) {
-      body.innerHTML = pageRows.length ? pageRows.map(l => {
-        return `
-        <tr>
-          <td style="font-family:monospace;font-size:12px;">${esc(l.runId)}</td>
-          <td>${esc(l.jobName)}</td>
-          <td style="font-size:12px;">${esc(ifaceLabel(l.iface))}</td>
-          <td>${l.trigger === '手动' ? '<span class="badge badge-blue badge-sm">手工</span>' : '<span class="badge badge-gray badge-sm">定时</span>'}</td>
-          <td style="font-size:12px;">${esc(l.startAt)}</td>
-          <td style="font-size:12px;">${esc(l.duration)}</td>
-          <td>${this.statusBadge(l.status)}</td>
-          <td style="font-size:12px;">${l.fetched} / ${l.inserted} / ${l.updated}</td>
-          <td style="font-size:12px;">${esc(l.operator)}</td>
-          <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openLogDetail('${l.runId}')">查看</button></div></td>
-        </tr>`;
-      }).join('') : '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">没有符合条件的执行日志</td></tr>';
-    }
-
-    const cnt = document.getElementById('logListCount');
-    if (cnt) cnt.textContent = '共 ' + total + ' 条';
-    const pinfo = document.getElementById('logPageInfo');
-    if (pinfo) pinfo.textContent = '第 ' + page + ' / ' + maxPage + ' 页';
-    const pager = document.getElementById('logPagination');
-    if (pager) {
-      let html = '<button class="pagination-btn" ' + (page <= 1 ? 'disabled' : '') + ' onclick="ScheduledJob.goLogPage(' + (page - 1) + ')">‹</button>';
-      for (let p = 1; p <= maxPage; p++) {
-        if (maxPage > 7 && p > 2 && p < maxPage - 1 && Math.abs(p - page) > 1) {
-          if (p === 3) html += '<span class="pagination-info">…</span>';
-          continue;
-        }
-        html += '<button class="pagination-btn ' + (p === page ? 'active' : '') + '" onclick="ScheduledJob.goLogPage(' + p + ')">' + p + '</button>';
-      }
-      html += '<button class="pagination-btn" ' + (page >= maxPage ? 'disabled' : '') + ' onclick="ScheduledJob.goLogPage(' + (page + 1) + ')">›</button>';
-      pager.innerHTML = html;
-    }
-  },
-
-  goLogPage(p) { this.logFilter.page = p; this.renderLogTable(); },
-
-  /* ==================== 六、接口注册子页 ==================== */
-  renderIfacePage() {
-    const rows = SAP_INTERFACES.filter(i => {
-      const kw = (this.ifaceFilter.keyword || '').trim().toLowerCase();
-      if (this.ifaceFilter.status === 'enabled' && !i.enabled) return false;
-      if (this.ifaceFilter.status === 'disabled' && i.enabled) return false;
-      if (kw && (i.code + i.name + i.biz).toLowerCase().indexOf(kw) < 0) return false;
-      return true;
-    });
-
-    return `
-    <div style="padding:20px 24px;background:#f6f8fb;min-height:calc(100vh - 56px);">
-      <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:12.5px;color:var(--text-secondary);line-height:1.7;">
-        接口注册用于维护「SAP 接口目录 + 查询条件参数模板」。任务的查询条件完全由所选接口的参数模板动态生成，
-        因此未来新增一个轮询接口（如生产订单、供应商主数据）时，只需在此登记接口与字段，即可在「任务清单」中直接创建任务，无需开发改前端。
-      </div>
-
-      <div style="background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
-        <div class="filter-bar">
-          <div class="filter-group">
-            <label>启用状态</label>
-            <select id="ifFltStatus">
-              <option value="">全部</option>
-              <option value="enabled" ${this.ifaceFilter.status === 'enabled' ? 'selected' : ''}>已启用</option>
-              <option value="disabled" ${this.ifaceFilter.status === 'disabled' ? 'selected' : ''}>未启用</option>
-            </select>
-          </div>
-          <div class="filter-group" style="min-width:220px;">
-            <label>关键字</label>
-            <input id="ifFltKeyword" placeholder="接口编码 / 名称 / 业务" value="${esc(this.ifaceFilter.keyword)}">
-          </div>
-          <div class="filter-actions">
-            <button class="btn btn-secondary btn-sm" id="ifBtnReset">重置</button>
-            <button class="btn btn-primary btn-sm" id="ifBtnQuery">查询</button>
-          </div>
-        </div>
-
-        <div class="list-toolbar">
-          <div class="list-info"><span class="list-count" id="ifListCount">共 ${rows.length} 条</span></div>
-        </div>
-
-        <div class="table-wrapper">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th style="width:200px;">接口编码</th>
-                <th style="width:200px;">接口名称</th>
-                <th style="width:100px;">协议</th>
-                <th style="width:180px;">方向</th>
-                <th style="width:130px;">所属业务</th>
-                <th style="width:130px;">参数模板字段</th>
-                <th style="width:120px;">关联任务</th>
-                <th style="width:90px;">状态</th>
-                <th style="width:100px;">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(i => `
-                <tr>
-                  <td style="font-family:monospace;font-size:12px;">${esc(i.code)}</td>
-                  <td>${esc(i.name)}</td>
-                  <td><span class="badge badge-gray badge-sm">${esc(i.protocol)}</span></td>
-                  <td style="font-size:12px;">${esc(i.direction)}</td>
-                  <td>${esc(i.biz)}</td>
-                  <td>${i.params.length} 个</td>
-                  <td>${JOB_DEFS.filter(j => j.iface === i.code).length} 个</td>
-                  <td>${i.enabled ? '<span class="badge badge-green">已启用</span>' : '<span class="badge badge-gray">未启用</span>'}</td>
-                  <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openIfaceView('${esc(i.code)}')">查看</button></div></td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
-  },
-
-  bindIface() {
-    const self = this;
-    const q = document.getElementById('ifBtnQuery');
-    const kw = document.getElementById('ifFltKeyword');
-    if (q) q.addEventListener('click', function () {
-      self.ifaceFilter.keyword = kw ? kw.value : '';
-      const ca = document.getElementById('contentArea');
-      if (ca) { ca.innerHTML = self.renderIfacePage(); self.bindIface(); }
-    });
-    if (kw) kw.addEventListener('keydown', function (e) { if (e.key === 'Enter' && q) q.click(); });
-    const st = document.getElementById('ifFltStatus');
-    if (st) st.addEventListener('change', function () {
-      self.ifaceFilter.status = this.value;
-      const ca = document.getElementById('contentArea');
-      if (ca) { ca.innerHTML = self.renderIfacePage(); self.bindIface(); }
-    });
-    const r = document.getElementById('ifBtnReset');
-    if (r) r.addEventListener('click', function () {
-      self.ifaceFilter = { keyword: '', status: '' };
-      const ca = document.getElementById('contentArea');
-      if (ca) { ca.innerHTML = self.renderIfacePage(); self.bindIface(); }
-    });
-  },
-
-  openIfaceView(code, editMode) {
-    const iface = SAP_INTERFACES.find(i => i.code === code);
-    if (!iface) return;
-    const jobs = JOB_DEFS.filter(j => j.iface === code);
-    const edit = !!editMode;
-
-    const info = `
-      <div class="form-section">
-        <div class="detail-grid">
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">接口编码</div><div style="font-weight:600;">${esc(iface.code)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">接口名称</div><div style="font-weight:600;">${esc(iface.name)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">协议 / 方向</div><div style="font-weight:600;">${esc(iface.protocol)} · ${esc(iface.direction)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">所属业务</div><div style="font-weight:600;">${esc(iface.biz)}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">启用状态</div><div style="font-weight:600;">${iface.enabled ? '<span class="badge badge-green">已启用</span>' : '<span class="badge badge-gray">未启用</span>'}</div></div>
-          <div class="detail-item"><div style="font-size:12px;color:var(--text-secondary);">关联任务</div><div style="font-weight:600;">${jobs.length} 个</div></div>
-        </div>
-      </div>
-      <div class="form-section">
-        <div class="form-section-title">接口说明</div>
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">${esc(iface.desc || '—')}</div>
-      </div>`;
-
-    const paramTable = `
-      <div class="form-section">
-        <div class="form-section-title">查询条件参数模板${edit ? '（编辑中）' : ''}</div>
-        <div class="table-wrapper">
-          <table class="data-table data-table-compact" id="ifaceParamTable">
-            <thead>
-              <tr>
-                <th style="width:60px;">序号</th>
-                <th style="width:180px;">字段名称</th>
-                <th style="width:160px;">字段键</th>
-                <th style="width:150px;">控件类型</th>
-                <th style="width:80px;">必填</th>
-                <th style="width:180px;">默认值</th>
-                <th>选项 / 说明</th>
-                ${edit ? '<th style="width:80px;">操作</th>' : ''}
-              </tr>
-            </thead>
-            <tbody>
-              ${iface.params.map((p, idx) => this.paramRow(iface, p, idx, edit)).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`;
-
-    const body = `<div style="min-height:56vh;">${info}${paramTable}</div>`;
-
-    const footer = edit ? [
-      { text: '+ 新增字段', cls: 'btn-outline', action: new Function('ScheduledJob.addParamField("' + code + '")') },
-      { text: '取消', cls: 'btn-secondary', action: new Function('ScheduledJob.openIfaceView("' + code + '", false)') },
-      { text: '保存模板', cls: 'btn-primary', action: new Function('ScheduledJob.saveIfaceTemplate("' + code + '")') }
-    ] : [
-      { text: iface.enabled ? '停用接口' : '启用接口', cls: 'btn-secondary', action: new Function('ScheduledJob.toggleIface("' + code + '")') },
-      { text: '编辑参数模板', cls: 'btn-primary', action: new Function('ScheduledJob.openIfaceView("' + code + '", true)') },
-      { text: '关闭', cls: 'btn-secondary', action: closeModal }
-    ];
-
-    showModal('SAP 接口详情 · ' + esc(iface.name), body, footer, 'modal-xxl');
-  },
-
-  paramRow(iface, p, idx, edit) {
-    const typeOpts = ['text', 'number', 'date', 'select', 'switch'];
-    const typeText = { text: '文本', number: '数字', date: '日期', select: '下拉选择', switch: '开关' };
-    if (!edit) {
-      let opt = p.help || '';
-      if (p.type === 'select') opt = (p.options || []).join(' / ');
-      return `<tr>
-        <td>${idx + 1}</td>
-        <td>${esc(p.label)}</td>
-        <td style="font-family:monospace;font-size:12px;">${esc(p.key)}</td>
-        <td>${esc(typeText[p.type] || p.type)}</td>
-        <td>${p.required ? '<span class="badge badge-red badge-sm">必填</span>' : '<span class="badge badge-gray badge-sm">选填</span>'}</td>
-        <td>${esc(this.paramDefText(p))}</td>
-        <td style="font-size:12px;color:var(--text-secondary);">${esc(opt)}</td>
-      </tr>`;
-    }
-    return `<tr data-idx="${idx}">
-      <td>${idx + 1}</td>
-      <td><input data-f="label" value="${esc(p.label)}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td><input data-f="key" value="${esc(p.key)}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:monospace;"></td>
-      <td><select data-f="type" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;">
-        ${typeOpts.map(t => `<option value="${t}" ${p.type === t ? 'selected' : ''}>${typeText[t]}</option>`).join('')}
-      </select></td>
-      <td><input type="checkbox" data-f="required" ${p.required ? 'checked' : ''} style="width:16px;height:16px;"></td>
-      <td><input data-f="def" value="${esc(this.paramDefText(p))}" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td><input data-f="help" value="${esc(p.type === 'select' ? (p.options || []).join(',') : (p.help || ''))}" placeholder="select 类型填选项，逗号分隔；其余填说明" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;"></td>
-      <td><button class="btn btn-secondary btn-sm" onclick="ScheduledJob.removeParamField('${esc(iface.code)}', ${idx})">删除</button></td>
-    </tr>`;
-  },
-
-  paramDefText(p) {
-    if (p.type === 'switch') return p.def ? '是' : '否';
-    return (p.def === undefined || p.def === null) ? '' : String(p.def);
-  },
-
-  addParamField(code) {
-    const iface = SAP_INTERFACES.find(i => i.code === code);
-    if (!iface) return;
-    iface.params.push({ key: 'field_' + (iface.params.length + 1), label: '新字段', type: 'text', required: false, def: '', help: '' });
-    this.openIfaceView(code, true);
-  },
-
-  removeParamField(code, idx) {
-    const iface = SAP_INTERFACES.find(i => i.code === code);
-    if (!iface) return;
-    iface.params.splice(idx, 1);
-    this.openIfaceView(code, true);
-  },
-
-  toggleIface(code) {
-    const iface = SAP_INTERFACES.find(i => i.code === code);
-    if (!iface) return;
-    iface.enabled = !iface.enabled;
-    toast(iface.enabled ? '接口已启用' : '接口已停用');
-    this.openIfaceView(code, false);
-    const ca = document.getElementById('contentArea');
-    if (ca && this.type === 'interface') { ca.innerHTML = this.renderIfacePage(); this.bindIface(); }
-  },
-
-  saveIfaceTemplate(code) {
-    const iface = SAP_INTERFACES.find(i => i.code === code);
-    if (!iface) return;
-    const table = document.getElementById('ifaceParamTable');
-    if (!table) return;
-    const rows = table.querySelectorAll('tbody tr');
-    const params = [];
-    rows.forEach(tr => {
-      const get = f => { const el = tr.querySelector('[data-f="' + f + '"]'); return el ? el.value : ''; };
-      const type = get('type');
-      const helpRaw = get('help');
-      const p = {
-        key: get('key') || ('field_' + (params.length + 1)),
-        label: get('label') || '未命名字段',
-        type: type,
-        required: (tr.querySelector('[data-f="required"]') || {}).checked || false,
-        def: type === 'switch' ? (get('def') === '是' || get('def') === 'true') : get('def'),
-        help: type === 'select' ? '' : helpRaw
-      };
-      if (type === 'select') p.options = helpRaw.split(',').map(s => s.trim()).filter(Boolean);
-      params.push(p);
-    });
-    iface.params = params;
-    toast('参数模板已保存，新建或修改任务时将按新模板生成查询条件。');
-    this.openIfaceView(code, false);
-    const ca = document.getElementById('contentArea');
-    if (ca && this.type === 'interface') { ca.innerHTML = this.renderIfacePage(); this.bindIface(); }
-  },
-
+    this.setType('list');
+    this.renderListTable();
+  }
 };
-
