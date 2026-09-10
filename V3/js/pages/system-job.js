@@ -334,7 +334,7 @@ const ScheduledJob = {
     const refresh = document.getElementById('jobBtnRefresh');
     if (refresh) refresh.addEventListener('click', function () { self.renderListTable(); toast('已刷新'); });
     const create = document.getElementById('jobBtnCreate');
-    if (create) create.addEventListener('click', function () { self.openCreateChoice(); });
+    if (create) create.addEventListener('click', function () { self.openCreate(); });
     this.renderListTable();
   },
 
@@ -461,10 +461,15 @@ const ScheduledJob = {
   },
 
   /* ---------- 动态参数表单 ---------- */
-  renderParamsForm(iface, values) {
+  renderParamsForm(iface, values, selectable) {
     const list = (iface && iface.params) || [];
     if (!list.length) return '<div class="form-help">该接口未定义参数模板，请先到「接口注册」维护。</div>';
     return list.map(p => {
+      const condBox = selectable
+        ? `<span style="display:flex;align-items:center;gap:5px;margin-left:auto;font-weight:400;font-size:12px;color:var(--text-secondary);">
+             <input type="checkbox" data-cond="${esc(p.key)}" checked onchange="ScheduledJob.toggleCond('${esc(p.key)}')" style="width:14px;height:14px;">作为条件
+           </span>`
+        : '';
       const v = (values && values[p.key] !== undefined) ? values[p.key] : p.def;
       const req = p.required ? '<span class="req">*</span>' : '';
       const help = p.help ? '<div class="form-help">' + esc(p.help) + '</div>' : '';
@@ -491,14 +496,21 @@ const ScheduledJob = {
       } else {
         ctrl = `<input type="text" data-pkey="${esc(p.key)}" value="${esc(v)}" placeholder="留空不限">`;
       }
-      return `<div class="form-group${full}"><label>${esc(p.label)}${req}</label>${ctrl}${help}</div>`;
+      return `<div class="form-group${full}"><label>${esc(p.label)}${req}${condBox}</label>${ctrl}${help}</div>`;
     }).join('');
   },
 
-  readParamsForm(job) {
+  readParamsForm(job, selectable) {
     const iface = SAP_INTERFACES.find(i => i.code === job.iface) || {};
     const out = {};
     (iface.params || []).forEach(p => {
+      if (selectable) {
+        const box = document.querySelector('[data-cond="' + p.key + '"]');
+        if (box && !box.checked) {
+          out[p.key] = p.type === 'daterange' ? { from: '', to: '' } : (p.type === 'switch' ? false : '');
+          return;
+        }
+      }
       const els = document.querySelectorAll('[data-pkey="' + p.key + '"]');
       if (!els.length) { out[p.key] = (job.params && job.params[p.key] !== undefined) ? job.params[p.key] : p.def; return; }
       if (p.type === 'daterange') {
@@ -723,41 +735,21 @@ const ScheduledJob = {
   },
 
   /* ==================== 三、新建任务 ==================== */
-  openCreateChoice() {
-    const cards = SAP_INTERFACES.filter(i => i.enabled).map(i => `
-      <div onclick="ScheduledJob.openCreateForm('${esc(i.code)}')"
-           style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;cursor:pointer;transition:all .15s;background:#fff;"
-           onmouseover="this.style.borderColor='#1E3A5F';this.style.background='#f8fafc';"
-           onmouseout="this.style.borderColor='';this.style.background='#fff';">
-        <div style="font-size:14px;font-weight:700;margin-bottom:6px;">${esc(i.name)}</div>
-        <div style="font-size:12px;color:var(--text-muted);font-family:monospace;margin-bottom:8px;">${esc(i.code)}</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">${esc(i.desc || '')}</div>
-        <div style="margin-top:10px;"><span class="badge badge-gray badge-sm">${esc(i.protocol)}</span> <span class="badge badge-blue badge-sm">${i.params.length} 个查询条件</span></div>
-      </div>`).join('');
-
-    const body = `
-      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
-        新建定时任务需先选择要轮询的 SAP 接口，任务的查询条件会根据该接口的参数模板自动生成。
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">${cards}</div>`;
-    showModal('选择要创建的任务类型', body, [{ text: '取消', cls: 'btn-secondary', action: closeModal }], 'modal-lg');
-  },
-
-  openCreateForm(ifaceCode) {
-    const iface = SAP_INTERFACES.find(i => i.code === ifaceCode) || {};
-    const defs = {};
-    (iface.params || []).forEach(p => { defs[p.key] = p.def; });
+  openCreate() {
+    const options = SAP_INTERFACES.filter(i => i.enabled)
+      .map(i => `<option value="${esc(i.code)}">${esc(i.name)}（${esc(i.code)}）</option>`).join('');
 
     const body = `
       <div class="form-section">
         <div class="form-section-title">基本信息</div>
         <div class="form-grid">
-          <div class="form-group"><label>任务编码<span class="req">*</span></label>
-            <input id="newJobCode" placeholder="如 JOB_SAP_MATDOC_10M"></div>
-          <div class="form-group"><label>任务名称<span class="req">*</span></label>
-            <input id="newJobName" placeholder="如 SAP物料凭证同步（10分钟）"></div>
-          <div class="form-group"><label>SAP 接口</label>
-            <input value="${esc(iface.name || '')}（${esc(iface.code)}）" disabled></div>
+          <div class="form-group"><label>SAP 接口<span class="req">*</span></label>
+            <select id="newJobIface" onchange="ScheduledJob.onSelectIface(this.value)">
+              <option value="">请选择要轮询的 SAP 接口</option>
+              ${options}
+            </select>
+            <div class="form-help" id="newJobIfaceDesc">选择接口后，下方会自动带出该接口的全部入参，可逐项勾选并设置条件。</div>
+          </div>
           <div class="form-group"><label>执行周期<span class="req">*</span></label>
             <select id="newJobCron">
               <option value="每 10 分钟|*/10 * * * *">每 10 分钟</option>
@@ -766,6 +758,10 @@ const ScheduledJob = {
               <option value="每天 02:00|0 2 * * *">每天 02:00</option>
               <option value="每天 08:00|0 8 * * *">每天 08:00</option>
             </select></div>
+          <div class="form-group"><label>任务编码<span class="req">*</span></label>
+            <input id="newJobCode" placeholder="如 JOB_SAP_MATDOC_10M"></div>
+          <div class="form-group"><label>任务名称<span class="req">*</span></label>
+            <input id="newJobName" placeholder="如 SAP物料凭证同步（10分钟）"></div>
           <div class="form-group"><label>创建后状态</label>
             <select id="newJobStatus"><option value="运行中">运行中</option><option value="已暂停">已暂停</option></select></div>
           <div class="form-group"><label>负责人</label><input id="newJobOwner" value="${esc(window.currentUserId || 'admin')}"></div>
@@ -773,18 +769,61 @@ const ScheduledJob = {
         </div>
       </div>
       <div class="form-section">
-        <div class="form-section-title">查询条件（来自接口参数模板）</div>
-        <div class="form-grid" id="newJobParams">${this.renderParamsForm(iface, defs)}</div>
+        <div class="form-section-title">查询条件（按所选接口动态生成）</div>
+        <div id="newJobParams">
+          <div style="padding:28px;text-align:center;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius-sm);">
+            请先在上方选择 SAP 接口，选择后此处自动展示该接口的入参
+          </div>
+        </div>
       </div>`;
 
-    showModal('新建定时任务 · ' + esc(iface.name || ''), body, [
+    showModal('新建定时任务', body, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
-      { text: '保存', cls: 'btn-primary', action: new Function('ScheduledJob.saveNewJob("' + ifaceCode + '")') }
+      { text: '保存', cls: 'btn-primary', action: new Function('ScheduledJob.saveNewJob()') }
     ], 'modal-xxl');
   },
 
-  saveNewJob(ifaceCode) {
-    const iface = SAP_INTERFACES.find(i => i.code === ifaceCode) || {};
+  /* 选中接口后，局部刷新入参区域（不关闭弹窗） */
+  onSelectIface(code) {
+    const area = document.getElementById('newJobParams');
+    const desc = document.getElementById('newJobIfaceDesc');
+    if (!code) {
+      if (desc) desc.textContent = '选择接口后，下方会自动带出该接口的全部入参，可逐项勾选并设置条件。';
+      if (area) {
+        area.innerHTML = '<div style="padding:28px;text-align:center;color:var(--text-muted);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius-sm);">请先在上方选择 SAP 接口，选择后此处自动展示该接口的入参</div>';
+      }
+      return;
+    }
+    const iface = SAP_INTERFACES.find(i => i.code === code);
+    if (!iface) return;
+    if (desc) {
+      desc.textContent = (iface.protocol || '') + ' · ' + (iface.direction || '') + ' · ' + (iface.desc || '');
+    }
+    const defs = {};
+    (iface.params || []).forEach(p => { defs[p.key] = p.def; });
+    if (area) {
+      if (!iface.params.length) {
+        area.innerHTML = '<div class="form-help">该接口未定义参数模板，请先到「接口注册」维护。</div>';
+      } else {
+        area.innerHTML = '<div class="form-grid">' + this.renderParamsForm(iface, defs, true) + '</div>';
+      }
+    }
+  },
+
+  /* 勾选/取消某个入参作为查询条件 */
+  toggleCond(key) {
+    const box = document.querySelector('[data-cond="' + key + '"]');
+    const els = document.querySelectorAll('[data-pkey="' + key + '"]');
+    const on = box ? box.checked : true;
+    els.forEach(el => { el.disabled = !on; });
+    const group = box ? box.closest('.form-group') : null;
+    if (group) group.style.opacity = on ? '1' : '0.45';
+  },
+
+  saveNewJob() {
+    const ifaceEl = document.getElementById('newJobIface');
+    const ifaceCode = ifaceEl ? ifaceEl.value : '';
+    if (!ifaceCode) { toast('请先选择 SAP 接口'); return; }
     const codeEl = document.getElementById('newJobCode');
     const nameEl = document.getElementById('newJobName');
     const code = codeEl ? codeEl.value.trim() : '';
@@ -799,7 +838,7 @@ const ScheduledJob = {
     const status = (document.getElementById('newJobStatus') || {}).value || '运行中';
 
     const tmpJob = { iface: ifaceCode, params: {} };
-    const params = this.readParamsForm(tmpJob);
+    const params = this.readParamsForm(tmpJob, true);
 
     JOB_DEFS.push({
       id: 'JOB-' + String(JOB_DEFS.length + 1).padStart(4, '0'),
