@@ -1,6 +1,6 @@
-/* ==================== 系统管理 · 定时任务 ====================
+/* ==================== 系统管理 · 定时JOB ====================
  * 统一管理所有轮询 SAP 的后台定时 Job：
- *   任务清单 —— 定义 Job（选 SAP 接口并逐项设置查询条件）、暂停/终止、
+ *   JOB清单 —— 定义 Job（选 SAP 接口并逐项设置查询条件）、暂停/终止、
  *               修改查询条件、手工立即执行
  *   注：接口的「查询条件参数模板」由 SAP_INTERFACES 维护（元数据驱动），
  *       不同接口查询条件不同，新增接口只需在该数组登记字段
@@ -129,7 +129,7 @@ const SAP_INTERFACES = [
   }
 ];
 
-/* ==================== 2. 任务定义（Job 实例） ==================== */
+/* ==================== 2. JOB 定义（定时JOB 实例） ==================== */
 /* 统一展示格式：接口编号-接口描述，如 PP0004-查询SAP物料凭证接口 */
 function ifaceLabel(code) {
   const i = SAP_INTERFACES.find(x => x.code === code);
@@ -150,7 +150,7 @@ const JOB_DEFS = [
       WATERMARK: { mode: 'EQ', value: '20260909103000', value2: '' },
       MAXROWS: { mode: 'EQ', value: '5000', value2: '' }
     },
-    remark: '主同步任务，按增量水位每 10 分钟拉取一次'
+    remark: '主同步 JOB，按增量水位每 10 分钟拉取一次'
   },
   {
     id: 'JOB-0002', code: 'JOB_PP0032_001', name: 'SAP采购申请状态同步（每日）',
@@ -266,7 +266,7 @@ const ScheduledJob = {
       return '<div style="padding:60px 20px;text-align:center;color:var(--text-secondary);">'
         + '<div style="font-size:44px;margin-bottom:12px;">🔒</div>'
         + '<div style="font-size:18px;font-weight:700;color:var(--text);">无访问权限</div>'
-        + '<div style="font-size:13px;margin-top:6px;">定时任务管理仅对系统管理员开放。</div></div>';
+        + '<div style="font-size:13px;margin-top:6px;">定时JOB管理仅对系统管理员开放。</div></div>';
     }
     return this.renderListPage();
   },
@@ -289,7 +289,7 @@ const ScheduledJob = {
     return '<span class="badge badge-gray">' + (status || '—') + '</span>';
   },
 
-  /* ==================== 一、任务清单 ==================== */
+  /* ==================== 一、JOB清单 ==================== */
   renderListPage() {
     return `
     <div style="padding:20px 24px 0;background:#f6f8fb;min-height:calc(100vh - 56px);display:flex;flex-direction:column;">
@@ -298,7 +298,7 @@ const ScheduledJob = {
           <div class="list-info"><span class="list-count" id="jobListCount">共 0 条</span></div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-secondary btn-sm" id="jobBtnRefresh">刷新</button>
-            <button class="btn btn-primary btn-sm" id="jobBtnCreate">+ 新建任务</button>
+            <button class="btn btn-primary btn-sm" id="jobBtnCreate">+ 新建定时JOB</button>
           </div>
         </div>
 
@@ -306,8 +306,8 @@ const ScheduledJob = {
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width:210px;">任务编码</th>
-                <th style="width:280px;">任务名称</th>
+                <th style="width:210px;">JOB编码</th>
+                <th style="width:280px;">JOB名称</th>
                 <th style="width:200px;">SAP 接口</th>
                 <th style="width:160px;">执行周期</th>
                 <th style="width:110px;">状态</th>
@@ -377,7 +377,7 @@ const ScheduledJob = {
           <td>${self.jobStatusBadge(j.status)}</td>
           <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openJobView('${j.id}')">查看</button></div></td>
         </tr>`;
-      }).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">没有符合条件的定时任务</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">没有符合条件的定时JOB</td></tr>';
     }
 
     const cnt = document.getElementById('jobListCount');
@@ -407,7 +407,7 @@ const ScheduledJob = {
     this.renderListTable();
   },
 
-  /* ==================== 二、任务查看大弹窗 ==================== */
+  /* ==================== 二、定时JOB 查看大弹窗 ==================== */
   openJobView(jobId) {
     this.currentJobId = jobId;
     this.viewTab = 'overview';
@@ -434,13 +434,13 @@ const ScheduledJob = {
       footer.push({ text: '保存', cls: 'btn-primary', action: new Function("ScheduledJob.saveJobEdit('" + jobId + "')") });
     } else {
       const nextStatus = job.status === '运行中' ? '已暂停' : '运行中';
-      footer.push({ text: job.status === '运行中' ? '暂停任务' : '启用任务', cls: 'btn-secondary', action: new Function("ScheduledJob.setJobStatus('" + jobId + "', '" + nextStatus + "')") });
-      footer.push({ text: '终止任务', cls: 'btn-secondary', action: new Function("ScheduledJob.terminateJob('" + jobId + "')") });
+      footer.push({ text: job.status === '运行中' ? '暂停JOB' : '启用JOB', cls: 'btn-secondary', action: new Function("ScheduledJob.setJobStatus('" + jobId + "', '" + nextStatus + "')") });
+      footer.push({ text: '终止JOB', cls: 'btn-secondary', action: new Function("ScheduledJob.terminateJob('" + jobId + "')") });
       footer.push({ text: '立即执行', cls: 'btn-secondary', action: new Function("ScheduledJob.runJob('" + jobId + "', 'once')") });
       footer.push({ text: '编辑', cls: 'btn-primary', action: new Function("ScheduledJob.startEdit('" + jobId + "')") });
     }
 
-    showModal('定时任务详情 · ' + esc(job.name), body, footer, 'modal-xxl');
+    showModal('定时JOB详情 · ' + esc(job.name), body, footer, 'modal-xxl');
   },
 
   startEdit(jobId) {
@@ -482,7 +482,7 @@ const ScheduledJob = {
     job.params = d.params || job.params;
     this.editMode = false;
     this._editDraft = null;
-    toast('任务已保存');
+    toast('JOB 已保存');
     this.renderJobView(jobId);
     this.renderListTable();
   },
@@ -509,11 +509,11 @@ const ScheduledJob = {
         </div>
       </div>`;
 
-    /* 字段顺序与新建任务保持一致：SAP 接口 / 任务编码 / 任务名称 / 状态 / 执行周期(整行) / 备注(整行) */
+    /* 字段顺序与新建定时JOB 保持一致：SAP 接口 / JOB编码 / JOB名称 / 状态 / 执行周期(整行) / 备注(整行) */
     const basic = edit
       ? viewField('SAP 接口', esc(ifaceLabel(job.iface)))
-        + viewField('任务编码', esc(job.code))
-        + editField('任务名称', `<input id="editJobName" value="${esc(val('name', job.name))}">`)
+        + viewField('JOB编码', esc(job.code))
+        + editField('JOB名称', `<input id="editJobName" value="${esc(val('name', job.name))}">`)
         + editField('状态', `<select id="editJobStatus">
             <option value="运行中" ${val('status', job.status) === '运行中' ? 'selected' : ''}>运行中</option>
             <option value="已暂停" ${val('status', job.status) === '已暂停' ? 'selected' : ''}>已暂停</option>
@@ -521,8 +521,8 @@ const ScheduledJob = {
         + cronBlock
         + editField('备注', `<input id="editJobRemark" value="${esc(val('remark', job.remark))}" placeholder="选填">`, true)
       : viewField('SAP 接口', esc(ifaceLabel(job.iface)))
-        + viewField('任务编码', esc(job.code))
-        + viewField('任务名称', esc(job.name))
+        + viewField('JOB编码', esc(job.code))
+        + viewField('JOB名称', esc(job.name))
         + viewField('状态', this.jobStatusBadge(job.status))
         + cronBlock
         + viewField('备注', esc(job.remark || '—'), true);
@@ -595,7 +595,7 @@ const ScheduledJob = {
     return job.cronExtra ? (job.cron + '；' + job.cronExtra) : job.cron;
   },
 
-  /* 打开周期设置器：target = 'new' 表示新建表单，或传入 jobId 表示修改任务 */
+  /* 打开周期设置器：target = 'new' 表示新建表单，或传入 jobId 表示修改该 JOB */
   openCronPicker(target) {
     this._cronTarget = target;
     let conf = this.defaultCronConf();
@@ -919,7 +919,7 @@ const ScheduledJob = {
     const job = JOB_DEFS.find(j => j.id === jobId);
     if (!job) return;
     job.status = status;
-    toast(status === '运行中' ? '任务已启用' : '任务已暂停');
+    toast(status === '运行中' ? 'JOB 已启用' : 'JOB 已暂停');
     this.renderJobView(jobId);
     this.renderListTable();
   },
@@ -929,12 +929,12 @@ const ScheduledJob = {
     if (!job) return;
     const body = `
       <div>
-        <div style="font-size:14px;line-height:1.8;margin-bottom:12px;">确定要终止任务 <strong>${esc(job.name)}</strong>（${esc(job.code)}）吗？</div>
+        <div style="font-size:14px;line-height:1.8;margin-bottom:12px;">确定要终止定时JOB <strong>${esc(job.name)}</strong>（${esc(job.code)}）吗？</div>
         <div style="font-size:13px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:10px 12px;">
-          终止后任务不再被调度，且不可恢复；如需继续使用请新建任务。
+          终止后该 JOB 不再被调度，且不可恢复；如需继续使用请新建定时JOB。
         </div>
       </div>`;
-    showModal('终止任务', body, [
+    showModal('终止定时JOB', body, [
       { text: '取消', cls: 'btn-secondary', action: new Function("ScheduledJob.renderJobView('" + jobId + "')") },
       { text: '确认终止', cls: 'btn-primary', action: new Function("ScheduledJob.doTerminate('" + jobId + "')") }
     ], 'modal-sm');
@@ -945,7 +945,7 @@ const ScheduledJob = {
     if (!job) return;
     job.status = '已终止';
     closeModal();
-    toast('任务已终止：' + job.name);
+    toast('JOB 已终止：' + job.name);
     this.renderJobView(jobId);
     this.renderListTable();
   },
@@ -970,13 +970,13 @@ const ScheduledJob = {
     const iface = SAP_INTERFACES.find(i => i.code === job.iface) || {};
     const params = this._runParams || job.params || {};
     const modeText = mode === 'once'
-      ? '<span class="badge badge-blue badge-sm">仅本次执行</span> 用当前填写的条件临时跑一次，不改动任务配置'
+      ? '<span class="badge badge-blue badge-sm">仅本次执行</span> 用当前填写的条件临时跑一次，不改动 JOB 配置'
       : '<span class="badge badge-green badge-sm">保存并立即执行</span> 条件已保存，后续定时执行同样生效';
 
     const body = `
       <div>
         <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:16px;">
-          <div style="font-size:13px;margin-bottom:6px;"><strong>任务：</strong>${esc(job.name)}（${esc(job.code)}）</div>
+          <div style="font-size:13px;margin-bottom:6px;"><strong>定时JOB：</strong>${esc(job.name)}（${esc(job.code)}）</div>
           <div style="font-size:13px;margin-bottom:6px;"><strong>接口：</strong>${esc(ifaceLabel(job.iface))} · ${esc(iface.protocol || '')} · ${esc(iface.direction || '')}</div>
           <div style="font-size:13px;"><strong>执行方式：</strong>${modeText}</div>
         </div>
@@ -1013,7 +1013,7 @@ const ScheduledJob = {
       trigger: '手动', startAt: jobNowStr(startAt), endAt: '—', duration: '—',
       status: '执行中', fetched: 0, inserted: 0, updated: 0,
       operator: window.currentUserId || 'admin',
-      message: this._runMode === 'once' ? '临时参数手工触发（不改动任务配置）' : '保存条件后手工触发',
+      message: this._runMode === 'once' ? '临时参数手工触发（不改动 JOB 配置）' : '保存条件后手工触发',
       errorMsg: '', paramsSnapshot: JSON.parse(JSON.stringify(params)),
       request: 'POST /api/sap/' + job.iface + '  params=' + JSON.stringify(params),
       response: ''
@@ -1045,7 +1045,7 @@ const ScheduledJob = {
         </div>
         <div style="margin-top:10px;font-size:12px;color:var(--text-muted);" id="jobRunTip">执行编号 ${esc(runId)} · 已提交调度</div>
       </div>`;
-    showModal('任务执行中', body, [], 'modal-md');
+    showModal('JOB 执行中', body, [], 'modal-md');
     let pct = 10;
     const bar = document.getElementById('jobRunBarInner');
     const tip = document.getElementById('jobRunTip');
@@ -1088,7 +1088,7 @@ const ScheduledJob = {
     this.renderListTable();
   },
 
-  /* ==================== 三、新建任务 ==================== */
+  /* ==================== 三、新建定时JOB ==================== */
   openCreate() {
     this._newCron = { cron: '*/10 * * * *', cronExtra: '', cronText: '每 10 分钟', cronConf: this.defaultCronConf() };
     const options = SAP_INTERFACES.filter(i => i.enabled)
@@ -1105,10 +1105,10 @@ const ScheduledJob = {
             </select>
             <div class="form-help" id="newJobIfaceDesc">选择接口后，下方会自动带出该接口的全部入参，可逐项勾选并设置条件。</div>
           </div>
-          <div class="form-group"><label>任务编码</label>
+          <div class="form-group"><label>JOB编码</label>
             <input id="newJobCode" value="选择接口后自动生成" readonly style="background:#f8fafc;color:var(--text-secondary);">
             <div class="form-help">按「JOB_接口编号_序号」自动编号，如 JOB_PP0004_001</div></div>
-          <div class="form-group"><label>任务名称<span class="req">*</span></label>
+          <div class="form-group"><label>JOB名称<span class="req">*</span></label>
             <input id="newJobName" placeholder="如 SAP物料凭证同步（10分钟）"></div>
           <div class="form-group"><label>状态</label>
             <select id="newJobStatus"><option value="运行中">运行中</option><option value="已暂停">已暂停</option></select></div>
@@ -1130,13 +1130,13 @@ const ScheduledJob = {
         </div>
       </div>`;
 
-    showModal('新建定时任务', body, [
+    showModal('新建定时JOB', body, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
       { text: '保存', cls: 'btn-primary', action: new Function("ScheduledJob.saveNewJob()") }
     ], 'modal-xxl');
   },
 
-  /* 任务编码自动生成：JOB_接口编号_序号（同一接口内递增） */
+  /* JOB编码自动生成：JOB_接口编号_序号（同一接口内递增） */
   nextJobCode(ifaceCode) {
     const prefix = 'JOB_' + ifaceCode + '_';
     let max = 0;
@@ -1201,7 +1201,7 @@ const ScheduledJob = {
     if (!ifaceCode) { toast('请先选择 SAP 接口'); return; }
     const nameEl = document.getElementById('newJobName');
     const name = nameEl ? nameEl.value.trim() : '';
-    if (!name) { toast('任务名称为必填项'); return; }
+    if (!name) { toast('JOB名称为必填项'); return; }
     const code = this.nextJobCode(ifaceCode);
 
     const cronSet = this._newCron || { cron: '*/10 * * * *', cronExtra: '', cronText: '每 10 分钟', cronConf: this.defaultCronConf() };
@@ -1228,7 +1228,7 @@ const ScheduledJob = {
     });
 
     closeModal();
-    toast('任务已创建：' + name + '（' + code + '）');
+    toast('JOB 已创建：' + name + '（' + code + '）');
     this._newCron = null;
     this.setType('list');
     this.renderListTable();

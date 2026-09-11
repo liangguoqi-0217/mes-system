@@ -118,8 +118,8 @@ const App = {
       id:'system-management', label:'系统管理', icon:'🛠', adminOnly:true,
       groups: [
         {
-          title:'定时任务', items: [
-            { id:'job-list', label:'任务清单', route:'job-list', pageObj:'ScheduledJob', type:'list' }
+          title:'定时JOB', items: [
+            { id:'job-list', label:'JOB清单', route:'job-list', pageObj:'ScheduledJob', type:'list' }
           ]
         }
       ]
@@ -167,7 +167,7 @@ const App = {
     'job-list': ScheduledJob
   },
 
-  /* ===== 权限：定时任务仅系统管理员可见 ===== */
+  /* ===== 权限：定时JOB 仅系统管理员可见 ===== */
   isAdmin() {
     return (window.currentUserId === 'admin') || (window.currentUserRole === 'admin');
   },
