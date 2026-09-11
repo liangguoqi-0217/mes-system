@@ -526,23 +526,13 @@ const ScheduledJob = {
         + viewField('备注', esc(job.remark || '—'), true)
         + cronBlock;
 
-    const condBlock = edit
-      ? `${this.renderParamsForm(iface, val('params', job.params))}`
-      : `<div style="font-size:13px;line-height:1.9;background:#f8fafc;border:1px solid #e5e7eb;border-radius:var(--radius-sm);padding:14px 16px;">
-          ${this.paramsSummary(iface, job.params)}
-        </div>`;
+    /* 查询条件：查看态用与新建/编辑一致的布局，控件只读 */
+    const condBlock = this.renderParamsForm(iface, val('params', job.params), false, !edit);
 
     return `
       <div class="form-section">
         <div class="form-section-title">基本信息${edit ? '（编辑中）' : ''}</div>
         <div class="form-grid">${basic}</div>
-      </div>
-      <div class="form-section">
-        <div class="form-section-title">接口说明</div>
-        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;">${esc(iface.desc || '—')}</div>
-        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);">
-          创建时间：${esc(job.createdAt)} · ${esc(iface.protocol || '')} · ${esc(iface.direction || '')} · ${esc(iface.biz || '')}
-        </div>
       </div>
       <div class="form-section">
         <div class="form-section-title">查询条件</div>
@@ -765,28 +755,30 @@ const ScheduledJob = {
     ];
   },
 
-  valueCtrl(p, val, part, show) {
+  valueCtrl(p, val, part, show, readonly) {
     const key = esc(p.key);
     const v = part === 1 ? val.value : val.value2;
     const base = 'flex:1;min-width:0;padding:8px 12px;border:1px solid #d1d5db;border-radius:var(--radius-sm);'
-      + 'font-size:13.5px;background:#fff;height:38px;box-sizing:border-box;';
+      + 'font-size:13.5px;height:38px;box-sizing:border-box;'
+      + (readonly ? 'background:#f1f5f9;color:#334155;border-color:#e2e8f0;' : 'background:#fff;');
     const style = base + (show ? '' : 'display:none;');
+    const ro = readonly ? ' disabled' : '';
     if (p.type === 'select') {
-      return `<select data-pkey="${key}" data-part="v${part}" style="${style}">
+      return `<select data-pkey="${key}" data-part="v${part}" style="${style}"${ro}>
         <option value="">— 请选择 —</option>
         ${(p.options || []).map(o => `<option value="${esc(o)}" ${String(v) === String(o) ? 'selected' : ''}>${esc(o)}</option>`).join('')}
       </select>`;
     }
     if (p.type === 'date') {
-      return `<input type="date" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" style="${style}">`;
+      return `<input type="date" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" style="${style}"${ro}>`;
     }
     if (p.type === 'number') {
-      return `<input type="number" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" placeholder="请输入数值" style="${style}">`;
+      return `<input type="number" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" placeholder="请输入数值" style="${style}"${ro}>`;
     }
-    return `<input type="text" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" placeholder="留空不限" style="${style}">`;
+    return `<input type="text" data-pkey="${key}" data-part="v${part}" value="${esc(v || '')}" placeholder="留空不限" style="${style}"${ro}>`;
   },
 
-  renderParamsForm(iface, values, selectable) {
+  renderParamsForm(iface, values, selectable, readonly) {
     const list = (iface && iface.params) || [];
     if (!list.length) return '<div class="form-help">该接口未定义参数模板，请联系系统管理员维护。</div>';
     const self = this;
@@ -808,20 +800,20 @@ const ScheduledJob = {
       let valueArea = '';
       if (p.type === 'switch') {
         valueArea = `<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:0;">
-            <input type="checkbox" data-pkey="${esc(p.key)}" data-part="v1" ${val.value ? 'checked' : ''} style="width:16px;height:16px;"> 是
+            <input type="checkbox" data-pkey="${esc(p.key)}" data-part="v1" ${val.value ? 'checked' : ''} ${readonly ? 'disabled' : ''} style="width:16px;height:16px;"> 是
           </label>`;
       } else {
         valueArea = `<div style="flex:1;display:flex;align-items:center;gap:10px;">`
-          + self.valueCtrl(p, val, 1, true)
+          + self.valueCtrl(p, val, 1, true, readonly)
           + `<span data-sep="${esc(p.key)}" style="color:#64748b;font-size:13px;flex-shrink:0;${range ? '' : 'display:none;'}">至</span>`
-          + self.valueCtrl(p, val, 2, range)
+          + self.valueCtrl(p, val, 2, range, readonly)
           + `</div>`;
       }
 
       /* 比较方式：所有字段统一 4 种（开关型不涉及） */
       const modeSel = (p.type === 'switch') ? '' : `
-        <select data-mode="${esc(p.key)}" onchange="ScheduledJob.toggleMode('${esc(p.key)}')"
-                style="width:150px;flex-shrink:0;padding:8px 10px;border:1px solid #d1d5db;border-radius:var(--radius-sm);font-size:13px;background:#fff;height:38px;box-sizing:border-box;">
+        <select data-mode="${esc(p.key)}" ${readonly ? 'disabled' : "onchange=\"ScheduledJob.toggleMode('" + esc(p.key) + "')\""}
+                style="width:150px;flex-shrink:0;padding:8px 10px;border:1px solid #d1d5db;border-radius:var(--radius-sm);font-size:13px;height:38px;box-sizing:border-box;${readonly ? 'background:#f1f5f9;color:#334155;border-color:#e2e8f0;' : 'background:#fff;'}">
           ${this.modeOptions().map(m => `<option value="${m.v}" ${val.mode === m.v ? 'selected' : ''}>${m.t}</option>`).join('')}
         </select>`;
 
