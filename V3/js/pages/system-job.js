@@ -373,7 +373,7 @@ const ScheduledJob = {
           <td style="font-family:monospace;font-size:12px;">${esc(j.code)}</td>
           <td>${esc(j.name)}</td>
           <td style="font-size:12px;">${esc(ifaceLabel(j.iface))}</td>
-          <td>${esc(j.cronText)}<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">${esc(self.cronFullText(j))}</div></td>
+          <td>${esc(j.cronText)}</td>
           <td>${self.jobStatusBadge(j.status)}</td>
           <td><div class="table-actions"><button class="btn btn-blue btn-sm" onclick="ScheduledJob.openJobView('${j.id}')">查看</button></div></td>
         </tr>`;
@@ -505,7 +505,6 @@ const ScheduledJob = {
         <label>执行周期 ${edit ? '<button type="button" class="btn btn-secondary btn-sm" style="margin-left:8px;padding:3px 10px;" onclick="ScheduledJob.collectEditDraft();ScheduledJob.openCronPicker(\'' + job.id + '\')">设置</button>' : ''}</label>
         <div style="padding:9px 0;font-size:13.5px;font-weight:600;color:#1f2937;">
           ${esc(job.cronText)}
-          <div style="margin-top:4px;font-family:monospace;font-size:11.5px;font-weight:400;color:var(--text-muted);">cron：${esc(this.cronFullText(job))}</div>
         </div>
       </div>`;
 
@@ -589,10 +588,6 @@ const ScheduledJob = {
       cronExtra: '',
       cronText: '每月 ' + (c.dayOfMonth || 1) + ' 日 ' + (c.time || '08:00')
     };
-  },
-
-  cronFullText(job) {
-    return job.cronExtra ? (job.cron + '；' + job.cronExtra) : job.cron;
   },
 
   /* 打开周期设置器：target = 'new' 表示新建表单，或传入 jobId 表示修改该 JOB */
@@ -700,9 +695,7 @@ const ScheduledJob = {
     const r = this.buildCron(conf);
     const el = document.getElementById('cronPreview');
     if (el) {
-      el.innerHTML = '<div style="margin-bottom:6px;"><strong>' + esc(r.cronText) + '</strong></div>'
-        + '<div style="font-family:monospace;font-size:12px;color:var(--text-muted);">cron：' + esc(r.cron)
-        + (r.cronExtra ? '；' + esc(r.cronExtra) : '') + '</div>';
+      el.innerHTML = '<div><strong>' + esc(r.cronText) + '</strong></div>';
     }
   },
 
