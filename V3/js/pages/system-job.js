@@ -509,6 +509,7 @@ const ScheduledJob = {
         </div>
       </div>`;
 
+    /* 字段顺序与新建任务保持一致：SAP 接口 / 任务编码 / 任务名称 / 状态 / 执行周期(整行) / 备注(整行) */
     const basic = edit
       ? viewField('SAP 接口', esc(ifaceLabel(job.iface)))
         + viewField('任务编码', esc(job.code))
@@ -517,14 +518,14 @@ const ScheduledJob = {
             <option value="运行中" ${val('status', job.status) === '运行中' ? 'selected' : ''}>运行中</option>
             <option value="已暂停" ${val('status', job.status) === '已暂停' ? 'selected' : ''}>已暂停</option>
           </select>`)
-        + editField('备注', `<input id="editJobRemark" value="${esc(val('remark', job.remark))}" placeholder="选填">`, true)
         + cronBlock
+        + editField('备注', `<input id="editJobRemark" value="${esc(val('remark', job.remark))}" placeholder="选填">`, true)
       : viewField('SAP 接口', esc(ifaceLabel(job.iface)))
         + viewField('任务编码', esc(job.code))
         + viewField('任务名称', esc(job.name))
         + viewField('状态', this.jobStatusBadge(job.status))
-        + viewField('备注', esc(job.remark || '—'), true)
-        + cronBlock;
+        + cronBlock
+        + viewField('备注', esc(job.remark || '—'), true);
 
     /* 查询条件：查看态用与新建/编辑一致的布局，控件只读 */
     const condBlock = this.renderParamsForm(iface, val('params', job.params), false, !edit);
@@ -1104,19 +1105,19 @@ const ScheduledJob = {
             </select>
             <div class="form-help" id="newJobIfaceDesc">选择接口后，下方会自动带出该接口的全部入参，可逐项勾选并设置条件。</div>
           </div>
-          <div class="form-group"><label>执行周期<span class="req">*</span></label>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <input id="newJobCronText" value="${this._newCron ? esc(this._newCron.cronText) : '每 10 分钟'}" readonly style="flex:1;background:#f8fafc;color:#1f2937;">
-              <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="ScheduledJob.openCronPicker('new')">设置</button>
-            </div>
-            <div class="form-help">支持固定频率、每天固定时间、时间窗内频率（如 08:00–17:00 每 10 分钟）、每周/每月</div></div>
           <div class="form-group"><label>任务编码</label>
             <input id="newJobCode" value="选择接口后自动生成" readonly style="background:#f8fafc;color:var(--text-secondary);">
             <div class="form-help">按「JOB_接口编号_序号」自动编号，如 JOB_PP0004_001</div></div>
           <div class="form-group"><label>任务名称<span class="req">*</span></label>
             <input id="newJobName" placeholder="如 SAP物料凭证同步（10分钟）"></div>
-          <div class="form-group"><label>创建后状态</label>
+          <div class="form-group"><label>状态</label>
             <select id="newJobStatus"><option value="运行中">运行中</option><option value="已暂停">已暂停</option></select></div>
+          <div class="form-group full"><label>执行周期<span class="req">*</span></label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input id="newJobCronText" value="${this._newCron ? esc(this._newCron.cronText) : '每 10 分钟'}" readonly style="flex:1;background:#f8fafc;color:#1f2937;">
+              <button type="button" class="btn btn-secondary btn-sm" style="flex-shrink:0;" onclick="ScheduledJob.openCronPicker('new')">设置</button>
+            </div>
+            <div class="form-help">支持固定频率、每天固定时间、时间窗内频率（如 08:00–17:00 每 10 分钟）、每周/每月</div></div>
           <div class="form-group full"><label>备注</label><input id="newJobRemark" placeholder="选填"></div>
         </div>
       </div>
