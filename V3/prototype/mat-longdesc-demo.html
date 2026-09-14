@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>物料长描述 · 列表展示方案对比</title>
+<link rel="stylesheet" href="../css/common.css">
+<style>
+  .demo-topbar {
+    background: linear-gradient(135deg, #1E3A5F, #2D5A87); color: #fff;
+    padding: 15px 24px; font-size: 15px; font-weight: 700;
+  }
+  .demo-topbar .sub { font-size: 12.5px; font-weight: 400; opacity: .82; margin-left: 10px; }
+  .demo-wrap { padding: 20px 24px 56px; max-width: 1440px; margin: 0 auto; }
+  .demo-intro {
+    font-size: 13px; color: #6b7280; line-height: 1.8; margin-bottom: 16px;
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px;
+  }
+  .demo-intro b { color: #1f2937; }
+
+  .demo-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .demo-tab {
+    padding: 9px 18px; border: 1px solid #e5e7eb; background: #fff; border-radius: 8px;
+    font-size: 13px; font-weight: 600; color: #6b7280; cursor: pointer; transition: all .18s;
+  }
+  .demo-tab:hover { border-color: #cbd5e1; color: #1f2937; }
+  .demo-tab.on { background: #1E3A5F; color: #fff; border-color: #1E3A5F; }
+
+  .scheme-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .scheme-card .name { font-size: 15px; font-weight: 700; color: #1E3A5F; display: flex; align-items: center; gap: 8px; }
+  .scheme-card .desc { font-size: 13px; color: #4b5563; margin-top: 7px; line-height: 1.75; }
+  .pros-cons { display: flex; gap: 28px; margin-top: 14px; font-size: 12.5px; flex-wrap: wrap; }
+  .pros-cons .col { flex: 1 1 220px; }
+  .pros-cons .col h4 {
+    font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 7px; font-weight: 700;
+  }
+  .pros-cons .col p { color: #4b5563; line-height: 2; margin: 0; }
+  .tag { display: inline-block; width: 15px; text-align: center; border-radius: 4px; font-size: 11px; font-weight: 700; margin-right: 6px; }
+  .tag-pro { background: rgba(16,185,129,.12); color: #065f46; }
+  .tag-con { background: rgba(220,38,38,.08); color: #991b1b; }
+  .flag { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; background: rgba(59,130,246,.1); color: #1e40af; }
+
+  .d-toggle { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .d-state { font-size: 12.5px; color: #6b7280; }
+  .d-state b { color: #1E3A5F; }
+
+  .demo-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+  .demo-panel .table-wrapper { max-height: 540px; }
+  .demo-panel .data-table { min-width: auto; }
+  .mono { font-family: Consolas, 'SF Mono', Menlo, monospace; color: #1E3A5F; font-weight: 600; }
+
+  /* 方案 B 叠层 */
+  .cell-stack .main { color: #1f2937; }
+  .cell-stack .sub {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    font-size: 12px; color: #9ca3af; line-height: 1.55; margin-top: 3px;
+  }
+
+  /* 方案 C / D 单行省略 */
+  .truncate {
+    display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: help; color: #4b5563;
+  }
+  .empty { color: #cbd5e1; }
+
+  /* 悬浮全文浮层 */
+  .demo-tip {
+    position: fixed; z-index: 9999; max-width: 400px; padding: 10px 13px;
+    background: #1E293B; color: #fff; font-size: 12.5px; line-height: 1.7;
+    border-radius: 8px; box-shadow: 0 8px 24px rgba(15,23,42,.25);
+    display: none; white-space: normal; pointer-events: none;
+  }
+
+  /* 详情弹窗 */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; margin-bottom: 22px; }
+  .detail-grid .k { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 3px; }
+  .detail-grid .v { font-size: 14px; color: #1f2937; }
+  .long-block { border-top: 1px solid #e5e7eb; padding-top: 16px; }
+  .long-title { font-size: 13px; font-weight: 700; color: #1E3A5F; margin-bottom: 9px; }
+  .long-text {
+    font-size: 13.5px; color: #374151; line-height: 1.9; white-space: pre-wrap; word-break: break-word;
+    background: #f8fafc; border: 1px solid #eef1f4; border-radius: 8px; padding: 14px 16px;
+  }
+  .long-empty {
+    font-size: 13px; color: #9ca3af; background: #f8fafc; border: 1px dashed #e5e7eb;
+    border-radius: 8px; padding: 14px 16px;
+  }
+</style>
+</head>
+<body>
+  <div class="demo-topbar">物料主数据 · 长描述展示方案对比 <span class="sub">Material Master / Long Description — 列表层展示方案</span></div>
+  <div class="demo-wrap">
+    <div class="demo-intro">
+      同一批 MRO 物料数据下，「物料长描述」（255 字符）的四种列表展示方案对比。数据中特意混合了<b>有长描述</b>与<b>无长描述</b>的物料。<br>
+      点击顶部页签切换方案；点击任意一行右侧的<b>「查看」</b>可以打开四种方案共用的<b>详情弹窗</b>（长描述完整展示）。方案 C / D 中，鼠标悬浮长描述单元格可查看全文。
+    </div>
+
+    <div class="demo-tabs" id="tabs">
+      <div class="demo-tab on" data-k="A">方案 A · 详情优先</div>
+      <div class="demo-tab" data-k="B">方案 B · 叠层显示</div>
+      <div class="demo-tab" data-k="C">方案 C · 独立列省略</div>
+      <div class="demo-tab" data-k="D">方案 D · 智能列</div>
+    </div>
+
+    <div id="panel"></div>
+  </div>
+
+  <!-- 详情弹窗（四方案共用） -->
+  <div class="modal-backdrop hidden" id="demoModal" onclick="if(event.target===this)closeDemoModal()">
+    <div class="modal modal-md">
+      <div class="modal-header">
+        <h2 class="modal-title" id="demoModalTitle">物料详情</h2>
+        <button class="modal-close" onclick="closeDemoModal()">×</button>
+      </div>
+      <div class="modal-body" id="demoModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeDemoModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const DATA = [
+    { code:'60000001', desc:'大桶-天兰',          long:'', type:'耗材及其他', unit:'件' },
+    { code:'61001001', desc:'深沟球轴承',          long:'SKF 6205-2RS1 深沟球轴承，内径 25mm / 外径 52mm / 厚度 15mm，双侧丁腈橡胶密封，C3 游隙，适用于 3# 包装线主传动轴减速箱输入轴端，可替代原 FAG 6205。', type:'备品备件', unit:'个' },
+    { code:'60000002', desc:'洁净区服-蓝',         long:'', type:'耗材及其他', unit:'套' },
+    { code:'61001002', desc:'通用变频器',          long:'ABB ACS580-01-12A6-4 通用型变频器，额定功率 5.5kW，额定电流 12.6A，三相 380V，内置 EMC 滤波器 C2 级，标配中文操作面板及 Modbus RTU 通讯接口，用于 2# 灌装线输送电机调速。', type:'备品备件', unit:'台' },
+    { code:'61001003', desc:'抗磨液压油',          long:'美孚 DTE 25 抗磨液压油，黏度等级 ISO VG 46，18L/桶，适用于注塑机及液压站高压系统，工作温度范围 -10℃ ~ 90℃，建议换油周期 4000 小时。', type:'辅料', unit:'桶' },
+    { code:'61001004', desc:'三相异步电机',        long:'', type:'备品备件', unit:'台' },
+    { code:'61001005', desc:'压缩空气过滤芯',      long:'Atlas Copco 1613-8722-00 精密过滤芯，过滤精度 0.01μm，残余油含量 ≤0.01mg/m³，适用于 GA55 空压机后置干燥过滤器，建议更换周期 4000 小时。', type:'备品备件', unit:'支' },
+    { code:'60000010', desc:'工服袋',              long:'', type:'耗材及其他', unit:'个' }
+  ];
+
+  const META = {
+    A: {
+      name: '方案 A · 详情优先', flag: '最克制',
+      desc: '列表完全不出现长描述，仅保留短描述列；长描述只在「查看」详情弹窗里完整展示。',
+      pros: ['列表最干净，行高统一', '完全贴合现有中性商务风', '长文本在详情里完整可读、无截断'],
+      cons: ['列表里完全看不到长描述', '必须点开详情才能知道有没有'],
+      fit: '长描述内容长、查看频率低、以短描述检索为主的场景。'
+    },
+    B: {
+      name: '方案 B · 叠层显示', flag: '信息密度高',
+      desc: '长描述并入「物料描述」列：第一行是短描述，第二行小字灰色显示长描述，最多 2 行截断；无长描述时只显示一行。',
+      pros: ['不点开就能扫到长描述开头', '有值/无值一目了然'],
+      cons: ['行高不齐，长文本行明显变高', '255 字符截断后信息量有限', '表格整体容易显乱'],
+      fit: '长描述普遍偏短（一两行内）、强调「一眼看全」的场景。'
+    },
+    C: {
+      name: '方案 C · 独立列省略', flag: '结构规整',
+      desc: '单独增加「长描述」列，单元格单行省略显示，鼠标悬浮弹出浮层查看全文；无值显示「—」。',
+      pros: ['列对齐、结构整齐', '有值/无值一眼可辨', '悬浮即可看全文'],
+      cons: ['单行省略信息量低', '必须悬浮才能看全，触屏不友好'],
+      fit: '长描述长度中等、希望列表能直观感知「有无」的场景。'
+    },
+    D: {
+      name: '方案 D · 智能列', flag: '推荐候选',
+      desc: '在方案 C 基础上做增强：仅当当前筛选结果中「存在长描述」时才显示该列；若结果全部无长描述，整列自动隐藏，避免大面积空白。',
+      pros: ['避免整列空白，不留无用列', '兼顾方案 C 的规整与可读性', '正好对应「不是所有物料都有值」'],
+      cons: ['列随筛选结果显隐，切换时可能轻微跳动'],
+      fit: '长描述覆盖率不稳定的数据（正是 MRO 物料的典型情况）。'
+    }
+  };
+
+  const esc = s => (s == null ? '' : String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])));
+  const viewBtn = code => `<button class="btn btn-blue btn-sm" onclick="openDetail('${code}')">查看</button>`;
+
+  let dOnlyNoLong = false;
+
+  function table(cols, rows) {
+    const th = cols.map(c => `<th${c.w ? ` style="width:${c.w}"` : ''}>${c.t}</th>`).join('');
+    return `<div class="demo-panel"><div class="table-wrapper">
+      <table class="data-table"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table>
+    </div></div>`;
+  }
+
+  function schemeA() {
+    const rows = DATA.map((m, i) => `<tr>
+      <td>${i + 1}</td>
+      <td class="mono">${esc(m.code)}</td>
+      <td>${esc(m.desc)}</td>
+      <td>${esc(m.type)}</td>
+      <td>${esc(m.unit)}</td>
+      <td>${viewBtn(m.code)}</td>
+    </tr>`).join('');
+    return table([
+      { t:'序号', w:'50px' }, { t:'物料号', w:'110px' }, { t:'物料描述', w:'200px' },
+      { t:'物料类型', w:'120px' }, { t:'基本单位', w:'90px' }, { t:'操作', w:'80px' }
+    ], rows);
+  }
+
+  function schemeB() {
+    const rows = DATA.map((m, i) => `<tr>
+      <td>${i + 1}</td>
+      <td class="mono">${esc(m.code)}</td>
+      <td style="min-width:360px;">
+        <div class="cell-stack">
+          <div class="main">${esc(m.desc)}</div>
+          ${m.long ? `<div class="sub" data-tip="${esc(m.long)}">${esc(m.long)}</div>` : ''}
+        </div>
+      </td>
+      <td>${esc(m.type)}</td>
+      <td>${esc(m.unit)}</td>
+      <td>${viewBtn(m.code)}</td>
+    </tr>`).join('');
+    return table([
+      { t:'序号', w:'50px' }, { t:'物料号', w:'110px' }, { t:'物料描述（含长描述）', w:'420px' },
+      { t:'物料类型', w:'120px' }, { t:'基本单位', w:'90px' }, { t:'操作', w:'80px' }
+    ], rows);
+  }
+
+  function longCell(m) {
+    return m.long
+      ? `<span class="truncate" data-tip="${esc(m.long)}">${esc(m.long)}</span>`
+      : `<span class="empty">—</span>`;
+  }
+
+  function schemeC() {
+    const rows = DATA.map((m, i) => `<tr>
+      <td>${i + 1}</td>
+      <td class="mono">${esc(m.code)}</td>
+      <td>${esc(m.desc)}</td>
+      <td>${longCell(m)}</td>
+      <td>${esc(m.type)}</td>
+      <td>${esc(m.unit)}</td>
+      <td>${viewBtn(m.code)}</td>
+    </tr>`).join('');
+    return table([
+      { t:'序号', w:'50px' }, { t:'物料号', w:'110px' }, { t:'物料描述', w:'170px' },
+      { t:'长描述', w:'280px' }, { t:'物料类型', w:'120px' }, { t:'基本单位', w:'90px' }, { t:'操作', w:'80px' }
+    ], rows);
+  }
+
+  function schemeD() {
+    const list = dOnlyNoLong ? DATA.filter(m => !m.long) : DATA;
+    const hasLong = list.some(m => m.long);
+    const cols = [{ t:'序号', w:'50px' }, { t:'物料号', w:'110px' }, { t:'物料描述', w:'170px' }];
+    if (hasLong) cols.push({ t:'长描述', w:'280px' });
+    cols.push({ t:'物料类型', w:'120px' }, { t:'基本单位', w:'90px' }, { t:'操作', w:'80px' });
+
+    const rows = list.map((m, i) => `<tr>
+      <td>${i + 1}</td>
+      <td class="mono">${esc(m.code)}</td>
+      <td>${esc(m.desc)}</td>
+      ${hasLong ? `<td>${longCell(m)}</td>` : ''}
+      <td>${esc(m.type)}</td>
+      <td>${esc(m.unit)}</td>
+      <td>${viewBtn(m.code)}</td>
+    </tr>`).join('');
+    return table(cols, rows);
+  }
+
+  function card(m, key) {
+    let extra = '';
+    if (key === 'D') {
+      extra = `<div class="d-toggle">
+        <button class="btn btn-secondary btn-sm" onclick="toggleD()">
+          ${dOnlyNoLong ? '← 切回：全部结果（含长描述）' : '切换为：仅无长描述的结果 →'}
+        </button>
+        <span class="d-state">当前筛选结果：${
+          dOnlyNoLong
+            ? '<b>仅无长描述</b> —— 长描述列已自动隐藏'
+            : '<b>含长描述</b> —— 长描述列出现'
+        }</span>
+      </div>`;
+    }
+    return `<div class="scheme-card">
+      <div class="name">${m.name}<span class="flag">${m.flag}</span></div>
+      <div class="desc">${m.desc}</div>
+      <div class="pros-cons">
+        <div class="col"><h4>优点</h4><p>${m.pros.map(p => `<span class="tag tag-pro">+</span>${p}`).join('<br>')}</p></div>
+        <div class="col"><h4>代价</h4><p>${m.cons.map(p => `<span class="tag tag-con">−</span>${p}`).join('<br>')}</p></div>
+        <div class="col"><h4>适用</h4><p>${m.fit}</p></div>
+      </div>
+      ${extra}
+    </div>`;
+  }
+
+  function render(key) {
+    const tableHtml = { A: schemeA, B: schemeB, C: schemeC, D: schemeD }[key]();
+    document.getElementById('panel').innerHTML = card(META[key], key) + tableHtml;
+  }
+
+  function toggleD() { dOnlyNoLong = !dOnlyNoLong; render('D'); }
+
+  function openDetail(code) {
+    const m = DATA.find(x => x.code === code);
+    if (!m) return;
+    document.getElementById('demoModalTitle').textContent = '物料详情 · ' + m.code;
+    document.getElementById('demoModalBody').innerHTML = `
+      <div class="detail-grid">
+        <div><span class="k">物料号</span><span class="v mono">${esc(m.code)}</span></div>
+        <div><span class="k">物料描述</span><span class="v">${esc(m.desc)}</span></div>
+        <div><span class="k">物料类型</span><span class="v">${esc(m.type)}</span></div>
+        <div><span class="k">基本单位</span><span class="v">${esc(m.unit)}</span></div>
+      </div>
+      <div class="long-block">
+        <div class="long-title">物料长描述</div>
+        ${m.long ? `<div class="long-text">${esc(m.long)}</div>` : `<div class="long-empty">暂无长描述</div>`}
+      </div>`;
+    document.getElementById('demoModal').classList.remove('hidden');
+  }
+  function closeDemoModal() { document.getElementById('demoModal').classList.add('hidden'); }
+
+  /* 悬浮全文浮层 */
+  let tipEl = null;
+  function getTip() {
+    if (!tipEl) { tipEl = document.createElement('div'); tipEl.className = 'demo-tip'; document.body.appendChild(tipEl); }
+    return tipEl;
+  }
+  function positionTip(t) {
+    const el = getTip();
+    const r = t.getBoundingClientRect();
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let left = r.left;
+    if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
+    let top = r.bottom + 8;
+    if (top + h > window.innerHeight - 12) top = r.top - h - 8;
+    el.style.left = Math.max(12, left) + 'px';
+    el.style.top = Math.max(12, top) + 'px';
+  }
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest && e.target.closest('[data-tip]');
+    if (!t) return;
+    const el = getTip();
+    el.textContent = t.getAttribute('data-tip');
+    el.style.display = 'block';
+    positionTip(t);
+  });
+  document.addEventListener('mousemove', e => {
+    if (tipEl && tipEl.style.display === 'block') {
+      const t = e.target.closest && e.target.closest('[data-tip]');
+      if (t) positionTip(t);
+    }
+  });
+  document.addEventListener('mouseout', e => {
+    const t = e.target.closest && e.target.closest('[data-tip]');
+    if (!t) return;
+    getTip().style.display = 'none';
+  });
+
+  document.getElementById('tabs').addEventListener('click', e => {
+    const t = e.target.closest('.demo-tab');
+    if (!t) return;
+    document.querySelectorAll('.demo-tab').forEach(x => x.classList.toggle('on', x === t));
+    render(t.dataset.k);
+  });
+
+  render('A');
+</script>
+</body>
+</html>
