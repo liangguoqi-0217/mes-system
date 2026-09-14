@@ -516,17 +516,6 @@ const SpPurchase = {
                 <button class="btn btn-primary" onclick="SpPurchase.downloadTemplate()" style="display:flex;align-items:center;gap:6px;white-space:nowrap;">
                   <span style="font-size:18px;">⬇</span> 下载 Excel 模板
                 </button>
-                <div style="font-size:12px;color:var(--text-muted);line-height:1.8;">
-                  模板中需填写：<strong>申请人、工厂、采购申请凭证类型</strong>（表头区）以及<strong>行项目明细</strong>；<br>
-                  部门、申请日期由系统按当前用户自动带出，无需填写。
-                </div>
-              </div>
-              <div style="margin-top:4px;padding:10px 0 6px;border-top:1px dashed var(--border);font-size:12px;color:var(--text-muted);line-height:1.9;">
-                暂无真实数据想快速体验？可下载
-                <a href="javascript:;" onclick="SpPurchase.downloadDemoData('ok')" style="color:var(--primary);font-weight:600;text-decoration:underline;">规范演示数据</a>
-                （上传即可体验导入全流程），或下载
-                <a href="javascript:;" onclick="SpPurchase.downloadDemoData('error')" style="color:var(--primary);font-weight:600;text-decoration:underline;">含错误演示数据</a>
-                （查看系统校验拦截与错误提示）。
               </div>
             </div>
 
