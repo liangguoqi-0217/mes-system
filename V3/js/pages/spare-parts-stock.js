@@ -280,20 +280,34 @@ const SparePartsStock = {
     if (btn) btn.textContent = this.showExtCols ? '收起次要字段' : '展开次要字段';
   },
 
-  // 显示类型联动：工厂层级档隐藏 WBS编号/批次、置灰库存地点；其余档位恢复
+  // 显示类型联动：
+  // - 批次汇总(1)：批次字段已聚合到行上，作为查询条件无意义 -> 置灰并清空
+  // - 工厂层级(2)：隐藏 WBS编号/批次、置灰库存地点
+  // - 明细(空)：全部恢复可用
   _syncFilterStates() {
-    const isPlant = document.getElementById('spDisplayType').value === '2';
+    const type = document.getElementById('spDisplayType').value;
+    const isPlant = type === '2';
+    const isBatchSummary = type === '1';
     const locSel = document.getElementById('spStorageLoc');
     const wbsGroup = document.getElementById('spWbsGroup');
     const batchGroup = document.getElementById('spBatchGroup');
+    const batchInput = document.getElementById('spBatch');
     if (locSel) locSel.disabled = isPlant;
     if (wbsGroup) wbsGroup.style.display = isPlant ? 'none' : '';
     if (batchGroup) batchGroup.style.display = isPlant ? 'none' : '';
+    if (batchInput) {
+      batchInput.disabled = isBatchSummary;
+      batchInput.title = isBatchSummary ? '批次汇总下不参与筛选' : '';
+      batchInput.style.cursor = isBatchSummary ? 'not-allowed' : '';
+      batchInput.style.background = isBatchSummary ? '#f1f5f9' : '';
+      if (isBatchSummary) batchInput.value = '';
+    }
   },
 
-  // 切换显示类型：切到工厂层级时清空无效筛选值，避免残留值参与查询
+  // 切换显示类型：切到工厂层级/批次汇总时清空失效的筛选值，避免残留值参与查询
   onDisplayTypeChange() {
-    if (document.getElementById('spDisplayType').value === '2') {
+    const type = document.getElementById('spDisplayType').value;
+    if (type === '2') {
       document.getElementById('spStorageLoc').value = '';
       document.getElementById('spWbsNo').value = '';
       document.getElementById('spBatch').value = '';
@@ -308,7 +322,8 @@ const SparePartsStock = {
     const wbsNo = document.getElementById('spWbsNo').value.trim();
     const matType = document.getElementById('spMatType').value;
     const matCode = document.getElementById('spMatCode').value.trim();
-    const batch = document.getElementById('spBatch').value.trim();
+    const batchEl = document.getElementById('spBatch');
+    const batch = (batchEl && batchEl.disabled) ? '' : (batchEl ? batchEl.value.trim() : '');
 
     this.filtered = sparePartsStockData.filter(row => {
       if (this._isConfidential(row.factory, row.storageLoc)) return false;
