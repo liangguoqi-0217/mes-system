@@ -919,16 +919,25 @@ tr.locked td { background: #fafbfc; }
 .qv-form-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
 .qv-form-foot .qv-check { margin-top: 0; }
 
-.qv-card {
+.qv-table-wrap {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: all .15s;
+  max-height: 330px; overflow-y: auto; background: #fff;
 }
-.qv-card:hover { border-color: var(--primary); background: #f8fafc; }
-.qv-card.active { border-color: var(--primary); background: rgba(30, 58, 95, 0.04); }
-.qv-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.qv-card-name { font-size: 14.5px; font-weight: 700; }
+.qv-table { min-width: 720px; }
+.qv-table tbody tr { cursor: pointer; }
+.qv-table tbody tr.qv-row-active { background: rgba(30, 58, 95, 0.05); }
+.qv-table tbody tr.qv-row-active:hover { background: rgba(30, 58, 95, 0.08); }
+.qv-table .qv-code {
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  font-size: 12px; color: var(--text-secondary); white-space: nowrap;
+}
+.qv-table .qv-name { font-weight: 600; color: var(--text); }
+.qv-table .qv-num { text-align: right; font-variant-numeric: tabular-nums; }
+.qv-table .qv-time { color: var(--text-secondary); white-space: nowrap; }
+.qv-table .qv-ops { text-align: right; white-space: nowrap; }
+.qv-table .qv-ops .btn { padding: 3px 9px; font-size: 11px; margin-left: 4px; }
 
-.qv-ops-disabled { font-size: 12px; color: var(--text-muted); padding: 0 6px; }
+.qv-ops-disabled { font-size: 12px; color: var(--text-muted); padding: 0 4px; }
 .qv-tag {
   display: inline-block; font-size: 10.5px; font-weight: 600; color: var(--primary);
   background: rgba(30, 58, 95, 0.07); border-radius: 4px; padding: 1px 6px; vertical-align: 1px;

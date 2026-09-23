@@ -43,6 +43,14 @@ window.QueryVariant = (function () {
   function _now() { return new Date().toISOString(); }
   function _newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function _pad(n) { return n < 10 ? '0' + n : String(n); }
+  // ISO -> YYYY-MM-DD HH:mm（本地时间），空值显示 —
+  function _fmt(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.getFullYear() + '-' + _pad(d.getMonth() + 1) + '-' + _pad(d.getDate()) +
+      ' ' + _pad(d.getHours()) + ':' + _pad(d.getMinutes());
+  }
   function _stamp(d) {
     return d.getFullYear() + _pad(d.getMonth() + 1) + _pad(d.getDate()) +
       '-' + _pad(d.getHours()) + _pad(d.getMinutes()) + _pad(d.getSeconds());
@@ -326,28 +334,31 @@ window.QueryVariant = (function () {
     if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
+  // 已保存变式列表（表格行，tbody 内容）
   function _listHtml(pageId) {
     const items = _variants(pageId);
     if (!items.length) {
-      return '<div class="qv-empty">还没有保存任何变式。<br>填好筛选条件后，在下方输入名称保存。</div>';
+      return '<tr><td colspan="6"><div class="qv-empty">还没有保存任何变式。<br>填好筛选条件后，在下方输入名称保存。</div></td></tr>';
     }
     const curId = (_state[pageId] && _state[pageId].currentId) || '';
+    const del = 'event.stopPropagation();QueryVariant.remove(\'' + pageId + '\',';
+    const def = 'event.stopPropagation();QueryVariant.setDefault(\'' + pageId + '\',';
     return items.map(v => {
       const active = v.id === curId;
-      return '<div class="qv-card' + (active ? ' active' : '') + '" ' +
-        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')" ' +
-        'title="变式编码：' + _esc(v.variant_code || '-') + '　（点击应用该变式）">' +
-        '<div class="qv-card-top">' +
-        '<span class="qv-card-name">' + _esc(v.variant_name) +
-        (v.is_default ? ' <span class="qv-tag">默认</span>' : '') +
-        (active ? ' <span class="qv-tag qv-tag-now">当前</span>' : '') + '</span>' +
-        '<span class="qv-card-ops">' +
+      return '<tr class="' + (active ? 'qv-row-active' : '') + '" ' +
+        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')" title="点击应用该变式">' +
+        '<td class="qv-code">' + _esc(v.variant_code || '-') + '</td>' +
+        '<td class="qv-name">' + _esc(v.variant_name) +
+        (active ? ' <span class="qv-tag qv-tag-now">当前</span>' : '') + '</td>' +
+        '<td>' + (v.is_default ? '<span class="qv-tag">默认</span>' : '') + '</td>' +
+        '<td class="qv-num">' + (v.use_count || 0) + '</td>' +
+        '<td class="qv-time">' + _fmt(v.last_used_at) + '</td>' +
+        '<td class="qv-ops">' +
         (v.is_default
           ? '<span class="qv-ops-disabled">已默认</span>'
-          : '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();QueryVariant.setDefault(\'' + pageId + '\',\'' + v.id + '\')">设为默认</button>') +
-        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();QueryVariant.remove(\'' + pageId + '\',\'' + v.id + '\')">删除</button>' +
-        '</span></div>' +
-        '</div>';
+          : '<button class="btn btn-secondary btn-sm" onclick="' + def + '\'' + v.id + '\')">设为默认</button>') +
+        '<button class="btn btn-danger btn-sm" onclick="' + del + '\'' + v.id + '\')">删除</button>' +
+        '</td></tr>';
     }).join('');
   }
 
@@ -365,7 +376,18 @@ window.QueryVariant = (function () {
       '<div class="modal-body">' +
       '<div class="qv-section">' +
       '<div class="qv-sec-title">已保存的变式</div>' +
-      '<div id="qvListWrap">' + _listHtml(pageId) + '</div>' +
+      '<div class="qv-table-wrap">' +
+      '<table class="data-table data-table-compact qv-table">' +
+      '<thead><tr>' +
+      '<th style="width:180px;">变式编码</th>' +
+      '<th>变式名称</th>' +
+      '<th style="width:70px;">默认</th>' +
+      '<th style="width:80px;" class="qv-num">使用次数</th>' +
+      '<th style="width:130px;">最近使用</th>' +
+      '<th style="width:150px;text-align:right;">操作</th>' +
+      '</tr></thead>' +
+      '<tbody id="qvListWrap">' + _listHtml(pageId) + '</tbody>' +
+      '</table></div>' +
       '</div>' +
       '<div class="qv-section qv-save-section">' +
       '<div class="qv-sec-title">保存当前条件为新变式</div>' +
