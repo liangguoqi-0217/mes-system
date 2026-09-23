@@ -58,6 +58,35 @@ const MDL_COLUMNS = [
   { key: 'operator', label: '操作员', width: 80 }
 ];
 
+/* 查询条件分组配置：按业务语义分组，全部字段默认平铺可见（不隐藏），
+ * 通过「分组标题 + 紧凑网格 + 已填高亮 + 已填计数」解决字段多时的杂乱感。 */
+const MDL_FILTER_GROUPS = [
+  {
+    id: 'doc', title: '凭证信息', fields: [
+      { id: 'mdlDocNo', label: '物料凭证号', type: 'text', ph: '如 4900000101' },
+      { id: 'mdlDateFrom', label: '过账日期 起', type: 'date' },
+      { id: 'mdlDateTo', label: '过账日期 止', type: 'date' },
+      { id: 'mdlMoveType', label: '移动类型', type: 'select', opts: 'moveType' },
+      { id: 'mdlDocStatus', label: '凭证状态', type: 'select', opts: 'docStatus' },
+      { id: 'mdlOperator', label: '操作员', type: 'text', ph: '过账人' }
+    ]
+  },
+  {
+    id: 'mat', title: '物料与组织', fields: [
+      { id: 'mdlMatCode', label: '物料号', type: 'text', ph: '编码 / 描述' },
+      { id: 'mdlPlant', label: '工厂', type: 'select', opts: 'plant' }
+    ]
+  },
+  {
+    id: 'acct', title: '账户分配', fields: [
+      { id: 'mdlOrderNo', label: '订单/网络', type: 'text', ph: '内部订单 / 流程订单' },
+      { id: 'mdlResNo', label: '预留号', type: 'text', ph: '如 0000000111' },
+      { id: 'mdlWbs', label: 'WBS编号', type: 'text', ph: 'WBS 元素' },
+      { id: 'mdlCostCenter', label: '成本中心', type: 'text', ph: '如 CC-1002' }
+    ]
+  }
+];
+
 const MaterialDocList = {
   _version: '1.0-20260923',
   page: 1, pageSize: 10,
@@ -231,8 +260,26 @@ const MaterialDocList = {
           <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="MaterialDocList.refresh()">🔄 刷新数据</button>
         </div>
 
+        <style>
+          .mdl-filter{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px 12px;}
+          .mdl-filter-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+          .mdl-filter-sum{font-size:12px;color:var(--text-muted);}
+          .mdl-fgroup{margin-bottom:6px;}
+          .mdl-fgroup:last-child{margin-bottom:0;}
+          .mdl-fgroup-head{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer;user-select:none;}
+          .mdl-fg-title{font-size:12px;font-weight:700;color:var(--text-secondary);letter-spacing:.4px;}
+          .mdl-fg-count{font-size:11px;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;border-radius:9px;padding:0 7px;}
+          .mdl-fg-clear{font-size:11px;color:var(--text-muted);margin-left:auto;}
+          .mdl-fg-clear:hover{color:var(--danger);text-decoration:underline;}
+          .mdl-fg-caret{font-size:10px;color:var(--text-muted);}
+          .mdl-fgroup-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:8px 14px;padding:2px 0 4px;}
+          .mdl-field label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:3px;white-space:nowrap;}
+          .mdl-field input,.mdl-field select{width:100%;height:30px;border:1px solid var(--border);border-radius:4px;padding:0 8px;font-size:13px;background:#fff;box-sizing:border-box;}
+          .mdl-field input:focus,.mdl-field select:focus{outline:none;border-color:var(--primary);}
+          .mdl-field.filled label{color:#2563eb;font-weight:600;}
+          .mdl-field.filled input,.mdl-field.filled select{border-color:#93c5fd;background:#f8fbff;}
+        </style>
         <div id="mdlFilterBar" style="flex-shrink:0;"></div>
-        <div id="mdlStats" style="flex-shrink:0;"></div>
         <div class="table-wrapper" style="flex:1;overflow:auto;" id="mdlTableWrapper"></div>
         <div id="mdlPagination" style="flex-shrink:0;"></div>
         <div id="mdlModalContainer"></div>
@@ -240,14 +287,14 @@ const MaterialDocList = {
   },
 
   init() {
-    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    // 先渲染筛选栏：控件存在后，查询变式才能把默认/上次条件回填进去
+    this.renderFilterBar();
     if (window.QueryVariant) {
       QueryVariant.mount('material-doc-list');
       QueryVariant.restore('material-doc-list');
       QueryVariant.bindRecent('material-doc-list');
     }
-    this.renderFilterBar();
-    this.renderStats();
+    this.updateFilled();
     this.renderTable();
     this.renderPagination();
   },
@@ -263,61 +310,129 @@ const MaterialDocList = {
   renderFilterBar() {
     const el = document.getElementById('mdlFilterBar');
     if (!el) return;
-    const moveOpts = Object.keys(MDL_MOVE_TYPE_TEXT)
-      .map(k => `<option value="${k}">${k} ${MDL_MOVE_TYPE_TEXT[k]}</option>`).join('');
-    const plantOpts = Object.keys(MDL_PLANT_TEXT)
-      .map(k => `<option value="${k}">${k} ${MDL_PLANT_TEXT[k]}</option>`).join('');
 
-    el.innerHTML = `
-      <div class="filter-bar">
-        <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
-        <div class="filter-group"><label>过账日期 起</label><input type="date" id="mdlDateFrom"></div>
-        <div class="filter-group"><label>过账日期 止</label><input type="date" id="mdlDateTo"></div>
-        <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码"></div>
-        <div class="filter-group"><label>移动类型</label><select id="mdlMoveType"><option value="">全部</option>${moveOpts}</select></div>
-        <div class="filter-group"><label>工厂</label><select id="mdlPlant"><option value="">全部</option>${plantOpts}</select></div>
-        <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
-          <option value="valid">仅有效凭证</option>
+    const optsHtml = (f) => {
+      if (f.opts === 'moveType') {
+        return '<option value="">全部</option>' + Object.keys(MDL_MOVE_TYPE_TEXT)
+          .map(k => `<option value="${k}">${k} ${MDL_MOVE_TYPE_TEXT[k]}</option>`).join('');
+      }
+      if (f.opts === 'plant') {
+        return '<option value="">全部</option>' + Object.keys(MDL_PLANT_TEXT)
+          .map(k => `<option value="${k}">${k} ${MDL_PLANT_TEXT[k]}</option>`).join('');
+      }
+      if (f.opts === 'docStatus') {
+        return `<option value="valid">仅有效凭证</option>
           <option value="all">全部凭证</option>
           <option value="reversed">仅被冲销凭证</option>
-          <option value="reversal">仅冲销凭证</option>
-        </select></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="MaterialDocList.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.resetFilter()">重置</button>
-          <button class="btn btn-secondary btn-sm" id="mdlMoreBtn" onclick="MaterialDocList.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
+          <option value="reversal">仅冲销凭证</option>`;
+      }
+      return '';
+    };
+
+    const groupsHtml = MDL_FILTER_GROUPS.map(g => `
+      <div class="mdl-fgroup">
+        <div class="mdl-fgroup-head" onclick="MaterialDocList.toggleGroup('${g.id}')">
+          <span class="mdl-fg-title">${g.title}</span>
+          <span class="mdl-fg-count" id="mdlCnt_${g.id}" style="display:none;"></span>
+          <span class="mdl-fg-clear" onclick="event.stopPropagation();MaterialDocList.clearGroup('${g.id}')">清空本组</span>
+          <span class="mdl-fg-caret" id="mdlCaret_${g.id}">▾</span>
         </div>
-      </div>
-      <div class="filter-bar mdl-more-bar" id="mdlMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};background:#fff;border-top:1px dashed var(--border);">
-        <div class="filter-group"><label>订单/网络</label><input type="text" id="mdlOrderNo" placeholder="内部订单/流程订单"></div>
-        <div class="filter-group"><label>预留号</label><input type="text" id="mdlResNo" placeholder="如 0000000111"></div>
-        <div class="filter-group"><label>WBS编号</label><input type="text" id="mdlWbs" placeholder="WBS 元素"></div>
-        <div class="filter-group"><label>成本中心</label><input type="text" id="mdlCostCenter" placeholder="如 CC-1002"></div>
-        <div class="filter-group"><label>操作员</label><input type="text" id="mdlOperator" placeholder="过账人"></div>
+        <div class="mdl-fgroup-body" id="mdlBody_${g.id}">
+          ${g.fields.map(f => `
+          <div class="mdl-field" id="mdlWrap_${f.id}">
+            <label>${f.label}</label>
+            ${f.type === 'select'
+              ? `<select id="${f.id}">${optsHtml(f)}</select>`
+              : `<input type="${f.type}" id="${f.id}" placeholder="${f.ph || ''}">`}
+          </div>`).join('')}
+        </div>
+      </div>`).join('');
+
+    el.innerHTML = `
+      <div class="mdl-filter">
+        <div class="mdl-filter-top">
+          <span class="mdl-filter-sum" id="mdlFilterSum"></span>
+          <div class="filter-actions">
+            <button class="btn btn-primary btn-sm" onclick="MaterialDocList.search()">查询</button>
+            <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.resetFilter()">重置</button>
+          </div>
+        </div>
+        ${groupsHtml}
       </div>`;
+
+    // 字段值变化 -> 实时更新已填高亮与计数
+    MDL_FILTER_GROUPS.forEach(g => g.fields.forEach(f => {
+      const c = document.getElementById(f.id);
+      if (!c) return;
+      const h = () => this.updateFilled();
+      c.addEventListener('input', h);
+      c.addEventListener('change', h);
+    }));
+
+    this._applyGroupState();
+    this.updateFilled();
   },
 
-  toggleMore() {
-    this.moreOpen = !this.moreOpen;
-    const bar = document.getElementById('mdlMoreBar');
-    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
-    // 用 id 定位：查询变式的「我的变式」按钮也会被插到 filter-actions 末尾，不能用 :last-child
-    const btn = document.getElementById('mdlMoreBtn');
-    if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
+  // 分组折叠（状态记忆到 localStorage，默认展开）
+  toggleGroup(gid) {
+    const body = document.getElementById('mdlBody_' + gid);
+    const caret = document.getElementById('mdlCaret_' + gid);
+    if (!body) return;
+    const willShow = body.style.display === 'none';
+    body.style.display = willShow ? 'grid' : 'none';
+    if (caret) caret.textContent = willShow ? '▾' : '▸';
+    try { localStorage.setItem('mdl_group_' + gid, willShow ? '1' : '0'); } catch (e) {}
   },
 
-  renderStats() {
-    const el = document.getElementById('mdlStats');
-    if (!el) return;
-    const normal = this.flatRows.filter(r => r.docCategory === 'NORMAL').length;
-    const reversed = this.flatRows.filter(r => r.docCategory === 'REVERSED').length;
-    const reversal = this.flatRows.filter(r => r.docCategory === 'REVERSAL').length;
-    el.innerHTML = `<div class="stats-row" style="margin:10px 24px 0;">
-      <div class="stat-card"><div class="stat-value">${this.flatRows.length}</div><div class="stat-label">物料凭证行</div></div>
-      <div class="stat-card"><div class="stat-value" style="color:var(--primary);">${normal}</div><div class="stat-label">有效凭证</div></div>
-      <div class="stat-card"><div class="stat-value" style="color:var(--danger);">${reversed}</div><div class="stat-label">被冲销凭证</div></div>
-      <div class="stat-card"><div class="stat-value" style="color:var(--warning);">${reversal}</div><div class="stat-label">冲销凭证</div></div>
-    </div>`;
+  _applyGroupState() {
+    MDL_FILTER_GROUPS.forEach(g => {
+      let open = true;
+      try { if (localStorage.getItem('mdl_group_' + g.id) === '0') open = false; } catch (e) {}
+      const body = document.getElementById('mdlBody_' + g.id);
+      const caret = document.getElementById('mdlCaret_' + g.id);
+      if (body) body.style.display = open ? 'grid' : 'none';
+      if (caret) caret.textContent = open ? '▾' : '▸';
+    });
+  },
+
+  clearGroup(gid) {
+    const g = MDL_FILTER_GROUPS.find(x => x.id === gid);
+    if (!g) return;
+    g.fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (!el) return;
+      el.value = (f.id === 'mdlDocStatus') ? 'valid' : '';
+    });
+    this.updateFilled();
+    this.search();
+  },
+
+  // 已填字段高亮 + 分组/全局条件计数
+  updateFilled() {
+    let filled = 0, total = 0;
+    MDL_FILTER_GROUPS.forEach(g => {
+      let cnt = 0;
+      g.fields.forEach(f => {
+        const el = document.getElementById(f.id);
+        if (!el) return;
+        const v = String(el.value || '').trim();
+        // 凭证状态默认值 valid 视为未填，避免一进页面就计 1
+        const isFilled = (f.id === 'mdlDocStatus') ? (!!v && v !== 'valid') : !!v;
+        const wrap = document.getElementById('mdlWrap_' + f.id);
+        if (wrap) wrap.classList.toggle('filled', isFilled);
+        if (isFilled) cnt++;
+        total++;
+      });
+      const c = document.getElementById('mdlCnt_' + g.id);
+      if (c) { c.textContent = '已填 ' + cnt; c.style.display = cnt ? '' : 'none'; }
+      filled += cnt;
+    });
+    const sum = document.getElementById('mdlFilterSum');
+    if (sum) {
+      sum.innerHTML = filled
+        ? `已填 <b style="color:var(--primary);">${filled}</b> / ${total} 个查询条件`
+        : `共 ${total} 个查询条件，未填写`;
+    }
   },
 
   _val(id) {
@@ -343,6 +458,7 @@ const MaterialDocList = {
       const e = document.getElementById(id); if (e) e.value = '';
     });
     const st = document.getElementById('mdlDocStatus'); if (st) st.value = 'valid';
+    this.updateFilled();
     this.search();
 
     // 查询变式：重置时解除变式选中并清除"上次查询条件"
