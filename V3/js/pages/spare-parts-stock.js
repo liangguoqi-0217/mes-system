@@ -84,6 +84,7 @@ const SparePartsStock = {
           </select></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
           <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
+          ${window.QueryVariant ? QueryVariant.barHtml('sp-stock') : ''}
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SparePartsStock.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
@@ -110,6 +111,8 @@ const SparePartsStock = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) QueryVariant.restore('sp-stock');
     this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
     this.page = 1;
     const displayType = document.getElementById('spDisplayType').value;
@@ -117,6 +120,8 @@ const SparePartsStock = {
     else if (displayType === '2') this._aggregateByPlant();
     this.renderTable();
     this._syncFilterStates();
+    // 查询变式：文本字段绑定"最近输入"下拉
+    if (window.QueryVariant) QueryVariant.bindRecent('sp-stock');
   },
 
   // 保密库位判断（factory|storageLoc 与 CONFIDENTIAL_STORAGE_LOCS 匹配）
@@ -342,6 +347,12 @@ const SparePartsStock = {
 
     this.page = 1;
     this.renderTable();
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('sp-stock');
+      QueryVariant.recordUsed('sp-stock');
+      QueryVariant.syncOptions('sp-stock');
+    }
   },
 
   reset() {
@@ -353,10 +364,12 @@ const SparePartsStock = {
     document.getElementById('spMatCode').value = '';
     document.getElementById('spBatch').value = '';
     this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
-    this._aggregate();
+    // 显示类型已重置为"明细"，此处不再聚合（原逻辑无条件聚合会导致表头与数据不符）
     this.page = 1;
     this.renderTable();
     this._syncFilterStates();
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('sp-stock');
   },
 
   prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
@@ -367,6 +380,21 @@ const SparePartsStock = {
     toast('数据导出功能开发中...');
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'sp-stock',
+    fields: ['spFactory', 'spStorageLoc', 'spDisplayType', 'spWbsNo', 'spMatType', 'spMatCode', 'spBatch'],
+    textFields: ['spWbsNo', 'spMatCode', 'spBatch'],
+    labels: {
+      spFactory: '工厂', spStorageLoc: '库位', spDisplayType: '显示类型',
+      spWbsNo: 'WBS编号', spMatType: '物料类型', spMatCode: '物料号', spBatch: '批次'
+    },
+    onApply: function () { SparePartsStock.search(); },            // 用户主动选变式 -> 立即查询
+    onRestore: function () { SparePartsStock._syncFilterStates(); } // 回填后同步置灰/显隐联动
+  });
+}
 
 // ===== Demo Data for Spare Parts Stock =====
 const sparePartsStockData = [
