@@ -287,7 +287,7 @@ const MaterialDocList = {
           <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" id="mdlMoreBtn" onclick="MaterialDocList.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
-        <div id="mdlMoreBar" style="display:${this.moreOpen ? 'contents' : 'none'};">
+        <div id="mdlMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码 / 描述"></div>
           <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
@@ -308,7 +308,7 @@ const MaterialDocList = {
   toggleMore() {
     this.moreOpen = !this.moreOpen;
     const bar = document.getElementById('mdlMoreBar');
-    if (bar) bar.style.display = this.moreOpen ? 'contents' : 'none';
+    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
     // 用 id 定位：查询变式的「我的变式」按钮也会被插到 filter-actions 末尾，不能用 :last-child
     const btn = document.getElementById('mdlMoreBtn');
     if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
