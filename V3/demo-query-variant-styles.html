@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>查询变式 - 三种界面方案对比</title>
+<link rel="stylesheet" href="css/common.css">
+<style>
+  body { margin:0; background:#f1f5f9; font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif; color:#1f2937; }
+  .demo-top {
+    background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff;
+    padding:22px 32px;
+  }
+  .demo-top h1 { margin:0 0 6px; font-size:20px; font-weight:700; }
+  .demo-top p { margin:0; font-size:13px; opacity:.85; line-height:1.6; }
+  .demo-wrap { padding:24px 32px 60px; display:flex; flex-direction:column; gap:26px; }
+
+  .demo-case { background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+  .demo-case-head { padding:16px 22px; border-bottom:1px solid var(--border); background:#fafbfc; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; }
+  .demo-badge {
+    background:var(--primary); color:#fff; font-size:12px; font-weight:700;
+    border-radius:4px; padding:3px 9px; letter-spacing:.5px;
+  }
+  .demo-badge.alt { background:#475569; }
+  .demo-case-head h3 { margin:0; font-size:16px; font-weight:700; }
+  .demo-case-head p { margin:0; font-size:12.5px; color:var(--text-secondary); }
+
+  /* 仿真页面外壳 */
+  .fake-page { border:1px solid var(--border); margin:20px 22px; border-radius:var(--radius-sm); overflow:hidden; }
+  .fake-header {
+    background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:#fff;
+    padding:13px 20px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .fake-header .t { font-size:15px; font-weight:700; }
+  .fake-header .s { font-size:11.5px; opacity:.8; }
+  .fake-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+  .fake-table th { text-align:left; padding:8px 12px; background:#f8fafc; font-size:10.5px; color:var(--text-secondary); border-bottom:2px solid var(--border); white-space:nowrap; }
+  .fake-table td { padding:8px 12px; border-bottom:1px solid #eef2f6; white-space:nowrap; }
+  .fake-foot { padding:7px 14px; font-size:11.5px; color:var(--text-muted); background:#fff; }
+
+  /* 方案 B：独立变式条 */
+  .qv-strip {
+    display:flex; align-items:center; gap:14px; padding:9px 20px;
+    background:#fff; border-bottom:1px solid var(--border);
+  }
+  .qv-strip-label { font-size:12px; font-weight:600; color:var(--text-secondary); }
+  .qv-strip select { padding:6px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; min-width:170px; background:#fff; }
+  .qv-strip-summary {
+    flex:1; font-size:12px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .qv-strip-state {
+    font-size:11.5px; color:var(--primary); background:rgba(30,58,95,.07);
+    border-radius:4px; padding:3px 8px; font-weight:600;
+  }
+
+  /* 方案 C：抽屉 */
+  .qv-drawer-btn { display:flex; align-items:center; gap:6px; }
+  .qv-mask { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:900; display:none; }
+  .qv-mask.show { display:block; }
+  .qv-drawer {
+    position:fixed; top:0; right:0; height:100%; width:440px; background:#fff; z-index:901;
+    box-shadow:-6px 0 24px rgba(15,23,42,.14); transform:translateX(100%);
+    transition:transform .28s ease; display:flex; flex-direction:column;
+  }
+  .qv-drawer.show { transform:translateX(0); }
+  .qv-drawer-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .qv-drawer-head h4 { margin:0; font-size:16px; font-weight:700; }
+  .qv-drawer-body { flex:1; overflow-y:auto; padding:8px 18px 18px; }
+  .qv-card {
+    border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-top:12px;
+    background:#fff; transition:all .15s;
+  }
+  .qv-card:hover { border-color:var(--primary); box-shadow:0 2px 8px rgba(30,58,95,.08); }
+  .qv-card.active { border-color:var(--primary); background:rgba(30,58,95,.03); }
+  .qv-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .qv-card-name { font-size:14px; font-weight:700; }
+  .qv-card-cond { margin-top:8px; font-size:12px; color:var(--text-secondary); line-height:1.75; }
+  .qv-card-meta { margin-top:8px; font-size:11.5px; color:var(--text-muted); }
+  .qv-card-ops { margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; }
+  .qv-drawer-foot { padding:14px 22px; border-top:1px solid var(--border); background:#fafbfc; display:flex; justify-content:space-between; gap:10px; }
+
+  /* 最近输入下拉（仿真定位） */
+  .qv-recent-demo { position:absolute; z-index:800; background:#fff; border:1px solid var(--border);
+    border-radius:var(--radius-sm); box-shadow:var(--shadow-lg); padding:4px; min-width:190px; display:none; }
+  .qv-recent-demo.show { display:block; }
+
+  .demo-pros { display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:1px solid var(--border); }
+  .demo-pros > div { padding:14px 22px; }
+  .demo-pros > div + div { border-left:1px solid var(--border); }
+  .demo-pros h4 { margin:0 0 6px; font-size:12.5px; font-weight:700; }
+  .demo-pros ul { margin:0; padding-left:18px; font-size:12.5px; color:var(--text-secondary); line-height:1.85; }
+  .demo-pros .good h4 { color:#0f766e; }
+  .demo-pros .cost h4 { color:#b45309; }
+
+  .cmp { background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+  .cmp h3 { margin:0; padding:16px 22px; border-bottom:1px solid var(--border); font-size:16px; background:#fafbfc; }
+  .cmp table { width:100%; border-collapse:collapse; font-size:13px; }
+  .cmp th, .cmp td { padding:11px 18px; border-bottom:1px solid #eef2f6; text-align:left; }
+  .cmp th { background:#f8fafc; font-size:12px; color:var(--text-secondary); }
+  .cmp td:first-child { font-weight:600; }
+  .cmp .yes { color:#0f766e; font-weight:600; }
+  .cmp .no { color:#94a3b8; }
+  .cmp tfoot td { background:#fafbfc; font-size:12.5px; color:var(--text-secondary); }
+
+  /* 演示弹窗 */
+  .demo-modal { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+  .demo-modal.show { display:flex; }
+  .hint { font-size:12px; color:var(--text-muted); padding:0 22px 16px; }
+</style>
+</head>
+<body>
+
+<div class="demo-top">
+  <h1>查询变式 · 三种界面方案对比</h1>
+  <p>以下三个方案的功能完全一致（保存 / 应用 / 管理 / 最近输入），区别只在控件怎么摆。每个方案都可以真实点开体验。</p>
+</div>
+
+<div class="demo-wrap">
+
+  <!-- ============ 方案 A ============ -->
+  <section class="demo-case">
+    <div class="demo-case-head">
+      <span class="demo-badge">方案 A</span>
+      <h3>极简内联</h3>
+      <p>作为筛选栏里的一个普通筛选项，不额外占高度（当前已实现）</p>
+    </div>
+
+    <div class="fake-page">
+      <div class="fake-header">
+        <div><div class="t">库存查询</div><div class="s">实时查看备品备件库存状态</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" style="background:rgba(255,255,255,.15);color:#fff;">刷新</button>
+          <button class="btn btn-blue btn-sm">+ 导出</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-group"><label>工厂</label><select><option>全部</option><option selected>1000 (山东步长制药工厂)</option></select></div>
+        <div class="filter-group"><label>库位</label><select><option>全部</option></select></div>
+        <div class="filter-group"><label>显示类型</label><select><option selected>空 - 明细</option></select></div>
+        <div class="filter-group"><label>WBS编号</label><input type="text" placeholder="WBS编号"></div>
+        <div class="filter-group"><label>物料类型</label><select><option selected>ERSA - 备件</option></select></div>
+        <div class="filter-group" style="position:relative;">
+          <label>物料号</label>
+          <input type="text" id="aMat" placeholder="物料号" value="60001018" onfocus="showRecent('aRecent')">
+          <div class="qv-recent-demo" id="aRecent" style="top:100%;left:0;">
+            <div class="qv-recent-item"><span>60001018</span><span class="qv-recent-del">×</span></div>
+            <div class="qv-recent-item"><span>60000655</span><span class="qv-recent-del">×</span></div>
+            <div class="qv-recent-item"><span>60001128</span><span class="qv-recent-del">×</span></div>
+          </div>
+        </div>
+        <div class="filter-group"><label>批次</label><input type="text" placeholder="批次"></div>
+
+        <!-- A 的变式控件 -->
+        <div class="filter-group" style="min-width:230px;">
+          <label>查询变式</label>
+          <div class="qv-bar">
+            <select style="flex:1;min-width:0;" onchange="setSummary('aSummary',this.value)">
+              <option value="">— 未使用 —</option>
+              <option value="1" selected>周一备件盘库（默认）</option>
+              <option value="2">月底盘点</option>
+              <option value="3">紧急件查询</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" style="padding:5px 8px;" title="保存为变式" onclick="openSave()">☆</button>
+            <button class="btn btn-secondary btn-sm" style="padding:5px 8px;" onclick="openManage()">管理</button>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-primary btn-sm">查询</button>
+          <button class="btn btn-secondary btn-sm">重置</button>
+        </div>
+      </div>
+      <table class="fake-table">
+        <thead><tr><th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th><th>非限制</th><th>单位</th></tr></thead>
+        <tbody>
+          <tr><td>1000</td><td>5004</td><td>60001018</td><td>高效过滤器-MIIPDF-635*520*93</td><td>251101</td><td>8</td><td>个</td></tr>
+          <tr><td>1000</td><td>5004</td><td>60001019</td><td>高效过滤器-MIIPDF-635*762*93</td><td>251201</td><td>5</td><td>个</td></tr>
+        </tbody>
+      </table>
+      <div class="fake-foot">共 128 条 · 第 1 / 9 页</div>
+    </div>
+
+    <div class="hint">↑ 点「物料号」输入框可看到"最近输入"下拉；点 ☆ 看保存弹窗；点「管理」看管理弹窗。</div>
+
+    <div class="demo-pros">
+      <div class="good"><h4>优点</h4><ul>
+        <li>与其他筛选框完全同构，视觉上像原生功能</li>
+        <li>不占额外高度，筛选栏一行放得下</li>
+        <li>改动面最小，34 个页面推广成本最低</li>
+      </ul></div>
+      <div class="cost"><h4>代价</h4><ul>
+        <li>"当前在用哪个变式"的提示比较弱</li>
+        <li>变式多了以后，下拉里的名字容易被忽略</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ============ 方案 B ============ -->
+  <section class="demo-case">
+    <div class="demo-case-head">
+      <span class="demo-badge alt">方案 B</span>
+      <h3>独立变式条</h3>
+      <p>筛选栏上方加一条横条，常驻显示"当前变式 + 条件摘要"</p>
+    </div>
+
+    <div class="fake-page">
+      <div class="fake-header">
+        <div><div class="t">库存查询</div><div class="s">实时查看备品备件库存状态</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" style="background:rgba(255,255,255,.15);color:#fff;">刷新</button>
+          <button class="btn btn-blue btn-sm">+ 导出</button>
+        </div>
+      </div>
+
+      <!-- B 的变式条 -->
+      <div class="qv-strip">
+        <span class="qv-strip-label">查询变式</span>
+        <select onchange="setSummary('bSummary',this.value)">
+          <option value="">— 未使用 —</option>
+          <option value="1" selected>周一备件盘库（默认）</option>
+          <option value="2">月底盘点</option>
+          <option value="3">紧急件查询</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="openSave()">☆ 存为变式</button>
+        <button class="btn btn-secondary btn-sm" onclick="openManage()">管理</button>
+        <span class="qv-strip-summary" id="bSummary">工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018</span>
+        <span class="qv-strip-state">已回填 · 未查询</span>
+      </div>
+
+      <div class="filter-bar">
+        <div class="filter-group"><label>工厂</label><select><option>全部</option><option selected>1000 (山东步长制药工厂)</option></select></div>
+        <div class="filter-group"><label>库位</label><select><option>全部</option></select></div>
+        <div class="filter-group"><label>显示类型</label><select><option selected>空 - 明细</option></select></div>
+        <div class="filter-group"><label>WBS编号</label><input type="text" placeholder="WBS编号"></div>
+        <div class="filter-group"><label>物料类型</label><select><option selected>ERSA - 备件</option></select></div>
+        <div class="filter-group"><label>物料号</label><input type="text" placeholder="物料号" value="60001018"></div>
+        <div class="filter-group"><label>批次</label><input type="text" placeholder="批次"></div>
+        <div class="filter-actions">
+          <button class="btn btn-primary btn-sm">查询</button>
+          <button class="btn btn-secondary btn-sm">重置</button>
+        </div>
+      </div>
+      <table class="fake-table">
+        <thead><tr><th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th><th>非限制</th><th>单位</th></tr></thead>
+        <tbody>
+          <tr><td>1000</td><td>5004</td><td>60001018</td><td>高效过滤器-MIIPDF-635*520*93</td><td>251101</td><td>8</td><td>个</td></tr>
+          <tr><td>1000</td><td>5004</td><td>60001019</td><td>高效过滤器-MIIPDF-635*762*93</td><td>251201</td><td>5</td><td>个</td></tr>
+        </tbody>
+      </table>
+      <div class="fake-foot">共 128 条 · 第 1 / 9 页</div>
+    </div>
+
+    <div class="hint">↑ 切换下拉，右侧"条件摘要"会跟着变；这条横条始终可见。</div>
+
+    <div class="demo-pros">
+      <div class="good"><h4>优点</h4><ul>
+        <li>当前用的哪个变式、条件是什么，一眼可见</li>
+        <li>"已回填 · 未查询"状态提醒，避免误以为数据已筛选</li>
+        <li>变式是"一等公民"，新用户容易发现这个功能</li>
+      </ul></div>
+      <div class="cost"><h4>代价</h4><ul>
+        <li>多占一行高度（约 44px），挤压表格空间</li>
+        <li>34 个页面都要改筛选区结构，改造量略大</li>
+        <li>变式条与下方筛选栏有视觉重复</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ============ 方案 C ============ -->
+  <section class="demo-case">
+    <div class="demo-case-head">
+      <span class="demo-badge alt">方案 C</span>
+      <h3>抽屉管理</h3>
+      <p>筛选栏只放一个入口按钮，点开右侧抽屉以卡片形式管理变式</p>
+    </div>
+
+    <div class="fake-page">
+      <div class="fake-header">
+        <div><div class="t">库存查询</div><div class="s">实时查看备品备件库存状态</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" style="background:rgba(255,255,255,.15);color:#fff;">刷新</button>
+          <button class="btn btn-blue btn-sm">+ 导出</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-group"><label>工厂</label><select><option>全部</option><option selected>1000 (山东步长制药工厂)</option></select></div>
+        <div class="filter-group"><label>库位</label><select><option>全部</option></select></div>
+        <div class="filter-group"><label>显示类型</label><select><option selected>空 - 明细</option></select></div>
+        <div class="filter-group"><label>WBS编号</label><input type="text" placeholder="WBS编号"></div>
+        <div class="filter-group"><label>物料类型</label><select><option selected>ERSA - 备件</option></select></div>
+        <div class="filter-group"><label>物料号</label><input type="text" placeholder="物料号" value="60001018"></div>
+        <div class="filter-group"><label>批次</label><input type="text" placeholder="批次"></div>
+        <div class="filter-actions">
+          <!-- C 的入口 -->
+          <button class="btn btn-secondary btn-sm" onclick="openDrawer()">我的变式（3）· 周一备件盘库</button>
+          <button class="btn btn-primary btn-sm">查询</button>
+          <button class="btn btn-secondary btn-sm">重置</button>
+        </div>
+      </div>
+      <table class="fake-table">
+        <thead><tr><th>工厂</th><th>库位</th><th>物料号</th><th>物料描述</th><th>批次</th><th>非限制</th><th>单位</th></tr></thead>
+        <tbody>
+          <tr><td>1000</td><td>5004</td><td>60001018</td><td>高效过滤器-MIIPDF-635*520*93</td><td>251101</td><td>8</td><td>个</td></tr>
+          <tr><td>1000</td><td>5004</td><td>60001019</td><td>高效过滤器-MIIPDF-635*762*93</td><td>251201</td><td>5</td><td>个</td></tr>
+        </tbody>
+      </table>
+      <div class="fake-foot">共 128 条 · 第 1 / 9 页</div>
+    </div>
+
+    <div class="hint">↑ 点「我的变式（3）」从右侧滑出抽屉。</div>
+
+    <div class="demo-pros">
+      <div class="good"><h4>优点</h4><ul>
+        <li>筛选区最干净，只多一个按钮</li>
+        <li>卡片式展示信息量最大：条件、使用次数、默认标记一目了然</li>
+        <li>变式多（10+）时最好用，可搜索/分组</li>
+      </ul></div>
+      <div class="cost"><h4>代价</h4><ul>
+        <li>切换变式要多一步（先开抽屉再选），高频切换时最慢</li>
+        <li>抽屉遮住右侧内容，表格要重新看</li>
+        <li>移动端/小屏体验一般</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ============ 对比表 ============ -->
+  <section class="cmp">
+    <h3>三方案对比</h3>
+    <table>
+      <thead><tr><th>维度</th><th>A 极简内联</th><th>B 独立变式条</th><th>C 抽屉管理</th></tr></thead>
+      <tbody>
+        <tr><td>额外占高度</td><td class="yes">0</td><td class="no">约 44px</td><td class="yes">0</td></tr>
+        <tr><td>切换变式所需点击</td><td class="yes">1 次（下拉）</td><td class="yes">1 次（下拉）</td><td class="no">2 次（开抽屉 + 选）</td></tr>
+        <tr><td>"当前用哪个变式"可见性</td><td class="no">弱（仅下拉文字）</td><td class="yes">强（常驻 + 条件摘要）</td><td class="yes">中（按钮上显示）</td></tr>
+        <tr><td>变式多时的可扩展性</td><td>中</td><td>中</td><td class="yes">强（可搜索/分组）</td></tr>
+        <tr><td>新用户能否发现功能</td><td>中</td><td class="yes">高</td><td class="no">低（藏起来了）</td></tr>
+        <tr><td>34 个页面推广改造量</td><td class="yes">小（插一段 HTML）</td><td>中（筛选区上加结构）</td><td class="yes">小（插一段 HTML）</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="4">三个方案的数据层、存储结构、安全规则完全一致，切换方案只改 UI 层，不影响已保存的变式数据。</td></tr></tfoot>
+    </table>
+  </section>
+
+</div>
+
+<!-- 抽屉（方案 C） -->
+<div class="qv-mask" id="drawerMask" onclick="closeDrawer()"></div>
+<div class="qv-drawer" id="drawer">
+  <div class="qv-drawer-head">
+    <h4>我的查询变式</h4>
+    <button class="modal-close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="qv-drawer-body">
+    <div class="qv-card active">
+      <div class="qv-card-top"><span class="qv-card-name">周一备件盘库</span><span class="qv-tag">默认</span></div>
+      <div class="qv-card-cond">工厂：1000 山东步长制药工厂<br>物料类型：ERSA 备件<br>物料号：60001018</div>
+      <div class="qv-card-meta">用过 24 次 · 最近 2026-09-21</div>
+      <div class="qv-card-ops">
+        <button class="btn btn-secondary btn-sm" onclick="openSave()">更新为当前条件</button>
+        <button class="btn btn-secondary btn-sm">重命名</button>
+        <button class="btn btn-secondary btn-sm">↑</button>
+        <button class="btn btn-danger btn-sm">删除</button>
+      </div>
+    </div>
+    <div class="qv-card">
+      <div class="qv-card-top"><span class="qv-card-name">月底盘点</span></div>
+      <div class="qv-card-cond">工厂：2001 陕西步长制药工厂<br>显示类型：1 批次汇总</div>
+      <div class="qv-card-meta">用过 6 次 · 最近 2026-08-31</div>
+      <div class="qv-card-ops">
+        <button class="btn btn-secondary btn-sm">应用</button>
+        <button class="btn btn-secondary btn-sm">设为默认</button>
+        <button class="btn btn-secondary btn-sm">重命名</button>
+        <button class="btn btn-danger btn-sm">删除</button>
+      </div>
+    </div>
+    <div class="qv-card">
+      <div class="qv-card-top"><span class="qv-card-name">紧急件查询</span></div>
+      <div class="qv-card-cond">物料类型：ERSA 备件<br>库位：1000|5004</div>
+      <div class="qv-card-meta">用过 2 次 · 最近 2026-09-15</div>
+      <div class="qv-card-ops">
+        <button class="btn btn-secondary btn-sm">应用</button>
+        <button class="btn btn-secondary btn-sm">设为默认</button>
+        <button class="btn btn-secondary btn-sm">重命名</button>
+        <button class="btn btn-danger btn-sm">删除</button>
+      </div>
+    </div>
+  </div>
+  <div class="qv-drawer-foot">
+    <button class="btn btn-secondary btn-sm">清除本页输入历史</button>
+    <button class="btn btn-primary btn-sm" onclick="openSave()">+ 保存当前条件</button>
+  </div>
+</div>
+
+<!-- 保存弹窗（三方案共用） -->
+<div class="demo-modal" id="saveModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal modal-sm">
+    <div class="modal-header"><div class="modal-title">保存为查询变式</div>
+      <button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>变式名称</label><input type="text" placeholder="如：周一备件盘库"></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:12px;">
+        <input type="checkbox"> 设为该页面的默认变式</label>
+      <div class="qv-preview">
+        <div style="font-weight:600;color:var(--text);margin-bottom:4px;">将保存以下条件</div>
+        工厂：1000 山东步长制药工厂<br>物料类型：ERSA 备件<br>物料号：60001018
+      </div>
+      <div class="qv-tip">置灰或隐藏的字段不会被保存；条件为空的字段也不会保存。</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="closeModal()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理弹窗（A/B 共用） -->
+<div class="demo-modal" id="manageModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal modal-md">
+    <div class="modal-header"><div class="modal-title">管理查询变式</div>
+      <button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body">
+      <div class="qv-row">
+        <div class="qv-row-name">周一备件盘库 <span class="qv-tag">默认</span></div>
+        <div class="qv-row-cond">工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018</div>
+        <div class="qv-row-meta">用过 24 次 / 2026-09-21</div>
+        <div class="qv-row-ops">
+          <span class="qv-ops-disabled">已默认</span>
+          <button class="btn btn-secondary btn-sm">更新</button>
+          <button class="btn btn-secondary btn-sm">重命名</button>
+          <button class="btn btn-danger btn-sm">删除</button>
+        </div>
+      </div>
+      <div class="qv-row">
+        <div class="qv-row-name">月底盘点</div>
+        <div class="qv-row-cond">工厂：2001 陕西步长制药工厂；显示类型：1 批次汇总</div>
+        <div class="qv-row-meta">用过 6 次 / 2026-08-31</div>
+        <div class="qv-row-ops">
+          <button class="btn btn-secondary btn-sm">设为默认</button>
+          <button class="btn btn-secondary btn-sm">更新</button>
+          <button class="btn btn-secondary btn-sm">重命名</button>
+          <button class="btn btn-secondary btn-sm">↑</button>
+          <button class="btn btn-danger btn-sm">删除</button>
+        </div>
+      </div>
+      <div class="qv-row">
+        <div class="qv-row-name">紧急件查询</div>
+        <div class="qv-row-cond">物料类型：ERSA 备件；库位：1000|5004</div>
+        <div class="qv-row-meta">用过 2 次 / 2026-09-15</div>
+        <div class="qv-row-ops">
+          <button class="btn btn-secondary btn-sm">设为默认</button>
+          <button class="btn btn-secondary btn-sm">更新</button>
+          <button class="btn btn-secondary btn-sm">重命名</button>
+          <button class="btn btn-secondary btn-sm">↑</button>
+          <button class="btn btn-danger btn-sm">删除</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var SUMMARY = {
+    '': '当前未使用任何变式，条件为空',
+    '1': '工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018',
+    '2': '工厂：2001 陕西步长制药工厂；显示类型：1 批次汇总',
+    '3': '物料类型：ERSA 备件；库位：1000|5004'
+  };
+  function setSummary(id, v) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = SUMMARY[v] || '';
+  }
+  function showRecent(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('show');
+    setTimeout(function () { el && el.classList.remove('show'); }, 4000);
+  }
+  function openSave() { document.getElementById('saveModal').classList.add('show'); }
+  function openManage() { document.getElementById('manageModal').classList.add('show'); }
+  function closeModal() {
+    document.getElementById('saveModal').classList.remove('show');
+    document.getElementById('manageModal').classList.remove('show');
+  }
+  function openDrawer() {
+    document.getElementById('drawerMask').classList.add('show');
+    document.getElementById('drawer').classList.add('show');
+  }
+  function closeDrawer() {
+    document.getElementById('drawerMask').classList.remove('show');
+    document.getElementById('drawer').classList.remove('show');
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { closeModal(); closeDrawer(); }
+  });
+</script>
+</body>
+</html>
