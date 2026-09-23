@@ -58,8 +58,7 @@ const MDL_COLUMNS = [
   { key: 'operator', label: '操作员', width: 80 },
   { key: 'docCategory', label: '凭证类别', width: 80 },
   { key: 'sourceType', label: '来源类型', width: 100 },
-  { key: 'reversalDocNo', label: '冲销凭证号', width: 130, mono: true },
-  { key: 'notes', label: '备注', width: 200 }
+  { key: 'reversalDocNo', label: '冲销凭证号', width: 130, mono: true }
 ];
 
 const MaterialDocList = {
@@ -226,7 +225,7 @@ const MaterialDocList = {
     this.filtered = this.flatRows.slice();
     this.page = 1;
     return `
-      <div class="mdl-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100vw;overflow:hidden;">
+      <div class="mdl-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100%;overflow:hidden;">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div>
             <div style="font-size:18px;font-weight:700;">物料凭证清单</div>
