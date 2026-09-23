@@ -270,18 +270,12 @@ const MaterialDocList = {
 
     el.innerHTML = `
       <div class="filter-bar">
-        <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
+        <div class="filter-group"><label>工厂</label><select id="mdlPlant"><option value="">全部</option>${plantOpts}</select></div>
         <div class="filter-group"><label>过账日期 起</label><input type="date" id="mdlDateFrom"></div>
         <div class="filter-group"><label>过账日期 止</label><input type="date" id="mdlDateTo"></div>
-        <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码"></div>
         <div class="filter-group"><label>移动类型</label><select id="mdlMoveType"><option value="">全部</option>${moveOpts}</select></div>
-        <div class="filter-group"><label>工厂</label><select id="mdlPlant"><option value="">全部</option>${plantOpts}</select></div>
-        <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
-          <option value="valid">仅有效凭证</option>
-          <option value="all">全部凭证</option>
-          <option value="reversed">仅被冲销凭证</option>
-          <option value="reversal">仅冲销凭证</option>
-        </select></div>
+        <div class="filter-group"><label>发货库位</label><input type="text" id="mdlIssueLoc" placeholder="如 A-01-03"></div>
+        <div class="filter-group"><label>收货库存</label><input type="text" id="mdlReceiveLoc" placeholder="如 采购收货"></div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="MaterialDocList.search()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.resetFilter()">重置</button>
@@ -289,6 +283,14 @@ const MaterialDocList = {
         </div>
       </div>
       <div class="filter-bar" id="mdlMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};background:#fff;border-top:1px dashed var(--border);">
+        <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
+        <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码 / 描述"></div>
+        <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
+          <option value="valid">仅有效凭证</option>
+          <option value="all">全部凭证</option>
+          <option value="reversed">仅被冲销凭证</option>
+          <option value="reversal">仅冲销凭证</option>
+        </select></div>
         <div class="filter-group"><label>订单/网络</label><input type="text" id="mdlOrderNo" placeholder="内部订单/流程订单"></div>
         <div class="filter-group"><label>预留号</label><input type="text" id="mdlResNo" placeholder="如 0000000111"></div>
         <div class="filter-group"><label>WBS编号</label><input type="text" id="mdlWbs" placeholder="WBS 元素"></div>
@@ -325,6 +327,7 @@ const MaterialDocList = {
 
   resetFilter() {
     ['mdlDocNo', 'mdlDateFrom', 'mdlDateTo', 'mdlMatCode', 'mdlMoveType', 'mdlPlant',
+      'mdlIssueLoc', 'mdlReceiveLoc',
       'mdlOrderNo', 'mdlResNo', 'mdlWbs', 'mdlCostCenter', 'mdlOperator'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
@@ -350,6 +353,8 @@ const MaterialDocList = {
     const wbs = this._val('mdlWbs').toLowerCase();
     const costCenter = this._val('mdlCostCenter').toLowerCase();
     const operator = this._val('mdlOperator');
+    const issueLoc = this._val('mdlIssueLoc').toLowerCase();
+    const receiveLoc = this._val('mdlReceiveLoc').toLowerCase();
 
     // 凭证状态下拉值 -> 行内 docCategory
     const catMap = { valid: 'NORMAL', reversed: 'REVERSED', reversal: 'REVERSAL' };
@@ -364,6 +369,8 @@ const MaterialDocList = {
           r.matName.toLowerCase().indexOf(matCode) === -1) return false;
       if (moveType && r.moveType !== moveType) return false;
       if (plant && r.plant !== plant) return false;
+      if (issueLoc && r.issueLocation.toLowerCase().indexOf(issueLoc) === -1) return false;
+      if (receiveLoc && r.receiveType.toLowerCase().indexOf(receiveLoc) === -1) return false;
       if (orderNo && r.orderNo.toLowerCase().indexOf(orderNo) === -1) return false;
       if (resNo && r.reservationNo.indexOf(resNo) === -1) return false;
       if (wbs && r.wbs.toLowerCase().indexOf(wbs) === -1) return false;
@@ -447,12 +454,13 @@ const MaterialDocList = {
 if (window.QueryVariant) {
   QueryVariant.register({
     pageId: 'material-doc-list',
-    fields: ['mdlDocNo', 'mdlDateFrom', 'mdlDateTo', 'mdlMatCode', 'mdlMoveType', 'mdlPlant',
-      'mdlDocStatus', 'mdlOrderNo', 'mdlResNo', 'mdlWbs', 'mdlCostCenter', 'mdlOperator'],
-    textFields: ['mdlDocNo', 'mdlMatCode', 'mdlOrderNo', 'mdlResNo', 'mdlWbs', 'mdlCostCenter', 'mdlOperator'],
+    fields: ['mdlPlant', 'mdlDateFrom', 'mdlDateTo', 'mdlMoveType', 'mdlIssueLoc', 'mdlReceiveLoc',
+      'mdlDocNo', 'mdlMatCode', 'mdlDocStatus', 'mdlOrderNo', 'mdlResNo', 'mdlWbs', 'mdlCostCenter', 'mdlOperator'],
+    textFields: ['mdlIssueLoc', 'mdlReceiveLoc', 'mdlDocNo', 'mdlMatCode', 'mdlOrderNo', 'mdlResNo', 'mdlWbs', 'mdlCostCenter', 'mdlOperator'],
     labels: {
-      mdlDocNo: '物料凭证号', mdlDateFrom: '过账日期起', mdlDateTo: '过账日期止',
-      mdlMatCode: '物料号', mdlMoveType: '移动类型', mdlPlant: '工厂',
+      mdlPlant: '工厂', mdlDateFrom: '过账日期起', mdlDateTo: '过账日期止',
+      mdlMoveType: '移动类型', mdlIssueLoc: '发货库位', mdlReceiveLoc: '收货库存',
+      mdlDocNo: '物料凭证号', mdlMatCode: '物料号',
       mdlDocStatus: '凭证状态', mdlOrderNo: '订单/网络', mdlResNo: '预留号',
       mdlWbs: 'WBS编号', mdlCostCenter: '成本中心', mdlOperator: '操作员'
     },
