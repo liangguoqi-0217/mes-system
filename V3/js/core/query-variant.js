@@ -307,13 +307,13 @@ window.QueryVariant = (function () {
   function _listHtml(pageId) {
     const items = _variants(pageId);
     if (!items.length) {
-      return '<div class="qv-empty">还没有保存任何变式。<br>先在筛选栏填好常用条件，再在右侧输入名称保存。</div>';
+      return '<div class="qv-empty">还没有保存任何变式。<br>填好筛选条件后，在下方输入名称保存。</div>';
     }
     const curId = (_state[pageId] && _state[pageId].currentId) || '';
     return items.map(v => {
       const active = v.id === curId;
       return '<div class="qv-card' + (active ? ' active' : '') + '" ' +
-        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')">' +
+        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')" title="点击应用该变式">' +
         '<div class="qv-card-top">' +
         '<span class="qv-card-name">' + _esc(v.variant_name) +
         (v.is_default ? ' <span class="qv-tag">默认</span>' : '') +
@@ -324,7 +324,6 @@ window.QueryVariant = (function () {
           : '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();QueryVariant.setDefault(\'' + pageId + '\',\'' + v.id + '\')">设为默认</button>') +
         '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();QueryVariant.remove(\'' + pageId + '\',\'' + v.id + '\')">删除</button>' +
         '</span></div>' +
-        '<div class="qv-card-cond">' + _condText(pageId, v.conditions_json, '；') + '</div>' +
         '</div>';
     }).join('');
   }
@@ -332,34 +331,28 @@ window.QueryVariant = (function () {
   function openManage(pageId) {
     hideRecent();
     _close('qvManageBackdrop');
-    const cond = _collect(pageId);
-    const preview = Object.keys(cond).length
-      ? _condText(pageId, cond, '<br>')
-      : '（当前没有填写任何筛选条件）';
 
     const wrap = document.createElement('div');
     wrap.className = 'modal-backdrop';
     wrap.id = 'qvManageBackdrop';
     wrap.innerHTML =
-      '<div class="modal modal-lg" onclick="event.stopPropagation()">' +
+      '<div class="modal modal-md" onclick="event.stopPropagation()">' +
       '<div class="modal-header"><div class="modal-title">我的查询变式</div>' +
       '<button class="modal-close" onclick="QueryVariant.closeManage()">×</button></div>' +
       '<div class="modal-body">' +
-      '<div class="qv-split">' +
-      '<div class="qv-split-main">' +
-      '<div class="qv-sec-title">已保存的变式<span class="qv-sec-hint">点击卡片即可应用并查询</span></div>' +
+      '<div class="qv-section">' +
+      '<div class="qv-sec-title">已保存的变式</div>' +
       '<div id="qvListWrap">' + _listHtml(pageId) + '</div>' +
       '</div>' +
-      '<div class="qv-split-side">' +
+      '<div class="qv-section qv-save-section">' +
       '<div class="qv-sec-title">保存当前条件为新变式</div>' +
-      '<div class="form-group"><label>变式名称</label>' +
+      '<div class="qv-form-row">' +
+      '<div class="form-group" style="flex:1;margin-bottom:0;"><label>变式名称</label>' +
       '<input type="text" id="qvSaveName" maxlength="50" placeholder="如：周一备件盘库"></div>' +
-      '<label class="qv-check"><input type="checkbox" id="qvSaveDefault"> 设为该页面的默认变式</label>' +
-      '<div class="qv-preview"><div class="qv-preview-title">将保存以下条件</div>' + preview + '</div>' +
-      '<div class="qv-tip">置灰或隐藏的字段不会被保存；条件为空的字段也不会保存。</div>' +
-      '<button class="btn btn-primary" style="width:100%;margin-top:16px;padding:9px 20px;" ' +
+      '<button class="btn btn-primary" style="height:36px;" ' +
       'onclick="QueryVariant.confirmSave(\'' + pageId + '\')">保存为新变式</button>' +
       '</div>' +
+      '<label class="qv-check"><input type="checkbox" id="qvSaveDefault"> 设为该页面的默认变式</label>' +
       '</div>' +
       '</div>' +
       '<div class="modal-footer">' +

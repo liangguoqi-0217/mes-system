@@ -138,7 +138,7 @@
               <option value="3">紧急件查询</option>
             </select>
             <button class="btn btn-secondary btn-sm" style="padding:5px 8px;" title="保存为变式" onclick="openSave()">☆</button>
-            <button class="btn btn-secondary btn-sm" style="padding:5px 8px;" onclick="openManage()">管理</button>
+            <button class="btn btn-secondary btn-sm" style="padding:5px 8px;" onclick="openC()">管理</button>
           </div>
         </div>
 
@@ -199,7 +199,7 @@
           <option value="3">紧急件查询</option>
         </select>
         <button class="btn btn-secondary btn-sm" onclick="openSave()">☆ 存为变式</button>
-        <button class="btn btn-secondary btn-sm" onclick="openManage()">管理</button>
+        <button class="btn btn-secondary btn-sm" onclick="openC()">管理</button>
         <span class="qv-strip-summary" id="bSummary">工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018</span>
         <span class="qv-strip-state">已回填 · 未查询</span>
       </div>
@@ -247,8 +247,8 @@
   <section class="demo-case">
     <div class="demo-case-head">
       <span class="demo-badge alt">方案 C</span>
-      <h3>抽屉管理</h3>
-      <p>筛选栏只放一个入口按钮，点开右侧抽屉以卡片形式管理变式</p>
+      <h3>弹窗管理（已选定）</h3>
+      <p>筛选栏只放一个入口按钮，点击打开弹窗以卡片形式管理变式</p>
     </div>
 
     <div class="fake-page">
@@ -318,64 +318,53 @@
 
 </div>
 
-<!-- 方案 C 最终形态：大弹窗（左侧变式列表 + 右侧保存区） -->
+<!-- 方案 C 最终形态：上下布局弹窗（上为已保存变式，下为保存新变式） -->
 <div class="demo-modal" id="cModal" onclick="if(event.target===this)closeModal()">
-  <div class="modal modal-lg">
+  <div class="modal modal-md">
     <div class="modal-header">
       <div class="modal-title">我的查询变式</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <div class="qv-split">
-        <div class="qv-split-main">
-          <div class="qv-sec-title">已保存的变式<span class="qv-sec-hint">点击卡片即可应用并查询</span></div>
-
-          <div class="qv-card active">
-            <div class="qv-card-top">
-              <span class="qv-card-name">周一备件盘库 <span class="qv-tag">默认</span> <span class="qv-tag qv-tag-now">当前</span></span>
-              <span class="qv-card-ops">
-                <span class="qv-ops-disabled">已默认</span>
-                <button class="btn btn-danger btn-sm">删除</button>
-              </span>
-            </div>
-            <div class="qv-card-cond">工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018</div>
-          </div>
-
-          <div class="qv-card">
-            <div class="qv-card-top">
-              <span class="qv-card-name">月底盘点</span>
-              <span class="qv-card-ops">
-                <button class="btn btn-secondary btn-sm">设为默认</button>
-                <button class="btn btn-danger btn-sm">删除</button>
-              </span>
-            </div>
-            <div class="qv-card-cond">工厂：2001 陕西步长制药工厂；显示类型：1 批次汇总</div>
-          </div>
-
-          <div class="qv-card">
-            <div class="qv-card-top">
-              <span class="qv-card-name">紧急件查询</span>
-              <span class="qv-card-ops">
-                <button class="btn btn-secondary btn-sm">设为默认</button>
-                <button class="btn btn-danger btn-sm">删除</button>
-              </span>
-            </div>
-            <div class="qv-card-cond">物料类型：ERSA 备件；库位：1000|5004</div>
+      <div class="qv-section">
+        <div class="qv-sec-title">已保存的变式</div>
+        <div class="qv-card active">
+          <div class="qv-card-top">
+            <span class="qv-card-name">周一备件盘库 <span class="qv-tag">默认</span> <span class="qv-tag qv-tag-now">当前</span></span>
+            <span class="qv-card-ops">
+              <span class="qv-ops-disabled">已默认</span>
+              <button class="btn btn-danger btn-sm">删除</button>
+            </span>
           </div>
         </div>
+        <div class="qv-card">
+          <div class="qv-card-top">
+            <span class="qv-card-name">月底盘点</span>
+            <span class="qv-card-ops">
+              <button class="btn btn-secondary btn-sm">设为默认</button>
+              <button class="btn btn-danger btn-sm">删除</button>
+            </span>
+          </div>
+        </div>
+        <div class="qv-card">
+          <div class="qv-card-top">
+            <span class="qv-card-name">紧急件查询</span>
+            <span class="qv-card-ops">
+              <button class="btn btn-secondary btn-sm">设为默认</button>
+              <button class="btn btn-danger btn-sm">删除</button>
+            </span>
+          </div>
+        </div>
+      </div>
 
-        <div class="qv-split-side">
-          <div class="qv-sec-title">保存当前条件为新变式</div>
-          <div class="form-group"><label>变式名称</label>
+      <div class="qv-section qv-save-section">
+        <div class="qv-sec-title">保存当前条件为新变式</div>
+        <div class="qv-form-row">
+          <div class="form-group" style="flex:1;margin-bottom:0;"><label>变式名称</label>
             <input type="text" placeholder="如：周一备件盘库"></div>
-          <label class="qv-check"><input type="checkbox"> 设为该页面的默认变式</label>
-          <div class="qv-preview">
-            <div class="qv-preview-title">将保存以下条件</div>
-            工厂：1000 山东步长制药工厂<br>物料类型：ERSA 备件<br>物料号：60001018
-          </div>
-          <div class="qv-tip">置灰或隐藏的字段不会被保存；条件为空的字段也不会保存。</div>
-          <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:9px 20px;">保存为新变式</button>
+          <button class="btn btn-primary" style="height:36px;">保存为新变式</button>
         </div>
+        <label class="qv-check"><input type="checkbox"> 设为该页面的默认变式</label>
       </div>
     </div>
     <div class="modal-footer">
@@ -406,54 +395,6 @@
   </div>
 </div>
 
-<!-- 管理弹窗（A/B 共用） -->
-<div class="demo-modal" id="manageModal" onclick="if(event.target===this)closeModal()">
-  <div class="modal modal-md">
-    <div class="modal-header"><div class="modal-title">管理查询变式</div>
-      <button class="modal-close" onclick="closeModal()">×</button></div>
-    <div class="modal-body">
-      <div class="qv-row">
-        <div class="qv-row-name">周一备件盘库 <span class="qv-tag">默认</span></div>
-        <div class="qv-row-cond">工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018</div>
-        <div class="qv-row-meta">用过 24 次 / 2026-09-21</div>
-        <div class="qv-row-ops">
-          <span class="qv-ops-disabled">已默认</span>
-          <button class="btn btn-secondary btn-sm">更新</button>
-          <button class="btn btn-secondary btn-sm">重命名</button>
-          <button class="btn btn-danger btn-sm">删除</button>
-        </div>
-      </div>
-      <div class="qv-row">
-        <div class="qv-row-name">月底盘点</div>
-        <div class="qv-row-cond">工厂：2001 陕西步长制药工厂；显示类型：1 批次汇总</div>
-        <div class="qv-row-meta">用过 6 次 / 2026-08-31</div>
-        <div class="qv-row-ops">
-          <button class="btn btn-secondary btn-sm">设为默认</button>
-          <button class="btn btn-secondary btn-sm">更新</button>
-          <button class="btn btn-secondary btn-sm">重命名</button>
-          <button class="btn btn-secondary btn-sm">↑</button>
-          <button class="btn btn-danger btn-sm">删除</button>
-        </div>
-      </div>
-      <div class="qv-row">
-        <div class="qv-row-name">紧急件查询</div>
-        <div class="qv-row-cond">物料类型：ERSA 备件；库位：1000|5004</div>
-        <div class="qv-row-meta">用过 2 次 / 2026-09-15</div>
-        <div class="qv-row-ops">
-          <button class="btn btn-secondary btn-sm">设为默认</button>
-          <button class="btn btn-secondary btn-sm">更新</button>
-          <button class="btn btn-secondary btn-sm">重命名</button>
-          <button class="btn btn-secondary btn-sm">↑</button>
-          <button class="btn btn-danger btn-sm">删除</button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
-    </div>
-  </div>
-</div>
-
 <script>
   var SUMMARY = {
     '': '当前未使用任何变式，条件为空',
@@ -471,11 +412,9 @@
     setTimeout(function () { el && el.classList.remove('show'); }, 4000);
   }
   function openSave() { document.getElementById('saveModal').classList.add('show'); }
-  function openManage() { document.getElementById('manageModal').classList.add('show'); }
   function openC() { document.getElementById('cModal').classList.add('show'); }
   function closeModal() {
     document.getElementById('saveModal').classList.remove('show');
-    document.getElementById('manageModal').classList.remove('show');
     document.getElementById('cModal').classList.remove('show');
   }
   document.addEventListener('keydown', function (e) {
