@@ -292,8 +292,6 @@ const MaterialDocList = {
           <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
             <option value="valid">仅有效凭证</option>
             <option value="all">全部凭证</option>
-            <option value="reversed">仅被冲销凭证</option>
-            <option value="reversal">仅冲销凭证</option>
           </select></div>
           <div class="filter-group"><label>订单/网络</label><input type="text" id="mdlOrderNo" placeholder="内部订单/流程订单"></div>
           <div class="filter-group"><label>预留号</label><input type="text" id="mdlResNo" placeholder="如 0000000111"></div>
