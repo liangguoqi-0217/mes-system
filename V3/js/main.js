@@ -17,6 +17,11 @@ const App = {
             { id:'cost-object-costc', label:'成本中心', route:'cost-object', pageObj:'CostObject', type:'costc' },
             { id:'cost-object-project', label:'项目', route:'cost-object', pageObj:'CostObject', type:'project' }
           ]
+        },
+        {
+          title:'齐套检查', items: [
+            { id:'order-readiness', label:'订单齐套检查', route:'order-readiness', pageObj:'OrderReadiness' }
+          ]
         }
       ]
     },
@@ -141,6 +146,7 @@ const App = {
     'material-master': MaterialMaster,
     'batch-char': BatchChar,
     'material-doc-list': MaterialDocList,
+    'order-readiness': OrderReadiness,
     'material-doc-reversal': MaterialDocReversal,
     'equipment-master': EquipmentMaster,
     'functional-location': FunctionalLocation,
