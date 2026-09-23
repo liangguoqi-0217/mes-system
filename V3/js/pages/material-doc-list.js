@@ -231,7 +231,6 @@ const MaterialDocList = {
           <div>
             <div style="font-size:18px;font-weight:700;">物料凭证清单</div>
           </div>
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="MaterialDocList.refresh()">🔄 刷新数据</button>
         </div>
 
         <div id="mdlFilterBar" style="flex-shrink:0;"></div>
@@ -279,6 +278,7 @@ const MaterialDocList = {
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="MaterialDocList.search()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.resetFilter()">重置</button>
+          <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" id="mdlMoreBtn" onclick="MaterialDocList.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
       </div>
@@ -447,7 +447,34 @@ const MaterialDocList = {
     if (this.page < totalPages) { this.page++; this.renderTable(); this.renderPagination(); }
   },
 
-  changePageSize(v) { this.pageSize = Number(v); this.page = 1; this.renderTable(); this.renderPagination(); }
+  changePageSize(v) { this.pageSize = Number(v); this.page = 1; this.renderTable(); this.renderPagination(); },
+
+  exportData() {
+    if (!this.filtered || this.filtered.length === 0) return toast('无数据可导出');
+    const lines = [['序号'].concat(MDL_COLUMNS.map(c => c.label)).join(',')];
+    this.filtered.forEach((r, i) => {
+      const cells = [String(i + 1)];
+      MDL_COLUMNS.forEach(c => {
+        let v = r[c.key];
+        if (c.key === 'docCategory') {
+          const map = { NORMAL: '有效', REVERSED: '被冲销', REVERSAL: '冲销凭证' };
+          v = map[v] || v || '';
+        }
+        if (v === null || v === undefined) v = '';
+        cells.push('"' + String(v).replace(/"/g, '""') + '"');
+      });
+      lines.push(cells.join(','));
+    });
+    const csv = '\uFEFF' + lines.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '物料凭证清单_' + new Date().toISOString().substring(0, 10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('导出成功（共 ' + this.filtered.length + ' 行）');
+  }
 };
 
 // ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====

@@ -29,11 +29,9 @@ const PMAutoGen = {
 
     let html='<div class="page-container">'+
       '<div class="page-header"><div class="page-title">自动生成预防性工单</div><div class="page-actions">'+
-        '<button class="btn btn-secondary" onclick="PMAutoGen.resetGenFilter()">刷新</button>'+
         '<button class="btn btn-blue" onclick="PMAutoGen.manualGen()">手动触发生成</button>'+
         '<button class="btn btn-outline" onclick="PMAutoGen.batchReplenish()">批量补单</button>'+
         '<button class="btn btn-outline" onclick="PMAutoGen.mode=\'log\';PMAutoGen.renderTo()">生成日志</button>'+
-        '<button class="btn btn-outline" onclick="PMAutoGen.exportLog()">导出日志</button>'+
       '</div></div>'+
       // 统计卡片
       '<div class="stats-row" style="margin-bottom:12px;">'+
@@ -47,7 +45,7 @@ const PMAutoGen = {
         '<div class="filter-group"><label>调度方案</label><select id="mgScheduleId" onchange="PMAutoGen.genFilter.scheduleId=this.value;PMAutoGen.searchGen()"><option value="" '+(f.scheduleId?'':'selected')+'>全部方案</option>'+schedOpts+'</select></div>'+
         '<div class="filter-group"><label>设备</label><input id="mgEqInfo" value="'+esc(f.eqInfo)+'" onchange="PMAutoGen.genFilter.eqInfo=this.value;PMAutoGen.searchGen()" placeholder="编码/名称"></div>'+
         '<div class="filter-group"><label>生成状态</label><select id="mgResult" onchange="PMAutoGen.genFilter.result=this.value;PMAutoGen.searchGen()"><option value="" '+(f.result?'':'selected')+'>全部状态</option>'+resOpts+'</select></div>'+
-        '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="PMAutoGen.searchGen()">查询</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.resetGenFilter()">重置</button></div>'+
+        '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="PMAutoGen.searchGen()">查询</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.resetGenFilter()">重置</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.exportLog()">导出</button></div>'+
       '</div>'+
       // 表格
       '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>调度方案</th><th>设备</th><th>计划生成时间</th><th>实际生成时间</th><th>生成结果</th><th>工单编号</th><th>失败原因</th><th>操作</th></tr></thead>'+
@@ -103,13 +101,11 @@ const PMAutoGen = {
 
     return '<div class="page-container"><div class="page-header"><div class="page-title">生成日志</div><div class="page-actions">'+
       '<button class="btn btn-outline" onclick="PMAutoGen.mode=\'monitor\';PMAutoGen.page=1;PMAutoGen.renderTo()">\u2190 返回监控总览</button>'+
-      '<button class="btn btn-secondary" onclick="PMAutoGen.resetLogFilter()">刷新</button>'+
-      '<button class="btn btn-outline" onclick="PMAutoGen.exportLog()">导出日志</button>'+
     '</div></div>'+
     '<div class="filter-bar">'+
       '<div class="filter-group"><label>调度编码</label><input value="'+esc(f.scheduleCode)+'" onchange="PMAutoGen.logFilter.scheduleCode=this.value;PMAutoGen.searchLog()" placeholder="调度编码"></div>'+
       '<div class="filter-group"><label>生成状态</label><select onchange="PMAutoGen.logFilter.genStatus=this.value;PMAutoGen.searchLog()"><option value="" '+(f.genStatus?'':'selected')+'>全部状态</option>'+sOpts+'</select></div>'+
-      '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="PMAutoGen.searchLog()">查询</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.resetLogFilter()">重置</button></div>'+
+      '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="PMAutoGen.searchLog()">查询</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.resetLogFilter()">重置</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.exportLog()">导出</button></div>'+
     '</div>'+
     '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>日志编号</th><th>调度方案</th><th>生成类型</th><th>涉及设备</th><th>生成结果</th><th>失败原因</th><th>操作人</th><th>操作时间</th><th>操作</th></tr></thead>'+
     '<tbody>'+pageData.map(d=>{

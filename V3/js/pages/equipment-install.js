@@ -30,7 +30,7 @@ const EquipmentInstall = {
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div><div style="font-size:18px;font-weight:700;">设备安装 / 移交管理</div><div style="font-size:13px;opacity:0.8;">设备到货验收 · 安装调试 · 资产移交</div></div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary" style="background:rgba(255,255,255,0.15);color:white;" onclick="EquipmentInstall.refresh()"><span>&#8635;</span> 刷新</button>
+
             <button class="btn btn-blue" onclick="EquipmentInstall.newDoc()">+ 新增单据</button>
           </div>
         </div>

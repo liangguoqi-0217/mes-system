@@ -16,7 +16,6 @@ const EquipmentRunLog = {
               <div style="font-size:12px;opacity:0.7;">全周期运行流水记录 · 按时间倒序</div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;" onclick="EquipmentRunLog.exportLog()">导出台账</button>
               <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;" onclick="EquipmentRunLog.statistics()">统计分析</button>
             </div>
           </div>
@@ -34,6 +33,7 @@ const EquipmentRunLog = {
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="EquipmentRunLog.search()">查询</button>
             <button class="btn btn-outline btn-sm" onclick="EquipmentRunLog.reset()">重置</button>
+            <button class="btn btn-outline btn-sm" onclick="EquipmentRunLog.exportLog()">导出</button>
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">

@@ -21,7 +21,7 @@ const MfOrder = {
     const typeOpts=mfOrderTypeOptions.map(o=>`<option value="${o.value}" ${f.orderType===o.value?'selected':''}>${o.label}</option>`).join('');
     const sOpts=mfOrderStatusOptions.map(o=>`<option value="${o.value}" ${f.execStatus===o.value?'selected':''}>${o.label}</option>`).join('<option value="" '+(!f.execStatus?'selected':'')+'>全部状态</option>');
 
-    return `<div class="page-container"><div class="page-header"><div class="page-title">维修工单</div><div class="page-actions"><button class="btn btn-secondary" onclick="MfOrder.reset()">刷新</button><button class="btn btn-blue" onclick="MfOrder.create()">+ 新增工单</button></div></div>
+    return `<div class="page-container"><div class="page-header"><div class="page-title">维修工单</div><div class="page-actions"><button class="btn btn-blue" onclick="MfOrder.create()">+ 新增工单</button></div></div>
     <div class="filter-bar">
       <div class="filter-group"><label>工单编号</label><input id="moDocNo" value="${esc(f.docNo)}" onchange="MfOrder.filter.docNo=this.value;MfOrder.refresh()" placeholder="工单编号"></div>
       <div class="filter-group"><label>类型</label><select id="moOrderType" onchange="MfOrder.filter.orderType=this.value;MfOrder.refresh()">${typeOpts}</select></div>

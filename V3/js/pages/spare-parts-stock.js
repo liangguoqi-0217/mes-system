@@ -48,10 +48,7 @@ const SparePartsStock = {
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div><div style="font-size:18px;font-weight:700;">库存查询</div><div style="font-size:13px;opacity:0.8;">实时查看备品备件库存状态</div></div>
-          <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary" style="background:rgba(255,255,255,0.15);color:white;" onclick="SparePartsStock.reset()">刷新</button>
-            <button class="btn btn-blue" onclick="SparePartsStock.exportData()">+ 导出</button>
-          </div>
+          <div style="display:flex;gap:8px;"></div>
         </div>
         <div class="filter-bar" style="flex-shrink:0;">
           <div class="filter-group"><label>工厂</label><select id="spFactory">
@@ -87,6 +84,7 @@ const SparePartsStock = {
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SparePartsStock.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
+            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.exportData()">导出</button>
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">

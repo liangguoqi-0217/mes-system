@@ -8,7 +8,7 @@ const EquipmentBOM = {
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div><div style="font-size:18px;font-weight:700;">设备BOM管理</div><div style="font-size:13px;opacity:0.8;">物料清单</div></div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary" style="background:rgba(255,255,255,0.15);color:white;" onclick="EquipmentBOM.reset()">🔄 刷新</button>
+
             <button class="btn btn-blue" onclick="EquipmentBOM.addModal()">+ 新增BOM</button>
           </div>
         </div>

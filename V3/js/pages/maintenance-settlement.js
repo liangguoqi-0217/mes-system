@@ -16,12 +16,12 @@ const MfSettlement = {
     const typeOpts=mfOrderTypeOptions.map(o=>`<option value="${o.value}" ${f.orderType===o.value?'selected':''}>${o.label}</option>`).join('');
 
     return `<div class="page-container">
-      <div class="page-header"><div class="page-title">工单结算 & 关闭</div><div class="page-actions"><button class="btn btn-secondary" onclick="MfSettlement.refresh()">刷新</button><button class="btn btn-outline btn-sm" onclick="MfSettlement.exportReport()">导出结算报表</button></div></div>
+      <div class="page-header"><div class="page-title">工单结算 & 关闭</div><div class="page-actions"></div></div>
       <div class="filter-bar">
         <div class="filter-group"><label>工单编号</label><input id="settleDocNo" value="${esc(f.docNo)}" onchange="MfSettlement.filter.docNo=this.value;MfSettlement.refresh()"></div>
         <div class="filter-group"><label>类型</label><select id="settleOrderType" onchange="MfSettlement.filter.orderType=this.value;MfSettlement.refresh()">${typeOpts}</select></div>
         <div class="filter-group"><label>设备</label><input id="settleEqInfo" value="${esc(f.eqInfo)}" onchange="MfSettlement.filter.eqInfo=this.value;MfSettlement.refresh()"></div>
-        <div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MfSettlement.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MfSettlement.reset()">重置</button></div>
+        <div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MfSettlement.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MfSettlement.reset()">重置</button><button class="btn btn-outline btn-sm" onclick="MfSettlement.exportReport()">导出</button></div>
       </div>
       <div class="table-wrapper" style="margin-top:12px;"><table class="data-table">
         <thead><tr><th>工单编号</th><th>类型</th><th>设备</th><th>完工时间</th><th>验收</th><th>计划/实际工时</th><th>计划/实际用料</th><th>总成本</th><th>结算状态</th><th>操作</th></tr></thead>

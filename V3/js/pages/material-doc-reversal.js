@@ -108,7 +108,7 @@ const MaterialDocReversal = {
             <div style="font-size:18px;font-weight:700;">物料凭证冲销</div>
             <div style="font-size:13px;opacity:0.8;">库存管理 → 库存记账 → 物料凭证冲销</div>
           </div>
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="MaterialDocReversal.refresh()">🔄 刷新数据</button>
+
         </div>
 
         <!-- 筛选栏 -->
@@ -172,6 +172,7 @@ const MaterialDocReversal = {
       <div class="filter-actions">
         <button class="btn btn-primary btn-sm" onclick="MaterialDocReversal.search()">查询</button>
         <button class="btn btn-secondary btn-sm" onclick="MaterialDocReversal.resetFilter()">重置</button>
+        <button class="btn btn-secondary btn-sm" onclick="MaterialDocReversal.exportData()">导出</button>
       </div>
     </div>`;
   },
@@ -212,6 +213,8 @@ const MaterialDocReversal = {
     // 查询变式：重置时解除变式选中并清除"上次查询条件"
     if (window.QueryVariant) QueryVariant.resetSelection('material-doc-reversal');
 },
+
+  exportData() { toast('导出功能开发中...'); },
 
   /* ==================== 表格 ==================== */
 

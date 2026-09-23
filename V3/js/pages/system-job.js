@@ -297,7 +297,6 @@ const ScheduledJob = {
         <div class="list-toolbar">
           <div class="list-info"><span class="list-count" id="jobListCount">共 0 条</span></div>
           <div style="display:flex;gap:8px;">
-            <button class="btn btn-secondary btn-sm" id="jobBtnRefresh">刷新</button>
             <button class="btn btn-primary btn-sm" id="jobBtnCreate">+ 新建定时JOB</button>
           </div>
         </div>

@@ -20,10 +20,7 @@ const EquipmentRunDashboard = {
               <div style="font-size:15px;font-weight:700;">设备运行总看板</div>
               <div style="font-size:12px;opacity:0.7;">实时状态监控 · 数据刷新：${new Date().toLocaleTimeString('zh-CN')}</div>
             </div>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;" onclick="EquipmentRunDashboard.refresh()">刷新</button>
-              <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:white;" onclick="EquipmentRunDashboard.exportReport()">导出报表</button>
-            </div>
+            <div style="display:flex;gap:8px;"></div>
           </div>
         </div>
         <div style="padding:12px 20px;background:white;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;overflow-x:auto;flex-wrap:wrap;">
@@ -39,6 +36,7 @@ const EquipmentRunDashboard = {
             <div><div class="stat-label">维保停机</div><div class="stat-value" style="font-size:18px;color:#3B82F6;">${maintenance}</div></div></div>
           <div class="stat-card" style="min-width:110px;box-shadow:none;border:1px solid var(--border);padding:8px 10px;border-left:3px solid #6B7280;cursor:pointer;" onclick="EquipmentRunDashboard.filterByStatus('disabled')">
             <div><div class="stat-label">停用/封存</div><div class="stat-value" style="font-size:18px;color:#6B7280;">${disabled}</div></div></div>
+          <button class="btn btn-outline btn-sm" style="margin-left:auto;flex-shrink:0;align-self:center;" onclick="EquipmentRunDashboard.exportReport()">导出</button>
         </div>
         <div class="two-panel" style="flex:1;min-height:0;">
           <div class="left-panel">

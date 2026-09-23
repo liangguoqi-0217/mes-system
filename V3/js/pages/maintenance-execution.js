@@ -20,7 +20,7 @@ const MfExecution = {
     const paused=data.filter(d=>d.orderStatus==='paused').length;
 
     return `<div class="page-container">
-      <div class="page-header"><div class="page-title">工单执行工作台</div><div class="page-actions"><button class="btn btn-secondary" onclick="MfExecution.refresh()">刷新</button></div></div>
+      <div class="page-header"><div class="page-title">工单执行工作台</div><div class="page-actions"></div></div>
       <div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px;">
         <div class="stat-card" style="cursor:pointer;" onclick="MfExecution.filter.status='';MfExecution.refresh()">
           <div class="stat-label">待处理工单</div><div class="stat-value" style="font-size:22px;color:var(--text);">${total}</div></div>

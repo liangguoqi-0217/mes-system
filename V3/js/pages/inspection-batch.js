@@ -114,7 +114,7 @@ const InspectionBatch = {
             <div style="font-size:18px;font-weight:700;">检验批管理</div>
             <div style="font-size:13px;opacity:0.8;">质量管理 → 质量检验 → 检验批管理</div>
           </div>
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="InspectionBatch.refresh()">🔄 刷新数据</button>
+
         </div>
 
         <!-- Tabs -->
@@ -218,6 +218,7 @@ const InspectionBatch = {
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="InspectionBatch.search()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetFilter()">重置</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.exportData()">导出</button>
         </div>
       </div>`;
     } else {
@@ -233,6 +234,7 @@ const InspectionBatch = {
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="InspectionBatch.searchPending()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetPendingFilter()">重置</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.exportData()">导出</button>
         </div>
       </div>`;
     }
@@ -276,6 +278,8 @@ const InspectionBatch = {
     // 查询变式：重置时解除变式选中并清除"上次查询条件"
     if (window.QueryVariant) QueryVariant.resetSelection('inspection-batch');
 },
+
+  exportData() { toast('导出功能开发中...'); },
 
   // ==================== 检验批表格 ====================
 

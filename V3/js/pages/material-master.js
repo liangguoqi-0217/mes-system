@@ -21,11 +21,10 @@ const MaterialMaster = {
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="MaterialMaster.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="MaterialMaster.reset()">重置</button>
+            <button class="btn btn-secondary btn-sm" onclick="MaterialMaster.export()">导出</button>
           </div>
         </div>
-        <div style="flex-shrink:0;display:flex;justify-content:flex-end;padding:4px 16px 0;">
-          <button class="btn btn-sm" style="background:#f1f5f9;color:#475569;border:1px solid var(--border);" onclick="MaterialMaster.export()">导出</button>
-        </div>
+
         <div class="table-wrapper" style="flex:1;overflow-x:auto;">
           <table class="data-table" style="min-width:1600px;">
             <thead><tr>
