@@ -204,6 +204,7 @@ const OrderReadiness = {
           <select id="orGapStatus">
             <option value="all">全部</option>
             <option value="short">仅缺料</option>
+            <option value="tight">仅并发紧张</option>
             <option value="ok">仅齐套</option>
           </select>
         </div>
@@ -309,8 +310,9 @@ const OrderReadiness = {
     const push = (map, o, c, withRef) => {
       const open = (c.reqQty || 0) - (c.issuedQty || 0);
       if (open <= 0) return;
-      const cur = map.get(c.mat) || { open: 0, refs: [] };
+      const cur = map.get(c.mat) || { open: 0, refs: [], orders: new Set() };
       cur.open += open;
+      cur.orders.add(o.no);
       if (withRef) cur.refs.push({ no: o.no, name: o.name, wc: o.workCenter, req: c.reqQty, issued: c.issuedQty || 0, open: open });
       map.set(c.mat, cur);
     };
@@ -330,21 +332,25 @@ const OrderReadiness = {
     };
 
     // 4. 物料维度行
+    // 状态三态：short=本车间需求已超库存；tight=本车间够、但全厂总需求超库存（跨车间竞争）；ok=齐套
     let rows = [];
     myMap.forEach((d, mat) => {
       const st = stockOf(mat);
       const gap = d.open - st.stock;   // >0 表示缺料
+      const allD = allMap.has(mat) ? allMap.get(mat).open : d.open;
+      const tight = gap <= 0 && allD > st.stock;
       rows.push({
         mat: mat,
         name: (d.refs[0] && d.refs[0].name) || st.name || '',
         unit: (d.refs[0] && d.refs[0].unit) || st.unit || '',
         myDemand: d.open,
-        allDemand: allMap.has(mat) ? allMap.get(mat).open : d.open,
+        allDemand: allD,
+        allOrders: allMap.has(mat) ? allMap.get(mat).orders.size : d.refs.length,
         stock: st.stock,
         unrestricted: st.unrestricted,
         quality: st.quality,
         gap: gap,
-        status: gap > 0 ? 'short' : 'ok',
+        status: gap > 0 ? 'short' : (tight ? 'tight' : 'ok'),
         refs: d.refs
       });
     });
@@ -352,36 +358,49 @@ const OrderReadiness = {
     if (matKey) rows = rows.filter(r => (r.mat + r.name).toLowerCase().indexOf(matKey) !== -1);
     if (gapSel === 'short') rows = rows.filter(r => r.status === 'short');
     if (gapSel === 'ok') rows = rows.filter(r => r.status === 'ok');
-    // 缺料优先，缺口大的优先
+    if (gapSel === 'tight') rows = rows.filter(r => r.status === 'tight');
+    // 缺料 → 并发紧张 → 齐套；同级按缺口降序
+    const rank = { short: 0, tight: 1, ok: 2 };
     rows.sort((a, b) => {
-      if (a.status !== b.status) return a.status === 'short' ? -1 : 1;
+      if (a.status !== b.status) return rank[a.status] - rank[b.status];
       return b.gap - a.gap;
     });
     this.matRows = rows;
 
     // 5. 订单维度行（库存取全量，不做跨订单分配 —— A 方案）
+    // 组件三态：short=本订单未清需求已超库存；tight=本订单够、但同期并发订单合计超库存；ok=齐套
     this.orderRows = myOrders.map(o => {
       const items = o.components.map(c => {
         const open = (c.reqQty || 0) - (c.issuedQty || 0);
         const st = stockOf(c.mat);
+        const stock = st.stock;
+        const gap = open - stock;
+        const allInfo = allMap.get(c.mat);
+        const concurrent = allInfo ? allInfo.orders.size : 1;
+        const concurrentOver = allInfo ? allInfo.open > stock : false;
         return {
           mat: c.mat, name: c.name, unit: c.unit,
           req: c.reqQty || 0, issued: c.issuedQty || 0, open: open,
-          stock: st.stock, gap: open - st.stock
+          stock: stock, gap: gap,
+          concurrent: concurrent,
+          concurrentDemand: allInfo ? allInfo.open : open,
+          status: gap > 0 ? 'short' : (concurrentOver ? 'tight' : 'ok')
         };
       });
-      const shortCount = items.filter(i => i.gap > 0).length;
+      const shortCount = items.filter(i => i.status === 'short').length;
+      const tightCount = items.filter(i => i.status === 'tight').length;
       return {
         no: o.no, name: o.name, plant: o.plant, workCenter: o.workCenter,
         startDate: o.startDate, endDate: o.endDate, qty: o.qty, unit: o.unit,
         statusName: o.statusName, items: items,
-        total: items.length, shortCount: shortCount, okCount: items.length - shortCount,
-        status: shortCount === 0 ? 'ok' : 'short'
+        total: items.length, shortCount: shortCount, tightCount: tightCount,
+        okCount: items.length - shortCount - tightCount,
+        status: shortCount > 0 ? 'short' : (tightCount > 0 ? 'tight' : 'ok')
       };
     });
     this.orderRows.sort((a, b) => {
-      if (a.status !== b.status) return a.status === 'short' ? -1 : 1;
-      return b.shortCount - a.shortCount;
+      if (a.status !== b.status) return rank[a.status] - rank[b.status];
+      return (b.shortCount + b.tightCount) - (a.shortCount + a.tightCount);
     });
   },
 
@@ -434,9 +453,16 @@ const OrderReadiness = {
     const body = page.map((r, i) => {
       const idx = start + i + 1;
       const short = r.status === 'short';
+      const tight = r.status === 'tight';
       const gapCell = short
         ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(r.gap) + '</span>'
         : '<span style="color:var(--text-muted);">0</span>';
+      const allCell = tight
+        ? '<span style="color:var(--warning);font-weight:700;" title="同期 ' + r.allOrders + ' 个订单合计需求 ' + this._fmt(r.allDemand) + '，已超可用库存 ' + this._fmt(r.stock) + '">' + this._fmt(r.allDemand) + ' ⚠</span>'
+        : this._fmt(r.allDemand);
+      const badge = short
+        ? '<span class="badge badge-red badge-sm">缺料</span>'
+        : (tight ? '<span class="badge badge-yellow badge-sm">并发紧张</span>' : '<span class="badge badge-green badge-sm">齐套</span>');
       const detailId = 'orRef_' + idx;
       return `
       <tr>
@@ -445,15 +471,17 @@ const OrderReadiness = {
         <td>${esc(r.name)}</td>
         <td>${esc(r.unit)}</td>
         <td style="text-align:right;">${this._fmt(r.myDemand)}</td>
-        <td style="text-align:right;color:var(--text-secondary);">${this._fmt(r.allDemand)}</td>
+        <td style="text-align:right;color:var(--text-secondary);">${allCell}</td>
         <td style="text-align:right;" title="非限制 ${this._fmt(r.unrestricted)} + 质检 ${this._fmt(r.quality)}">${this._fmt(r.stock)}</td>
         <td style="text-align:right;">${gapCell}</td>
-        <td style="text-align:center;">${short ? '<span class="badge badge-red badge-sm">缺料</span>' : '<span class="badge badge-green badge-sm">齐套</span>'}</td>
+        <td style="text-align:center;">${badge}</td>
         <td style="text-align:center;"><span style="color:var(--primary);cursor:pointer;" onclick="OrderReadiness.toggleRef('${detailId}')">${r.refs.length} 单 ▸</span></td>
       </tr>
       <tr class="or-detail" id="${detailId}" style="display:none;">
         <td colspan="10" style="padding:8px 16px;">
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">本车间订单需求明细（未清需求 = 需求 − 已投料）</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">本车间订单需求明细（未清需求 = 需求 − 已投料）${tight
+            ? '<span style="color:var(--warning);font-weight:600;margin-left:8px;">⚠ 同期全厂共 ' + r.allOrders + ' 个订单需要此物料，合计 ' + this._fmt(r.allDemand) + '，已超可用库存 ' + this._fmt(r.stock) + '</span>'
+            : ''}</div>
           <table class="data-table data-table-compact">
             <thead><tr>
               <th>流程订单号</th><th>订单名称</th><th>车间</th>
@@ -500,6 +528,10 @@ const OrderReadiness = {
     const body = page.map((o, i) => {
       const idx = start + i + 1;
       const short = o.status === 'short';
+      const tight = o.status === 'tight';
+      const badge = short
+        ? '<span class="badge badge-red badge-sm">缺料</span>'
+        : (tight ? '<span class="badge badge-yellow badge-sm">并发紧张</span>' : '<span class="badge badge-green badge-sm">齐套</span>');
       const detailId = 'orOrder_' + o.no;
       return `
       <tr>
@@ -510,19 +542,22 @@ const OrderReadiness = {
         <td>${esc(o.startDate)}</td>
         <td style="text-align:right;">${esc(o.qty)} ${esc(o.unit)}</td>
         <td style="text-align:center;">${o.okCount} / ${o.total}</td>
-        <td style="text-align:center;">${short ? '<span style="color:var(--danger);font-weight:700;">' + o.shortCount + '</span>' : '<span style="color:var(--text-muted);">0</span>'}</td>
-        <td style="text-align:center;">${short ? '<span class="badge badge-red badge-sm">缺料</span>' : '<span class="badge badge-green badge-sm">齐套</span>'}</td>
+        <td style="text-align:center;">${o.shortCount > 0 ? '<span style="color:var(--danger);font-weight:700;">' + o.shortCount + '</span>' : '<span style="color:var(--text-muted);">0</span>'}</td>
+        <td style="text-align:center;">${o.tightCount > 0 ? '<span style="color:var(--warning);font-weight:700;">' + o.tightCount + '</span>' : '<span style="color:var(--text-muted);">0</span>'}</td>
+        <td style="text-align:center;">${badge}</td>
         <td style="text-align:center;"><span style="color:var(--primary);cursor:pointer;" onclick="OrderReadiness.toggleRef('${detailId}')">明细 ▸</span></td>
       </tr>
       <tr class="or-detail" id="${detailId}" style="display:none;">
-        <td colspan="10" style="padding:8px 16px;">
+        <td colspan="11" style="padding:8px 16px;">
           <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">组件（预留）逐项对比 —— 未清需求 = 需求 − 已投料；可用库存 = 非限制 + 质检</div>
           <table class="data-table data-table-compact">
             <thead><tr>
               <th>物料号</th><th>物料描述</th>
               <th style="text-align:right;">需求</th><th style="text-align:right;">已投料</th>
               <th style="text-align:right;">未清需求</th><th style="text-align:right;">可用库存</th>
-              <th style="text-align:right;">缺口</th><th style="text-align:center;">状态</th>
+              <th style="text-align:right;">缺口</th>
+              <th style="text-align:center;" title="所选日期范围内同时需要该物料的订单数">同期并发</th>
+              <th style="text-align:center;">状态</th>
             </tr></thead>
             <tbody>${o.items.map(it => '<tr>' +
               '<td style="font-family:monospace;font-size:12px;">' + esc(it.mat) + '</td>' +
@@ -532,7 +567,8 @@ const OrderReadiness = {
               '<td style="text-align:right;font-weight:600;">' + this._fmt(it.open) + '</td>' +
               '<td style="text-align:right;">' + this._fmt(it.stock) + '</td>' +
               '<td style="text-align:right;">' + (it.gap > 0 ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(it.gap) + '</span>' : '<span style="color:var(--text-muted);">0</span>') + '</td>' +
-              '<td style="text-align:center;">' + (it.gap > 0 ? '<span class="badge badge-red badge-sm">缺料</span>' : '<span class="badge badge-green badge-sm">齐套</span>') + '</td>' +
+              '<td style="text-align:center;" title="并发合计需求 ' + this._fmt(it.concurrentDemand) + '">' + (it.concurrent > 1 ? '<span style="color:var(--warning);font-weight:600;">' + it.concurrent + ' 单</span>' : '<span style="color:var(--text-muted);">1 单</span>') + '</td>' +
+              '<td style="text-align:center;">' + (it.status === 'short' ? '<span class="badge badge-red badge-sm">缺料</span>' : (it.status === 'tight' ? '<span class="badge badge-yellow badge-sm">并发紧张</span>' : '<span class="badge badge-green badge-sm">齐套</span>')) + '</td>' +
             '</tr>').join('')}</tbody>
           </table>
         </td>
@@ -546,6 +582,7 @@ const OrderReadiness = {
         <th style="text-align:right;">订单数量</th>
         <th style="text-align:center;">齐套项/总项</th>
         <th style="text-align:center;">缺料项</th>
+        <th style="text-align:center;" title="本订单单看够，但同期其他订单也在要，合计已超库存">并发紧张</th>
         <th style="width:90px;text-align:center;">状态</th>
         <th style="width:90px;text-align:center;">组件明细</th>
       </tr></thead>
@@ -626,19 +663,21 @@ const OrderReadiness = {
     if (!rows.length) return toast('无数据可导出');
     const lines = [];
     if (this.view === 'mat') {
-      lines.push(['序号', '物料号', '物料描述', '单位', '本车间需求量', '全厂总需求', '可用库存', '缺口', '状态'].join(','));
+      lines.push(['序号', '物料号', '物料描述', '单位', '本车间需求量', '全厂总需求', '并发订单数', '可用库存', '缺口', '状态'].join(','));
       rows.forEach((r, i) => {
         lines.push([
-          i + 1, r.mat, r.name, r.unit, r.myDemand, r.allDemand, r.stock,
-          r.gap > 0 ? -r.gap : 0, r.status === 'short' ? '缺料' : '齐套'
+          i + 1, r.mat, r.name, r.unit, r.myDemand, r.allDemand, r.allOrders, r.stock,
+          r.gap > 0 ? -r.gap : 0,
+          r.status === 'short' ? '缺料' : (r.status === 'tight' ? '并发紧张' : '齐套')
         ].join(','));
       });
     } else {
-      lines.push(['序号', '流程订单号', '订单名称', '车间', '计划开始日', '齐套项', '缺料项', '状态'].join(','));
+      lines.push(['序号', '流程订单号', '订单名称', '车间', '计划开始日', '齐套项', '缺料项', '并发紧张项', '状态'].join(','));
       rows.forEach((o, i) => {
         lines.push([
           i + 1, o.no, o.name, OR_WORKCENTER_TEXT[o.workCenter] || o.workCenter,
-          o.startDate, o.okCount + '/' + o.total, o.shortCount, o.status === 'short' ? '缺料' : '齐套'
+          o.startDate, o.okCount + '/' + o.total, o.shortCount, o.tightCount,
+          o.status === 'short' ? '缺料' : (o.status === 'tight' ? '并发紧张' : '齐套')
         ].join(','));
       });
     }
