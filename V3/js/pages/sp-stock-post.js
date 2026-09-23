@@ -633,6 +633,17 @@ const spStockPostData = [
     lines: [
       { itemNo: 10, matCode: 'M20008', matName: '工业润滑油', qty: 20, unit: 'L', batch: '' }
     ]
+  },
+  {
+    docNo: 'SP-20260728-006', postType: 'stock-scrap', moveType: '551',
+    plant: '1000', location: 'A02辅料仓', targetLocation: '',
+    internalOrderNo: '', costCenter: '', adjustDir: '', scrapReason: '数量录入错误', consignDir: '',
+    postDept: '生产二部', applicant: '王芳', postDate: '2026-07-28',
+    status: '已冲销', materialDocNo: '4900000606', reversalDocNo: '4900000707',
+    notes: '报废数量录入错误，已执行冲销。',
+    lines: [
+      { itemNo: 10, matCode: 'M20015', matName: '乳糖（药用）', qty: 30, unit: 'KG', batch: 'B250812' }
+    ]
   }
 ];
 
