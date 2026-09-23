@@ -53,31 +53,8 @@
     border-radius:4px; padding:3px 8px; font-weight:600;
   }
 
-  /* 方案 C：抽屉 */
-  .qv-drawer-btn { display:flex; align-items:center; gap:6px; }
-  .qv-mask { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:900; display:none; }
-  .qv-mask.show { display:block; }
-  .qv-drawer {
-    position:fixed; top:0; right:0; height:100%; width:440px; background:#fff; z-index:901;
-    box-shadow:-6px 0 24px rgba(15,23,42,.14); transform:translateX(100%);
-    transition:transform .28s ease; display:flex; flex-direction:column;
-  }
-  .qv-drawer.show { transform:translateX(0); }
-  .qv-drawer-head { padding:18px 22px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-  .qv-drawer-head h4 { margin:0; font-size:16px; font-weight:700; }
-  .qv-drawer-body { flex:1; overflow-y:auto; padding:8px 18px 18px; }
-  .qv-card {
-    border:1px solid var(--border); border-radius:var(--radius-sm); padding:14px 16px; margin-top:12px;
-    background:#fff; transition:all .15s;
-  }
-  .qv-card:hover { border-color:var(--primary); box-shadow:0 2px 8px rgba(30,58,95,.08); }
-  .qv-card.active { border-color:var(--primary); background:rgba(30,58,95,.03); }
-  .qv-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .qv-card-name { font-size:14px; font-weight:700; }
-  .qv-card-cond { margin-top:8px; font-size:12px; color:var(--text-secondary); line-height:1.75; }
-  .qv-card-meta { margin-top:8px; font-size:11.5px; color:var(--text-muted); }
-  .qv-card-ops { margin-top:12px; display:flex; gap:6px; flex-wrap:wrap; }
-  .qv-drawer-foot { padding:14px 22px; border-top:1px solid var(--border); background:#fafbfc; display:flex; justify-content:space-between; gap:10px; }
+  /* 方案 C 的卡片、分栏样式统一使用 common.css（与正式实现保持一致） */
+  .qv-recent-demo-gap { height: 0; }
 
   /* 最近输入下拉（仿真定位） */
   .qv-recent-demo { position:absolute; z-index:800; background:#fff; border:1px solid var(--border);
@@ -112,7 +89,7 @@
 
 <div class="demo-top">
   <h1>查询变式 · 三种界面方案对比</h1>
-  <p>以下三个方案的功能完全一致（保存 / 应用 / 管理 / 最近输入），区别只在控件怎么摆。每个方案都可以真实点开体验。</p>
+  <p>三个方案功能完全一致（保存 / 应用 / 管理 / 最近输入），区别只在控件怎么摆，每个方案都能真实点开体验。<strong>最终采用：方案 C</strong>（见页面最下方，已按你的要求改为：按钮常驻「我的变式」、位置在"查询"与"重置"之间、点击打开大弹窗、弹窗内左侧选变式右侧存变式）。</p>
 </div>
 
 <div class="demo-wrap">
@@ -291,9 +268,9 @@
         <div class="filter-group"><label>物料号</label><input type="text" placeholder="物料号" value="60001018"></div>
         <div class="filter-group"><label>批次</label><input type="text" placeholder="批次"></div>
         <div class="filter-actions">
-          <!-- C 的入口 -->
-          <button class="btn btn-secondary btn-sm" onclick="openDrawer()">我的变式（3）· 周一备件盘库</button>
           <button class="btn btn-primary btn-sm">查询</button>
+          <!-- C 的入口：名称固定，位置在"查询"与"重置"之间 -->
+          <button class="btn btn-secondary btn-sm" onclick="openC()">我的变式</button>
           <button class="btn btn-secondary btn-sm">重置</button>
         </div>
       </div>
@@ -307,18 +284,17 @@
       <div class="fake-foot">共 128 条 · 第 1 / 9 页</div>
     </div>
 
-    <div class="hint">↑ 点「我的变式（3）」从右侧滑出抽屉。</div>
+    <div class="hint">↑ 点「我的变式」打开大弹窗：左侧是已保存的变式（点卡片即用），右侧可把当前条件存成新变式。</div>
 
     <div class="demo-pros">
       <div class="good"><h4>优点</h4><ul>
-        <li>筛选区最干净，只多一个按钮</li>
-        <li>卡片式展示信息量最大：条件、使用次数、默认标记一目了然</li>
-        <li>变式多（10+）时最好用，可搜索/分组</li>
+        <li>筛选区只多一个按钮，最干净</li>
+        <li>弹窗空间大，选变式和存变式在一个界面里完成</li>
+        <li>大弹窗符合你"弹窗要大、别让我拖滚动条"的习惯</li>
       </ul></div>
       <div class="cost"><h4>代价</h4><ul>
-        <li>切换变式要多一步（先开抽屉再选），高频切换时最慢</li>
-        <li>抽屉遮住右侧内容，表格要重新看</li>
-        <li>移动端/小屏体验一般</li>
+        <li>切换变式要两步（打开弹窗 + 点卡片）</li>
+        <li>按钮上看不到当前用的是哪个变式（可在打开弹窗后看到"当前"标记）</li>
       </ul></div>
     </div>
   </section>
@@ -342,51 +318,69 @@
 
 </div>
 
-<!-- 抽屉（方案 C） -->
-<div class="qv-mask" id="drawerMask" onclick="closeDrawer()"></div>
-<div class="qv-drawer" id="drawer">
-  <div class="qv-drawer-head">
-    <h4>我的查询变式</h4>
-    <button class="modal-close" onclick="closeDrawer()">×</button>
-  </div>
-  <div class="qv-drawer-body">
-    <div class="qv-card active">
-      <div class="qv-card-top"><span class="qv-card-name">周一备件盘库</span><span class="qv-tag">默认</span></div>
-      <div class="qv-card-cond">工厂：1000 山东步长制药工厂<br>物料类型：ERSA 备件<br>物料号：60001018</div>
-      <div class="qv-card-meta">用过 24 次 · 最近 2026-09-21</div>
-      <div class="qv-card-ops">
-        <button class="btn btn-secondary btn-sm" onclick="openSave()">更新为当前条件</button>
-        <button class="btn btn-secondary btn-sm">重命名</button>
-        <button class="btn btn-secondary btn-sm">↑</button>
-        <button class="btn btn-danger btn-sm">删除</button>
+<!-- 方案 C 最终形态：大弹窗（左侧变式列表 + 右侧保存区） -->
+<div class="demo-modal" id="cModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">我的查询变式</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="qv-split">
+        <div class="qv-split-main">
+          <div class="qv-sec-title">已保存的变式<span class="qv-sec-hint">点击卡片即可应用并查询</span></div>
+
+          <div class="qv-card active">
+            <div class="qv-card-top">
+              <span class="qv-card-name">周一备件盘库 <span class="qv-tag">默认</span> <span class="qv-tag qv-tag-now">当前</span></span>
+              <span class="qv-card-ops">
+                <span class="qv-ops-disabled">已默认</span>
+                <button class="btn btn-danger btn-sm">删除</button>
+              </span>
+            </div>
+            <div class="qv-card-cond">工厂：1000 山东步长制药工厂；物料类型：ERSA 备件；物料号：60001018</div>
+          </div>
+
+          <div class="qv-card">
+            <div class="qv-card-top">
+              <span class="qv-card-name">月底盘点</span>
+              <span class="qv-card-ops">
+                <button class="btn btn-secondary btn-sm">设为默认</button>
+                <button class="btn btn-danger btn-sm">删除</button>
+              </span>
+            </div>
+            <div class="qv-card-cond">工厂：2001 陕西步长制药工厂；显示类型：1 批次汇总</div>
+          </div>
+
+          <div class="qv-card">
+            <div class="qv-card-top">
+              <span class="qv-card-name">紧急件查询</span>
+              <span class="qv-card-ops">
+                <button class="btn btn-secondary btn-sm">设为默认</button>
+                <button class="btn btn-danger btn-sm">删除</button>
+              </span>
+            </div>
+            <div class="qv-card-cond">物料类型：ERSA 备件；库位：1000|5004</div>
+          </div>
+        </div>
+
+        <div class="qv-split-side">
+          <div class="qv-sec-title">保存当前条件为新变式</div>
+          <div class="form-group"><label>变式名称</label>
+            <input type="text" placeholder="如：周一备件盘库"></div>
+          <label class="qv-check"><input type="checkbox"> 设为该页面的默认变式</label>
+          <div class="qv-preview">
+            <div class="qv-preview-title">将保存以下条件</div>
+            工厂：1000 山东步长制药工厂<br>物料类型：ERSA 备件<br>物料号：60001018
+          </div>
+          <div class="qv-tip">置灰或隐藏的字段不会被保存；条件为空的字段也不会保存。</div>
+          <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:9px 20px;">保存为新变式</button>
+        </div>
       </div>
     </div>
-    <div class="qv-card">
-      <div class="qv-card-top"><span class="qv-card-name">月底盘点</span></div>
-      <div class="qv-card-cond">工厂：2001 陕西步长制药工厂<br>显示类型：1 批次汇总</div>
-      <div class="qv-card-meta">用过 6 次 · 最近 2026-08-31</div>
-      <div class="qv-card-ops">
-        <button class="btn btn-secondary btn-sm">应用</button>
-        <button class="btn btn-secondary btn-sm">设为默认</button>
-        <button class="btn btn-secondary btn-sm">重命名</button>
-        <button class="btn btn-danger btn-sm">删除</button>
-      </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
     </div>
-    <div class="qv-card">
-      <div class="qv-card-top"><span class="qv-card-name">紧急件查询</span></div>
-      <div class="qv-card-cond">物料类型：ERSA 备件<br>库位：1000|5004</div>
-      <div class="qv-card-meta">用过 2 次 · 最近 2026-09-15</div>
-      <div class="qv-card-ops">
-        <button class="btn btn-secondary btn-sm">应用</button>
-        <button class="btn btn-secondary btn-sm">设为默认</button>
-        <button class="btn btn-secondary btn-sm">重命名</button>
-        <button class="btn btn-danger btn-sm">删除</button>
-      </div>
-    </div>
-  </div>
-  <div class="qv-drawer-foot">
-    <button class="btn btn-secondary btn-sm">清除本页输入历史</button>
-    <button class="btn btn-primary btn-sm" onclick="openSave()">+ 保存当前条件</button>
   </div>
 </div>
 
@@ -478,20 +472,14 @@
   }
   function openSave() { document.getElementById('saveModal').classList.add('show'); }
   function openManage() { document.getElementById('manageModal').classList.add('show'); }
+  function openC() { document.getElementById('cModal').classList.add('show'); }
   function closeModal() {
     document.getElementById('saveModal').classList.remove('show');
     document.getElementById('manageModal').classList.remove('show');
-  }
-  function openDrawer() {
-    document.getElementById('drawerMask').classList.add('show');
-    document.getElementById('drawer').classList.add('show');
-  }
-  function closeDrawer() {
-    document.getElementById('drawerMask').classList.remove('show');
-    document.getElementById('drawer').classList.remove('show');
+    document.getElementById('cModal').classList.remove('show');
   }
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeModal(); closeDrawer(); }
+    if (e.key === 'Escape') closeModal();
   });
 </script>
 </body>

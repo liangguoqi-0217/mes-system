@@ -84,7 +84,6 @@ const SparePartsStock = {
           </select></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
           <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
-          ${window.QueryVariant ? QueryVariant.barHtml('sp-stock') : ''}
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SparePartsStock.search()">查询</button>
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
@@ -112,7 +111,10 @@ const SparePartsStock = {
 
   init() {
     // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
-    if (window.QueryVariant) QueryVariant.restore('sp-stock');
+    if (window.QueryVariant) {
+      QueryVariant.mount('sp-stock');   // 在"查询"按钮后插入「我的变式」按钮
+      QueryVariant.restore('sp-stock');
+    }
     this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
     this.page = 1;
     const displayType = document.getElementById('spDisplayType').value;
@@ -351,7 +353,6 @@ const SparePartsStock = {
     if (window.QueryVariant) {
       QueryVariant.saveAuto('sp-stock');
       QueryVariant.recordUsed('sp-stock');
-      QueryVariant.syncOptions('sp-stock');
     }
   },
 

@@ -2,10 +2,12 @@
 // 存储层：localStorage（数据结构 1:1 对应未来后端表 mes_query_variant / mes_field_recent_value）
 // 迁移后端时只需把 _read/_write 换成接口调用，页面代码零改动。
 //
-// 页面接入方式（3 步）：
-//   1. render() 的筛选区内插入 QueryVariant.barHtml(pageId)
-//   2. init() 里调用 QueryVariant.restore(pageId) + QueryVariant.bindRecent(pageId)
-//   3. search() 末尾调用 QueryVariant.saveAuto(pageId) + QueryVariant.recordUsed(pageId)
+// 页面接入方式：
+//   1. init() 里调用 QueryVariant.mount(pageId)（自动把「我的变式」按钮插到"查询"按钮之后）
+//                   + QueryVariant.restore(pageId)（回填默认变式/上次条件，不自动查询）
+//                   + QueryVariant.bindRecent(pageId)（文本字段绑定最近输入下拉）
+//   2. search() 末尾调用 QueryVariant.saveAuto(pageId) + QueryVariant.recordUsed(pageId)
+//   3. reset() 末尾调用 QueryVariant.resetSelection(pageId)
 //   4. 文件末尾调用 QueryVariant.register({pageId, fields, textFields, labels, onApply, onRestore})
 
 window.QueryVariant = (function () {
@@ -16,12 +18,10 @@ window.QueryVariant = (function () {
   const MAX_RECENT = 5;      // 每个字段最近输入保留条数
   const SCHEMA_VERSION = 1;  // conditions_json 结构版本
   const AUTO_FLAG = '__AUTO__';
-  const AUTO_NAME = '上次查询条件';
   const AUTO_CODE = '__LAST__';
 
   const _reg = {};    // pageId -> 页面注册配置
   const _state = {};  // pageId -> { currentId }
-  let _pendingSave = null;
 
   /* ================= 基础工具 ================= */
 
@@ -62,6 +62,12 @@ window.QueryVariant = (function () {
     }
     return val;
   }
+  // 条件对象 -> 可读摘要（用于列表与保存预览）
+  function _condText(pageId, cond, sep) {
+    const keys = Object.keys(cond || {});
+    if (!keys.length) return '无条件';
+    return keys.map(k => _label(pageId, k) + '：' + _esc(_display(pageId, k, cond[k]))).join(sep || '；');
+  }
 
   /* ================= 变式数据层 ================= */
 
@@ -71,16 +77,13 @@ window.QueryVariant = (function () {
   function _variants(pageId) {
     return _all(pageId)
       .filter(v => v.source !== 'AUTO' && !v.deleted_at)
-      .sort((a, b) =>
-        (a.sort_no || 0) - (b.sort_no || 0) ||
-        String(b.last_used_at || '').localeCompare(String(a.last_used_at || '')));
+      .sort((a, b) => (a.sort_no || 0) - (b.sort_no || 0));
   }
   function _auto(pageId) {
     return _all(pageId).find(v => v.source === 'AUTO' && !v.deleted_at) || null;
   }
-  function _find(pageId, id) {
-    return _all(pageId).find(v => v.id === id) || null;
-  }
+  function _find(pageId, id) { return _all(pageId).find(v => v.id === id) || null; }
+
   function _markApplied(pageId, id) {
     const arr = _all(pageId);
     const v = arr.find(x => x.id === id);
@@ -121,8 +124,6 @@ window.QueryVariant = (function () {
     if (c.onRestore) c.onRestore();
   }
 
-  function _clearFields(pageId) { _applyValues(pageId, {}); }
-
   /* ================= 最近输入 ================= */
 
   // 点查询时记录：只记录手工文本字段的非空值，随后按字段滚动淘汰到 MAX_RECENT 条
@@ -161,125 +162,6 @@ window.QueryVariant = (function () {
       .sort((a, b) => String(b.last_used_at || '').localeCompare(String(a.last_used_at || '')))
       .slice(0, MAX_RECENT);
   }
-
-  /* ================= 变式栏 UI ================= */
-
-  function _optionsHtml(pageId, selectedId) {
-    const items = _variants(pageId);
-    const opts = ['<option value="">— 未使用 —</option>'];
-    if (_auto(pageId)) opts.push('<option value="' + AUTO_FLAG + '">' + AUTO_NAME + '</option>');
-    items.forEach(v => {
-      opts.push('<option value="' + _esc(v.id) + '">' +
-        _esc(v.variant_name + (v.is_default ? '（默认）' : '')) + '</option>');
-    });
-    const html = opts.join('');
-    const sel = _el('qvSelect');
-    if (sel) {
-      sel.innerHTML = html;
-      sel.value = selectedId || '';
-    }
-    return html;
-  }
-
-  // 插入筛选区的变式栏 HTML
-  function barHtml(pageId) {
-    if (!_cfg(pageId)) return '';
-    // 页面重绘（含切换页面）时清理遗留的下拉与弹窗
-    hideRecent();
-    _close('qvSaveBackdrop');
-    _close('qvManageBackdrop');
-    return '<div class="filter-group" style="min-width:230px;">' +
-      '<label>查询变式</label>' +
-      '<div class="qv-bar">' +
-      '<select id="qvSelect" style="flex:1;min-width:0;" onchange="QueryVariant.onSelect(\'' + pageId + '\')">' +
-      _optionsHtml(pageId, '') +
-      '</select>' +
-      '<button class="btn btn-secondary btn-sm" style="padding:5px 8px;" title="将当前条件保存为变式" onclick="QueryVariant.openSave(\'' + pageId + '\')">☆</button>' +
-      '<button class="btn btn-secondary btn-sm" style="padding:5px 8px;" title="管理变式" onclick="QueryVariant.openManage(\'' + pageId + '\')">管理</button>' +
-      '</div></div>';
-  }
-
-  // 用户主动选择：立即执行查询
-  function onSelect(pageId) {
-    const sel = _el('qvSelect');
-    const v = sel ? sel.value : '';
-    hideRecent();
-    if (!v) {
-      _clearFields(pageId);
-      _state[pageId] = { currentId: null };
-    } else if (v === AUTO_FLAG) {
-      const a = _auto(pageId);
-      _applyValues(pageId, a ? a.conditions_json : {});
-      _state[pageId] = { currentId: AUTO_FLAG };
-    } else {
-      const item = _find(pageId, v);
-      if (!item) return;
-      _applyValues(pageId, item.conditions_json);
-      _markApplied(pageId, v);
-      _state[pageId] = { currentId: v };
-    }
-    const c = _cfg(pageId);
-    if (c && c.onApply) c.onApply();
-  }
-
-  // 进入页面：回填默认变式 > 上次条件 > 空；不自动执行查询
-  function restore(pageId) {
-    const def = _variants(pageId).find(v => v.is_default);
-    if (def) {
-      _applyValues(pageId, def.conditions_json);
-      _markApplied(pageId, def.id);
-      _optionsHtml(pageId, def.id);
-      _state[pageId] = { currentId: def.id };
-      return;
-    }
-    const a = _auto(pageId);
-    if (a) {
-      _applyValues(pageId, a.conditions_json);
-      _optionsHtml(pageId, AUTO_FLAG);
-      _state[pageId] = { currentId: AUTO_FLAG };
-      return;
-    }
-    _optionsHtml(pageId, '');
-    _state[pageId] = { currentId: null };
-  }
-
-  // 刷新下拉选项并尽量保持当前选中项（查询后新增"上次查询条件"时使用）
-  function syncOptions(pageId) {
-    const sel = _el('qvSelect');
-    const cur = sel ? sel.value : ((_state[pageId] && _state[pageId].currentId) || '');
-    _optionsHtml(pageId, cur);
-  }
-
-  // 重置页面时：解除变式选中并清除"上次条件"
-  function resetSelection(pageId) {
-    const arr = _all(pageId);
-    const i = arr.findIndex(v => v.source === 'AUTO');
-    if (i > -1) arr.splice(i, 1);
-    _write(_vKey(pageId), arr);
-    _optionsHtml(pageId, '');
-    _state[pageId] = { currentId: null };
-  }
-
-  // 查询执行后：自动保存"上次条件"
-  function saveAuto(pageId) {
-    const cond = _collect(pageId);
-    const arr = _all(pageId);
-    const i = arr.findIndex(v => v.source === 'AUTO');
-    if (i > -1) arr.splice(i, 1);
-    if (Object.keys(cond).length) {
-      arr.push({
-        id: _newId(), user_id: _uid(), page_id: pageId,
-        variant_name: AUTO_CODE, source: 'AUTO', scope: 'PERSONAL',
-        is_default: null, auto_run: 0, sort_no: 0,
-        use_count: 0, last_used_at: _now(),
-        conditions_json: cond, schema_version: SCHEMA_VERSION,
-        created_at: _now(), updated_at: _now(), deleted_at: null
-      });
-    }
-    _write(_vKey(pageId), arr);
-  }
-
-  /* ================= 最近输入下拉 ================= */
 
   function showRecent(inputEl, pageId, fid) {
     hideRecent();
@@ -323,8 +205,7 @@ window.QueryVariant = (function () {
   }
 
   function removeRecent(pageId, fid, value) {
-    const arr = _read(_rKey(pageId)).filter(r =>
-      !(r.field_id === fid && r.input_value === value));
+    const arr = _read(_rKey(pageId)).filter(r => !(r.field_id === fid && r.input_value === value));
     _write(_rKey(pageId), arr);
   }
 
@@ -339,53 +220,199 @@ window.QueryVariant = (function () {
     });
   }
 
-  /* ================= 保存弹窗 ================= */
+  /* ================= 入口按钮 ================= */
+
+  // 在筛选栏操作区插入「我的变式」按钮，紧跟在"查询/搜索"按钮之后（即 查询 · 我的变式 · 重置）
+  function mount(pageId) {
+    if (!_cfg(pageId)) return;
+    hideRecent();
+    _close('qvManageBackdrop');               // 页面重绘/切换时清理遗留弹窗
+    const actions = document.querySelector('.filter-actions');
+    if (!actions) return;
+    if (_el('qvOpenBtn')) return;
+    const btn = document.createElement('button');
+    btn.id = 'qvOpenBtn';
+    btn.className = 'btn btn-secondary btn-sm';
+    btn.textContent = '我的变式';
+    btn.title = '查看并应用已保存的查询条件，或保存当前条件';
+    btn.onclick = function () { openManage(pageId); };
+    const btns = actions.querySelectorAll('button');
+    let anchor = null;
+    for (let i = 0; i < btns.length; i++) {
+      const t = (btns[i].textContent || '').trim();
+      if (t.indexOf('查询') > -1 || t.indexOf('搜索') > -1 || t.indexOf('筛选') > -1) { anchor = btns[i]; break; }
+    }
+    if (anchor && anchor.parentNode === actions && anchor.nextSibling) {
+      actions.insertBefore(btn, anchor.nextSibling);
+    } else {
+      actions.appendChild(btn);
+    }
+  }
+
+  /* ================= 进入页面 / 查询后 / 重置 ================= */
+
+  // 进入页面：回填 默认变式 > 上次条件 > 空；不自动执行查询
+  function restore(pageId) {
+    const def = _variants(pageId).find(v => v.is_default);
+    if (def) {
+      _applyValues(pageId, def.conditions_json);
+      _markApplied(pageId, def.id);
+      _state[pageId] = { currentId: def.id };
+      return;
+    }
+    const a = _auto(pageId);
+    if (a) {
+      _applyValues(pageId, a.conditions_json);
+      _state[pageId] = { currentId: AUTO_FLAG };
+      return;
+    }
+    _state[pageId] = { currentId: null };
+  }
+
+  // 重置页面时：解除变式选中并清除"上次条件"
+  function resetSelection(pageId) {
+    const arr = _all(pageId);
+    const i = arr.findIndex(v => v.source === 'AUTO');
+    if (i > -1) arr.splice(i, 1);
+    _write(_vKey(pageId), arr);
+    _state[pageId] = { currentId: null };
+  }
+
+  // 查询执行后：自动保存"上次条件"（下次进入页面可回填）
+  function saveAuto(pageId) {
+    const cond = _collect(pageId);
+    const arr = _all(pageId);
+    const i = arr.findIndex(v => v.source === 'AUTO');
+    if (i > -1) arr.splice(i, 1);
+    if (Object.keys(cond).length) {
+      arr.push({
+        id: _newId(), user_id: _uid(), page_id: pageId,
+        variant_name: AUTO_CODE, source: 'AUTO', scope: 'PERSONAL',
+        is_default: null, auto_run: 0, sort_no: 0,
+        use_count: 0, last_used_at: _now(),
+        conditions_json: cond, schema_version: SCHEMA_VERSION,
+        created_at: _now(), updated_at: _now(), deleted_at: null
+      });
+    }
+    _write(_vKey(pageId), arr);
+  }
+
+  /* ================= 我的变式弹窗 ================= */
 
   function _close(id) {
     const b = _el(id);
     if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
-  function openSave(pageId) {
+  function _listHtml(pageId) {
+    const items = _variants(pageId);
+    if (!items.length) {
+      return '<div class="qv-empty">还没有保存任何变式。<br>先在筛选栏填好常用条件，再在右侧输入名称保存。</div>';
+    }
+    const curId = (_state[pageId] && _state[pageId].currentId) || '';
+    return items.map(v => {
+      const active = v.id === curId;
+      return '<div class="qv-card' + (active ? ' active' : '') + '" ' +
+        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')">' +
+        '<div class="qv-card-top">' +
+        '<span class="qv-card-name">' + _esc(v.variant_name) +
+        (v.is_default ? ' <span class="qv-tag">默认</span>' : '') +
+        (active ? ' <span class="qv-tag qv-tag-now">当前</span>' : '') + '</span>' +
+        '<span class="qv-card-ops">' +
+        (v.is_default
+          ? '<span class="qv-ops-disabled">已默认</span>'
+          : '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();QueryVariant.setDefault(\'' + pageId + '\',\'' + v.id + '\')">设为默认</button>') +
+        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();QueryVariant.remove(\'' + pageId + '\',\'' + v.id + '\')">删除</button>' +
+        '</span></div>' +
+        '<div class="qv-card-cond">' + _condText(pageId, v.conditions_json, '；') + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function openManage(pageId) {
     hideRecent();
-    _close('qvSaveBackdrop');
+    _close('qvManageBackdrop');
     const cond = _collect(pageId);
-    const keys = Object.keys(cond);
-    _pendingSave = { pageId: pageId, conditions: cond };
-    const preview = keys.length
-      ? keys.map(k => _label(pageId, k) + '：' + _esc(_display(pageId, k, cond[k]))).join('<br>')
+    const preview = Object.keys(cond).length
+      ? _condText(pageId, cond, '<br>')
       : '（当前没有填写任何筛选条件）';
 
     const wrap = document.createElement('div');
     wrap.className = 'modal-backdrop';
-    wrap.id = 'qvSaveBackdrop';
+    wrap.id = 'qvManageBackdrop';
     wrap.innerHTML =
-      '<div class="modal modal-sm" onclick="event.stopPropagation()">' +
-      '<div class="modal-header"><div class="modal-title">保存为查询变式</div>' +
-      '<button class="modal-close" onclick="QueryVariant.closeSave()">×</button></div>' +
+      '<div class="modal modal-lg" onclick="event.stopPropagation()">' +
+      '<div class="modal-header"><div class="modal-title">我的查询变式</div>' +
+      '<button class="modal-close" onclick="QueryVariant.closeManage()">×</button></div>' +
       '<div class="modal-body">' +
+      '<div class="qv-split">' +
+      '<div class="qv-split-main">' +
+      '<div class="qv-sec-title">已保存的变式<span class="qv-sec-hint">点击卡片即可应用并查询</span></div>' +
+      '<div id="qvListWrap">' + _listHtml(pageId) + '</div>' +
+      '</div>' +
+      '<div class="qv-split-side">' +
+      '<div class="qv-sec-title">保存当前条件为新变式</div>' +
       '<div class="form-group"><label>变式名称</label>' +
       '<input type="text" id="qvSaveName" maxlength="50" placeholder="如：周一备件盘库"></div>' +
-      '<label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:12px;">' +
-      '<input type="checkbox" id="qvSaveDefault"> 设为该页面的默认变式</label>' +
-      '<div class="qv-preview"><div style="font-weight:600;color:var(--text);margin-bottom:4px;">将保存以下条件</div>' +
-      preview + '</div>' +
+      '<label class="qv-check"><input type="checkbox" id="qvSaveDefault"> 设为该页面的默认变式</label>' +
+      '<div class="qv-preview"><div class="qv-preview-title">将保存以下条件</div>' + preview + '</div>' +
       '<div class="qv-tip">置灰或隐藏的字段不会被保存；条件为空的字段也不会保存。</div>' +
+      '<button class="btn btn-primary" style="width:100%;margin-top:16px;padding:9px 20px;" ' +
+      'onclick="QueryVariant.confirmSave(\'' + pageId + '\')">保存为新变式</button>' +
+      '</div>' +
+      '</div>' +
       '</div>' +
       '<div class="modal-footer">' +
-      '<button class="btn btn-secondary" onclick="QueryVariant.closeSave()">取消</button>' +
-      '<button class="btn btn-primary" onclick="QueryVariant.confirmSave()">保存</button>' +
+      '<button class="btn btn-secondary" onclick="QueryVariant.closeManage()">关闭</button>' +
       '</div></div>';
-    wrap.addEventListener('click', e => { if (e.target === wrap) closeSave(); });
+    wrap.addEventListener('click', e => { if (e.target === wrap) closeManage(); });
     document.body.appendChild(wrap);
-    setTimeout(() => { const i = _el('qvSaveName'); if (i) i.focus(); }, 50);
+    setTimeout(() => { const i = _el('qvSaveName'); if (i) i.focus(); }, 60);
   }
 
-  function closeSave() { _pendingSave = null; _close('qvSaveBackdrop'); }
+  function closeManage() {
+    _close('qvManageBackdrop');
+    hideRecent();
+  }
 
-  function confirmSave() {
-    if (!_pendingSave) return;
-    const pageId = _pendingSave.pageId;
+  function _refreshList(pageId) {
+    const wrap = _el('qvListWrap');
+    if (wrap) wrap.innerHTML = _listHtml(pageId);
+  }
+
+  // 点击卡片：应用该变式并立即查询
+  function applyOne(pageId, id) {
+    const v = _find(pageId, id);
+    if (!v) return;
+    _applyValues(pageId, v.conditions_json);
+    _markApplied(pageId, id);
+    _state[pageId] = { currentId: id };
+    closeManage();
+    const c = _cfg(pageId);
+    if (c && c.onApply) c.onApply();
+  }
+
+  function setDefault(pageId, id) {
+    const arr = _all(pageId);
+    arr.forEach(v => { v.is_default = (v.id === id) ? 1 : null; });
+    _write(_vKey(pageId), arr);
+    _state[pageId] = { currentId: id };
+    _refreshList(pageId);
+  }
+
+  function remove(pageId, id) {
+    const arr = _all(pageId);
+    const v = arr.find(x => x.id === id);
+    if (!v) return;
+    if (!confirm('确定删除变式「' + v.variant_name + '」吗？')) return;
+    v.deleted_at = _now();          // 软删
+    v.is_default = null;
+    _write(_vKey(pageId), arr);
+    if (_state[pageId] && _state[pageId].currentId === id) _state[pageId] = { currentId: null };
+    _refreshList(pageId);
+  }
+
+  function confirmSave(pageId) {
     const nameInput = _el('qvSaveName');
     const name = nameInput ? String(nameInput.value || '').trim() : '';
     if (!name) { alert('请输入变式名称'); return; }
@@ -399,141 +426,21 @@ window.QueryVariant = (function () {
     const defEl = _el('qvSaveDefault');
     const isDefault = !!(defEl && defEl.checked);
     if (isDefault) arr.forEach(v => { v.is_default = null; });
-    arr.push({
+    const rec = {
       id: _newId(), user_id: _uid(), page_id: pageId,
       variant_name: name, source: 'USER', scope: 'PERSONAL',
-      is_default: isDefault ? 1 : null, auto_run: 0, sort_no: 0,
+      is_default: isDefault ? 1 : null, auto_run: 0, sort_no: alive.length,
       use_count: 0, last_used_at: null,
-      conditions_json: _pendingSave.conditions, schema_version: SCHEMA_VERSION,
+      conditions_json: _collect(pageId), schema_version: SCHEMA_VERSION,
       created_at: _now(), updated_at: _now(), deleted_at: null
-    });
+    };
+    arr.push(rec);
     _write(_vKey(pageId), arr);
-    _optionsHtml(pageId, arr[arr.length - 1].id);
-    _state[pageId] = { currentId: arr[arr.length - 1].id };
-    closeSave();
-  }
-
-  /* ================= 管理弹窗 ================= */
-
-  function openManage(pageId) {
-    hideRecent();
-    _close('qvManageBackdrop');
-    const wrap = document.createElement('div');
-    wrap.className = 'modal-backdrop';
-    wrap.id = 'qvManageBackdrop';
-    wrap.innerHTML =
-      '<div class="modal modal-md" onclick="event.stopPropagation()">' +
-      '<div class="modal-header"><div class="modal-title">管理查询变式</div>' +
-      '<button class="modal-close" onclick="QueryVariant.closeManage()">×</button></div>' +
-      '<div class="modal-body" id="qvManageBody">' + _manageBody(pageId) + '</div>' +
-      '<div class="modal-footer">' +
-      '<button class="btn btn-secondary" onclick="QueryVariant.closeManage()">关闭</button>' +
-      '</div></div>';
-    wrap.addEventListener('click', e => { if (e.target === wrap) closeManage(); });
-    document.body.appendChild(wrap);
-  }
-
-  function _manageBody(pageId) {
-    const items = _variants(pageId);
-    if (!items.length) {
-      return '<div class="qv-empty">还没有保存任何查询变式。<br>先在筛选栏填好常用条件，再点「☆」保存。</div>';
-    }
-    return items.map((v, idx) => {
-      const keys = Object.keys(v.conditions_json || {});
-      const cond = keys.length
-        ? keys.map(k => _label(pageId, k) + '：' + _esc(_display(pageId, k, v.conditions_json[k]))).join('；')
-        : '无条件';
-      const used = v.use_count ? ('用过 ' + v.use_count + ' 次') : '未使用过';
-      const last = v.last_used_at ? String(v.last_used_at).slice(0, 10) : '—';
-      return '<div class="qv-row">' +
-        '<div class="qv-row-name">' + _esc(v.variant_name) +
-        (v.is_default ? ' <span class="qv-tag">默认</span>' : '') + '</div>' +
-        '<div class="qv-row-cond">' + cond + '</div>' +
-        '<div class="qv-row-meta">' + used + ' / ' + last + '</div>' +
-        '<div class="qv-row-ops">' +
-        (v.is_default ? '<span class="qv-ops-disabled">已默认</span>'
-          : '<button class="btn btn-secondary btn-sm" onclick="QueryVariant.setDefault(\'' + pageId + '\',\'' + v.id + '\')">设为默认</button>') +
-        '<button class="btn btn-secondary btn-sm" onclick="QueryVariant.updateOne(\'' + pageId + '\',\'' + v.id + '\')">更新</button>' +
-        '<button class="btn btn-secondary btn-sm" onclick="QueryVariant.rename(\'' + pageId + '\',\'' + v.id + '\')">重命名</button>' +
-        (idx > 0 ? '<button class="btn btn-secondary btn-sm" onclick="QueryVariant.moveUp(\'' + pageId + '\',\'' + v.id + '\')">↑</button>' : '') +
-        '<button class="btn btn-danger btn-sm" onclick="QueryVariant.remove(\'' + pageId + '\',\'' + v.id + '\')">删除</button>' +
-        '</div></div>';
-    }).join('');
-  }
-
-  function _refreshManage(pageId) {
-    const body = _el('qvManageBody');
-    if (body) body.innerHTML = _manageBody(pageId);
-    _optionsHtml(pageId, (_state[pageId] && _state[pageId].currentId) || '');
-  }
-
-  function closeManage() {
-    _close('qvManageBackdrop');
-    hideRecent();
-  }
-
-  function setDefault(pageId, id) {
-    const arr = _all(pageId);
-    arr.forEach(v => { v.is_default = (v.id === id) ? 1 : null; });
-    _write(_vKey(pageId), arr);
-    _refreshManage(pageId);
-  }
-
-  // 用当前筛选条件覆盖该变式
-  function updateOne(pageId, id) {
-    const arr = _all(pageId);
-    const v = arr.find(x => x.id === id);
-    if (!v) return;
-    const cond = _collect(pageId);
-    if (!Object.keys(cond).length && !confirm('当前没有填写任何筛选条件，确定要保存为空条件吗？')) return;
-    v.conditions_json = cond;
-    v.schema_version = SCHEMA_VERSION;
-    v.updated_at = _now();
-    _write(_vKey(pageId), arr);
-    _refreshManage(pageId);
-  }
-
-  function rename(pageId, id) {
-    const arr = _all(pageId);
-    const v = arr.find(x => x.id === id);
-    if (!v) return;
-    const name = prompt('修改变式名称', v.variant_name);
-    if (name == null) return;
-    const t = String(name).trim();
-    if (!t) { alert('名称不能为空'); return; }
-    if (arr.some(x => x.id !== id && x.source !== 'AUTO' && !x.deleted_at && x.variant_name === t)) {
-      alert('已存在同名变式'); return;
-    }
-    v.variant_name = t;
-    v.updated_at = _now();
-    _write(_vKey(pageId), arr);
-    _refreshManage(pageId);
-  }
-
-  function moveUp(pageId, id) {
-    const arr = _all(pageId);
-    const items = arr.filter(v => v.source !== 'AUTO' && !v.deleted_at)
-      .sort((a, b) => (a.sort_no || 0) - (b.sort_no || 0));
-    const i = items.findIndex(v => v.id === id);
-    if (i <= 0) return;
-    const tmp = items[i - 1];
-    items[i - 1] = items[i];
-    items[i] = tmp;
-    items.forEach((v, idx) => { v.sort_no = idx; });
-    _write(_vKey(pageId), arr);
-    _refreshManage(pageId);
-  }
-
-  function remove(pageId, id) {
-    const arr = _all(pageId);
-    const v = arr.find(x => x.id === id);
-    if (!v) return;
-    if (!confirm('确定删除变式「' + v.variant_name + '」吗？')) return;
-    v.deleted_at = _now();          // 软删
-    v.is_default = null;
-    _write(_vKey(pageId), arr);
-    if (_state[pageId] && _state[pageId].currentId === id) _state[pageId] = { currentId: null };
-    _refreshManage(pageId);
+    _state[pageId] = { currentId: rec.id };
+    // 清空输入并刷新列表
+    if (nameInput) nameInput.value = '';
+    if (defEl) defEl.checked = false;
+    _refreshList(pageId);
   }
 
   /* ================= 注册 ================= */
@@ -553,24 +460,18 @@ window.QueryVariant = (function () {
 
   return {
     register: register,
-    barHtml: barHtml,
+    mount: mount,
     restore: restore,
     resetSelection: resetSelection,
     bindRecent: bindRecent,
-    syncOptions: syncOptions,
     saveAuto: saveAuto,
     recordUsed: recordUsed,
-    onSelect: onSelect,
-    openSave: openSave,
-    closeSave: closeSave,
-    confirmSave: confirmSave,
     openManage: openManage,
     closeManage: closeManage,
+    applyOne: applyOne,
     setDefault: setDefault,
-    updateOne: updateOne,
-    rename: rename,
-    moveUp: moveUp,
     remove: remove,
+    confirmSave: confirmSave,
     removeRecent: removeRecent,
     showRecent: showRecent,
     hideRecent: hideRecent,
