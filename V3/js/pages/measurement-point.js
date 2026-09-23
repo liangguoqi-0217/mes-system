@@ -10,6 +10,13 @@ const MeasurementPoint = {
   currentPage: 1,
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('measurement-point');
+      QueryVariant.restore('measurement-point');
+      QueryVariant.bindRecent('measurement-point');
+    }
+
     this.currentEquipmentId = '';
     this.currentEquipmentName = '';
     this.filteredData = [...measurementPointData];
@@ -178,7 +185,13 @@ const MeasurementPoint = {
     });
     this.currentPage = 1;
     this.renderTable();
-  },
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('measurement-point');
+      QueryVariant.recordUsed('measurement-point');
+    }
+},
 
   resetFilter() {
     const kw = document.getElementById('mpSearchKeyword'); if (kw) kw.value = '';
@@ -188,7 +201,10 @@ const MeasurementPoint = {
     this.filteredData = [...measurementPointData];
     this.currentPage = 1;
     this.renderTable();
-  },
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('measurement-point');
+},
 
   goPage(p) {
     const pages = Math.ceil(this.filteredData.length / this.pageSize);
@@ -614,3 +630,14 @@ const MeasurementPoint = {
   }
 };
 */
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'measurement-point',
+    fields: ['mpSearchKeyword', 'mpSearchType', 'mpSearchStatus', 'mpSearchCounter'],
+    textFields: ['mpSearchKeyword'],
+    labels: { mpSearchKeyword: '关键字', mpSearchType: '类型', mpSearchStatus: '状态', mpSearchCounter: '是否计数器' },
+    onApply: function () { MeasurementPoint.doFilter(); }
+  });
+}

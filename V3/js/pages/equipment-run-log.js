@@ -59,6 +59,12 @@ const EquipmentRunLog = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('equipment-run-log');
+      QueryVariant.restore('equipment-run-log');
+      QueryVariant.bindRecent('equipment-run-log');
+    }
     this.filtered = [...eqRunLogData].sort((a, b) => new Date(b.recordedTime) - new Date(a.recordedTime));
     this.page = 1;
     this.renderTable();
@@ -82,6 +88,12 @@ const EquipmentRunLog = {
 
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('equipment-run-log');
+      QueryVariant.recordUsed('equipment-run-log');
+    }
   },
 
   reset() {
@@ -93,6 +105,9 @@ const EquipmentRunLog = {
     this.filtered = [...eqRunLogData].sort((a, b) => new Date(b.recordedTime) - new Date(a.recordedTime));
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('equipment-run-log');
   },
 
   renderTable() {
@@ -191,3 +206,13 @@ const EquipmentRunLog = {
     ], 'modal-lg');
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'equipment-run-log',
+    fields: ['logEq', 'logShift', 'logDownType', 'logDateFrom', 'logDateTo'],
+    labels: { logEq: '设备', logShift: '班次', logDownType: '停机类型', logDateFrom: '开始日期', logDateTo: '结束日期' },
+    onApply: function () { EquipmentRunLog.search(); }
+  });
+}

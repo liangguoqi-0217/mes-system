@@ -21,11 +21,11 @@ const MaintPlan = {
     const statusOpts=pmPlanStatusOptions.map(o=>'<option value="'+o.value+'" '+(f.status===o.value?'selected':'')+'>'+o.label+'</option>').join('');
     return '<div class="page-container"><div class="page-header"><div class="page-title">维护计划定义</div><div class="page-actions"><button class="btn btn-secondary" onclick="MaintPlan.reset()">刷新</button><button class="btn btn-blue" onclick="MaintPlan.batchEnable()">批量启用</button><button class="btn btn-outline" onclick="MaintPlan.batchDisable()">批量停用</button><button class="btn btn-outline" onclick="MaintPlan.batchExport()">批量导出</button><button class="btn btn-blue" onclick="MaintPlan.create()">+ 新增维护计划</button></div></div>'+
     '<div class="filter-bar">'+
-      '<div class="filter-group"><label>计划编码</label><input value="'+esc(f.code)+'" onchange="MaintPlan.filter.code=this.value;MaintPlan.search()" placeholder="计划编码"></div>'+
-      '<div class="filter-group"><label>计划名称</label><input value="'+esc(f.name)+'" onchange="MaintPlan.filter.name=this.value;MaintPlan.search()" placeholder="计划名称"></div>'+
-      '<div class="filter-group"><label>维保类型</label><select onchange="MaintPlan.filter.maintenanceType=this.value;MaintPlan.search()"><option value="" '+(f.maintenanceType?'':'selected')+'>全部类型</option>'+typeOpts+'</select></div>'+
-      '<div class="filter-group"><label>设备分类</label><input value="'+esc(f.eqCategory)+'" onchange="MaintPlan.filter.eqCategory=this.value;MaintPlan.search()" placeholder="设备分类"></div>'+
-      '<div class="filter-group"><label>状态</label><select onchange="MaintPlan.filter.status=this.value;MaintPlan.search()"><option value="" '+(f.status?'':'selected')+'>全部状态</option>'+statusOpts+'</select></div>'+
+      '<div class="filter-group"><label>计划编码</label><input id="planCode" value="'+esc(f.code)+'" onchange="MaintPlan.filter.code=this.value;MaintPlan.search()" placeholder="计划编码"></div>'+
+      '<div class="filter-group"><label>计划名称</label><input id="planName" value="'+esc(f.name)+'" onchange="MaintPlan.filter.name=this.value;MaintPlan.search()" placeholder="计划名称"></div>'+
+      '<div class="filter-group"><label>维保类型</label><select id="planType" onchange="MaintPlan.filter.maintenanceType=this.value;MaintPlan.search()"><option value="" '+(f.maintenanceType?'':'selected')+'>全部类型</option>'+typeOpts+'</select></div>'+
+      '<div class="filter-group"><label>设备分类</label><input id="planEqCategory" value="'+esc(f.eqCategory)+'" onchange="MaintPlan.filter.eqCategory=this.value;MaintPlan.search()" placeholder="设备分类"></div>'+
+      '<div class="filter-group"><label>状态</label><select id="planStatus" onchange="MaintPlan.filter.status=this.value;MaintPlan.search()"><option value="" '+(f.status?'':'selected')+'>全部状态</option>'+statusOpts+'</select></div>'+
       '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MaintPlan.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MaintPlan.reset()">重置</button></div>'+
     '</div>'+
     '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>计划编码</th><th>计划名称</th><th>维保类型</th><th>设备分类</th><th>工作中心</th><th>版本</th><th>状态</th><th>创建人</th><th>生效日期</th><th>操作</th></tr></thead>'+
@@ -69,8 +69,17 @@ const MaintPlan = {
   },
 
   goPage(p){ this.page=Math.max(1,p); this.renderTo(); },
-  search(){ this.page=1; this.renderTo(); },
-  reset(){ this.filter={code:'',name:'',maintenanceType:'',eqCategory:'',status:'',effectiveDate:''}; this.page=1; this.renderTo(); },
+  search(){ this.page=1; this.renderTo(); 
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-plan');
+      QueryVariant.recordUsed('maintenance-plan');
+    }
+},
+  reset(){ this.filter={code:'',name:'',maintenanceType:'',eqCategory:'',status:'',effectiveDate:''}; this.page=1; this.renderTo(); 
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-plan');
+},
   renderTo(){
     const ca=document.getElementById('contentArea');
     if(ca) ca.innerHTML=this.render();
@@ -281,6 +290,31 @@ const MaintPlan = {
   saveDraft(){ toast('已保存为草稿'); },
   saveAndSubmit(){ toast('保存并提交审核'); },
 
-  init(){}
+  init(){
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-plan');
+      QueryVariant.restore('maintenance-plan');
+      QueryVariant.bindRecent('maintenance-plan');
+    }
+}
 };
 */
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-plan',
+    fields: ['planCode', 'planName', 'planType', 'planEqCategory', 'planStatus'],
+    textFields: ['planCode', 'planName', 'planEqCategory'],
+    labels: { planCode: '计划编码', planName: '计划名称', planType: '维保类型', planEqCategory: '设备分类', planStatus: '状态' },
+    syncFilter: function () {
+      MaintPlan.filter.code = (document.getElementById('planCode') || {}).value || '';
+      MaintPlan.filter.name = (document.getElementById('planName') || {}).value || '';
+      MaintPlan.filter.maintenanceType = (document.getElementById('planType') || {}).value || '';
+      MaintPlan.filter.eqCategory = (document.getElementById('planEqCategory') || {}).value || '';
+      MaintPlan.filter.status = (document.getElementById('planStatus') || {}).value || '';
+    },
+    onApply: function () { MaintPlan.search(); }
+  });
+}

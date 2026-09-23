@@ -45,6 +45,12 @@ const EquipmentMaster = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('equipment-master');
+      QueryVariant.restore('equipment-master');
+      QueryVariant.bindRecent('equipment-master');
+    }
     this.filtered = [...equipmentData];
     this.page = 1;
     this.renderTable();
@@ -88,6 +94,12 @@ const EquipmentMaster = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('equipment-master');
+      QueryVariant.recordUsed('equipment-master');
+    }
   },
 
   reset() {
@@ -99,6 +111,9 @@ const EquipmentMaster = {
     this.filtered = [...equipmentData];
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('equipment-master');
   },
 
   showStatsPanel() {
@@ -2037,4 +2052,15 @@ function _qrgen(text, ecl) {
     if(i<8){if(bit)bestMatrix[Math.floor(i/3)][i%3+8]=1;else bestMatrix[Math.floor(i/3)][i%3+8]=0}else{if(bit)bestMatrix[size-1-(i-8)%8][Math.floor((i-8)/3)]=1;else bestMatrix[size-1-(i-8)%8][Math.floor((i-8)/3)]=0}}
   var paths='';for(var r=0;r<size;r++)for(var c=0;c<size;c++)if(bestMatrix[r][c])paths+='M'+c+' '+r+'h1v1h-1z ';
   return {moduleCount:size,paths:paths};
+}
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'equipment-master',
+    fields: ['eqFactory', 'eqLocation', 'eqType', 'eqStatus', 'eqCode'],
+    textFields: ['eqLocation', 'eqCode'],
+    labels: { eqFactory: '工厂', eqLocation: '功能位置', eqType: '设备类型', eqStatus: '运行状态', eqCode: '设备编码' },
+    onApply: function () { EquipmentMaster.search(); }
+  });
 }

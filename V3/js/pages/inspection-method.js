@@ -218,6 +218,12 @@ const InspectionMethod = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('inspection-method');
+      QueryVariant.restore('inspection-method');
+      QueryVariant.bindRecent('inspection-method');
+    }
     this.initFilters();
     this.renderTable();
   },
@@ -291,6 +297,12 @@ const InspectionMethod = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('inspection-method');
+      QueryVariant.recordUsed('inspection-method');
+    }
   },
 
   reset() {
@@ -298,6 +310,9 @@ const InspectionMethod = {
     els.forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     this.initFilters();
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('inspection-method');
   },
 
   prevPage() { if(this.page>1){this.page--;this.renderTable();} },
@@ -736,3 +751,14 @@ const InspectionMethod = {
     );
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'inspection-method',
+    fields: ['imCode', 'imName', 'imStatus', 'imStandard'],
+    textFields: ['imCode', 'imName', 'imStandard'],
+    labels: { imCode: '方法编码', imName: '方法名称', imStatus: '状态', imStandard: '引用标准' },
+    onApply: function () { InspectionMethod.search(); }
+  });
+}

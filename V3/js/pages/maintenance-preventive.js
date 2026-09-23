@@ -42,7 +42,14 @@ const MaintPreventive = {
     return '';
   },
 
-  init() { this.tab = 'plan'; this.page = 1; },
+  init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-preventive');
+      QueryVariant.restore('maintenance-preventive');
+      QueryVariant.bindRecent('maintenance-preventive');
+    }
+ this.tab = 'plan'; this.page = 1; },
 
   switchTab(t) {
     this.tab = t; this.page = 1;
@@ -55,7 +62,10 @@ const MaintPreventive = {
   _refreshContent() {
     const el = document.getElementById('pvTabContent');
     if (el) el.innerHTML = this._renderCurrentTab();
-  },
+  
+    // 查询变式：切回本页签后重新挂接入按钮
+    if (window.QueryVariant && this.tab === 'plan') { QueryVariant.mount('maintenance-preventive'); QueryVariant.bindRecent('maintenance-preventive'); }
+},
 
   // ======================== TAB 1: 维护计划列表 ========================
   _renderPlanTab() {
@@ -76,10 +86,10 @@ const MaintPreventive = {
 
     return `<div style="padding:16px 24px;display:flex;flex-direction:column;height:100%;">
       <div class="filter-bar">
-        <div class="filter-group"><label>计划编码</label><input type="text" value="${esc(f.code)}" onchange="MaintPreventive.pFilter.code=this.value;MaintPreventive.searchPlan()" placeholder="计划编码"></div>
-        <div class="filter-group"><label>计划名称</label><input type="text" value="${esc(f.name)}" onchange="MaintPreventive.pFilter.name=this.value;MaintPreventive.searchPlan()" placeholder="计划名称"></div>
-        <div class="filter-group"><label>策略类型</label><select onchange="MaintPreventive.pFilter.planType=this.value;MaintPreventive.searchPlan()"><option value="">全部类型</option>${typeOpts}</select></div>
-        <div class="filter-group"><label>状态</label><select onchange="MaintPreventive.pFilter.status=this.value;MaintPreventive.searchPlan()"><option value="">全部状态</option>${statusOpts}</select></div>
+        <div class="filter-group"><label>计划编码</label><input type="text" id="pvCode" value="${esc(f.code)}" onchange="MaintPreventive.pFilter.code=this.value;MaintPreventive.searchPlan()" placeholder="计划编码"></div>
+        <div class="filter-group"><label>计划名称</label><input type="text" id="pvName" value="${esc(f.name)}" onchange="MaintPreventive.pFilter.name=this.value;MaintPreventive.searchPlan()" placeholder="计划名称"></div>
+        <div class="filter-group"><label>策略类型</label><select id="pvPlanType" onchange="MaintPreventive.pFilter.planType=this.value;MaintPreventive.searchPlan()"><option value="">全部类型</option>${typeOpts}</select></div>
+        <div class="filter-group"><label>状态</label><select id="pvStatus" onchange="MaintPreventive.pFilter.status=this.value;MaintPreventive.searchPlan()"><option value="">全部状态</option>${statusOpts}</select></div>
         <div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MaintPreventive.searchPlan()">查询</button><button class="btn btn-secondary btn-sm" onclick="MaintPreventive.resetPlanFilter()">重置</button></div>
       </div>
       <div class="table-wrapper" style="flex:1;overflow:auto;margin-top:12px;"><table class="data-table"><thead><tr>
@@ -110,8 +120,17 @@ const MaintPreventive = {
     return `<button class="btn btn-blue btn-sm" onclick="MaintPreventive.viewPlan('${d.id}')">查看</button>`;
   },
 
-  searchPlan() { this.page = 1; this._refreshContent(); },
-  resetPlanFilter() { this.pFilter = { code: '', name: '', planType: '', status: '' }; this.page = 1; this._refreshContent(); },
+  searchPlan() { this.page = 1; this._refreshContent(); 
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-preventive');
+      QueryVariant.recordUsed('maintenance-preventive');
+    }
+},
+  resetPlanFilter() { this.pFilter = { code: '', name: '', planType: '', status: '' }; this.page = 1; this._refreshContent(); 
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-preventive');
+},
 
   createPlan() {
     const eqOpts = equipmentData.map(e => `<option value="${e.id}">${esc(e.code)} | ${esc(e.name)}</option>`).join('');
@@ -1350,3 +1369,20 @@ const MaintPreventive = {
       </div></div>`;
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-preventive',
+    fields: ['pvCode', 'pvName', 'pvPlanType', 'pvStatus'],
+    textFields: ['pvCode', 'pvName'],
+    labels: { pvCode: '计划编码', pvName: '计划名称', pvPlanType: '策略类型', pvStatus: '状态' },
+    syncFilter: function () {
+      MaintPreventive.pFilter.code = (document.getElementById('pvCode') || {}).value || '';
+      MaintPreventive.pFilter.name = (document.getElementById('pvName') || {}).value || '';
+      MaintPreventive.pFilter.planType = (document.getElementById('pvPlanType') || {}).value || '';
+      MaintPreventive.pFilter.status = (document.getElementById('pvStatus') || {}).value || '';
+    },
+    onApply: function () { MaintPreventive.searchPlan(); }
+  });
+}

@@ -18,10 +18,10 @@ const MaintSchedule = {
     const sOpts=pmScheduleStatusOptions.map(o=>'<option value="'+o.value+'" '+(f.status===o.value?'selected':'')+'>'+o.label+'</option>').join('');
     return '<div class="page-container"><div class="page-header"><div class="page-title">计划调度</div><div class="page-actions"><button class="btn btn-secondary" onclick="MaintSchedule.reset()">刷新</button><button class="btn btn-outline" onclick="MaintSchedule.batchEnable()">批量启用</button><button class="btn btn-outline" onclick="MaintSchedule.batchPause()">批量暂停</button><button class="btn btn-outline" onclick="MaintSchedule.batchRecalc()">批量重算周期</button><button class="btn btn-blue" onclick="MaintSchedule.create()">+ 新增调度方案</button></div></div>'+
     '<div class="filter-bar">'+
-      '<div class="filter-group"><label>调度编码</label><input value="'+esc(f.code)+'" onchange="MaintSchedule.filter.code=this.value;MaintSchedule.search()" placeholder="调度编码"></div>'+
-      '<div class="filter-group"><label>维护计划</label><input value="'+esc(f.planName)+'" onchange="MaintSchedule.filter.planName=this.value;MaintSchedule.search()" placeholder="关联维护计划"></div>'+
-      '<div class="filter-group"><label>触发类型</label><select onchange="MaintSchedule.filter.triggerType=this.value;MaintSchedule.search()"><option value="" '+(f.triggerType?'':'selected')+'>全部类型</option>'+trigOpts+'</select></div>'+
-      '<div class="filter-group"><label>状态</label><select onchange="MaintSchedule.filter.status=this.value;MaintSchedule.search()"><option value="" '+(f.status?'':'selected')+'>全部状态</option>'+sOpts+'</select></div>'+
+      '<div class="filter-group"><label>调度编码</label><input id="schCode" value="'+esc(f.code)+'" onchange="MaintSchedule.filter.code=this.value;MaintSchedule.search()" placeholder="调度编码"></div>'+
+      '<div class="filter-group"><label>维护计划</label><input id="schPlanName" value="'+esc(f.planName)+'" onchange="MaintSchedule.filter.planName=this.value;MaintSchedule.search()" placeholder="关联维护计划"></div>'+
+      '<div class="filter-group"><label>触发类型</label><select id="schTriggerType" onchange="MaintSchedule.filter.triggerType=this.value;MaintSchedule.search()"><option value="" '+(f.triggerType?'':'selected')+'>全部类型</option>'+trigOpts+'</select></div>'+
+      '<div class="filter-group"><label>状态</label><select id="schStatus" onchange="MaintSchedule.filter.status=this.value;MaintSchedule.search()"><option value="" '+(f.status?'':'selected')+'>全部状态</option>'+sOpts+'</select></div>'+
       '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MaintSchedule.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MaintSchedule.reset()">重置</button></div>'+
     '</div>'+
     '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>调度编码</th><th>关联维护计划</th><th>触发类型</th><th>执行频率</th><th>覆盖设备</th><th>状态</th><th>最近生成</th><th>下次预计</th><th>操作</th></tr></thead>'+
@@ -60,8 +60,17 @@ const MaintSchedule = {
   },
 
   goPage(p){ this.page=Math.max(1,p); this.renderTo(); },
-  search(){ this.page=1; this.renderTo(); },
-  reset(){ this.filter={code:'',planName:'',triggerType:'',status:'',dateRange:''}; this.page=1; this.renderTo(); },
+  search(){ this.page=1; this.renderTo(); 
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-scheduling');
+      QueryVariant.recordUsed('maintenance-scheduling');
+    }
+},
+  reset(){ this.filter={code:'',planName:'',triggerType:'',status:'',dateRange:''}; this.page=1; this.renderTo(); 
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-scheduling');
+},
   renderTo(){
     const ca=document.getElementById('contentArea');
     if(ca) ca.innerHTML=this.render();
@@ -204,5 +213,29 @@ const MaintSchedule = {
   saveDraft(){ toast('已保存为草稿'); },
   saveAndActivate(){ toast('保存并启用调度'); },
 
-  init(){}
+  init(){
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-scheduling');
+      QueryVariant.restore('maintenance-scheduling');
+      QueryVariant.bindRecent('maintenance-scheduling');
+    }
+}
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-scheduling',
+    fields: ['schCode', 'schPlanName', 'schTriggerType', 'schStatus'],
+    textFields: ['schCode', 'schPlanName'],
+    labels: { schCode: '调度编码', schPlanName: '维护计划', schTriggerType: '触发类型', schStatus: '状态' },
+    syncFilter: function () {
+      MaintSchedule.filter.code = (document.getElementById('schCode') || {}).value || '';
+      MaintSchedule.filter.planName = (document.getElementById('schPlanName') || {}).value || '';
+      MaintSchedule.filter.triggerType = (document.getElementById('schTriggerType') || {}).value || '';
+      MaintSchedule.filter.status = (document.getElementById('schStatus') || {}).value || '';
+    },
+    onApply: function () { MaintSchedule.search(); }
+  });
+}

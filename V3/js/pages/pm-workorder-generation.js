@@ -44,9 +44,9 @@ const PMAutoGen = {
       '</div>'+
       // 筛选
       '<div class="filter-bar">'+
-        '<div class="filter-group"><label>调度方案</label><select onchange="PMAutoGen.genFilter.scheduleId=this.value;PMAutoGen.searchGen()"><option value="" '+(f.scheduleId?'':'selected')+'>全部方案</option>'+schedOpts+'</select></div>'+
-        '<div class="filter-group"><label>设备</label><input value="'+esc(f.eqInfo)+'" onchange="PMAutoGen.genFilter.eqInfo=this.value;PMAutoGen.searchGen()" placeholder="编码/名称"></div>'+
-        '<div class="filter-group"><label>生成状态</label><select onchange="PMAutoGen.genFilter.result=this.value;PMAutoGen.searchGen()"><option value="" '+(f.result?'':'selected')+'>全部状态</option>'+resOpts+'</select></div>'+
+        '<div class="filter-group"><label>调度方案</label><select id="mgScheduleId" onchange="PMAutoGen.genFilter.scheduleId=this.value;PMAutoGen.searchGen()"><option value="" '+(f.scheduleId?'':'selected')+'>全部方案</option>'+schedOpts+'</select></div>'+
+        '<div class="filter-group"><label>设备</label><input id="mgEqInfo" value="'+esc(f.eqInfo)+'" onchange="PMAutoGen.genFilter.eqInfo=this.value;PMAutoGen.searchGen()" placeholder="编码/名称"></div>'+
+        '<div class="filter-group"><label>生成状态</label><select id="mgResult" onchange="PMAutoGen.genFilter.result=this.value;PMAutoGen.searchGen()"><option value="" '+(f.result?'':'selected')+'>全部状态</option>'+resOpts+'</select></div>'+
         '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="PMAutoGen.searchGen()">查询</button><button class="btn btn-secondary btn-sm" onclick="PMAutoGen.resetGenFilter()">重置</button></div>'+
       '</div>'+
       // 表格
@@ -79,8 +79,17 @@ const PMAutoGen = {
   },
 
   goGenPage(p){ this.page=Math.max(1,p); this.renderTo(); },
-  searchGen(){ this.page=1; this.renderTo(); },
-  resetGenFilter(){ this.genFilter={scheduleId:'',eqInfo:'',dateRange:'',result:''}; this.page=1; this.renderTo(); },
+  searchGen(){ this.page=1; this.renderTo(); 
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('pm-workorder-generation');
+      QueryVariant.recordUsed('pm-workorder-generation');
+    }
+},
+  resetGenFilter(){ this.genFilter={scheduleId:'',eqInfo:'',dateRange:'',result:''}; this.page=1; this.renderTo(); 
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('pm-workorder-generation');
+},
 
   // ===== 生成日志页 =====
   renderLog(){
@@ -177,5 +186,28 @@ const PMAutoGen = {
   },
   exportLog(){ toast('导出日志功能开发中'); },
 
-  init(){}
+  init(){
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('pm-workorder-generation');
+      QueryVariant.restore('pm-workorder-generation');
+      QueryVariant.bindRecent('pm-workorder-generation');
+    }
+}
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'pm-workorder-generation',
+    fields: ['mgScheduleId', 'mgEqInfo', 'mgResult'],
+    textFields: ['mgEqInfo'],
+    labels: { mgScheduleId: '调度方案', mgEqInfo: '设备', mgResult: '生成状态' },
+    syncFilter: function () {
+      PMAutoGen.genFilter.scheduleId = (document.getElementById('mgScheduleId') || {}).value || '';
+      PMAutoGen.genFilter.eqInfo = (document.getElementById('mgEqInfo') || {}).value || '';
+      PMAutoGen.genFilter.result = (document.getElementById('mgResult') || {}).value || '';
+    },
+    onApply: function () { PMAutoGen.searchGen(); }
+  });
+}

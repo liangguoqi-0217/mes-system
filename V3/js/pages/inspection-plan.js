@@ -405,6 +405,12 @@ const InspectionPlan = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('inspection-plan');
+      QueryVariant.restore('inspection-plan');
+      QueryVariant.bindRecent('inspection-plan');
+    }
     this.renderTable();
     this.renderPagination();
   },
@@ -429,6 +435,12 @@ const InspectionPlan = {
     this.page = 1;
     this.renderTable();
     this.renderPagination();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('inspection-plan');
+      QueryVariant.recordUsed('inspection-plan');
+    }
   },
 
   reset() {
@@ -437,6 +449,9 @@ const InspectionPlan = {
     this.initFilters();
     this.renderTable();
     this.renderPagination();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('inspection-plan');
   },
 
   // ---- 表格渲染 ----
@@ -1507,3 +1522,14 @@ const InspectionPlan = {
     toast('检验计划已删除');
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'inspection-plan',
+    fields: ['ipMaterial', 'ipPurpose', 'ipStatus'],
+    textFields: ['ipMaterial'],
+    labels: { ipMaterial: '物料编码/名称', ipPurpose: '用途代码', ipStatus: '状态' },
+    onApply: function () { InspectionPlan.search(); }
+  });
+}

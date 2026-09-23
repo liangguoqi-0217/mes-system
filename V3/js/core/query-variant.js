@@ -151,6 +151,21 @@ window.QueryVariant = (function () {
       if (!e) return;
       e.value = (cond && cond[fid] !== undefined && cond[fid] !== null) ? cond[fid] : '';
     });
+    if (c.syncFilter) {
+      // 部分页面把筛选值存在内部 filter 对象里（控件靠 onchange 同步），
+      // 这类页面在 register 时提供 syncFilter，一次性把 DOM 值同步回内部对象
+      try { c.syncFilter(); } catch (err) { /* 忽略 */ }
+    } else if (c.dispatchChange) {
+      // 兜底：逐字段触发 change；若页面在 onchange 里整页重绘，每轮先把完整条件写回
+      c.fields.forEach(fid => {
+        c.fields.forEach(f2 => {
+          const e2 = _el(f2);
+          if (e2) e2.value = (cond && cond[f2] !== undefined && cond[f2] !== null) ? cond[f2] : '';
+        });
+        const e = _el(fid);
+        if (e && e.dispatchEvent) { try { e.dispatchEvent(new Event('change')); } catch (err) { /* 忽略 */ } }
+      });
+    }
     if (c.onRestore) c.onRestore();
   }
 
@@ -277,6 +292,31 @@ window.QueryVariant = (function () {
     } else {
       actions.appendChild(btn);
     }
+    _autoRemount();
+  }
+
+  // 该 pageId 的页面是否正在显示（用该页第一个字段控件是否还在 DOM 里判断）
+  function _visible(pageId) {
+    const c = _cfg(pageId);
+    if (!c || !c.fields || !c.fields.length) return false;
+    return !!_el(c.fields[0]);
+  }
+
+  // 部分页面查询/刷新时整页重绘（innerHTML = render()），按钮会被清掉。
+  // 用 MutationObserver 监听 DOM 变化，按钮丢失且当前页属于某 pageId 时自动补回。
+  let _obs = null, _obsTimer = null;
+  function _autoRemount() {
+    if (_obs || typeof MutationObserver === 'undefined') return;
+    _obs = new MutationObserver(function () {
+      if (_obsTimer) clearTimeout(_obsTimer);
+      _obsTimer = setTimeout(function () {
+        if (_el('qvOpenBtn')) return;
+        Object.keys(_reg).forEach(function (pid) {
+          if (_visible(pid)) mount(pid);
+        });
+      }, 60);
+    });
+    _obs.observe(document.body, { childList: true, subtree: true });
   }
 
   /* ================= 进入页面 / 查询后 / 重置 ================= */

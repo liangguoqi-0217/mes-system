@@ -18,9 +18,9 @@ const MfSettlement = {
     return `<div class="page-container">
       <div class="page-header"><div class="page-title">工单结算 & 关闭</div><div class="page-actions"><button class="btn btn-secondary" onclick="MfSettlement.refresh()">刷新</button><button class="btn btn-outline btn-sm" onclick="MfSettlement.exportReport()">导出结算报表</button></div></div>
       <div class="filter-bar">
-        <div class="filter-group"><label>工单编号</label><input value="${esc(f.docNo)}" onchange="MfSettlement.filter.docNo=this.value;MfSettlement.refresh()"></div>
-        <div class="filter-group"><label>类型</label><select onchange="MfSettlement.filter.orderType=this.value;MfSettlement.refresh()">${typeOpts}</select></div>
-        <div class="filter-group"><label>设备</label><input value="${esc(f.eqInfo)}" onchange="MfSettlement.filter.eqInfo=this.value;MfSettlement.refresh()"></div>
+        <div class="filter-group"><label>工单编号</label><input id="settleDocNo" value="${esc(f.docNo)}" onchange="MfSettlement.filter.docNo=this.value;MfSettlement.refresh()"></div>
+        <div class="filter-group"><label>类型</label><select id="settleOrderType" onchange="MfSettlement.filter.orderType=this.value;MfSettlement.refresh()">${typeOpts}</select></div>
+        <div class="filter-group"><label>设备</label><input id="settleEqInfo" value="${esc(f.eqInfo)}" onchange="MfSettlement.filter.eqInfo=this.value;MfSettlement.refresh()"></div>
         <div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MfSettlement.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MfSettlement.reset()">重置</button></div>
       </div>
       <div class="table-wrapper" style="margin-top:12px;"><table class="data-table">
@@ -145,10 +145,26 @@ const MfSettlement = {
   },
 
   // ========== ACTIONS ==========
-  init(){this.renderTo();},
+  init(){
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-settlement');
+      QueryVariant.restore('maintenance-settlement');
+      QueryVariant.bindRecent('maintenance-settlement');
+    }
+this.renderTo();},
   renderTo(){document.getElementById('contentArea').innerHTML=this.render();},
-  search(){this.page=1;this.renderTo();},
-  reset(){this.filter={docNo:'',orderType:'',eqInfo:''};this.page=1;this.renderTo();},
+  search(){this.page=1;this.renderTo();
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-settlement');
+      QueryVariant.recordUsed('maintenance-settlement');
+    }
+},
+  reset(){this.filter={docNo:'',orderType:'',eqInfo:''};this.page=1;this.renderTo();
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-settlement');
+},
   refresh(){this.renderTo();},
   goPage(p){const tp=Math.ceil(mfOrderData.filter(d=>d.orderStatus==='settlement'||d.orderStatus==='closed').length/this.pageSize)||1;if(p>=1&&p<=tp){this.page=p;this.renderTo();}},
 
@@ -189,3 +205,19 @@ const MfSettlement = {
 
   exportReport(){toast('导出结算报表（演示模式，导出结算数据汇总为Excel）');}
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-settlement',
+    fields: ['settleDocNo', 'settleOrderType', 'settleEqInfo'],
+    textFields: ['settleDocNo', 'settleEqInfo'],
+    labels: { settleDocNo: '工单编号', settleOrderType: '类型', settleEqInfo: '设备' },
+    syncFilter: function () {
+      MfSettlement.filter.docNo = (document.getElementById('settleDocNo') || {}).value || '';
+      MfSettlement.filter.orderType = (document.getElementById('settleOrderType') || {}).value || '';
+      MfSettlement.filter.eqInfo = (document.getElementById('settleEqInfo') || {}).value || '';
+    },
+    onApply: function () { MfSettlement.search(); }
+  });
+}

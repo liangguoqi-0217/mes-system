@@ -63,6 +63,12 @@ const FunctionalLocation = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('functional-location');
+      QueryVariant.restore('functional-location');
+      QueryVariant.bindRecent('functional-location');
+    }
     this.searchFilters = { factory: '', code: '', level: '' };
     this.expandedNodes = new Set();
     this.treeData.forEach(n => {
@@ -125,6 +131,12 @@ const FunctionalLocation = {
       if (panel) panel.style.display = 'none';
     }
     this.renderTree();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('functional-location');
+      QueryVariant.recordUsed('functional-location');
+    }
   },
 
   reset() {
@@ -139,6 +151,9 @@ const FunctionalLocation = {
     this.searchResults = null;
     if (this.selectedNode) { this.showTable(this.selectedNode); }
     this.renderTree();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('functional-location');
   },
 
   renderTree() {
@@ -501,3 +516,14 @@ const FunctionalLocation = {
       ]);
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'functional-location',
+    fields: ['flFilterFactory', 'flFilterCode', 'flFilterLevel'],
+    textFields: ['flFilterCode'],
+    labels: { flFilterFactory: '所属工厂', flFilterCode: '功能位置编码', flFilterLevel: '层级' },
+    onApply: function () { FunctionalLocation.search(); }
+  });
+}

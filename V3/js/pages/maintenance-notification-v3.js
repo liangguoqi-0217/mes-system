@@ -58,7 +58,13 @@ const MaintenanceNotificationV3 = {
     </div>`;
   },
 
-  init() { this.filtered=[...notificationV2Data]; this.page=1; this.renderTable(); },
+  init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-notification-v3');
+      QueryVariant.restore('maintenance-notification-v3');
+      QueryVariant.bindRecent('maintenance-notification-v3');
+    } this.filtered=[...notificationV2Data]; this.page=1; this.renderTable(); },
 
   /* ========== 表格渲染 ========== */
   renderTable() {
@@ -123,6 +129,12 @@ const MaintenanceNotificationV3 = {
       return true;
     });
     this.page=1; this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-notification-v3');
+      QueryVariant.recordUsed('maintenance-notification-v3');
+    }
   },
 
   reset() {
@@ -133,6 +145,9 @@ const MaintenanceNotificationV3 = {
     document.getElementById('nfV3PRIOK').value='';
     this._searchQmnum='';this._searchEqunr='';this._searchQmart='';this._searchStat='';this._searchPriok='';
     this.filtered=[...notificationV2Data]; this.page=1; this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-notification-v3');
   },
 
   prevPage(){if(this.page>1){this.page--;this.renderTable();}},
@@ -600,3 +615,14 @@ const MaintenanceNotificationV3 = {
     ]);
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-notification-v3',
+    fields: ['nfV3QMNUM', 'nfV3EQUNR', 'nfV3QMART', 'nfV3STAT', 'nfV3PRIOK'],
+    textFields: ['nfV3QMNUM', 'nfV3EQUNR'],
+    labels: { nfV3QMNUM: '通知单号', nfV3EQUNR: '设备编码', nfV3QMART: '类型', nfV3STAT: '状态', nfV3PRIOK: '优先级' },
+    onApply: function () { MaintenanceNotificationV3.search(); }
+  });
+}

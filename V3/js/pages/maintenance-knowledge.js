@@ -44,6 +44,12 @@ const MaintenanceKnowledge = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-knowledge');
+      QueryVariant.restore('maintenance-knowledge');
+      QueryVariant.bindRecent('maintenance-knowledge');
+    }
     this.page = 1;
     this._activeTab = 'case';
   },
@@ -61,6 +67,12 @@ const MaintenanceKnowledge = {
     const contentArea = document.getElementById('contentArea');
     if (contentArea) contentArea.innerHTML = this.render();
     this.bindEvents();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-knowledge');
+      QueryVariant.recordUsed('maintenance-knowledge');
+    }
   },
 
   reset() {
@@ -74,6 +86,9 @@ const MaintenanceKnowledge = {
     const contentArea = document.getElementById('contentArea');
     if (contentArea) contentArea.innerHTML = this.render();
     this.bindEvents();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-knowledge');
   },
 
   renderCaseList() {
@@ -188,3 +203,14 @@ const MaintenanceKnowledge = {
     // 绑定事件
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-knowledge',
+    fields: ['mkKeyword', 'mkEqType', 'mkFaultType'],
+    textFields: ['mkKeyword', 'mkEqType'],
+    labels: { mkKeyword: '关键词', mkEqType: '设备类型', mkFaultType: '故障类型' },
+    onApply: function () { MaintenanceKnowledge.search(); }
+  });
+}

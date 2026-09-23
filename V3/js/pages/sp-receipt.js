@@ -89,6 +89,12 @@ const SpReceipt = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('sp-receipt');
+      QueryVariant.restore('sp-receipt');
+      QueryVariant.bindRecent('sp-receipt');
+    }
     this.renderRows();
     const el = document.getElementById('rcDocNo');
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') this.search(); });
@@ -142,6 +148,12 @@ const SpReceipt = {
     this.page = 1;
     this.renderRows();
     const c = document.getElementById('rcCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('sp-receipt');
+      QueryVariant.recordUsed('sp-receipt');
+    }
   },
   reset() {
     ['rcDocNo', 'rcPoNo', 'rcLoc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -150,6 +162,9 @@ const SpReceipt = {
     this.page = 1;
     this.renderRows();
     const c = document.getElementById('rcCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('sp-receipt');
   },
   prevPage() { if (this.page > 1) { this.page--; this.renderRows(); } },
   nextPage() { if (this.page < Math.ceil(this.filteredFlat.length / this.pageSize)) { this.page++; this.renderRows(); } },
@@ -455,3 +470,14 @@ const spReceiptData = [
     ]
   }
 ];
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'sp-receipt',
+    fields: ['rcDocNo', 'rcPoNo', 'rcLoc', 'rcStatus'],
+    textFields: ['rcDocNo', 'rcPoNo', 'rcLoc'],
+    labels: { rcDocNo: '物料凭证', rcPoNo: '生产订单号', rcLoc: '目标库位', rcStatus: '状态' },
+    onApply: function () { SpReceipt.search(); }
+  });
+}

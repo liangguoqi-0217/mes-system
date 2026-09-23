@@ -116,6 +116,12 @@ const SpIssue = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('sp-issue');
+      QueryVariant.restore('sp-issue');
+      QueryVariant.bindRecent('sp-issue');
+    }
     this.renderRows();
     const el = document.getElementById('issueDocNo');
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') this.search(); });
@@ -173,6 +179,12 @@ const SpIssue = {
     this.page = 1;
     this.renderRows();
     const c = document.getElementById('issueCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('sp-issue');
+      QueryVariant.recordUsed('sp-issue');
+    }
   },
   reset() {
     ['issueDocNo', 'issueLoc', 'issueDept'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -181,6 +193,9 @@ const SpIssue = {
     this.page = 1;
     this.renderRows();
     const c = document.getElementById('issueCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('sp-issue');
   },
   prevPage() { if (this.page > 1) { this.page--; this.renderRows(); } },
   nextPage() { if (this.page < Math.ceil(this.filteredFlat.length / this.pageSize)) { this.page++; this.renderRows(); } },
@@ -596,3 +611,14 @@ const spIssueData = [
     ]
   }
 ];
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'sp-issue',
+    fields: ['issueDocNo', 'issueType', 'issueLoc', 'issueDept', 'issueStatus'],
+    textFields: ['issueDocNo', 'issueLoc', 'issueDept'],
+    labels: { issueDocNo: '预留号', issueType: '领料方式', issueLoc: '发出库位', issueDept: '请领部门', issueStatus: '状态' },
+    onApply: function () { SpIssue.search(); }
+  });
+}

@@ -268,6 +268,12 @@ const SpPurchase = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('sp-purchase');
+      QueryVariant.restore('sp-purchase');
+      QueryVariant.bindRecent('sp-purchase');
+    }
     initGlobalTooltip();
     this.flatRows = this.flattenData();
     this.filteredFlat = [...this.flatRows];
@@ -357,6 +363,12 @@ const SpPurchase = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('sp-purchase');
+      QueryVariant.recordUsed('sp-purchase');
+    }
   },
 
   reset() {
@@ -367,6 +379,9 @@ const SpPurchase = {
     this.filteredFlat = [...this.flatRows];
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('sp-purchase');
   },
 
   prevPage() {
@@ -2000,3 +2015,14 @@ const spPurchaseData = [
     ]
   }
 ];
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'sp-purchase',
+    fields: ['prPlant', 'prDocNo', 'prMatCode', 'prCreateMonth', 'prApplicant', 'prIsSettled', 'prStatus'],
+    textFields: ['prPlant', 'prDocNo', 'prMatCode', 'prApplicant'],
+    labels: { prPlant: '工厂', prDocNo: '采购申请号', prMatCode: '物料', prCreateMonth: '创建月份', prApplicant: '申请人', prIsSettled: '是否结算', prStatus: '处理状态' },
+    onApply: function () { SpPurchase.search(); }
+  });
+}

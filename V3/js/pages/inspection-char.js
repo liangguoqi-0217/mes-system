@@ -160,6 +160,12 @@ const InspectionChar = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('inspection-char');
+      QueryVariant.restore('inspection-char');
+      QueryVariant.bindRecent('inspection-char');
+    }
     this.initFilters();
     this.renderTable();
   },
@@ -219,6 +225,12 @@ const InspectionChar = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('inspection-char');
+      QueryVariant.recordUsed('inspection-char');
+    }
   },
 
   reset() {
@@ -226,6 +238,9 @@ const InspectionChar = {
     els.forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
     this.initFilters();
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('inspection-char');
   },
 
   prevPage() { if(this.page>1){this.page--;this.renderTable();} },
@@ -616,3 +631,13 @@ const InspectionChar = {
     );
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'inspection-char',
+    fields: ['micFactory', 'micType'],
+    labels: { micFactory: '工厂', micType: '特性类型' },
+    onApply: function () { InspectionChar.search(); }
+  });
+}

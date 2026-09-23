@@ -484,6 +484,12 @@ const MeasurementRecord = {
     this.filteredRecords = [...measurementRecordData];
     this.currentPage = 1;
     this.renderHistoryTable();
+    // 查询变式：历史查询页签的筛选区（进入页签时挂接入按钮并回填上次条件，仅首次回填）
+    if (window.QueryVariant) {
+      QueryVariant.mount('measurement-record');
+      if (!this._qvRestored) { QueryVariant.restore('measurement-record'); this._qvRestored = true; }
+      QueryVariant.bindRecent('measurement-record');
+    }
   },
 
   doHistoryFilter() {
@@ -503,6 +509,11 @@ const MeasurementRecord = {
     });
     this.currentPage = 1;
     this.renderHistoryTable();
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('measurement-record');
+      QueryVariant.recordUsed('measurement-record');
+    }
   },
 
   resetHistoryFilter() {
@@ -511,6 +522,8 @@ const MeasurementRecord = {
     this.filteredRecords = [...measurementRecordData];
     this.currentPage = 1;
     this.renderHistoryTable();
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('measurement-record');
   },
 
   renderHistoryTable() {
@@ -920,3 +933,13 @@ const MeasurementRecord = {
     toast('异常事件已标记为已处理');
   }
 };
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'measurement-record',
+    fields: ['mrHistEquipment', 'mrHistPoint', 'mrHistStart', 'mrHistEnd', 'mrHistOperator'],
+    textFields: ['mrHistOperator'],
+    labels: { mrHistEquipment: '设备', mrHistPoint: '测量点', mrHistStart: '开始时间', mrHistEnd: '结束时间', mrHistOperator: '测量人' },
+    onApply: function () { MeasurementRecord.doHistoryFilter(); }
+  });
+}

@@ -114,6 +114,12 @@ const SpStockPost = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('sp-stock-post');
+      QueryVariant.restore('sp-stock-post');
+      QueryVariant.bindRecent('sp-stock-post');
+    }
     this.renderRows();
     const el = document.getElementById('spDocNo');
     if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') this.search(); });
@@ -170,6 +176,12 @@ const SpStockPost = {
     this.page = 1;
     this.renderRows();
     const c = document.getElementById('spCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('sp-stock-post');
+      QueryVariant.recordUsed('sp-stock-post');
+    }
   },
   reset() {
     ['spDocNo', 'spLoc', 'spDept'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -178,6 +190,9 @@ const SpStockPost = {
     this.page = 1;
     this.renderRows();
     const c = document.getElementById('spCount'); if (c) c.textContent = `共 ${this.filteredFlat.length} 行`;
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('sp-stock-post');
   },
   prevPage() { if (this.page > 1) { this.page--; this.renderRows(); } },
   nextPage() { if (this.page < Math.ceil(this.filteredFlat.length / this.pageSize)) { this.page++; this.renderRows(); } },
@@ -620,3 +635,14 @@ const spStockPostData = [
     ]
   }
 ];
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'sp-stock-post',
+    fields: ['spDocNo', 'spType', 'spLoc', 'spDept', 'spStatus'],
+    textFields: ['spDocNo', 'spLoc', 'spDept'],
+    labels: { spDocNo: '记账单号', spType: '记账类型', spLoc: '库存地点', spDept: '记账部门', spStatus: '状态' },
+    onApply: function () { SpStockPost.search(); }
+  });
+}

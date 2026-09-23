@@ -138,6 +138,13 @@ const InspectionBatch = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('inspection-batch');
+      QueryVariant.restore('inspection-batch');
+      QueryVariant.bindRecent('inspection-batch');
+    }
+
     this.renderStats();
     this.renderFilterBar();
     this.renderTable();
@@ -249,7 +256,13 @@ const InspectionBatch = {
     this.page = 1;
     this.renderTable();
     this.renderPagination();
-  },
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('inspection-batch');
+      QueryVariant.recordUsed('inspection-batch');
+    }
+},
 
   resetFilter() {
     ['ibMaterial','ibSuppBatch','ibSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
@@ -259,7 +272,10 @@ const InspectionBatch = {
     this.page = 1;
     this.renderTable();
     this.renderPagination();
-  },
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('inspection-batch');
+},
 
   // ==================== 检验批表格 ====================
 
@@ -1670,3 +1686,14 @@ const InspectionBatch = {
   }
 
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'inspection-batch',
+    fields: ['ibFactory', 'ibMaterial', 'ibSuppBatch', 'ibSapBatch', 'ibStatus'],
+    textFields: ['ibMaterial', 'ibSuppBatch', 'ibSapBatch'],
+    labels: { ibFactory: '工厂', ibMaterial: '物料编码', ibSuppBatch: '供应商批次号', ibSapBatch: 'SAP批次号', ibStatus: '状态' },
+    onApply: function () { InspectionBatch.search(); }
+  });
+}

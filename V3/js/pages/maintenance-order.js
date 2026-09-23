@@ -23,11 +23,11 @@ const MfOrder = {
 
     return `<div class="page-container"><div class="page-header"><div class="page-title">维修工单</div><div class="page-actions"><button class="btn btn-secondary" onclick="MfOrder.reset()">刷新</button><button class="btn btn-blue" onclick="MfOrder.create()">+ 新增工单</button></div></div>
     <div class="filter-bar">
-      <div class="filter-group"><label>工单编号</label><input value="${esc(f.docNo)}" onchange="MfOrder.filter.docNo=this.value;MfOrder.refresh()" placeholder="工单编号"></div>
-      <div class="filter-group"><label>类型</label><select onchange="MfOrder.filter.orderType=this.value;MfOrder.refresh()">${typeOpts}</select></div>
-      <div class="filter-group"><label>设备</label><input value="${esc(f.eqInfo)}" onchange="MfOrder.filter.eqInfo=this.value;MfOrder.refresh()" placeholder="编码/名称"></div>
-      <div class="filter-group"><label>工作中心</label><input value="${esc(f.workCenter)}" onchange="MfOrder.filter.workCenter=this.value;MfOrder.refresh()" placeholder="维修班组"></div>
-      <div class="filter-group"><label>状态</label><select onchange="MfOrder.filter.execStatus=this.value;MfOrder.refresh()">${sOpts}</select></div>
+      <div class="filter-group"><label>工单编号</label><input id="moDocNo" value="${esc(f.docNo)}" onchange="MfOrder.filter.docNo=this.value;MfOrder.refresh()" placeholder="工单编号"></div>
+      <div class="filter-group"><label>类型</label><select id="moOrderType" onchange="MfOrder.filter.orderType=this.value;MfOrder.refresh()">${typeOpts}</select></div>
+      <div class="filter-group"><label>设备</label><input id="moEqInfo" value="${esc(f.eqInfo)}" onchange="MfOrder.filter.eqInfo=this.value;MfOrder.refresh()" placeholder="编码/名称"></div>
+      <div class="filter-group"><label>工作中心</label><input id="moWorkCenter" value="${esc(f.workCenter)}" onchange="MfOrder.filter.workCenter=this.value;MfOrder.refresh()" placeholder="维修班组"></div>
+      <div class="filter-group"><label>状态</label><select id="moExecStatus" onchange="MfOrder.filter.execStatus=this.value;MfOrder.refresh()">${sOpts}</select></div>
       <div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MfOrder.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MfOrder.reset()">重置</button></div>
     </div>
     <div class="table-wrapper" style="margin-top:12px;"><table class="data-table">
@@ -189,10 +189,26 @@ const MfOrder = {
   },
 
   // ========== ACTIONS ==========
-  init(){this.renderTo();},
+  init(){
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('maintenance-order');
+      QueryVariant.restore('maintenance-order');
+      QueryVariant.bindRecent('maintenance-order');
+    }
+this.renderTo();},
   renderTo(){document.getElementById('contentArea').innerHTML=this.render();},
-  search(){this.page=1;this.renderTo();},
-  reset(){this.filter={docNo:'',orderType:'',eqInfo:'',location:'',workCenter:'',execStatus:'',planStart:'',planEnd:''};this.page=1;this.renderTo();},
+  search(){this.page=1;this.renderTo();
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('maintenance-order');
+      QueryVariant.recordUsed('maintenance-order');
+    }
+},
+  reset(){this.filter={docNo:'',orderType:'',eqInfo:'',location:'',workCenter:'',execStatus:'',planStart:'',planEnd:''};this.page=1;this.renderTo();
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('maintenance-order');
+},
   refresh(){this.renderTo();},
   goPage(p){const tp=Math.ceil(mfOrderData.length/this.pageSize)||1;if(p>=1&&p<=tp){this.page=p;this.renderTo();}},
   switchTab(t){this.formTab=t;this.renderTo();},
@@ -230,3 +246,21 @@ const MfOrder = {
   exportDoc(id){const d=mfOrderData.find(x=>x.id===id)||{};toast('导出工单：'+(d.docNo||'')+'（演示模式，导出PDF/Excel）');}
 };
 */
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'maintenance-order',
+    fields: ['moDocNo', 'moOrderType', 'moEqInfo', 'moWorkCenter', 'moExecStatus'],
+    textFields: ['moDocNo', 'moEqInfo', 'moWorkCenter'],
+    labels: { moDocNo: '工单编号', moOrderType: '类型', moEqInfo: '设备', moWorkCenter: '工作中心', moExecStatus: '状态' },
+    syncFilter: function () {
+      MfOrder.filter.docNo = (document.getElementById('moDocNo') || {}).value || '';
+      MfOrder.filter.orderType = (document.getElementById('moOrderType') || {}).value || '';
+      MfOrder.filter.eqInfo = (document.getElementById('moEqInfo') || {}).value || '';
+      MfOrder.filter.workCenter = (document.getElementById('moWorkCenter') || {}).value || '';
+      MfOrder.filter.execStatus = (document.getElementById('moExecStatus') || {}).value || '';
+    },
+    onApply: function () { MfOrder.search(); }
+  });
+}

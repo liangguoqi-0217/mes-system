@@ -63,6 +63,12 @@ const BatchChar = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('batch-char');
+      QueryVariant.restore('batch-char');
+      QueryVariant.bindRecent('batch-char');
+    }
     this.renderFilterBar();
     const footer = document.getElementById('bcFooterBar');
     if (this.activeTab === 'modify') {
@@ -134,6 +140,12 @@ const BatchChar = {
   search() {
     if (this.activeTab === 'modify') this.queryBatch();
     else this.loadLogs();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('batch-char');
+      QueryVariant.recordUsed('batch-char');
+    }
   },
 
   resetFilter() {
@@ -149,6 +161,9 @@ const BatchChar = {
       this.renderFilterBar();
       this.loadLogs();
     }
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('batch-char');
   },
 
   // ==================== Tab1：查询批次 ====================
@@ -425,3 +440,14 @@ const batchCharLogData = [
   { factory: '1000', batchNo: 'P260610', materialCode: 'F50001', charCode: 'CHAR01', charName: '含量测定', oldValue: '98.2', newValue: '98.7', changeBy: '王芳', changeTime: '2026-08-11 15:30' },
   { factory: '2002', batchNo: 'P260618', materialCode: 'F50021', charCode: 'CHAR02', charName: '粒度', oldValue: '不合格', newValue: '合格', changeBy: '赵磊', changeTime: '2026-08-15 10:05' }
 ];
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'batch-char',
+    fields: ['bcFactory', 'bcMaterial', 'bcBatch'],
+    textFields: ['bcMaterial', 'bcBatch'],
+    labels: { bcFactory: '工厂', bcMaterial: '物料号', bcBatch: '批次' },
+    onApply: function () { BatchChar.search(); }
+  });
+}

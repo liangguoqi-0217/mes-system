@@ -11,6 +11,12 @@ const EquipmentInstall = {
     return this.renderList();
   },
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('equipment-install');
+      QueryVariant.restore('equipment-install');
+      QueryVariant.bindRecent('equipment-install');
+    }
     if (this.mode === 'form' || this.mode === 'detail') { this.renderFormInit(); return; }
     this.filtered = [...installDocsData];
     this.page = 1;
@@ -106,6 +112,12 @@ const EquipmentInstall = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('equipment-install');
+      QueryVariant.recordUsed('equipment-install');
+    }
   },
   reset() {
     document.getElementById('instDocNo').value = '';
@@ -117,6 +129,9 @@ const EquipmentInstall = {
     this.filtered = [...installDocsData];
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('equipment-install');
   },
   refresh() { this.reset(); },
   prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
@@ -481,3 +496,14 @@ const EquipmentInstall = {
   }
 };
 */
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'equipment-install',
+    fields: ['instDocNo', 'instEqInfo', 'instDocType', 'instStatus', 'instHandler', 'instDept'],
+    textFields: ['instDocNo', 'instEqInfo', 'instHandler'],
+    labels: { instDocNo: '单据编号', instEqInfo: '设备编码/名称', instDocType: '单据类型', instStatus: '状态', instHandler: '经办人', instDept: '所属车间' },
+    onApply: function () { EquipmentInstall.search(); }
+  });
+}

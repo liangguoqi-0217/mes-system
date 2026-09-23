@@ -54,6 +54,12 @@ const WorkCenter = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('work-center');
+      QueryVariant.restore('work-center');
+      QueryVariant.bindRecent('work-center');
+    }
     this.searchFilters = { factory: '', code: '', name: '' };
     this.expandedNodes = new Set();
     this.orgTree.forEach(n => this.expandedNodes.add(n.id));
@@ -126,6 +132,12 @@ const WorkCenter = {
     } else {
       this._showTable(descendants);
     }
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('work-center');
+      QueryVariant.recordUsed('work-center');
+    }
   },
 
   reset() {
@@ -139,6 +151,9 @@ const WorkCenter = {
     this.searchTerm = '';
     this.searchResults = null;
     if (this.selectedNode) { this.showTable(this.selectedNode); }
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('work-center');
   },
 
   _wcBelongsToFactory(wc, factoryId) {
@@ -417,3 +432,14 @@ const WorkCenter = {
       ]);
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'work-center',
+    fields: ['wcFilterFactory', 'wcFilterCode', 'wcFilterName'],
+    textFields: ['wcFilterCode', 'wcFilterName'],
+    labels: { wcFilterFactory: '所属工厂', wcFilterCode: '工作中心编码', wcFilterName: '工作中心名称' },
+    onApply: function () { WorkCenter.search(); }
+  });
+}

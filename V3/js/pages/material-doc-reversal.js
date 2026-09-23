@@ -129,6 +129,13 @@ const MaterialDocReversal = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('material-doc-reversal');
+      QueryVariant.restore('material-doc-reversal');
+      QueryVariant.bindRecent('material-doc-reversal');
+    }
+
     this.renderFilterBar();
     this.renderStats();
     this.renderTable();
@@ -188,14 +195,23 @@ const MaterialDocReversal = {
     this.page = 1;
     this.renderTable();
     this.renderPagination();
-  },
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('material-doc-reversal');
+      QueryVariant.recordUsed('material-doc-reversal');
+    }
+},
 
   resetFilter() {
     ['mdrDoc', 'mdrSourceDoc', 'mdrSourceType', 'mdrMaterial', 'mdrStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
     this.search();
-  },
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('material-doc-reversal');
+},
 
   /* ==================== 表格 ==================== */
 
@@ -468,3 +484,14 @@ const MaterialDocReversal = {
     if (cont) cont.innerHTML = '';
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'material-doc-reversal',
+    fields: ['mdrDoc', 'mdrSourceDoc', 'mdrSourceType', 'mdrMaterial', 'mdrStatus'],
+    textFields: ['mdrDoc', 'mdrSourceDoc', 'mdrMaterial'],
+    labels: { mdrDoc: '物料凭证号', mdrSourceDoc: '来源单据号', mdrSourceType: '来源类型', mdrMaterial: '物料', mdrStatus: '状态' },
+    onApply: function () { MaterialDocReversal.search(); }
+  });
+}

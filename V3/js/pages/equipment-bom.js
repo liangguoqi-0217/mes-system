@@ -52,6 +52,12 @@ const EquipmentBOM = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('equipment-bom');
+      QueryVariant.restore('equipment-bom');
+      QueryVariant.bindRecent('equipment-bom');
+    }
     this.filtered = [...bomListData];
     this.page = 1;
     this.renderTable();
@@ -99,6 +105,12 @@ const EquipmentBOM = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('equipment-bom');
+      QueryVariant.recordUsed('equipment-bom');
+    }
   },
 
   reset() {
@@ -108,6 +120,9 @@ const EquipmentBOM = {
     this.filtered = [...bomListData];
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('equipment-bom');
   },
 
   prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
@@ -207,3 +222,14 @@ const EquipmentBOM = {
       ]);
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'equipment-bom',
+    fields: ['bomEqCode', 'bomEqName', 'bomStatus'],
+    textFields: ['bomEqCode', 'bomEqName'],
+    labels: { bomEqCode: '设备编码', bomEqName: '设备名称', bomStatus: '状态' },
+    onApply: function () { EquipmentBOM.search(); }
+  });
+}

@@ -63,6 +63,12 @@ const MaterialMaster = {
   },
 
   init() {
+    // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
+    if (window.QueryVariant) {
+      QueryVariant.mount('material-master');
+      QueryVariant.restore('material-master');
+      QueryVariant.bindRecent('material-master');
+    }
     this.filtered = [...materialData];
     this.page = 1;
     this.renderTable();
@@ -119,6 +125,12 @@ const MaterialMaster = {
     });
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('material-master');
+      QueryVariant.recordUsed('material-master');
+    }
   },
 
   reset() {
@@ -131,6 +143,9 @@ const MaterialMaster = {
     this.filtered = [...materialData];
     this.page = 1;
     this.renderTable();
+  
+    // 查询变式：重置时解除变式选中并清除"上次查询条件"
+    if (window.QueryVariant) QueryVariant.resetSelection('material-master');
   },
 
   prevPage() { if (this.page > 1) { this.page--; this.renderTable(); } },
@@ -206,3 +221,14 @@ const MaterialMaster = {
     toast('物料新增成功');
   }
 };
+
+// ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'material-master',
+    fields: ['matFactory', 'matMrpCtrl', 'matWholesale', 'matProcType', 'matType', 'matCode'],
+    textFields: ['matCode'],
+    labels: { matFactory: '工厂', matMrpCtrl: 'MRP控制者', matWholesale: '批次管理', matProcType: '采购类型', matType: '物料类型', matCode: '物料号' },
+    onApply: function () { MaterialMaster.search(); }
+  });
+}
