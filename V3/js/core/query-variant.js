@@ -338,7 +338,7 @@ window.QueryVariant = (function () {
   function _listHtml(pageId) {
     const items = _variants(pageId);
     if (!items.length) {
-      return '<tr><td colspan="6"><div class="qv-empty">还没有保存任何变式。<br>填好筛选条件后，在下方输入名称保存。</div></td></tr>';
+      return '<tr><td colspan="4"><div class="qv-empty">还没有保存任何变式。<br>填好筛选条件后，在下方输入名称保存。</div></td></tr>';
     }
     const curId = (_state[pageId] && _state[pageId].currentId) || '';
     const del = 'event.stopPropagation();QueryVariant.remove(\'' + pageId + '\',';
@@ -351,8 +351,6 @@ window.QueryVariant = (function () {
         '<td class="qv-name">' + _esc(v.variant_name) +
         (active ? ' <span class="qv-tag qv-tag-now">当前</span>' : '') + '</td>' +
         '<td>' + (v.is_default ? '<span class="qv-tag">默认</span>' : '') + '</td>' +
-        '<td class="qv-num">' + (v.use_count || 0) + '</td>' +
-        '<td class="qv-time">' + _fmt(v.last_used_at) + '</td>' +
         '<td class="qv-ops">' +
         (v.is_default
           ? '<span class="qv-ops-disabled">已默认</span>'
@@ -379,11 +377,9 @@ window.QueryVariant = (function () {
       '<div class="qv-table-wrap">' +
       '<table class="data-table data-table-compact qv-table">' +
       '<thead><tr>' +
-      '<th style="width:180px;">变式编码</th>' +
+      '<th style="width:190px;">变式编码</th>' +
       '<th>变式名称</th>' +
       '<th style="width:70px;">默认</th>' +
-      '<th style="width:80px;" class="qv-num">使用次数</th>' +
-      '<th style="width:130px;">最近使用</th>' +
       '<th style="width:150px;text-align:right;">操作</th>' +
       '</tr></thead>' +
       '<tbody id="qvListWrap">' + _listHtml(pageId) + '</tbody>' +
@@ -391,16 +387,16 @@ window.QueryVariant = (function () {
       '</div>' +
       '<div class="qv-section qv-save-section">' +
       '<div class="qv-sec-title">保存当前条件为新变式</div>' +
-      '<div class="qv-form-grid">' +
-      '<div class="form-group"><label>变式编码</label>' +
+      '<div class="qv-form-line">' +
+      '<div class="qv-field"><label>变式编码</label>' +
       '<input type="text" id="qvSaveCode" class="qv-readonly" value="' + _esc(_code(pageId)) + '" ' +
       'readonly tabindex="-1" title="系统自动生成，不可修改"></div>' +
-      '<div class="form-group"><label>变式名称 <span class="qv-req">*</span></label>' +
+      '<div class="qv-field"><label>变式名称 <span class="qv-req">*</span></label>' +
       '<input type="text" id="qvSaveName" maxlength="50" placeholder="如：周一备件盘库"></div>' +
-      '</div>' +
-      '<div class="qv-form-foot">' +
-      '<label class="qv-check"><input type="checkbox" id="qvSaveDefault"> 设为该页面的默认变式</label>' +
-      '<button class="btn btn-primary" onclick="QueryVariant.confirmSave(\'' + pageId + '\')">保存为新变式</button>' +
+      '<div class="qv-field"><label>&nbsp;</label>' +
+      '<label class="qv-check"><input type="checkbox" id="qvSaveDefault"> 设为默认</label></div>' +
+      '<div class="qv-field"><label>&nbsp;</label>' +
+      '<button class="btn btn-primary" onclick="QueryVariant.confirmSave(\'' + pageId + '\')">保存为新变式</button></div>' +
       '</div>' +
       '</div>' +
       '</div>' +

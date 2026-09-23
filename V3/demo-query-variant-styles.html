@@ -331,11 +331,9 @@
         <div class="qv-table-wrap">
           <table class="data-table data-table-compact qv-table">
             <thead><tr>
-              <th style="width:180px;">变式编码</th>
+              <th style="width:190px;">变式编码</th>
               <th>变式名称</th>
               <th style="width:70px;">默认</th>
-              <th style="width:80px;" class="qv-num">使用次数</th>
-              <th style="width:130px;">最近使用</th>
               <th style="width:150px;text-align:right;">操作</th>
             </tr></thead>
             <tbody>
@@ -343,72 +341,54 @@
                 <td class="qv-code">admin-20260803-081245</td>
                 <td class="qv-name">周一备件盘库 <span class="qv-tag qv-tag-now">当前</span></td>
                 <td><span class="qv-tag">默认</span></td>
-                <td class="qv-num">24</td>
-                <td class="qv-time">2026-09-21 08:35</td>
                 <td class="qv-ops"><span class="qv-ops-disabled">已默认</span><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260805-140912</td>
                 <td class="qv-name">ERSA 紧急件查询</td>
                 <td></td>
-                <td class="qv-num">18</td>
-                <td class="qv-time">2026-09-22 15:12</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260811-093322</td>
                 <td class="qv-name">2001 工厂月度盘点</td>
                 <td></td>
-                <td class="qv-num">12</td>
-                <td class="qv-time">2026-09-01 09:30</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260719-163804</td>
                 <td class="qv-name">轴承类安全库存核查</td>
                 <td></td>
-                <td class="qv-num">9</td>
-                <td class="qv-time">2026-09-18 16:52</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260624-101547</td>
                 <td class="qv-name">进口件长周期备件</td>
                 <td></td>
-                <td class="qv-num">7</td>
-                <td class="qv-time">2026-08-20 10:15</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260602-144810</td>
                 <td class="qv-name">月底呆滞件清理</td>
                 <td></td>
-                <td class="qv-num">5</td>
-                <td class="qv-time">2026-08-31 14:48</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260514-091236</td>
                 <td class="qv-name">春节前备货排查</td>
                 <td></td>
-                <td class="qv-num">3</td>
-                <td class="qv-time">2026-07-05 09:12</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260420-133957</td>
                 <td class="qv-name">密封件批次追溯</td>
                 <td></td>
-                <td class="qv-num">1</td>
-                <td class="qv-time">2026-06-11 13:39</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
               <tr>
                 <td class="qv-code">admin-20260307-110452</td>
                 <td class="qv-name">电气模块备件查询</td>
                 <td></td>
-                <td class="qv-num">0</td>
-                <td class="qv-time">—</td>
                 <td class="qv-ops"><button class="btn btn-secondary btn-sm">设为默认</button><button class="btn btn-danger btn-sm">删除</button></td>
               </tr>
             </tbody>
@@ -418,15 +398,15 @@
 
       <div class="qv-section qv-save-section">
         <div class="qv-sec-title">保存当前条件为新变式</div>
-        <div class="qv-form-grid">
-          <div class="form-group"><label>变式编码</label>
+        <div class="qv-form-line">
+          <div class="qv-field"><label>变式编码</label>
             <input type="text" class="qv-readonly" value="admin-20260923-104530" readonly tabindex="-1"></div>
-          <div class="form-group"><label>变式名称 <span class="qv-req">*</span></label>
+          <div class="qv-field"><label>变式名称 <span class="qv-req">*</span></label>
             <input type="text" placeholder="如：周一备件盘库"></div>
-        </div>
-        <div class="qv-form-foot">
-          <label class="qv-check"><input type="checkbox"> 设为该页面的默认变式</label>
-          <button class="btn btn-primary">保存为新变式</button>
+          <div class="qv-field"><label>&nbsp;</label>
+            <label class="qv-check"><input type="checkbox"> 设为默认</label></div>
+          <div class="qv-field"><label>&nbsp;</label>
+            <button class="btn btn-primary">保存为新变式</button></div>
         </div>
       </div>
     </div>

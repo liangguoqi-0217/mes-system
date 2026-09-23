@@ -912,12 +912,13 @@ tr.locked td { background: #fafbfc; }
 .qv-section:last-child { margin-bottom: 0; }
 .qv-save-section { border-top: 1px solid var(--border); padding-top: 22px; }
 
-.qv-form-grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
-.qv-form-grid .form-group { margin-bottom: 0; }
+.qv-form-line { display: grid; grid-template-columns: 200px 1fr auto auto; gap: 14px; align-items: end; }
+.qv-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.qv-field > label { font-size: 12px; color: var(--text-secondary); line-height: 1; }
+.qv-field .qv-check { margin-top: 0; height: 36px; }
+.qv-field .btn { height: 36px; white-space: nowrap; }
 .qv-readonly { background: #f1f5f9; color: var(--text-secondary); cursor: not-allowed; }
 .qv-req { color: #dc2626; font-weight: 700; }
-.qv-form-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
-.qv-form-foot .qv-check { margin-top: 0; }
 
 .qv-table-wrap {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -932,8 +933,6 @@ tr.locked td { background: #fafbfc; }
   font-size: 12px; color: var(--text-secondary); white-space: nowrap;
 }
 .qv-table .qv-name { font-weight: 600; color: var(--text); }
-.qv-table .qv-num { text-align: right; font-variant-numeric: tabular-nums; }
-.qv-table .qv-time { color: var(--text-secondary); white-space: nowrap; }
 .qv-table .qv-ops { text-align: right; white-space: nowrap; }
 .qv-table .qv-ops .btn { padding: 3px 9px; font-size: 11px; margin-left: 4px; }
 
