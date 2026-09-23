@@ -359,12 +359,16 @@
 
       <div class="qv-section qv-save-section">
         <div class="qv-sec-title">保存当前条件为新变式</div>
-        <div class="qv-form-row">
-          <div class="form-group" style="flex:1;margin-bottom:0;"><label>变式名称</label>
+        <div class="qv-form-grid">
+          <div class="form-group"><label>变式编码</label>
+            <input type="text" class="qv-readonly" value="admin-20260923-104530" readonly tabindex="-1"></div>
+          <div class="form-group"><label>变式名称 <span class="qv-req">*</span></label>
             <input type="text" placeholder="如：周一备件盘库"></div>
-          <button class="btn btn-primary" style="height:36px;">保存为新变式</button>
         </div>
-        <label class="qv-check"><input type="checkbox"> 设为该页面的默认变式</label>
+        <div class="qv-form-foot">
+          <label class="qv-check"><input type="checkbox"> 设为该页面的默认变式</label>
+          <button class="btn btn-primary">保存为新变式</button>
+        </div>
       </div>
     </div>
     <div class="modal-footer">

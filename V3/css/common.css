@@ -912,9 +912,12 @@ tr.locked td { background: #fafbfc; }
 .qv-section:last-child { margin-bottom: 0; }
 .qv-save-section { border-top: 1px solid var(--border); padding-top: 22px; }
 
-.qv-form-row { display: flex; gap: 12px; align-items: flex-end; }
-.qv-form-row .form-group { flex: 1; margin-bottom: 0; }
-.qv-form-row .btn { height: 36px; white-space: nowrap; }
+.qv-form-grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
+.qv-form-grid .form-group { margin-bottom: 0; }
+.qv-readonly { background: #f1f5f9; color: var(--text-secondary); cursor: not-allowed; }
+.qv-req { color: #dc2626; font-weight: 700; }
+.qv-form-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
+.qv-form-foot .qv-check { margin-top: 0; }
 
 .qv-card {
   border: 1px solid var(--border); border-radius: var(--radius-sm);

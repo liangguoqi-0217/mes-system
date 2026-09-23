@@ -42,6 +42,17 @@ window.QueryVariant = (function () {
   }
   function _now() { return new Date().toISOString(); }
   function _newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function _pad(n) { return n < 10 ? '0' + n : String(n); }
+  function _stamp(d) {
+    return d.getFullYear() + _pad(d.getMonth() + 1) + _pad(d.getDate()) +
+      '-' + _pad(d.getHours()) + _pad(d.getMinutes()) + _pad(d.getSeconds());
+  }
+  // 变式编码：登录名-年月日-时分秒（如 admin-20260923-104530），同页冲突时追加序号
+  function _code(pageId) {
+    const base = _uid() + '-' + _stamp(new Date());
+    const n = _all(pageId).filter(v => String(v.variant_code || '').indexOf(base) === 0).length;
+    return n ? base + '-' + (n + 1) : base;
+  }
   function _el(id) { return document.getElementById(id); }
   function _esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, m =>
@@ -71,7 +82,18 @@ window.QueryVariant = (function () {
 
   /* ================= 变式数据层 ================= */
 
-  function _all(pageId) { return _read(_vKey(pageId)); }
+  // 读取该页全部变式；历史数据缺 variant_code 时按创建时间补一个并回写
+  function _all(pageId) {
+    const arr = _read(_vKey(pageId));
+    let dirty = false;
+    arr.forEach(v => {
+      if (v.source === 'AUTO' || v.variant_code) return;
+      v.variant_code = _uid() + '-' + _stamp(v.created_at ? new Date(v.created_at) : new Date());
+      dirty = true;
+    });
+    if (dirty) _write(_vKey(pageId), arr);
+    return arr;
+  }
 
   // 用户可见变式（排除系统自动保存的"上次条件"与软删记录）
   function _variants(pageId) {
@@ -313,7 +335,8 @@ window.QueryVariant = (function () {
     return items.map(v => {
       const active = v.id === curId;
       return '<div class="qv-card' + (active ? ' active' : '') + '" ' +
-        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')" title="点击应用该变式">' +
+        'onclick="QueryVariant.applyOne(\'' + pageId + '\',\'' + v.id + '\')" ' +
+        'title="变式编码：' + _esc(v.variant_code || '-') + '　（点击应用该变式）">' +
         '<div class="qv-card-top">' +
         '<span class="qv-card-name">' + _esc(v.variant_name) +
         (v.is_default ? ' <span class="qv-tag">默认</span>' : '') +
@@ -346,13 +369,17 @@ window.QueryVariant = (function () {
       '</div>' +
       '<div class="qv-section qv-save-section">' +
       '<div class="qv-sec-title">保存当前条件为新变式</div>' +
-      '<div class="qv-form-row">' +
-      '<div class="form-group" style="flex:1;margin-bottom:0;"><label>变式名称</label>' +
+      '<div class="qv-form-grid">' +
+      '<div class="form-group"><label>变式编码</label>' +
+      '<input type="text" id="qvSaveCode" class="qv-readonly" value="' + _esc(_code(pageId)) + '" ' +
+      'readonly tabindex="-1" title="系统自动生成，不可修改"></div>' +
+      '<div class="form-group"><label>变式名称 <span class="qv-req">*</span></label>' +
       '<input type="text" id="qvSaveName" maxlength="50" placeholder="如：周一备件盘库"></div>' +
-      '<button class="btn btn-primary" style="height:36px;" ' +
-      'onclick="QueryVariant.confirmSave(\'' + pageId + '\')">保存为新变式</button>' +
       '</div>' +
+      '<div class="qv-form-foot">' +
       '<label class="qv-check"><input type="checkbox" id="qvSaveDefault"> 设为该页面的默认变式</label>' +
+      '<button class="btn btn-primary" onclick="QueryVariant.confirmSave(\'' + pageId + '\')">保存为新变式</button>' +
+      '</div>' +
       '</div>' +
       '</div>' +
       '<div class="modal-footer">' +
@@ -419,9 +446,15 @@ window.QueryVariant = (function () {
     const defEl = _el('qvSaveDefault');
     const isDefault = !!(defEl && defEl.checked);
     if (isDefault) arr.forEach(v => { v.is_default = null; });
+    const codeEl = _el('qvSaveCode');
+    const code = (codeEl && String(codeEl.value || '').trim()) || _code(pageId);
+    if (arr.some(v => !v.deleted_at && v.variant_code === code)) {
+      alert('变式编码已存在，请关闭弹窗重新打开后再保存');
+      return;
+    }
     const rec = {
       id: _newId(), user_id: _uid(), page_id: pageId,
-      variant_name: name, source: 'USER', scope: 'PERSONAL',
+      variant_code: code, variant_name: name, source: 'USER', scope: 'PERSONAL',
       is_default: isDefault ? 1 : null, auto_run: 0, sort_no: alive.length,
       use_count: 0, last_used_at: null,
       conditions_json: _collect(pageId), schema_version: SCHEMA_VERSION,
@@ -430,10 +463,17 @@ window.QueryVariant = (function () {
     arr.push(rec);
     _write(_vKey(pageId), arr);
     _state[pageId] = { currentId: rec.id };
-    // 清空输入并刷新列表
+    // 清空输入、换一个新编码并刷新列表
     if (nameInput) nameInput.value = '';
     if (defEl) defEl.checked = false;
+    _refreshCode(pageId);
     _refreshList(pageId);
+  }
+
+  // 保存成功后重新生成一个编码，避免连续保存时撞号
+  function _refreshCode(pageId) {
+    const el = _el('qvSaveCode');
+    if (el) el.value = _code(pageId);
   }
 
   /* ================= 注册 ================= */
