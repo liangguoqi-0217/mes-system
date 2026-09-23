@@ -234,6 +234,12 @@ const MaterialDocList = {
         </div>
 
         <div id="mdlFilterBar" style="flex-shrink:0;"></div>
+        <style>
+          #mdlTableWrapper { scrollbar-width: thin; scrollbar-color: rgba(203,213,225,0.6) transparent; }
+          #mdlTableWrapper::-webkit-scrollbar { width: 6px; height: 0; }
+          #mdlTableWrapper::-webkit-scrollbar-thumb { background: rgba(203,213,225,0.6); border-radius: 3px; }
+          #mdlTableWrapper::-webkit-scrollbar-track { background: transparent; }
+        </style>
         <div class="table-wrapper" style="flex:1;overflow:auto;width:100%;min-width:0;" id="mdlTableWrapper"></div>
         <div id="mdlPagination" style="flex-shrink:0;"></div>
       </div>`;
@@ -268,7 +274,7 @@ const MaterialDocList = {
       .map(k => `<option value="${k}">${k} ${MDL_PLANT_TEXT[k]}</option>`).join('');
 
     el.innerHTML = `
-      <div class="filter-bar">
+      <div class="filter-bar" style="flex-wrap:wrap;">
         <div class="filter-group"><label>工厂</label><select id="mdlPlant"><option value="">全部</option>${plantOpts}</select></div>
         <div class="filter-group"><label>过账日期 起</label><input type="date" id="mdlDateFrom"></div>
         <div class="filter-group"><label>过账日期 止</label><input type="date" id="mdlDateTo"></div>
@@ -281,28 +287,28 @@ const MaterialDocList = {
           <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" id="mdlMoreBtn" onclick="MaterialDocList.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
-      </div>
-      <div class="filter-bar" id="mdlMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};background:#fff;border-top:1px dashed var(--border);">
-        <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
-        <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码 / 描述"></div>
-        <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
-          <option value="valid">仅有效凭证</option>
-          <option value="all">全部凭证</option>
-          <option value="reversed">仅被冲销凭证</option>
-          <option value="reversal">仅冲销凭证</option>
-        </select></div>
-        <div class="filter-group"><label>订单/网络</label><input type="text" id="mdlOrderNo" placeholder="内部订单/流程订单"></div>
-        <div class="filter-group"><label>预留号</label><input type="text" id="mdlResNo" placeholder="如 0000000111"></div>
-        <div class="filter-group"><label>WBS编号</label><input type="text" id="mdlWbs" placeholder="WBS 元素"></div>
-        <div class="filter-group"><label>成本中心</label><input type="text" id="mdlCostCenter" placeholder="如 CC-1002"></div>
-        <div class="filter-group"><label>操作员</label><input type="text" id="mdlOperator" placeholder="过账人"></div>
+        <div id="mdlMoreBar" style="display:${this.moreOpen ? 'contents' : 'none'};">
+          <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
+          <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码 / 描述"></div>
+          <div class="filter-group"><label>凭证状态</label><select id="mdlDocStatus">
+            <option value="valid">仅有效凭证</option>
+            <option value="all">全部凭证</option>
+            <option value="reversed">仅被冲销凭证</option>
+            <option value="reversal">仅冲销凭证</option>
+          </select></div>
+          <div class="filter-group"><label>订单/网络</label><input type="text" id="mdlOrderNo" placeholder="内部订单/流程订单"></div>
+          <div class="filter-group"><label>预留号</label><input type="text" id="mdlResNo" placeholder="如 0000000111"></div>
+          <div class="filter-group"><label>WBS编号</label><input type="text" id="mdlWbs" placeholder="WBS 元素"></div>
+          <div class="filter-group"><label>成本中心</label><input type="text" id="mdlCostCenter" placeholder="如 CC-1002"></div>
+          <div class="filter-group"><label>操作员</label><input type="text" id="mdlOperator" placeholder="过账人"></div>
+        </div>
       </div>`;
   },
 
   toggleMore() {
     this.moreOpen = !this.moreOpen;
     const bar = document.getElementById('mdlMoreBar');
-    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
+    if (bar) bar.style.display = this.moreOpen ? 'contents' : 'none';
     // 用 id 定位：查询变式的「我的变式」按钮也会被插到 filter-actions 末尾，不能用 :last-child
     const btn = document.getElementById('mdlMoreBtn');
     if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
