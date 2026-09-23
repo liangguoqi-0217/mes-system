@@ -55,7 +55,11 @@ const MDL_COLUMNS = [
   { key: 'customer', label: '客户', width: 90 },
   { key: 'cancelled', label: '已取消', width: 70, align: 'center' },
   { key: 'postDate', label: '过账日期', width: 100 },
-  { key: 'operator', label: '操作员', width: 80 }
+  { key: 'operator', label: '操作员', width: 80 },
+  { key: 'docCategory', label: '凭证类别', width: 80 },
+  { key: 'sourceType', label: '来源类型', width: 100 },
+  { key: 'reversalDocNo', label: '冲销凭证号', width: 130, mono: true },
+  { key: 'notes', label: '备注', width: 200 }
 ];
 
 /* 查询条件分组配置：按业务语义分组，全部字段默认平铺可见（不隐藏），
@@ -251,17 +255,16 @@ const MaterialDocList = {
     this.filtered = this.flatRows.slice();
     this.page = 1;
     return `
-      <div class="mdl-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
+      <div class="mdl-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100vw;overflow:hidden;">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div>
             <div style="font-size:18px;font-weight:700;">物料凭证清单</div>
-            <div style="font-size:13px;opacity:0.8;">库存管理 → 库存记账 → 物料凭证清单</div>
           </div>
           <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="MaterialDocList.refresh()">🔄 刷新数据</button>
         </div>
 
         <style>
-          .mdl-filter{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px 12px;}
+          .mdl-filter{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px 12px;min-width:0;}
           .mdl-filter-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
           .mdl-filter-sum{font-size:12px;color:var(--text-muted);}
           .mdl-fgroup{margin-bottom:6px;}
@@ -280,9 +283,8 @@ const MaterialDocList = {
           .mdl-field.filled input,.mdl-field.filled select{border-color:#93c5fd;background:#f8fbff;}
         </style>
         <div id="mdlFilterBar" style="flex-shrink:0;"></div>
-        <div class="table-wrapper" style="flex:1;overflow:auto;" id="mdlTableWrapper"></div>
+        <div class="table-wrapper" style="flex:1;overflow:auto;width:100%;min-width:0;" id="mdlTableWrapper"></div>
         <div id="mdlPagination" style="flex-shrink:0;"></div>
-        <div id="mdlModalContainer"></div>
       </div>`;
   },
 
@@ -511,20 +513,19 @@ const MaterialDocList = {
       `<th style="width:${c.width}px;${c.align ? 'text-align:' + c.align + ';' : ''}">${c.label}</th>`).join('');
     const td = page.length
       ? page.map((r, i) => this.renderRow(r, start + i + 1)).join('')
-      : `<tr><td colspan="${MDL_COLUMNS.length + 2}" class="empty-cell">暂无符合条件的物料凭证</td></tr>`;
+      : `<tr><td colspan="${MDL_COLUMNS.length + 1}" class="empty-cell">暂无符合条件的物料凭证</td></tr>`;
 
-    el.innerHTML = `<table class="data-table" style="min-width:2180px;">
-      <thead><tr><th style="width:50px;">序号</th>${th}<th style="width:80px;">操作</th></tr></thead>
+    el.innerHTML = `<table class="data-table">
+      <thead><tr><th style="width:50px;">序号</th>${th}</tr></thead>
       <tbody>${td}</tbody>
     </table>`;
   },
 
   renderRow(r, idx) {
-    const catBadge = this.getCategoryBadge(r.docCategory);
     const tds = MDL_COLUMNS.map(c => {
       let v = r[c.key];
       if (c.key === 'materialDocNo') {
-        return `<td style="font-family:monospace;font-size:12px;font-weight:600;color:#2563eb;">${esc(v)}<div style="margin-top:2px;">${catBadge}</div></td>`;
+        return `<td style="font-family:monospace;font-size:12px;font-weight:600;color:#2563eb;">${esc(v)}</td>`;
       }
       if (c.key === 'moveType') {
         return `<td style="font-family:monospace;font-size:12px;font-weight:600;">${esc(v)}<div style="font-size:11px;color:var(--text-muted);">${esc(MDL_MOVE_TYPE_TEXT[v] || '')}</div></td>`;
@@ -532,22 +533,17 @@ const MaterialDocList = {
       if (c.key === 'cancelled') {
         return `<td style="text-align:center;">${v === 'X' ? '<span style="color:var(--danger);font-weight:700;">X</span>' : ''}</td>`;
       }
+      if (c.key === 'docCategory') {
+        const map = { NORMAL: '有效', REVERSED: '被冲销', REVERSAL: '冲销凭证' };
+        return `<td>${esc(map[v] || v || '-')}</td>`;
+      }
       if (v === '' || v === null || v === undefined) v = '-';
       const align = c.align ? `text-align:${c.align};` : '';
       const mono = c.mono ? 'font-family:monospace;font-size:12px;' : '';
       return `<td style="${align}${mono}">${esc(v)}</td>`;
     }).join('');
 
-    return `<tr>
-      <td>${idx}</td>${tds}
-      <td><button class="btn btn-blue btn-sm" onclick="MaterialDocList.openViewModal('${r.materialDocNo}','${r.docCategory}','${r.docNo}','${r.matCode}')">查看</button></td>
-    </tr>`;
-  },
-
-  getCategoryBadge(cat) {
-    if (cat === 'REVERSED') return '<span class="badge badge-red badge-sm">被冲销</span>';
-    if (cat === 'REVERSAL') return '<span class="badge badge-yellow badge-sm">冲销凭证</span>';
-    return '<span class="badge badge-green badge-sm">有效</span>';
+    return `<tr><td>${idx}</td>${tds}</tr>`;
   },
 
   /* ==================== 分页 ==================== */
@@ -576,97 +572,7 @@ const MaterialDocList = {
     if (this.page < totalPages) { this.page++; this.renderTable(); this.renderPagination(); }
   },
 
-  changePageSize(v) { this.pageSize = Number(v); this.page = 1; this.renderTable(); this.renderPagination(); },
-
-  /* ==================== 查看弹窗 ==================== */
-
-  openViewModal(materialDocNo, docCategory, docNo, matCode) {
-    const row = this.flatRows.find(r =>
-      r.materialDocNo === materialDocNo && r.docCategory === docCategory &&
-      r.docNo === docNo && r.matCode === matCode);
-    if (!row) return;
-    // 同一凭证的全部行项目
-    const lines = this.flatRows.filter(r => r.materialDocNo === materialDocNo && r.docNo === docNo);
-
-    const item = (dt, dd) => `<div class="detail-item"><dt>${dt}</dt><dd>${dd}</dd></div>`;
-    const cont = document.getElementById('mdlModalContainer');
-    if (!cont) return;
-    cont.innerHTML = `
-      <div class="modal-backdrop" id="mdlModalBackdrop" onclick="MaterialDocList.closeModal()">
-        <div class="modal" style="width:96vw;max-width:96vw;max-height:98vh;" onclick="event.stopPropagation()">
-          <div class="modal-header">
-            <div class="modal-title">物料凭证 <span style="font-family:monospace;color:#2563eb;">${esc(materialDocNo)}</span>
-              <span style="margin-left:8px;">${this.getCategoryBadge(docCategory)}</span>
-              <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-left:8px;">${esc(MDL_MOVE_TYPE_TEXT[row.moveType] || '')} · ${esc(row.sourceType)}</span>
-            </div>
-            <button class="modal-close" onclick="MaterialDocList.closeModal()">✕</button>
-          </div>
-          <div class="modal-body" style="max-height:none;">
-            <div class="form-section">
-              <div class="form-section-title">凭证信息</div>
-              <div class="detail-grid" style="grid-template-columns:repeat(6,minmax(0,1fr));">
-                ${item('物料凭证', `<strong style="font-family:monospace;">${esc(row.materialDocNo)}</strong>`)}
-                ${item('凭证类别', this.getCategoryBadge(row.docCategory))}
-                ${item('移动类型', esc(row.moveType) + '（' + esc(MDL_MOVE_TYPE_TEXT[row.moveType] || '-') + '）')}
-                ${item('订单/网络', esc(row.orderNo || '-'))}
-                ${item('工厂', esc(row.plant) + ' ' + esc(row.plantText))}
-                ${item('发货仓位', esc(row.issueLocation || '-'))}
-                ${item('收货类型', esc(row.receiveType || '-'))}
-                ${item('预留号', esc(row.reservationNo || '-'))}
-                ${item('成本中心', esc(row.costCenter || '-'))}
-                ${item('WBS编号', esc(row.wbs || '-'))}
-                ${item('活动号', esc(row.activityNo || '-'))}
-                ${item('特殊库存', esc(row.specialStock || '-'))}
-                ${item('客户', esc(row.customer || '-'))}
-                ${item('已取消', row.cancelled === 'X' ? '<span style="color:var(--danger);font-weight:700;">X</span>' : '-')}
-                ${item('过账日期', esc(row.postDate || '-'))}
-                ${item('操作员', esc(row.operator || '-'))}
-                ${item('来源单据', esc(row.docNo || '-'))}
-                ${item('来源类型', esc(row.sourceType || '-'))}
-                ${row.reversalDocNo ? item('冲销凭证号', `<strong style="color:var(--danger);font-family:monospace;">${esc(row.reversalDocNo)}</strong>`) : ''}
-                ${row.reversedDocNo ? item('被冲销凭证', `<strong style="color:var(--warning);font-family:monospace;">${esc(row.reversedDocNo)}</strong>`) : ''}
-              </div>
-            </div>
-            <div class="form-section" style="margin-top:14px;">
-              <div class="form-section-title">行项目</div>
-              <table class="data-table data-table-compact" style="min-width:900px;">
-                <thead><tr>
-                  <th style="width:60px;text-align:center;">序号</th>
-                  <th>物料号</th><th>物料描述</th><th>批次</th>
-                  <th style="text-align:right;">数量</th><th style="width:60px;">单位</th>
-                  <th>接收者批次</th>
-                </tr></thead>
-                <tbody>
-                  ${lines.map((l, i) => `<tr>
-                    <td style="text-align:center;">${i + 1}</td>
-                    <td style="font-family:monospace;font-size:12px;">${esc(l.matCode)}</td>
-                    <td>${esc(l.matName)}</td>
-                    <td>${esc(l.batch || '-')}</td>
-                    <td style="text-align:right;">${l.qty}</td>
-                    <td>${esc(l.unit || '-')}</td>
-                    <td>${esc(l.receiverBatch || '-')}</td>
-                  </tr>`).join('')}
-                </tbody>
-              </table>
-            </div>
-            ${row.notes ? `<div class="form-section" style="margin-top:14px;">
-              <div class="form-section-title">备注</div>
-              <div style="font-size:13px;color:var(--text-secondary);padding:4px 2px;">${esc(row.notes)}</div>
-            </div>` : ''}
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="MaterialDocList.closeModal()">关闭</button>
-          </div>
-        </div>
-      </div>`;
-  },
-
-  closeModal() {
-    const b = document.getElementById('mdlModalBackdrop');
-    if (b && b.parentNode) b.parentNode.removeChild(b);
-    const c = document.getElementById('mdlModalContainer');
-    if (c) c.innerHTML = '';
-  }
+  changePageSize(v) { this.pageSize = Number(v); this.page = 1; this.renderTable(); this.renderPagination(); }
 };
 
 // ===== 查询变式注册（通用模块 V3/js/core/query-variant.js）=====
