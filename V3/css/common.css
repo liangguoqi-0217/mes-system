@@ -131,6 +131,12 @@ tr.locked td { background: #fafbfc; }
 .table-actions { display: flex; gap: 4px; }
 .table-actions .btn { padding: 4px 10px; font-size: 11px; }
 
+/* ===== 采购申请列表：数据区表格线 ===== */
+.pr-list-table { border: 1px solid #e5e7eb; }
+.pr-list-table th, .pr-list-table td { border: 1px solid #e5e7eb; }
+.pr-list-table th { border-bottom: 2px solid var(--border); }
+.pr-list-table td:first-child, .pr-list-table th:first-child { border-left: none; }
+
 /* ===== Filter Bar ===== */
 .filter-bar {
   display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
