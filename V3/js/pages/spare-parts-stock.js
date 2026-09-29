@@ -47,7 +47,7 @@ const SparePartsStock = {
     return `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <div><div style="font-size:18px;font-weight:700;">库存查询</div><div style="font-size:13px;opacity:0.8;">实时查看备品备件库存状态</div></div>
+          <div><div style="font-size:18px;font-weight:700;">库存查询</div><div style="font-size:13px;opacity:0.8;">实时查看库存数量及库存状态</div></div>
           <div style="display:flex;gap:8px;"></div>
         </div>
         <div class="filter-bar" style="flex-shrink:0;">
