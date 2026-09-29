@@ -39,6 +39,7 @@ const getMatType = matCode => MAT_TYPE_MAP[matCode] || '';
 const SparePartsStock = {
   page: 1, pageSize: 15, filtered: [],
   showExtCols: false,
+  moreOpen: false,
 
   render() {
     this.filtered = sparePartsStockData.filter(r => !this._isConfidential(r.factory, r.storageLoc));
@@ -70,21 +71,25 @@ const SparePartsStock = {
             <option value="1">1 - 批次汇总</option>
             <option value="2">2 - 库位汇总</option>
           </select></div>
-          <div class="filter-group" id="spWbsGroup"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
-          <div class="filter-group"><label>物料类型</label><select id="spMatType">
-            <option value="">全部</option>
-            <option value="FERT">FERT - 成品</option>
-            <option value="HALB">HALB - 半成品</option>
-            <option value="ROH">ROH - 原材料</option>
-            <option value="VERP">VERP - 包装材料</option>
-            <option value="ERSA">ERSA - 备件</option>
-          </select></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
-          <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
           <div class="filter-actions">
             <button class="btn btn-primary btn-sm" onclick="SparePartsStock.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
             <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.exportData()">导出</button>
+            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.refresh()">刷新</button>
+            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
+            <button class="btn btn-secondary btn-sm" id="spMoreBtn" onclick="SparePartsStock.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
+          </div>
+          <div id="spMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
+            <div class="filter-group"><label>物料类型</label><select id="spMatType">
+              <option value="">全部</option>
+              <option value="FERT">FERT - 成品</option>
+              <option value="HALB">HALB - 半成品</option>
+              <option value="ROH">ROH - 原材料</option>
+              <option value="VERP">VERP - 包装材料</option>
+              <option value="ERSA">ERSA - 备件</option>
+            </select></div>
+            <div class="filter-group" id="spWbsGroup"><label>WBS编号</label><input type="text" id="spWbsNo" placeholder="WBS编号"></div>
+            <div class="filter-group" id="spBatchGroup"><label>批次</label><input type="text" id="spBatch" placeholder="批次"></div>
           </div>
         </div>
         <div class="table-wrapper" style="flex:1;">
@@ -275,6 +280,15 @@ const SparePartsStock = {
     return '<span style="display:inline-flex;align-items:center;gap:4px;color:#dc2626;font-weight:600;"><span style="width:8px;height:8px;background:#dc2626;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite;"></span> 红灯</span>';
   },
 
+  // 更多条件：展开区独占一整行，与上方条件同底色、无分隔线
+  toggleMore() {
+    this.moreOpen = !this.moreOpen;
+    const bar = document.getElementById('spMoreBar');
+    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
+    const btn = document.getElementById('spMoreBtn');
+    if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
+  },
+
   toggleExtCols() {
     this.showExtCols = !this.showExtCols;
     this.renderTable();
@@ -321,6 +335,21 @@ const SparePartsStock = {
   },
 
   search() {
+    this._applyFilter();
+    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('sp-stock');
+      QueryVariant.recordUsed('sp-stock');
+    }
+  },
+
+  // 刷新：按当前筛选条件重新取数，不写入查询变式
+  refresh() {
+    this._applyFilter();
+    toast('数据已刷新');
+  },
+
+  _applyFilter() {
     const factory = document.getElementById('spFactory').value;
     const storageLoc = document.getElementById('spStorageLoc').value;
     const displayType = document.getElementById('spDisplayType').value;
@@ -347,11 +376,6 @@ const SparePartsStock = {
 
     this.page = 1;
     this.renderTable();
-    // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
-    if (window.QueryVariant) {
-      QueryVariant.saveAuto('sp-stock');
-      QueryVariant.recordUsed('sp-stock');
-    }
   },
 
   reset() {
