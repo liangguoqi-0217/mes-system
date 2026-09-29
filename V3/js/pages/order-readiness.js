@@ -17,7 +17,9 @@
  * 交互：勾选订单 → 检查齐套 → 按订单分组展示组件，齐套的订单默认折叠
  *       两套结论不一致的行标记「差异」，可展开查看 SAP 为什么这么判
  *
- * 权限：车间视角锁定 workCenter，仅能看到本车间订单；全厂视角可看全部车间。
+ * 权限：车间用户锁定 workCenter，仅能看到本车间订单；全厂用户可看全部车间。
+ *       页面不提供手动切换视角的入口（真实环境权限由登录用户决定，不能由用户自己放开）。
+ *       原型里改 OR_CURRENT_USER.isPlantLevel 即可模拟不同登录身份。
  * ============================================================ */
 
 /* ---------- 主数据 ---------- */
@@ -206,11 +208,13 @@ const OrderReadiness = {
           <div>
             <div style="font-size:18px;font-weight:700;">订单齐套检查</div>
             <div style="font-size:12px;opacity:0.85;margin-top:2px;">
-              当前视角：<b id="orViewTip">${esc(viewTip)}</b>
-              <span style="opacity:0.7;"> · 车间口径 = 未清需求 vs 现有库存（非限制+质检）；SAP 口径 = SAP ATP 可用性检查。两套数据均由 SAP 现算</span>
+              车间口径 = 未清需求 vs 现有库存（非限制 + 质检）；SAP 口径 = SAP ATP 可用性检查。两套数据均由 SAP 现算
             </div>
           </div>
-          <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);" onclick="OrderReadiness.toggleView()">切换视角</button>
+          <div style="text-align:right;">
+            <div style="font-size:13px;font-weight:600;">${esc(viewTip)}</div>
+            <div style="font-size:11px;opacity:0.75;margin-top:2px;">${esc(OR_CURRENT_USER.plant)} ${esc(OR_PLANT_TEXT[OR_CURRENT_USER.plant] || '')}</div>
+          </div>
         </div>
 
         <div id="orFilterBar" style="flex-shrink:0;"></div>
@@ -711,21 +715,6 @@ const OrderReadiness = {
   refresh() {
     if (!this.checked) return this.query();
     this.runCheck();
-  },
-
-  // 视角切换（演示权限控制：车间视角仅本车间，全厂视角可看全部）
-  toggleView() {
-    OR_CURRENT_USER.isPlantLevel = !OR_CURRENT_USER.isPlantLevel;
-    this.renderFilterBar();
-    if (!this._val('orDateFrom')) this.setRange(this.rangeKind || 'week', true);
-    const tip = document.getElementById('orViewTip');
-    if (tip) {
-      tip.textContent = OR_CURRENT_USER.isPlantLevel
-        ? '全厂用户'
-        : OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '（' + OR_CURRENT_USER.name + '）';
-    }
-    this.query();
-    toast(OR_CURRENT_USER.isPlantLevel ? '已切换为全厂视角，可查看全部车间' : '已切换为车间视角，仅能查看本车间订单');
   },
 
   exportData() {
