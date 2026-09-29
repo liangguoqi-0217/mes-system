@@ -2,13 +2,14 @@
  * 业务背景：车间用户每天打开本页，勾选自己车间本周要生产的订单，让系统逐项对比
  *          订单组件的未清需求与供给，回答"缺不缺料"。
  *
- * 双口径设计（两套结论并列对照，不做二选一）：
- *   口径一 · 车间口径：未清需求 vs 现有库存（非限制 + 质检）
- *                     —— 车间用户熟悉的心智模型，实时、直观
- *   口径二 · SAP 口径：SAP ATP 可用性检查
- *                     —— 含在途采购/在制/调拨，扣减其他订单占用与安全库存，带时间轴
+ * 两套计算逻辑并列对照（差异很大，不是同一套算法的两个角度）：
+ *   逻辑一 · 现有库存对比（静态）：未清需求 vs 现有库存（非限制 + 质检）
+ *            —— 不计在途、不扣其他订单占用、不看需求日期；车间用户熟悉的心智模型
+ *   逻辑二 · SAP ATP 可用性检查（动态）：
+ *            —— 计入在途采购 / 在制订单 / 调拨在途，扣减其他订单占用与安全库存，
+ *               并按组件需求日期在时间轴上校验
  *
- * 两套口径的数据全部来自 SAP，且同一时刻取数，保证同源可比（不会出现两套库存打架）：
+ * 两套逻辑的数据全部来自 SAP，且同一时刻取数，保证同源可比（不会出现两套库存打架）：
  *   · 库存  → SAP 库存查询接口（复用现有接口，取 非限制 + 质检）
  *   · ATP   → SAP 批量可用性检查接口（一次传入订单清单，SAP 内部批量算，一次返回）
  *
@@ -138,9 +139,9 @@ const OR_STOCK_DB = {
 };
 
 // ATP 接口：工厂+物料 → 可用量/缺料量/可满足日 + 构成明细（构成明细用于生成差异原因）
-//   resbOther   被其他订单预留占用（车间口径不扣，SAP 扣）
+//   resbOther   被其他订单预留占用（现有库存对比不扣，SAP 扣）
 //   qiIncluded  质检库存是否计入可用（GMP 下未放行不计入）
-//   po/prd/tr   在途采购 / 在制订单 / 调拨在途（车间口径不含，SAP 算作供给）
+//   po/prd/tr   在途采购 / 在制订单 / 调拨在途（现有库存对比不含，SAP 算作供给）
 //   safety      扣减的安全库存
 const OR_ATP_DB = {
   '1000|MAT-10001': { atpQty: 220, shortQty: 380, availDate: orAddDays(6), safety: 0, po: 300, prd: 0, tr: 0, resbOther: 580, resbOtherCnt: 3, qiIncluded: false, poDoc: '4500018765', prdDoc: '' },
@@ -199,21 +200,15 @@ const OrderReadiness = {
   /* ==================== 渲染 ==================== */
 
   render() {
-    const viewTip = OR_CURRENT_USER.isPlantLevel
-      ? '全厂用户'
-      : OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '（' + OR_CURRENT_USER.name + '）';
     return `
       <div class="or-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100%;overflow:hidden;">
-        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <div>
-            <div style="font-size:18px;font-weight:700;">订单齐套检查</div>
-            <div style="font-size:12px;opacity:0.85;margin-top:2px;">
-              车间口径 = 未清需求 vs 现有库存（非限制 + 质检）；SAP 口径 = SAP ATP 可用性检查。两套数据均由 SAP 现算
-            </div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:13px;font-weight:600;">${esc(viewTip)}</div>
-            <div style="font-size:11px;opacity:0.75;margin-top:2px;">${esc(OR_CURRENT_USER.plant)} ${esc(OR_PLANT_TEXT[OR_CURRENT_USER.plant] || '')}</div>
+        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:14px 24px;flex-shrink:0;">
+          <div style="font-size:18px;font-weight:700;">订单齐套检查</div>
+          <div style="font-size:12px;opacity:0.85;margin-top:3px;line-height:1.75;">
+            组件未清需求按两套不同的计算逻辑分别校验，结果并列对照：<br>
+            ① <b>现有库存对比</b> —— 只与仓库现有量比（非限制 + 质检），<b>不计在途、不扣其他订单占用、不看需求日期</b>；<br>
+            ② <b>SAP ATP 可用性检查</b> —— 计入在途采购 / 在制订单 / 调拨在途，扣减其他订单占用与安全库存，并<b>按组件需求日期校验</b>。<br>
+            两套数据均由 SAP 现算；结论不一致的行标记「差异」，展开可查看原因。
           </div>
         </div>
 
@@ -278,13 +273,6 @@ const OrderReadiness = {
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
         </div>
-        <div class="filter-group"><label>快捷范围</label>
-          <div style="display:flex;gap:4px;">
-            <button class="btn btn-secondary btn-sm" id="orQuick_today" onclick="OrderReadiness.setRange('today')">今日</button>
-            <button class="btn btn-secondary btn-sm" id="orQuick_week" onclick="OrderReadiness.setRange('week')">本周</button>
-            <button class="btn btn-secondary btn-sm" id="orQuick_month" onclick="OrderReadiness.setRange('month')">本月</button>
-          </div>
-        </div>
         <div class="filter-group"><label>订单状态</label>
           <select id="orOrderStatus">
             <option value="">全部</option>
@@ -293,14 +281,12 @@ const OrderReadiness = {
             <option value="TECO">技术性完成</option>
           </select>
         </div>
-        <div style="display:flex;align-items:flex-end;">
-          <button class="btn btn-secondary btn-sm" id="orMoreBtn" onclick="OrderReadiness.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
-        </div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="OrderReadiness.query()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.refresh()">刷新</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.resetFilter()">重置</button>
+          <button class="btn btn-secondary btn-sm" id="orMoreBtn" onclick="OrderReadiness.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
         <div id="orMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>流程订单号</label><input type="text" id="orOrderNo" placeholder="如 3000000123"></div>
@@ -324,6 +310,7 @@ const OrderReadiness = {
     if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
   },
 
+  // 填充默认日期区间（本周）。快捷按钮已取消，仅用于进页面与重置时自动填充，日期区间仍可手动改
   setRange(kind, silent) {
     this.rangeKind = kind;
     let r;
@@ -334,10 +321,6 @@ const OrderReadiness = {
     const t = document.getElementById('orDateTo');
     if (f) f.value = r.from;
     if (t) t.value = r.to;
-    ['today', 'week', 'month'].forEach(k => {
-      const b = document.getElementById('orQuick_' + k);
-      if (b) b.className = 'btn btn-sm ' + (k === kind ? 'btn-primary' : 'btn-secondary');
-    });
     if (!silent) this.query();
   },
 
@@ -425,7 +408,7 @@ const OrderReadiness = {
     const shopGap = shopStock === null ? null : open - shopStock;
     const shopShort = shopGap !== null && shopGap > 0;
     const sapShort = atp ? atp.shortQty > 0 : null;
-    // 两套口径都有数据时才判定差异
+    // 两套逻辑都有结果时才判定差异
     const diff = shopStock !== null && !!atp && shopShort !== sapShort;
     return { open: open, st: st, atp: atp, shopStock: shopStock, shopGap: shopGap, shopShort: shopShort, sapShort: sapShort, diff: diff };
   },
@@ -464,9 +447,9 @@ const OrderReadiness = {
     const stat = this.checking
       ? '<span style="font-size:12px;color:var(--text-secondary);">SAP 正在执行可用性检查…</span>'
       : (this.checked
-        ? `<span style="font-size:12px;">车间口径缺 <b style="color:var(--danger);">${shopShort}</b> 项
-             · SAP 口径缺 <b style="color:var(--danger);">${sapShort}</b> 项
-             · 口径差异 <b style="color:#92400e;">${diffCnt}</b> 项</span>`
+        ? `<span style="font-size:12px;">按现有库存对比缺 <b style="color:var(--danger);">${shopShort}</b> 项
+             · 按 ATP 可用性检查缺 <b style="color:var(--danger);">${sapShort}</b> 项
+             · 两者结论不一致 <b style="color:#92400e;">${diffCnt}</b> 项</span>`
         : '<span style="font-size:12px;color:var(--text-muted);">勾选订单后点击「检查齐套」，由 SAP 现算</span>');
 
     el.innerHTML = `
@@ -552,7 +535,7 @@ const OrderReadiness = {
         </tr>`;
       if (open) {
         if (!this.checked) {
-          rows += '<tr><td colspan="8" style="padding:6px 14px 10px 40px;color:var(--text-muted);font-size:12px;">尚未执行 SAP 检查 —— 点击「检查齐套」，由 SAP 现算两套口径结果</td></tr>';
+          rows += '<tr><td colspan="8" style="padding:6px 14px 10px 40px;color:var(--text-muted);font-size:12px;">尚未执行 SAP 检查 —— 点击「检查齐套」，由 SAP 现算两套逻辑的结果</td></tr>';
         } else {
           let shown = 0;
           o.components.forEach((c, i) => {
@@ -576,10 +559,10 @@ const OrderReadiness = {
         <th>物料描述</th>
         <th style="width:110px;text-align:right;" title="需求数量 − 已投料数量">未清需求</th>
         <th style="width:130px;text-align:right;" title="SAP 库存接口：非限制 + 质检">现有库存 <span style="color:#94a3b8;">ⓘ</span></th>
-        <th style="width:120px;text-align:right;" title="车间口径：未清需求 − 现有库存">车间缺口</th>
-        <th style="width:110px;text-align:right;" title="SAP ATP 可用量">SAP 可用量</th>
-        <th style="width:130px;text-align:right;" title="SAP ATP 缺料量与可满足日期">SAP 缺口</th>
-        <th style="width:100px;text-align:center;">口径差异</th>
+        <th style="width:130px;text-align:right;" title="现有库存对比：未清需求 − 现有库存（非限制+质检），不计在途、不扣其他订单占用、不看需求日期">现有库存缺口</th>
+        <th style="width:110px;text-align:right;" title="SAP ATP 可用量：计入在途/在制/调拨，扣减其他订单占用与安全库存">ATP 可用量</th>
+        <th style="width:130px;text-align:right;" title="SAP ATP 缺料量与可满足日期（按组件需求日期校验）">ATP 缺口</th>
+        <th style="width:100px;text-align:center;">逻辑差异</th>
       </tr></thead>
       <tbody>${body}</tbody>
     </table>`;
@@ -593,8 +576,8 @@ const OrderReadiness = {
     const diff = cells.filter(x => x.diff).length;
     if (!shop && !sap) return '<span class="badge badge-green badge-sm">齐套</span>';
     let s = '';
-    if (shop) s += '<span class="badge badge-red badge-sm">车间缺 ' + shop + '</span> ';
-    if (sap) s += '<span class="badge badge-red badge-sm">SAP 缺 ' + sap + '</span> ';
+    if (shop) s += '<span class="badge badge-red badge-sm">库存缺 ' + shop + '</span> ';
+    if (sap) s += '<span class="badge badge-red badge-sm">ATP 缺 ' + sap + '</span> ';
     if (diff) s += '<span class="badge badge-yellow badge-sm">差异 ' + diff + '</span>';
     return s;
   },
@@ -649,7 +632,7 @@ const OrderReadiness = {
       row += `<tr class="or-diffrow" id="${diffId}" style="display:none;">
         <td colspan="8" style="padding:8px 14px 12px 40px;">
           <div class="or-reason">
-            <div style="font-weight:600;color:#92400e;margin-bottom:2px;">⚠ 两套口径结论不一致 —— SAP 为什么这么判：</div>
+            <div style="font-weight:600;color:#92400e;margin-bottom:2px;">⚠ 两套计算逻辑结论不一致 —— ATP 为什么这么判：</div>
             <ul style="margin:0;padding-left:18px;">${this._reasons(c, x).map(r => '<li>' + r + '</li>').join('')}</ul>
           </div>
         </td>
@@ -658,7 +641,7 @@ const OrderReadiness = {
     return row;
   },
 
-  // 差异原因：用 SAP ATP 返回的构成明细，逐条说明两套口径差在哪
+  // 差异原因：用 SAP ATP 返回的构成明细，逐条说明两套计算逻辑差在哪
   _reasons(c, x) {
     const out = [];
     const u = esc(c.unit);
@@ -666,16 +649,16 @@ const OrderReadiness = {
     if (!st || !atp) return out;
 
     if (atp.resbOther > 0) {
-      out.push(`现有库存 <b>${this._fmt(x.shopStock)}</b> ${u} 中，<b>${this._fmt(atp.resbOther)}</b> ${u} 已被其他 <b>${atp.resbOtherCnt}</b> 张订单预留占用（车间口径不扣占用，SAP 扣）`);
+      out.push(`现有库存 <b>${this._fmt(x.shopStock)}</b> ${u} 中，<b>${this._fmt(atp.resbOther)}</b> ${u} 已被其他 <b>${atp.resbOtherCnt}</b> 张订单预留占用（现有库存对比不扣占用，SAP 扣）`);
     }
     if (!atp.qiIncluded && st.quality > 0) {
       out.push(`其中 <b>${this._fmt(st.quality)}</b> ${u} 处于质检状态未放行，SAP 未计入可用（GMP 下不可投料）`);
     }
     if (atp.safety > 0) {
-      out.push(`已扣减安全库存 <b>${this._fmt(atp.safety)}</b> ${u}（车间口径不扣）`);
+      out.push(`已扣减安全库存 <b>${this._fmt(atp.safety)}</b> ${u}（现有库存对比不扣）`);
     }
     if (atp.po > 0) {
-      out.push(`采购订单 <b>${esc(atp.poDoc)}</b> 在途 <b>${this._fmt(atp.po)}</b> ${u}（车间口径不含在途）`);
+      out.push(`采购订单 <b>${esc(atp.poDoc)}</b> 在途 <b>${this._fmt(atp.po)}</b> ${u}（现有库存对比不含在途）`);
     }
     if (atp.prd > 0) {
       out.push(`在制订单 <b>${esc(atp.prdDoc)}</b> 预计产出 <b>${this._fmt(atp.prd)}</b> ${u}`);
@@ -689,7 +672,7 @@ const OrderReadiness = {
         : `需求日 <b>${esc(c.reqDate)}</b> 不足，且 <b>无可补足来源</b>（无在途采购、无在制订单）`);
     }
     if (x.shopShort && !x.sapShort) {
-      out.push(`车间口径判缺、SAP 判不缺：差异来自上述供给项计入后，SAP 可用量 <b>${this._fmt(atp.atpQty)}</b> ${u} 已覆盖未清需求 <b>${this._fmt(x.open)}</b> ${u}`);
+      out.push(`现有库存对比判缺、ATP 判不缺：差异来自上述供给项计入后，ATP 可用量 <b>${this._fmt(atp.atpQty)}</b> ${u} 已覆盖未清需求 <b>${this._fmt(x.open)}</b> ${u}`);
     }
     return out;
   },
@@ -738,8 +721,8 @@ const OrderReadiness = {
     });
     if (!rows.length) return toast('无数据可导出');
     const head = ['流程订单号', '订单名称', '计划开始日', '物料号', '物料描述', '单位', '需求数量', '已投料', '未清需求', '需求日期',
-      '非限制库存', '质检库存', '现有库存合计', '车间口径缺口', '车间口径结论',
-      'SAP可用量', 'SAP缺料量', 'SAP可满足日期', 'SAP口径结论', '口径差异', '差异原因'].join(',');
+      '非限制库存', '质检库存', '现有库存合计', '现有库存对比缺口', '现有库存对比结论',
+      'ATP可用量', 'ATP缺料量', 'ATP可满足日期', 'ATP结论', '逻辑差异', '差异原因'].join(',');
     const csv = '\uFEFF' + head + '\n' + rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
