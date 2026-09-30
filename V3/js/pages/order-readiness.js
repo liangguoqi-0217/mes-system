@@ -147,27 +147,28 @@ const OR_STOCK_DB = {
   '1000|MAT-20001': { unrestricted: 6000, quality: 200 }
 };
 
-// ATP 元素类型文案（供给元素 / 需求元素）
+// ATP 元素类型值域（业务名）。本公司口径：现有库存与质检库存都算供应，固定不可配
 const OR_ATP_ELEMENT = {
-  STOCK: '现有库存（非限制）',
-  QI: '质检库存（未放行）',
-  PO: '在途采购订单',
+  STOCK: '现有库存',
+  QI: '质检库存',
+  PO: '采购订单',
+  PR: '采购申请',
   PRD: '在制订单',
   TR: '调拨在途',
-  RESB: '其他订单预留',
+  RESB: '预留',
   SAFETY: '安全库存'
 };
 
 // ATP 接口：工厂+物料 → 可用量/缺料量/可用日期 + 供给元素与需求元素明细
-//   supply  供给元素：按到达日期排序，counted=false 表示不计入可用（GMP 下未放行的质检库存）
-//   demand  需求元素：按需求日期排序，是本订单之外先占用库存的部分（其他订单预留 / 安全库存）
-//   口径：需求日可用量 = Σ计入的供给（需求日及之前）− Σ需求元素；可用日期 = 累计供给追上累计需求的日期
+//   supply  供应元素：按到达日期排序。本公司固定口径——现有库存与质检库存都算供应（counted 均为 true）
+//   demand  需求元素：按需求日期排序，是本订单之外先占用库存的部分（预留 / 安全库存）
+//   口径：需求日可用量 = Σ供应（需求日及之前）− Σ需求；可用日期 = 合计由负转正的日期
 const OR_ATP_DB = {
   '1000|MAT-10001': {
-    atpQty: 220, shortQty: 380, availDate: orAddDays(6),
+    atpQty: 420, shortQty: 180, availDate: orAddDays(6),
     supply: [
       { type: 'STOCK', doc: '', date: orAddDays(0), qty: 800, counted: true },
-      { type: 'QI', doc: '', date: orAddDays(0), qty: 200, counted: false },
+      { type: 'QI', doc: '', date: orAddDays(0), qty: 200, counted: true },
       { type: 'PO', doc: '4500018765', date: orAddDays(6), qty: 420, counted: true }
     ],
     demand: [
@@ -177,10 +178,10 @@ const OR_ATP_DB = {
     ]
   },
   '1000|MAT-10002': {
-    atpQty: 200, shortQty: 100, availDate: orAddDays(3),
+    atpQty: 250, shortQty: 50, availDate: orAddDays(3),
     supply: [
       { type: 'STOCK', doc: '', date: orAddDays(0), qty: 400, counted: true },
-      { type: 'QI', doc: '', date: orAddDays(0), qty: 50, counted: false },
+      { type: 'QI', doc: '', date: orAddDays(0), qty: 50, counted: true },
       { type: 'PRD', doc: '3000000255', date: orAddDays(3), qty: 150, counted: true }
     ],
     demand: [
@@ -215,10 +216,10 @@ const OR_ATP_DB = {
     demand: [{ type: 'SAFETY', doc: '', date: '', qty: 50 }]
   },
   '1000|MAT-10010': {
-    atpQty: 50, shortQty: 30, availDate: orAddDays(2),
+    atpQty: 200, shortQty: 0, availDate: '',
     supply: [
       { type: 'STOCK', doc: '', date: orAddDays(0), qty: 50, counted: true },
-      { type: 'QI', doc: '', date: orAddDays(0), qty: 150, counted: false },
+      { type: 'QI', doc: '', date: orAddDays(0), qty: 150, counted: true },
       { type: 'TR', doc: '4900000122', date: orAddDays(2), qty: 100, counted: true }
     ],
     demand: []
@@ -229,10 +230,10 @@ const OR_ATP_DB = {
     demand: [{ type: 'RESB', doc: '3000000180', date: orAddDays(0), qty: 300 }]
   },
   '1000|MAT-20001': {
-    atpQty: 5500, shortQty: 0, availDate: '',
+    atpQty: 5700, shortQty: 0, availDate: '',
     supply: [
       { type: 'STOCK', doc: '', date: orAddDays(0), qty: 6000, counted: true },
-      { type: 'QI', doc: '', date: orAddDays(0), qty: 200, counted: false }
+      { type: 'QI', doc: '', date: orAddDays(0), qty: 200, counted: true }
     ],
     demand: [{ type: 'RESB', doc: '3000000190', date: orAddDays(0), qty: 500 }]
   }
@@ -862,7 +863,7 @@ const OrderReadiness = {
         out.push(`${OR_ATP_ELEMENT[s.type] || s.type} <b>${this._fmt(s.qty)}</b> ${u}` +
           (s.doc ? `（凭证 ${esc(s.doc)}，${esc(s.date)}）` : ''));
       } else {
-        out.push(`${OR_ATP_ELEMENT[s.type] || s.type} <b>${this._fmt(s.qty)}</b> ${u} 未放行，<b>未计入可用</b>`);
+        out.push(`${OR_ATP_ELEMENT[s.type] || s.type} <b>${this._fmt(s.qty)}</b> ${u} <b>未计入可用</b>`);
       }
     });
     (atp.demand || []).forEach(d => {
@@ -895,41 +896,49 @@ const OrderReadiness = {
     const cont = document.getElementById('orModalContainer');
     if (!cont) return;
 
-    // 供给元素：按到达日期排；累计列只累计计入可用的（质检未放行不累计）
-    const supply = (atp.supply || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    let cum = 0;
-    const supplyRows = supply.map(s => {
-      if (s.counted) cum += s.qty;
-      return `<tr${s.counted ? '' : ' style="background:#fffbeb;"'}>
-        <td>${OR_ATP_ELEMENT[s.type] || s.type}</td>
-        <td style="font-family:monospace;font-size:12px;">${s.doc ? esc(s.doc) : '—'}</td>
-        <td>${s.date ? esc(s.date) : '—'}</td>
-        <td class="or-num">${this._fmt(s.qty)} ${u}</td>
-        <td class="or-num"${s.counted ? '' : ' style="color:var(--text-muted);"'}>${s.counted ? this._fmt(cum) + ' ' + u : '未计入'}</td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">无供给元素</td></tr>';
+    // 供应与需求合并成一条时间轴：日期 | 元素类型 | 元素单据 | 需求/供应 | 数量 | 合计
+    // 排序：库存（期初）最前 → 其余按日期升序 → 同一天需求在前、供应在后 → 本单需求排最后
+    const rows = [];
+    (atp.supply || []).forEach(s => {
+      rows.push({
+        date: s.date, isStock: (s.type === 'STOCK' || s.type === 'QI'),
+        type: OR_ATP_ELEMENT[s.type] || s.type, doc: s.doc, dir: 'S', qty: s.qty, counted: s.counted
+      });
+    });
+    (atp.demand || []).forEach(d => {
+      rows.push({
+        date: d.date, isStock: false,
+        type: OR_ATP_ELEMENT[d.type] || d.type, doc: d.doc, dir: 'D', qty: -d.qty, counted: true
+      });
+    });
+    rows.push({
+      date: c.reqDate, isStock: false, type: '本单需求', doc: o.no, dir: 'D', qty: -x.open, counted: true, self: true
+    });
+    rows.sort((a, b) => {
+      if (a.isStock !== b.isStock) return a.isStock ? -1 : 1;
+      const ad = a.date || '9999', bd = b.date || '9999';
+      if (ad !== bd) return ad.localeCompare(bd);
+      if (!!a.self !== !!b.self) return a.self ? 1 : -1;
+      if (a.dir !== b.dir) return a.dir === 'D' ? -1 : 1;
+      return 0;
+    });
 
-    // 需求元素：按需求日期排，末尾补一行本单需求（正在检查的这张订单）
-    const demand = (atp.demand || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
-    let dcum = 0;
-    const demandRows = demand.map(d => {
-      dcum += d.qty;
-      return `<tr>
-        <td>${OR_ATP_ELEMENT[d.type] || d.type}</td>
-        <td style="font-family:monospace;font-size:12px;">${d.doc ? esc(d.doc) : '—'}</td>
-        <td>${d.date ? esc(d.date) : '—'}</td>
-        <td class="or-num">${this._fmt(d.qty)} ${u}</td>
-        <td class="or-num">${this._fmt(dcum)} ${u}</td>
+    let sum = 0;
+    const body = rows.map(r => {
+      const isD = r.dir === 'D';
+      if (r.counted) sum += r.qty;
+      const color = isD ? 'var(--danger)' : '#16a34a';
+      const qtyTxt = (isD ? '−' : '+') + this._fmt(Math.abs(r.qty)) + ' ' + u;
+      const sumTxt = r.counted ? (sum < 0 ? '−' : '+') + this._fmt(Math.abs(sum)) + ' ' + u : '未计入';
+      return `<tr${r.self ? ' style="background:#f5f9ff;"' : ''}>
+        <td>${r.isStock ? '期初' : (r.date ? esc(r.date) : '—')}</td>
+        <td>${r.self ? '<b>' + r.type + '</b>' : r.type}</td>
+        <td style="font-family:monospace;font-size:12px;">${r.doc ? esc(r.doc) : '—'}</td>
+        <td style="color:${color};">${isD ? '需求' : '供应'}</td>
+        <td class="or-num" style="color:${color};">${qtyTxt}</td>
+        <td class="or-num" style="font-weight:600;color:${sum < 0 ? 'var(--danger)' : 'var(--text)'};">${sumTxt}</td>
       </tr>`;
-    }).join('');
-    dcum += x.open;
-    const selfRow = `<tr style="background:#f5f9ff;">
-        <td><b>本单需求</b>（正在检查的订单）</td>
-        <td style="font-family:monospace;font-size:12px;">${esc(o.no)}</td>
-        <td>${esc(c.reqDate)}</td>
-        <td class="or-num"><b>${this._fmt(x.open)} ${u}</b></td>
-        <td class="or-num"><b>${this._fmt(dcum)} ${u}</b></td>
-      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">无供需元素</td></tr>';
 
     const short = atp.shortQty > 0;
     cont.innerHTML = `
@@ -947,34 +956,25 @@ const OrderReadiness = {
               <div class="detail-item"><dt>未清数量</dt><dd><b>${this._fmt(x.open)} ${u}</b>（需求 ${this._fmt(c.reqQty)} − 已投料 ${this._fmt(c.issuedQty)}）</dd></div>
             </div>
             <div class="form-section">
-              <div class="form-section-title">供给元素（按到达日期）</div>
+              <div class="form-section-title">供需明细（按日期排序，同日需求在前）</div>
               <table class="data-table" style="width:100%;">
                 <thead><tr>
-                  <th style="width:160px;">元素类型</th><th style="width:130px;">凭证号</th><th style="width:120px;">日期</th>
-                  <th style="text-align:right;">数量</th><th style="width:120px;text-align:right;">累计可用</th>
+                  <th style="width:110px;">日期</th><th style="width:120px;">元素类型</th><th style="width:130px;">元素单据</th>
+                  <th style="width:80px;">需求/供应</th><th style="text-align:right;">数量</th>
+                  <th style="width:120px;text-align:right;">合计</th>
                 </tr></thead>
-                <tbody>${supplyRows}</tbody>
-              </table>
-            </div>
-            <div class="form-section">
-              <div class="form-section-title">需求元素（按需求日期）</div>
-              <table class="data-table" style="width:100%;">
-                <thead><tr>
-                  <th style="width:160px;">元素类型</th><th style="width:130px;">凭证号</th><th style="width:120px;">日期</th>
-                  <th style="text-align:right;">数量</th><th style="width:120px;text-align:right;">累计占用</th>
-                </tr></thead>
-                <tbody>${demandRows}${selfRow}</tbody>
+                <tbody>${body}</tbody>
               </table>
             </div>
             <div style="padding:12px 14px;border-radius:var(--radius-sm);background:${short ? '#fef2f2' : '#f0fdf4'};border:1px solid ${short ? '#fecaca' : '#bbf7d0'};">
               <div style="font-size:13px;">需求日可用量 <b>${this._fmt(atp.atpQty)} ${u}</b>　未清需求 <b>${this._fmt(x.open)} ${u}</b>　${
-                short ? `缺口 <b style="color:var(--danger);">-${this._fmt(atp.shortQty)} ${u}</b>` : '<b style="color:#16a34a;">齐套</b>'}</div>
+                short ? `缺口 <b style="color:var(--danger);">−${this._fmt(atp.shortQty)} ${u}</b>` : '<b style="color:#16a34a;">齐套</b>'}</div>
               <div style="font-size:13px;margin-top:4px;color:var(--text-secondary);">${
                 short
                   ? (atp.availDate
-                    ? `可用日期 <b>${esc(atp.availDate)}</b> —— 该日有供给元素到货后，累计供给可覆盖累计需求`
-                    : '<b style="color:var(--danger);">无在途来源</b> —— 无在途采购、无在制订单，需采购或计划介入')
-                  : '需求日即可满足，无需等待后续供给'}</div>
+                    ? `可用日期 <b>${esc(atp.availDate)}</b> —— 该日有供应元素到货，合计由负转正`
+                    : '<b style="color:var(--danger);">无在途来源</b> —— 无采购订单、无在制订单，需采购或计划介入')
+                  : '需求日即可满足，无需等待后续供应'}</div>
             </div>
           </div>
           <div class="modal-footer">
