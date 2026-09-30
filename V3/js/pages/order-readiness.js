@@ -649,9 +649,10 @@ const OrderReadiness = {
     if (this.mode === k) return;
     // 切换逻辑会重绘筛选栏，先把已录入的条件存下来，重绘后回填
     const keep = {};
-    ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orProductCode', 'orMatCode', 'orPlant', 'orWorkCenter'].forEach(id => {
+    ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orProductCode', 'orMatCode', 'orPlant'].forEach(id => {
       keep[id] = this._val(id);
     });
+    const keepWc = this._wcVals();   // 工作中心是多选，单独保存
     this.mode = k;
     this.checked = false;
     this.stockMap = {};
@@ -663,6 +664,14 @@ const OrderReadiness = {
       const e = document.getElementById(id);
       if (e && keep[id]) e.value = keep[id];
     });
+    if (keepWc.length) {
+      const wc = document.getElementById('orWorkCenter');
+      if (wc && wc.options) {
+        for (let i = 0; i < wc.options.length; i++) {
+          wc.options[i].selected = keepWc.indexOf(wc.options[i].value) !== -1;
+        }
+      }
+    }
     if (window.QueryVariant) QueryVariant.mount('order-readiness');
     this.renderSummary();
     this.renderTable();
@@ -670,20 +679,40 @@ const OrderReadiness = {
 
   /* ==================== 筛选栏 ==================== */
 
-  // 工作中心选项：按工厂过滤 —— 工厂 → 工作中心 级联
-  _wcOptions(plant) {
-    const opts = Object.keys(OR_WORKCENTER_TEXT)
+  // 工作中心选项：按工厂过滤 —— 工厂 → 工作中心 级联。sel 为已选编码数组（厂级可多选）
+  _wcOptions(plant, sel) {
+    const selArr = Array.isArray(sel) ? sel : (sel ? [sel] : []);
+    return Object.keys(OR_WORKCENTER_TEXT)
       .filter(k => OR_WC_PLANT[k] === plant)
-      .map(k => '<option value="' + k + '">' + OR_WORKCENTER_TEXT[k] + '</option>').join('');
-    return '<option value="">全部工作中心</option>' + opts;
+      .map(k => '<option value="' + k + '"' + (selArr.indexOf(k) !== -1 ? ' selected' : '') + '>' + OR_WORKCENTER_TEXT[k] + '</option>').join('');
   },
 
-  // 切换工厂：工作中心列表跟着换，工作中心回到「全部工作中心」，并立即重查
+  // 默认工作中心：当前用户所属工作中心（须属于该工厂），否则该工厂第一个
+  _defaultWc(plant) {
+    if (OR_WC_PLANT[OR_CURRENT_USER.workCenter] === plant) return OR_CURRENT_USER.workCenter;
+    const keys = Object.keys(OR_WORKCENTER_TEXT).filter(k => OR_WC_PLANT[k] === plant);
+    return keys[0] || '';
+  },
+
+  // 工作中心取值：厂级取多选结果；车间用户固定为登录用户所属工作中心
+  _wcVals() {
+    if (!OR_CURRENT_USER.isPlantLevel) return [OR_CURRENT_USER.workCenter];
+    const e = document.getElementById('orWorkCenter');
+    const vals = [];
+    if (e && e.options) {
+      for (let i = 0; i < e.options.length; i++) {
+        if (e.options[i].selected) vals.push(e.options[i].value);
+      }
+    }
+    return vals.filter(Boolean);
+  },
+
+  // 切换工厂：工作中心列表跟着换，默认带出该工厂下的默认工作中心，并立即重查
   onPlantChange() {
+    const plant = this._val('orPlant') || OR_CURRENT_USER.plant;
     const sel = document.getElementById('orWorkCenter');
-    if (sel) {
-      sel.innerHTML = this._wcOptions(this._val('orPlant') || OR_CURRENT_USER.plant);
-      sel.value = '';
+    if (sel && OR_CURRENT_USER.isPlantLevel) {
+      sel.innerHTML = this._wcOptions(plant, this._defaultWc(plant));
     }
     this.query();
   },
@@ -700,21 +729,26 @@ const OrderReadiness = {
     // 两种检查逻辑下这个条件作用相同：只圈定要查询的订单范围，不参与缺料判定，所以名称固定
     const dateLabel = '计划开始日期';
 
+    // 必输条件：工厂 / 工作中心 / 检查逻辑 / 计划开始日期（起止）
+    const req = '<span style="color:var(--danger);margin-left:2px;">*</span>';
+    const wcCur = this._wcVals();
+    const wcOpts = this._wcOptions(curPlant, wcCur.length ? wcCur : [this._defaultWc(curPlant)]);
+    // 多选高度按该工厂实际工作中心数自适应（最多 4 行），避免多余空白
+    const wcSize = Math.min(4, Math.max(1, Object.keys(OR_WORKCENTER_TEXT).filter(k => OR_WC_PLANT[k] === curPlant).length));
+
     el.innerHTML = `
       <div class="filter-bar">
-        <div class="filter-group"><label>工厂</label>
+        <div class="filter-group"><label>工厂${req}</label>
           <select id="orPlant"${isPlant ? ' onchange="OrderReadiness.onPlantChange()"' : ' disabled'}>
             ${isPlant ? plantOpts : '<option value="' + OR_CURRENT_USER.plant + '">' + OR_CURRENT_USER.plant + ' ' + OR_PLANT_TEXT[OR_CURRENT_USER.plant] + '</option>'}
           </select>
         </div>
-        <div class="filter-group"><label>工作中心</label>
-          <select id="orWorkCenter"${isPlant ? '' : ' disabled'}>
-            ${isPlant
-              ? this._wcOptions(curPlant)
-              : '<option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option>'}
-          </select>
+        <div class="filter-group"><label>工作中心${req}${isPlant ? '<span style="font-weight:400;color:var(--text-muted);font-size:11px;">可多选</span>' : ''}</label>
+          ${isPlant
+            ? '<select id="orWorkCenter" multiple size="' + wcSize + '" style="min-width:150px;">' + wcOpts + '</select>'
+            : '<select id="orWorkCenter" disabled><option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option></select>'}
         </div>
-        <div class="filter-group"><label>检查逻辑
+        <div class="filter-group"><label>检查逻辑${req}
           <span class="or-tip" data-tip="${this.modeTipAll()}">ⓘ</span></label>
           <select id="orCheckLogic" style="width:190px;" title="${esc(this.modeTip())}" onchange="OrderReadiness.setMode(this.value)">
             <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>1-朴素逻辑</option>
@@ -722,7 +756,7 @@ const OrderReadiness = {
           </select>
         </div>
         <div class="filter-group"><label>产品编码</label><input type="text" id="orProductCode" placeholder="如 FG-100001"></div>
-        <div class="filter-group"><label title="只用于圈定要查询的订单范围；缺料判定用的是组件需求日期（SAP 标准逻辑）或现有库存（朴素逻辑）">${dateLabel}</label>
+        <div class="filter-group"><label title="只用于圈定要查询的订单范围；缺料判定用的是组件需求日期（SAP 标准逻辑）或现有库存（朴素逻辑）">${dateLabel}${req}</label>
           <div style="display:flex;align-items:center;gap:4px;">
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
@@ -744,7 +778,7 @@ const OrderReadiness = {
               <option value="TECO">技术性完成</option>
             </select>
           </div>
-          <div class="filter-group"><label>物料编码/描述</label><input type="text" id="orMatCode" placeholder="物料编码或名称"></div>
+          ${this.mode === 'stock' ? '' : '<div class="filter-group"><label>物料编码/描述</label><input type="text" id="orMatCode" placeholder="物料编码或名称"></div>'}
           <!-- 供给范围与扣减项由系统固定（现有库存 + 在途 + 在制，扣安全库存与其他订单占用），不提供可配置开关 -->
         </div>
       </div>`;
@@ -787,9 +821,13 @@ const OrderReadiness = {
     const prodKey = this._val('orProductCode').toLowerCase();
     const matKey = this._val('orMatCode').toLowerCase();
     const statusSel = this._val('orOrderStatus');
-    const wcSel = this._val('orWorkCenter');
-    const isPlant = OR_CURRENT_USER.isPlantLevel;
-    const myWc = isPlant ? (wcSel || '') : OR_CURRENT_USER.workCenter;
+    const myWc = this._wcVals();   // 已选工作中心（厂级可多选，车间用户为所属工作中心）
+
+    // 必输校验：工厂 / 工作中心 / 检查逻辑 / 计划开始日期（起止）
+    if (!plant) return toast('请选择工厂');
+    if (!myWc.length) return toast('请选择工作中心');
+    if (!this._val('orCheckLogic')) return toast('请选择检查逻辑');
+    if (!from || !to) return toast('请填写计划开始日期（起）与（止）');
 
     this.orders = OR_ORDERS.filter(o => {
       if (o.plant !== plant) return false;
@@ -798,7 +836,7 @@ const OrderReadiness = {
       if (statusSel && o.status !== statusSel) return false;
       if (orderKey && (o.no + o.name).toLowerCase().indexOf(orderKey) === -1) return false;
       if (prodKey && (o.mat || '').toLowerCase().indexOf(prodKey) === -1) return false;
-      if (myWc && o.workCenter !== myWc) return false;
+      if (myWc.length && myWc.indexOf(o.workCenter) === -1) return false;
       if (matKey && !o.components.some(c => (c.mat + c.name).toLowerCase().indexOf(matKey) !== -1)) return false;
       return true;
     });
@@ -991,7 +1029,7 @@ const OrderReadiness = {
       const open = this.collapsed.indexOf(o.no) === -1 ||
         (focus && o.components.some(c => c.mat === focus));
       const cells = o.components.map(c => this._cell(c));
-      const badge = this._orderBadge(o, cells);
+      const badge = this.checked ? this._orderBadge(o, cells) : '';
       return `
         <tr class="or-orderrow${sel ? ' or-orderrow-sel' : ''}" onclick="OrderReadiness.toggleGroup('${o.no}')">
           <td style="text-align:center;" onclick="event.stopPropagation()">
@@ -1001,10 +1039,10 @@ const OrderReadiness = {
           ${this.mode === 'stock' ? '<td style="font-family:monospace;font-size:12px;">' + esc(o.batch || '—') + '</td>' : ''}
           <td style="font-family:monospace;font-size:12px;">${esc(o.mat || '—')}</td>
           <td style="font-weight:600;">${esc(o.name)}</td>
+          <td>${esc(o.statusName || o.status || '—')}</td>
           <td>${esc(o.startDate)}</td>
           <td>${esc(o.endDate)}</td>
-          <td class="or-num">${o.components.length}</td>
-          <td>${badge}</td>
+          ${this.checked ? '<td>' + badge + '</td>' : ''}
           <td style="text-align:center;"><span class="or-caret${open ? ' or-caret-open' : ''}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td>
         </tr>
         <tr class="or-detailrow"${open ? '' : ' style="display:none;"'}>
@@ -1124,10 +1162,11 @@ const OrderReadiness = {
     return head.concat([
       { w: 'width:110px;', t: '产品编码' },
       { w: '', t: '产品描述' },
+      { w: 'width:100px;', t: '订单状态' },
       { w: 'width:112px;', t: '计划开始日期' },
       { w: 'width:112px;', t: '计划结束日期' },
-      { w: 'width:64px;text-align:right;', t: '组件数' },
-      { w: 'width:110px;', t: '检查结果' },
+      // 检查结果只有执行过检查才有内容，未检查时整列不显示
+      ...(this.checked ? [{ w: 'width:110px;', t: '检查结果' }] : []),
       { w: 'width:44px;', t: '' }
     ]);
   },
@@ -1417,15 +1456,12 @@ const OrderReadiness = {
     ['orOrderNo', 'orProductCode', 'orMatCode', 'orOrderStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
-    // 重置：工厂回到登录用户所属工厂，工作中心列表跟着换并回到「全部工作中心」
+    // 重置：工厂回到登录用户所属工厂，工作中心列表跟着换并带出该工厂默认工作中心
     const plant = document.getElementById('orPlant');
     if (plant && OR_CURRENT_USER.isPlantLevel) {
       plant.value = OR_CURRENT_USER.plant;
       const wc = document.getElementById('orWorkCenter');
-      if (wc) {
-        wc.innerHTML = this._wcOptions(OR_CURRENT_USER.plant);
-        wc.value = '';
-      }
+      if (wc) wc.innerHTML = this._wcOptions(OR_CURRENT_USER.plant, [this._defaultWc(OR_CURRENT_USER.plant)]);
     }
     this.setRange('week', true);
     this.query();
