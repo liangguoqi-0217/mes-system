@@ -1043,8 +1043,9 @@ const OrderReadiness = {
       '<td style="font-family:monospace;font-size:12px;">' + esc(r.batch) + '</td>' +
       '<td style="font-family:monospace;font-size:12px;">' + esc(r.prod) + '</td>' +
       '<td>' + esc(r.prodName) + '</td>' +
-      '<td class="or-num" title="需求 ' + this._fmt(r.reqQty) + ' ' + u + ' − 已投料 ' + this._fmt(r.issuedQty) + ' ' + u + '">' + this._fmt(r.reqQty) + ' ' + u + '</td>' +
-      '<td class="or-num">' + this._fmt(r.open) + ' ' + u + '</td>' +
+      '<td class="or-num" title="需求 ' + this._fmt(r.reqQty) + ' ' + u + ' − 已投料 ' + this._fmt(r.issuedQty) + ' ' + u + '">' + this._fmt(r.reqQty) + '</td>' +
+      '<td class="or-num">' + this._fmt(r.open) + '</td>' +
+      '<td>' + u + '</td>' +
       '</tr>').join('');
 
     const supplyQtyTxt = m.supply === null ? '—' : this._fmt(m.supply);
@@ -1054,11 +1055,11 @@ const OrderReadiness = {
         '<tr>' +
         '<td>' + esc(l.status) + '</td>' +
         '<td style="font-family:monospace;font-size:12px;">' + esc(l.loc || '—') + '</td>' +
-        '<td colspan="2">' + esc(l.locName || '—') + '</td>' +
+        '<td colspan="3">' + esc(l.locName || '—') + '</td>' +
         '<td class="or-num">' + this._fmt(l.qty) + '</td>' +
         '<td>' + u + '</td>' +
         '</tr>').join('')
-      : '<tr><td colspan="3" style="color:var(--text-muted);">未返回库位明细</td>' +
+      : '<tr><td colspan="4" style="color:var(--text-muted);">未返回库位明细</td>' +
         '<td class="or-num">' + supplyQtyTxt + '</td><td>' + u + '</td></tr>';
     const short = m.gap > 0, over = m.gap < 0;
     const gapTxt = short ? '-' + this._fmt(m.gap) : (over ? '+' + this._fmt(-m.gap) : '0');
@@ -1072,38 +1073,42 @@ const OrderReadiness = {
       '</div>' +
       '<div style="padding:16px 18px;">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求</div>' +
-      '<table class="data-table" style="min-width:800px;">' +
+      // 三张表同为 7 列：数量列在倒数第二、单位列固定 70px 在最右，竖列对齐
+      '<table class="data-table" style="min-width:870px;">' +
       '<thead><tr>' +
       '<th style="width:130px;">流程订单号</th><th style="width:120px;">产品批次</th><th style="width:110px;">产品编码</th>' +
       '<th>产品描述</th><th style="width:130px;text-align:right;">需求数量</th><th style="width:130px;text-align:right;">未清数量</th>' +
+      '<th style="width:70px;">单位</th>' +
       '</tr></thead>' +
       '<tbody>' + rows +
       '<tr class="or-sumrow">' +
       '<td colspan="4" style="text-align:right;">需求合计</td>' +
-      '<td class="or-num">' + this._fmt(reqTotal) + ' ' + u + '</td>' +
-      '<td class="or-num">' + this._fmt(m.req) + ' ' + u + '</td>' +
+      '<td class="or-num">' + this._fmt(reqTotal) + '</td>' +
+      '<td class="or-num">' + this._fmt(m.req) + '</td>' +
+      '<td>' + u + '</td>' +
       '</tr>' +
       '</tbody></table>' +
 
-      // 供应：与需求表同版式（同 data-table / 同合计行、同为 6 列），按库存状态 + 库位展开
+      // 供应：按库存状态 + 库位展开，库位描述跨 3 列使数量/单位列与需求表对齐
       '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应</div>' +
-      '<table class="data-table" style="min-width:800px;">' +
+      '<table class="data-table" style="min-width:870px;">' +
       '<thead><tr>' +
-      '<th style="width:130px;">库存状态</th><th style="width:120px;">库位编码</th><th colspan="2">库位描述</th>' +
-      '<th style="width:130px;text-align:right;">数量</th><th style="width:130px;">单位</th>' +
+      '<th style="width:130px;">库存状态</th><th style="width:120px;">库位编码</th><th colspan="3">库位描述</th>' +
+      '<th style="width:130px;text-align:right;">数量</th><th style="width:70px;">单位</th>' +
       '</tr></thead>' +
       '<tbody>' + supplyRows +
-      '<tr class="or-sumrow"><td colspan="4" style="text-align:right;">供应合计</td>' +
+      '<tr class="or-sumrow"><td colspan="5" style="text-align:right;">供应合计</td>' +
       '<td class="or-num">' + supplyQtyTxt + '</td><td>' + u + '</td></tr>' +
       '</tbody></table>' +
 
-      // 结果：单独一张，与上面同为 data-table，数字列位置一致
-      '<table class="data-table" style="min-width:800px;margin-top:14px;">' +
+      // 结果：单独一张，与上面同为 data-table，数量/单位列位置一致
+      '<table class="data-table" style="min-width:870px;margin-top:14px;">' +
       '<thead><tr><th colspan="5">结果</th>' +
-      '<th style="width:130px;text-align:right;">差异</th></tr></thead>' +
+      '<th style="width:130px;text-align:right;">差异</th><th style="width:70px;">单位</th></tr></thead>' +
       '<tbody><tr class="or-sumrow">' +
       '<td colspan="5" style="text-align:right;font-weight:700;">' + gapLabel + '</td>' +
-      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td>' +
+      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + '</td>' +
+      '<td>' + u + '</td>' +
       '</tr></tbody></table>' +
       '</div>';
   },
