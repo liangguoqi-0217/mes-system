@@ -523,10 +523,6 @@ const OrderReadiness = {
     } else {
       list.forEach(m => {
         const sel = this.matFocus === m.mat;
-        const sub = m.orders.length + ' 单' +
-          (isStock
-            ? (m.supply === null ? '' : ' · 库存 ' + this._fmt(m.supply))
-            : (m.noSource ? ' · ' + m.noSource + ' 单无来源' : (m.availDate ? ' · 最晚 ' + m.availDate : '')));
         // 缺口 > 0 缺料（红）；缺口 < 0 过剩（绿，带 +）；= 0 齐套（灰）
         const gapHtml = m.gap > 0
           ? '<div class="or-matgap">-' + this._fmt(m.gap) + '</div>'
@@ -539,10 +535,7 @@ const OrderReadiness = {
           '<div class="or-matname" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(m.name) + '</div>' +
           '<div class="or-matcode">' + esc(m.mat) + ' · ' + esc(m.unit) + '</div>' +
           '</div>' +
-          '<div style="text-align:right;flex-shrink:0;">' +
-          gapHtml +
-          '<div class="or-matsub">' + esc(sub) + '</div>' +
-          '</div>' +
+          '<div style="flex-shrink:0;align-self:center;text-align:right;">' + gapHtml + '</div>' +
           '</div>';
       });
     }
