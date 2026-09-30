@@ -173,6 +173,55 @@ const OR_STOCK_DB = {
   '2001|MAT-10011': { unrestricted: 2000, quality: 0 }
 };
 
+// 库存明细接口：工厂+物料 → 按「库存状态 + 库位」展开（MARD 口径）
+//   明细数量合计 = 上面 OR_STOCK_DB 的非限制 + 质检，两者始终一致
+const OR_STOCK_LOC_DB = {
+  '1000|MAT-10001': [
+    { status: '非限制', loc: 'A-01-01', locName: '原料高架库 A 区 01 货架', qty: 500 },
+    { status: '非限制', loc: 'A-02-05', locName: '原料平面库 A 区 05 货位', qty: 300 },
+    { status: '质检', loc: 'Q-01-01', locName: '待检库 Q 区 01 货位', qty: 200 }
+  ],
+  '1000|MAT-10002': [
+    { status: '非限制', loc: 'A-03-01', locName: '辅料库 A 区 01 货架', qty: 400 },
+    { status: '质检', loc: 'Q-01-02', locName: '待检库 Q 区 02 货位', qty: 50 }
+  ],
+  '1000|MAT-10003': [
+    { status: '非限制', loc: 'A-01-03', locName: '原料高架库 A 区 03 货架', qty: 3 }
+  ],
+  '1000|MAT-10004': [
+    { status: '非限制', loc: 'B-01-01', locName: '半成品库 B 区 01 货位', qty: 500 }
+  ],
+  '1000|MAT-10005': [
+    { status: '非限制', loc: 'A-01-01', locName: '原料高架库 A 区 01 货架', qty: 400000 },
+    { status: '非限制', loc: 'A-01-02', locName: '原料高架库 A 区 02 货架', qty: 200000 }
+  ],
+  '1000|MAT-10009': [
+    { status: '非限制', loc: 'A-02-01', locName: '原料平面库 A 区 01 货位', qty: 150 }
+  ],
+  '1000|MAT-10010': [
+    { status: '非限制', loc: 'A-02-02', locName: '原料平面库 A 区 02 货位', qty: 50 },
+    { status: '质检', loc: 'Q-02-01', locName: '待检库 Q 区 01 隔离位', qty: 150 }
+  ],
+  '1000|MAT-10011': [
+    { status: '非限制', loc: 'T-01-01', locName: '储罐区 T01 号罐', qty: 1200 }
+  ],
+  '1000|MAT-20001': [
+    { status: '非限制', loc: 'A-05-01', locName: '包材库 A 区 01 货架', qty: 6000 },
+    { status: '质检', loc: 'Q-01-03', locName: '待检库 Q 区 03 货位', qty: 200 }
+  ],
+  '2001|MAT-10009': [
+    { status: '非限制', loc: 'B1-01-01', locName: '二厂原料库 01 货架', qty: 120 },
+    { status: '质检', loc: 'B1-Q-01', locName: '二厂待检库 01 货位', qty: 30 }
+  ],
+  '2001|MAT-10010': [
+    { status: '非限制', loc: 'B1-01-02', locName: '二厂原料库 02 货架', qty: 40 },
+    { status: '质检', loc: 'B1-Q-02', locName: '二厂待检库 02 货位', qty: 20 }
+  ],
+  '2001|MAT-10011': [
+    { status: '非限制', loc: 'B1-T-01', locName: '二厂储罐区 T01 号罐', qty: 2000 }
+  ]
+};
+
 // ATP 元素类型值域（业务名）。本公司口径：现有库存与质检库存都算供应，固定不可配
 const OR_ATP_ELEMENT = {
   STOCK: '现有库存',
@@ -294,10 +343,17 @@ const OR_ATP_DB = {
  */
 
 const OrSapApi = {
-  // 库存：入参 工厂 + 物料清单，出参 { '物料编码': {unrestricted, quality} }
+  // 库存：入参 工厂 + 物料清单，出参 { '物料编码': {unrestricted, quality, locs:[库存状态+库位明细]} }
   getStock(plant, mats) {
     const out = {};
-    mats.forEach(m => { out[m] = OR_STOCK_DB[plant + '|' + m] || { unrestricted: 0, quality: 0 }; });
+    mats.forEach(m => {
+      const s = OR_STOCK_DB[plant + '|' + m] || { unrestricted: 0, quality: 0 };
+      // 明细数量合计与总数同源；原型未维护库位的物料，退回按库存状态两行
+      const locs = OR_STOCK_LOC_DB[plant + '|' + m] ||
+        [{ status: '非限制', loc: '', locName: '', qty: s.unrestricted },
+         { status: '质检', loc: '', locName: '', qty: s.quality }].filter(r => r.qty > 0);
+      out[m] = { unrestricted: s.unrestricted, quality: s.quality, locs: locs };
+    });
     return new Promise(resolve => setTimeout(() => resolve(out), 400));
   },
   // ATP：入参 工厂 + 订单号清单，出参 { '物料编码': {atpQty, shortQty, availDate, ...} }
@@ -469,11 +525,12 @@ const OrderReadiness = {
         let m = map[c.mat];
         if (!m) m = map[c.mat] = {
           mat: c.mat, name: c.name, unit: c.unit, gap: 0, req: 0,
-          orders: [], dates: [], noSource: 0, bad: false, supply: null, rows: []
+          orders: [], dates: [], noSource: 0, bad: false, supply: null, rows: [], locs: null
         };
         if (isStock) {
           m.req += x.open;                                   // 需求合计：各订单未清相加
           if (x.shopStock !== null) m.supply = x.shopStock;  // 供应：库存（所有订单共用）
+          if (!m.locs && x.st && x.st.locs) m.locs = x.st.locs;   // 供应明细：库存状态 + 库位
           m.rows.push({
             no: o.no, batch: o.batch || '—', prod: o.mat || '—', prodName: o.name,
             reqQty: c.reqQty, issuedQty: c.issuedQty, open: x.open, reqDate: c.reqDate
@@ -990,7 +1047,19 @@ const OrderReadiness = {
       '<td class="or-num">' + this._fmt(r.open) + ' ' + u + '</td>' +
       '</tr>').join('');
 
-    const supplyTxt = m.supply === null ? '—' : this._fmt(m.supply) + ' ' + u;
+    const supplyQtyTxt = m.supply === null ? '—' : this._fmt(m.supply);
+    const locs = m.locs || [];
+    const supplyRows = locs.length
+      ? locs.map(l =>
+        '<tr>' +
+        '<td>' + esc(l.status) + '</td>' +
+        '<td style="font-family:monospace;font-size:12px;">' + esc(l.loc || '—') + '</td>' +
+        '<td colspan="2">' + esc(l.locName || '—') + '</td>' +
+        '<td class="or-num">' + this._fmt(l.qty) + '</td>' +
+        '<td>' + u + '</td>' +
+        '</tr>').join('')
+      : '<tr><td colspan="3" style="color:var(--text-muted);">未返回库位明细</td>' +
+        '<td class="or-num">' + supplyQtyTxt + '</td><td>' + u + '</td></tr>';
     const short = m.gap > 0, over = m.gap < 0;
     const gapTxt = short ? '-' + this._fmt(m.gap) : (over ? '+' + this._fmt(-m.gap) : '0');
     const gapColor = short ? 'var(--danger)' : (over ? 'var(--success)' : 'var(--text-muted)');
@@ -1016,16 +1085,16 @@ const OrderReadiness = {
       '</tr>' +
       '</tbody></table>' +
 
-      // 供应：与需求表同版式（同 data-table / 同合计行），前 5 列 colspan 占位，数字列对齐需求表最右侧「未清数量」列
+      // 供应：与需求表同版式（同 data-table / 同合计行、同为 6 列），按库存状态 + 库位展开
       '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应 —— 现有库存</div>' +
       '<table class="data-table" style="min-width:800px;">' +
-      '<thead><tr><th colspan="5">供应元素</th>' +
-      '<th style="width:130px;text-align:right;">可用数量</th></tr></thead>' +
-      '<tbody>' +
-      '<tr><td colspan="5" style="white-space:nowrap;">现有库存（非限制 + 质检）</td>' +
-      '<td class="or-num">' + supplyTxt + '</td></tr>' +
-      '<tr class="or-sumrow"><td colspan="5" style="text-align:right;">供应合计</td>' +
-      '<td class="or-num">' + supplyTxt + '</td></tr>' +
+      '<thead><tr>' +
+      '<th style="width:130px;">库存状态</th><th style="width:120px;">库位编码</th><th colspan="2">库位描述</th>' +
+      '<th style="width:130px;text-align:right;">数量</th><th style="width:130px;">单位</th>' +
+      '</tr></thead>' +
+      '<tbody>' + supplyRows +
+      '<tr class="or-sumrow"><td colspan="4" style="text-align:right;">供应合计</td>' +
+      '<td class="or-num">' + supplyQtyTxt + '</td><td>' + u + '</td></tr>' +
       '</tbody></table>' +
 
       // 判定结果：单独一张，与上面同为 data-table，数字列位置一致
