@@ -33,21 +33,31 @@ const OR_WORKCENTER_TEXT = {
   'WC-PROD-01': '制剂车间',
   'WC-PROD-02': '压片车间',
   'WC-PROD-03': '包装车间',
-  'WC-WT-01': '水系统车间'
+  'WC-WT-01': '水系统车间',
+  'WC-PROD-11': '口服液车间',
+  'WC-PACK-11': '包装车间',
+  'WC-WT-11': '水系统车间'
 };
 
 const OR_PLANT_TEXT = { '1000': '山东步长制药工厂', '2001': '陕西步长制药工厂' };
+
+// 工作中心归属工厂 —— 「工厂 → 工作中心」级联的数据源
+const OR_WC_PLANT = {
+  'WC-PROD-01': '1000', 'WC-PROD-02': '1000', 'WC-PROD-03': '1000', 'WC-WT-01': '1000',
+  'WC-PROD-11': '2001', 'WC-PACK-11': '2001', 'WC-WT-11': '2001'
+};
 
 // 订单列表列数：勾选 + 流程订单号 + 产品编码 + 产品描述 + 计划开始/结束日期
 //              + 组件数 + 检查结果 + 展开（工作中心在组件层，订单可跨工作中心）
 const OR_ORDER_COLS = 9;
 
-// 当前登录用户（权限模拟）。isPlantLevel=false 时锁定本工作中心。
+// 当前登录用户（权限模拟）。isPlantLevel=true：厂级，工厂与工作中心都可下拉选择；
+// 改成 false 即模拟车间用户：两项锁定为其所属值，下拉禁用。
 const OR_CURRENT_USER = {
-  name: '工作中心用户A',
+  name: '全厂计划员',
   plant: '1000',
   workCenter: 'WC-PROD-01',
-  isPlantLevel: false
+  isPlantLevel: true
 };
 
 /* ---------- 日期工具（以运行当天为基准，保证「今日/本周/本月」始终有数据） ---------- */
@@ -127,6 +137,21 @@ const OR_ORDERS = [
     components: [
       { mat: 'MAT-10004', name: '维生素C原料', unit: 'KG', reqQty: 230, issuedQty: 0, reqDate: orAddDays(7) }
     ]
+  },
+  {
+    no: '3000000311', mat: 'FG-300001', name: '口服液配制', plant: '2001', workCenter: 'WC-PROD-11',
+    startDate: orAddDays(1), endDate: orAddDays(6), qty: '3000', unit: 'L', status: 'REL', statusName: '已下达',
+    components: [
+      { mat: 'MAT-10009', name: '蔗糖', unit: 'KG', reqQty: 200, issuedQty: 0, reqDate: orAddDays(1) },
+      { mat: 'MAT-10011', name: '纯化水', unit: 'L', reqQty: 3000, issuedQty: 0, reqDate: orAddDays(1), wc: 'WC-WT-11' }
+    ]
+  },
+  {
+    no: '3000000315', mat: 'FG-300002', name: '口服液包装', plant: '2001', workCenter: 'WC-PACK-11',
+    startDate: orAddDays(4), endDate: orAddDays(9), qty: '3000', unit: 'L', status: 'CRTD', statusName: '已创建',
+    components: [
+      { mat: 'MAT-10010', name: '药用铝箔', unit: 'KG', reqQty: 60, issuedQty: 0, reqDate: orAddDays(4) }
+    ]
   }
 ];
 
@@ -144,7 +169,10 @@ const OR_STOCK_DB = {
   '1000|MAT-10009': { unrestricted: 150, quality: 0 },
   '1000|MAT-10010': { unrestricted: 50, quality: 150 },
   '1000|MAT-10011': { unrestricted: 1200, quality: 0 },
-  '1000|MAT-20001': { unrestricted: 6000, quality: 200 }
+  '1000|MAT-20001': { unrestricted: 6000, quality: 200 },
+  '2001|MAT-10009': { unrestricted: 120, quality: 30 },
+  '2001|MAT-10010': { unrestricted: 40, quality: 20 },
+  '2001|MAT-10011': { unrestricted: 2000, quality: 0 }
 };
 
 // ATP 元素类型值域（业务名）。本公司口径：现有库存与质检库存都算供应，固定不可配
@@ -236,6 +264,28 @@ const OR_ATP_DB = {
       { type: 'QI', doc: '', date: orAddDays(0), qty: 200, counted: true }
     ],
     demand: [{ type: 'RESB', doc: '3000000190', date: orAddDays(0), qty: 500 }]
+  },
+  '2001|MAT-10009': {
+    atpQty: 100, shortQty: 100, availDate: orAddDays(5),
+    supply: [
+      { type: 'STOCK', doc: '', date: orAddDays(0), qty: 120, counted: true },
+      { type: 'QI', doc: '', date: orAddDays(0), qty: 30, counted: true },
+      { type: 'PO', doc: '4500018812', date: orAddDays(5), qty: 200, counted: true }
+    ],
+    demand: [{ type: 'SAFETY', doc: '', date: '', qty: 50 }]
+  },
+  '2001|MAT-10010': {
+    atpQty: 60, shortQty: 0, availDate: '',
+    supply: [
+      { type: 'STOCK', doc: '', date: orAddDays(0), qty: 40, counted: true },
+      { type: 'QI', doc: '', date: orAddDays(0), qty: 20, counted: true }
+    ],
+    demand: []
+  },
+  '2001|MAT-10011': {
+    atpQty: 1700, shortQty: 1300, availDate: '',
+    supply: [{ type: 'STOCK', doc: '', date: orAddDays(0), qty: 2000, counted: true }],
+    demand: [{ type: 'RESB', doc: '3000000301', date: orAddDays(0), qty: 300 }]
   }
 };
 
@@ -389,7 +439,7 @@ const OrderReadiness = {
     if (this.mode === k) return;
     // 切换逻辑会重绘筛选栏，先把已录入的条件存下来，重绘后回填
     const keep = {};
-    ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orMatCode', 'orWorkCenter'].forEach(id => {
+    ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orProductCode', 'orMatCode', 'orPlant', 'orWorkCenter'].forEach(id => {
       keep[id] = this._val(id);
     });
     this.mode = k;
@@ -409,14 +459,32 @@ const OrderReadiness = {
 
   /* ==================== 筛选栏 ==================== */
 
+  // 工作中心选项：按工厂过滤 —— 工厂 → 工作中心 级联
+  _wcOptions(plant) {
+    const opts = Object.keys(OR_WORKCENTER_TEXT)
+      .filter(k => OR_WC_PLANT[k] === plant)
+      .map(k => '<option value="' + k + '">' + OR_WORKCENTER_TEXT[k] + '</option>').join('');
+    return '<option value="">全部工作中心</option>' + opts;
+  },
+
+  // 切换工厂：工作中心列表跟着换，工作中心回到「全部工作中心」，并立即重查
+  onPlantChange() {
+    const sel = document.getElementById('orWorkCenter');
+    if (sel) {
+      sel.innerHTML = this._wcOptions(this._val('orPlant') || OR_CURRENT_USER.plant);
+      sel.value = '';
+    }
+    this.query();
+  },
+
   renderFilterBar() {
     const el = document.getElementById('orFilterBar');
     if (!el) return;
     const isPlant = OR_CURRENT_USER.isPlantLevel;
+    // 当前工厂：先取筛选栏已选的值（切换检查逻辑重绘时保留），没有则用登录用户所属工厂
+    const curPlant = this._val('orPlant') || OR_CURRENT_USER.plant;
     const plantOpts = Object.keys(OR_PLANT_TEXT)
-      .map(k => '<option value="' + k + '">' + k + ' ' + OR_PLANT_TEXT[k] + '</option>').join('');
-    const wcOpts = Object.keys(OR_WORKCENTER_TEXT)
-      .map(k => '<option value="' + k + '">' + OR_WORKCENTER_TEXT[k] + '</option>').join('');
+      .map(k => '<option value="' + k + '"' + (k === curPlant ? ' selected' : '') + '>' + k + ' ' + OR_PLANT_TEXT[k] + '</option>').join('');
 
     const isAtp = this.mode === 'atp';
     const dateLabel = isAtp ? '计划开始日期' : '计划开始日期（仅圈定范围）';
@@ -424,14 +492,14 @@ const OrderReadiness = {
     el.innerHTML = `
       <div class="filter-bar">
         <div class="filter-group"><label>工厂</label>
-          <select id="orPlant"${isPlant ? '' : ' disabled'}>
+          <select id="orPlant"${isPlant ? ' onchange="OrderReadiness.onPlantChange()"' : ' disabled'}>
             ${isPlant ? plantOpts : '<option value="' + OR_CURRENT_USER.plant + '">' + OR_CURRENT_USER.plant + ' ' + OR_PLANT_TEXT[OR_CURRENT_USER.plant] + '</option>'}
           </select>
         </div>
         <div class="filter-group"><label>工作中心</label>
           <select id="orWorkCenter"${isPlant ? '' : ' disabled'}>
             ${isPlant
-              ? '<option value="">全部工作中心</option>' + wcOpts
+              ? this._wcOptions(curPlant)
               : '<option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option>'}
           </select>
         </div>
@@ -1014,8 +1082,16 @@ const OrderReadiness = {
     ['orOrderNo', 'orProductCode', 'orMatCode', 'orOrderStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
-    const wc = document.getElementById('orWorkCenter');
-    if (wc && OR_CURRENT_USER.isPlantLevel) wc.value = '';
+    // 重置：工厂回到登录用户所属工厂，工作中心列表跟着换并回到「全部工作中心」
+    const plant = document.getElementById('orPlant');
+    if (plant && OR_CURRENT_USER.isPlantLevel) {
+      plant.value = OR_CURRENT_USER.plant;
+      const wc = document.getElementById('orWorkCenter');
+      if (wc) {
+        wc.innerHTML = this._wcOptions(OR_CURRENT_USER.plant);
+        wc.value = '';
+      }
+    }
     this.setRange('week', true);
     this.query();
     if (window.QueryVariant) QueryVariant.resetSelection('order-readiness');
