@@ -326,6 +326,17 @@ const OrderReadiness = {
           .or-num { text-align: right; font-variant-numeric: tabular-nums; }
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
           .or-clickable { cursor: pointer; }
+          /* 检查逻辑旁的说明图标：悬浮气泡列出两种逻辑的定义 */
+          .or-tip { position: relative; display: inline-flex; align-items: center; justify-content: center;
+            margin-left: 3px; color: var(--text-muted); cursor: help; font-size: 13px; font-weight: 400; }
+          .or-tip:hover { color: var(--primary); }
+          .or-tip:hover::after {
+            content: attr(data-tip);
+            position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%);
+            width: max-content; max-width: 430px; white-space: pre-line; text-align: left;
+            background: #1f2937; color: #fff; font-size: 12px; font-weight: 400; line-height: 1.9;
+            padding: 10px 13px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.2); z-index: 60;
+          }
           /* 需要强调的数字 / 日期用下划线，不用 ⚠ 之类图标 */
           .or-underline { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
           /* 判定依据弹窗：固定尺寸，元素多时表格在弹窗内部滚动 */
@@ -354,9 +365,15 @@ const OrderReadiness = {
 
   modeTip(k) {
     return {
-      stock: '只与仓库现有量比（非限制 + 质检）—— 不计在途、不扣其他订单占用、不看需求日期；直观，但不保证开工那天仍够',
-      atp: '可用量 = 现有库存 + 在途采购 + 在制订单 − 安全库存 − 其他订单占用，按组件需求日期在时间轴上校验；口径由系统固定，不可调整。缺料行可展开看判定依据'
+      stock: '朴素逻辑 —— 只与仓库现有量比（非限制 + 质检）—— 不计在途、不扣其他订单占用、不看需求日期；直观，但不保证开工那天仍够',
+      atp: 'SAP标准逻辑 —— 可用量 = 现有库存 + 在途采购 + 在制订单 − 安全库存 − 其他订单占用，按组件需求日期在时间轴上校验；口径由系统固定，不可调整。缺料行可展开看判定依据'
     }[k || this.mode];
+  },
+
+  // ⓘ 气泡里同时列出两种逻辑的定义（&#10; 为换行，配合 CSS 的 pre-line 生效）
+  modeTipAll() {
+    return '朴素逻辑：仅看现有库存，不考虑时间因素，不考虑其他部门占用&#10;' +
+      'SAP标准逻辑：考虑时间因素、其他部门占用、在途/在制等多种因素';
   },
 
   // 按钮与遮罩文案固定，不随检查逻辑变化
@@ -419,10 +436,10 @@ const OrderReadiness = {
           </select>
         </div>
         <div class="filter-group"><label>检查逻辑
-          <span style="cursor:help;color:var(--text-muted);font-weight:400;" title="${esc(this.modeTip())}">ⓘ</span></label>
-          <select id="orCheckLogic" style="width:150px;" title="${esc(this.modeTip())}" onchange="OrderReadiness.setMode(this.value)">
-            <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>1-考虑时间因素等</option>
-            <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>2-仅看现有库存</option>
+          <span class="or-tip" data-tip="${this.modeTipAll()}">ⓘ</span></label>
+          <select id="orCheckLogic" style="width:190px;" title="${esc(this.modeTip())}" onchange="OrderReadiness.setMode(this.value)">
+            <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>1-朴素逻辑</option>
+            <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>2-SAP标准逻辑（推荐）</option>
           </select>
         </div>
         <div class="filter-group"><label>产品编码</label><input type="text" id="orProductCode" placeholder="如 FG-100001"></div>
