@@ -334,6 +334,12 @@ const OrderReadiness = {
   onlyProblem: true,
   stockMap: {},
   atpMap: {},
+  // 布局版本：split=左物料缺口榜 + 右订单表（新）；classic=只有订单表（旧版）。可随时切换对比
+  layout: 'split',
+  matFocus: null,        // 左栏选中的物料编码，右栏据此筛选订单
+  matPanelCollapsed: false,
+  matShowAll: false,     // 左栏是否连带显示齐套物料
+  matPanelWidth: 320,
 
   /* ==================== 渲染 ==================== */
 
@@ -393,15 +399,200 @@ const OrderReadiness = {
           .or-modal { width: 1180px; height: 760px; max-width: 96vw; max-height: 94vh; }
           .or-modal .modal-body { max-height: none; padding: 22px 26px; }
           .or-mask { padding: 60px; text-align: center; color: var(--text-muted); font-size: 13px; }
+          /* 左栏：物料缺口榜 */
+          #orMatPanel { background: #f8fafc; scrollbar-width: thin; scrollbar-color: rgba(203,213,225,0.6) transparent; }
+          #orMatPanel::-webkit-scrollbar { width: 6px; }
+          #orMatPanel::-webkit-scrollbar-thumb { background: rgba(203,213,225,0.6); border-radius: 3px; }
+          #orMatPanel::-webkit-scrollbar-track { background: transparent; }
+          .or-mathead { padding: 10px 12px 8px; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 2; }
+          .or-matitem { padding: 8px 12px; border-bottom: 1px solid #eef2f7; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+          .or-matitem:hover { background: #eef4ff; }
+          .or-matitem-sel { background: #e5efff; box-shadow: inset 3px 0 0 var(--primary); }
+          .or-matname { font-size: 13px; font-weight: 600; line-height: 1.3; }
+          .or-matcode { font-size: 11px; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
+          .or-matgap { font-size: 13px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; white-space: nowrap; }
+          .or-matsub { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; }
+          .or-matstrip { width: 30px; flex-shrink: 0; background: #f8fafc; border-right: 1px solid var(--border);
+            cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; }
+          .or-matstrip:hover { background: #eef4ff; color: var(--primary); }
+          /* 聚焦物料时：右栏顶部提示条 + 组件行高亮 */
+          .or-focusbar { display: flex; align-items: center; gap: 10px; padding: 7px 16px; background: #fffbeb;
+            border-bottom: 1px solid #fde68a; font-size: 12px; color: #92400e; flex-wrap: wrap; }
+          .or-comp-focus td { background: #fffbeb !important; }
         </style>
 
-        <div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;width:100%;min-width:0;background:#fff;"></div>
+        <div id="orBody" style="flex:1;display:flex;min-height:0;min-width:0;background:#fff;"></div>
         <div id="orModalContainer"></div>
       </div>`;
   },
 
+  /* ==================== 布局版本：分栏版 / 原版（可随时切换对比） ==================== */
+
+  // 表格区骨架：分栏版 = 左物料榜 + 右订单表；原版 = 只有订单表（旧版行为完全一致）
+  renderBodyShell() {
+    const el = document.getElementById('orBody');
+    if (!el) return;
+    const tableWrap = '<div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;min-width:0;background:#fff;"></div>';
+    el.innerHTML = this.layout === 'split'
+      ? '<div id="orMatPanel" style="width:' + (this.matPanelCollapsed ? 30 : this.matPanelWidth) +
+        'px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;"></div>' + tableWrap
+      : tableWrap;
+  },
+
+  setLayout(v) {
+    if (this.layout === v) return;
+    this.layout = v;
+    if (v === 'classic') this.matFocus = null;   // 原版没有左栏，聚焦状态一并清掉
+    try { localStorage.setItem('or_layout_version', v); } catch (e) { /* localStorage 不可用时忽略 */ }
+    this.renderBodyShell();
+    this.renderTable();
+    this._syncLayoutBtn();
+  },
+
+  toggleLayout() {
+    this.setLayout(this.layout === 'split' ? 'classic' : 'split');
+  },
+
+  // 只改按钮文字，不重绘整个筛选栏（避免清掉已录入的筛选条件）
+  _syncLayoutBtn() {
+    const b = document.getElementById('orLayoutBtn');
+    if (!b) return;
+    b.textContent = this.layout === 'split' ? '⧉ 原版视图' : '⧉ 分栏视图';
+    b.title = this.layout === 'split'
+      ? '当前：分栏版（左侧物料缺口榜 + 右侧订单表）。点击切回原版'
+      : '当前：原版（只有订单表）。点击切到分栏版（左侧物料缺口榜 + 右侧订单表）';
+  },
+
+  toggleMatPanel() {
+    this.matPanelCollapsed = !this.matPanelCollapsed;
+    this.renderBodyShell();
+    this.renderMatPanel();
+    this.renderTable();
+  },
+
+  toggleMatShowAll(v) {
+    this.matShowAll = v;
+    this.renderMatPanel();
+  },
+
+  focusMat(mat) {
+    this.matFocus = this.matFocus === mat ? null : mat;   // 再点一次取消
+    this.renderMatPanel();
+    this.renderTable();
+  },
+
+  clearMatFocus() {
+    this.matFocus = null;
+    this.renderMatPanel();
+    this.renderTable();
+  },
+
+  /* ==================== 左栏：物料缺口榜 ==================== */
+
+  // 按物料聚合已勾选订单的组件（跟随当前检查逻辑与筛选结果，左榜随条件重算）
+  matAgg() {
+    if (!this.checked) return [];
+    const map = {};
+    this.orders.forEach(o => {
+      if (this.selected.indexOf(o.no) === -1) return;
+      o.components.forEach(c => {
+        const x = this._cell(c);
+        const gap = this.mode === 'atp' ? (x.atp ? x.atp.shortQty : 0) : (x.shopGap || 0);
+        const short = x.bad && gap > 0;
+        if (!this.matShowAll && !short) return;
+        let m = map[c.mat];
+        if (!m) m = map[c.mat] = { mat: c.mat, name: c.name, unit: c.unit, gap: 0, req: 0, orders: [], dates: [], noSource: 0, bad: false };
+        if (short) { m.gap += gap; m.bad = true; }
+        m.req += x.open;
+        if (m.orders.indexOf(o.no) === -1) m.orders.push(o.no);
+        if (this.mode === 'atp' && x.atp && gap > 0) {
+          if (x.atp.availDate) m.dates.push(x.atp.availDate); else m.noSource++;
+        }
+      });
+    });
+    const list = Object.keys(map).map(k => {
+      const m = map[k];
+      m.dates.sort();
+      m.availDate = m.dates.length ? m.dates[m.dates.length - 1] : '';   // 取最晚：全部补齐的时间点
+      return m;
+    });
+    list.sort((a, b) => (b.gap - a.gap) || (a.mat < b.mat ? -1 : 1));
+    return list;
+  },
+
+  renderMatPanel() {
+    const el = document.getElementById('orMatPanel');
+    if (!el || this.layout !== 'split') return;
+
+    if (this.matPanelCollapsed) {
+      el.className = 'or-matstrip';
+      el.style.width = '30px';
+      el.innerHTML = '<span style="writing-mode:vertical-rl;letter-spacing:2px;">物料</span>';
+      el.onclick = function () { OrderReadiness.toggleMatPanel(); };
+      return;
+    }
+    el.className = '';
+    el.style.width = this.matPanelWidth + 'px';
+    el.onclick = null;
+
+    const all = this.matAgg();
+    const badList = all.filter(m => m.bad);
+    const list = this.matShowAll ? all : badList;
+
+    let items = '';
+    if (!this.checked) {
+      items = '<div style="padding:18px 14px;color:var(--text-muted);font-size:12px;line-height:1.8;">勾选订单后点击「' +
+        this.checkBtnText() + '」<br>这里按物料汇总缺口</div>';
+    } else if (!list.length) {
+      items = '<div style="padding:18px 14px;color:var(--text-muted);font-size:12px;line-height:1.8;">' +
+        (this.selected.length ? '没有缺料物料，全部齐套' : '尚未勾选订单') + '</div>';
+    } else {
+      list.forEach(m => {
+        const sel = this.matFocus === m.mat;
+        const sub = m.orders.length + ' 单' +
+          (this.mode === 'atp'
+            ? (m.noSource ? ' · ' + m.noSource + ' 单无来源' : (m.availDate ? ' · 最晚 ' + m.availDate : ''))
+            : '');
+        items += '<div class="or-matitem' + (sel ? ' or-matitem-sel' : '') + '" title="' + esc(m.mat + ' ' + m.name) +
+          ' —— 点击在右侧只看含该物料的订单" onclick="OrderReadiness.focusMat(\'' + m.mat + '\')">' +
+          '<div style="min-width:0;flex:1;">' +
+          '<div class="or-matname" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(m.name) + '</div>' +
+          '<div class="or-matcode">' + esc(m.mat) + ' · ' + esc(m.unit) + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0;">' +
+          (m.bad
+            ? '<div class="or-matgap">-' + this._fmt(m.gap) + '</div>'
+            : '<div class="or-matsub" style="color:var(--success);">齐套</div>') +
+          '<div class="or-matsub">' + esc(sub) + '</div>' +
+          '</div>' +
+          '</div>';
+      });
+    }
+
+    el.innerHTML =
+      '<div class="or-mathead">' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<b style="font-size:13px;">物料缺口榜</b>' +
+      '<span style="margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:13px;padding:2px 5px;border-radius:4px;" ' +
+      'title="收起左栏，订单表占满宽度" onclick="OrderReadiness.toggleMatPanel()">«</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:var(--text-secondary);">' +
+      '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种</span>' +
+      '<label style="margin-left:auto;display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;">' +
+      '<input type="checkbox"' + (this.matShowAll ? ' checked' : '') + ' onchange="OrderReadiness.toggleMatShowAll(this.checked)">含齐套' +
+      '</label>' +
+      '</div>' +
+      '</div>' + items;
+  },
+
   init() {
+    // 布局版本记忆：上次选的分栏版 / 原版，刷新后保持
+    try {
+      const v = localStorage.getItem('or_layout_version');
+      if (v === 'split' || v === 'classic') this.layout = v;
+    } catch (e) { /* localStorage 不可用时用默认 */ }
     this.renderFilterBar();
+    this.renderBodyShell();
     if (window.QueryVariant) {
       QueryVariant.mount('order-readiness');
       QueryVariant.restore('order-readiness');
@@ -521,6 +712,7 @@ const OrderReadiness = {
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.refresh()">刷新</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.resetFilter()">重置</button>
+          <button class="btn btn-secondary btn-sm" id="orLayoutBtn" title="${this.layout === 'split' ? '当前：分栏版（左侧物料缺口榜 + 右侧订单表）。点击切回原版' : '当前：原版（只有订单表）。点击切到分栏版（左侧物料缺口榜 + 右侧订单表）'}" onclick="OrderReadiness.toggleLayout()">${this.layout === 'split' ? '⧉ 原版视图' : '⧉ 分栏视图'}</button>
           <button class="btn btn-secondary btn-sm" id="orMoreBtn" onclick="OrderReadiness.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
         <div id="orMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
@@ -745,6 +937,7 @@ const OrderReadiness = {
   renderTable() {
     const el = document.getElementById('orTableWrap');
     if (!el) return;
+    this.renderMatPanel();   // 左栏跟着订单数据一起重算
     if (this.checking) {
       el.innerHTML = '<div class="or-mask">' + this.checkingText() + '</div>';
       return;
@@ -754,9 +947,19 @@ const OrderReadiness = {
       return;
     }
 
-    const body = this.orders.map(o => {
+    // 左栏选中物料：右栏只留含该物料的订单，并强制展开（便于直接看到组件行）
+    const focus = this.matFocus;
+    const orders = focus ? this.orders.filter(o => o.components.some(c => c.mat === focus)) : this.orders;
+    const focusBar = focus ? this._focusBarHtml(focus, orders.length) : '';
+    if (focus && !orders.length) {
+      el.innerHTML = focusBar + '<div class="or-mask">没有订单含物料 ' + esc(focus) + '</div>';
+      return;
+    }
+
+    const body = orders.map(o => {
       const sel = this.selected.indexOf(o.no) !== -1;
-      const open = this.collapsed.indexOf(o.no) === -1;
+      const open = this.collapsed.indexOf(o.no) === -1 ||
+        (focus && o.components.some(c => c.mat === focus));
       const cells = o.components.map(c => this._cell(c));
       const badge = this._orderBadge(o, cells);
       return `
@@ -778,10 +981,23 @@ const OrderReadiness = {
         </tr>`;
     }).join('');
 
-    el.innerHTML = `<table class="data-table or-ordertable" style="min-width:1080px;">
+    el.innerHTML = focusBar + `<table class="data-table or-ordertable" style="min-width:1080px;">
       <thead>${this._orderHeadHtml()}</thead>
       <tbody>${body}</tbody>
     </table>`;
+  },
+
+  // 聚焦某物料时右栏顶部的提示条：说明在看什么、缺多少、怎么退出
+  _focusBarHtml(mat, orderCnt) {
+    const m = this.matAgg().filter(k => k.mat === mat)[0];
+    const gap = m ? '<b>-' + this._fmt(m.gap) + '</b> ' + esc(m.unit) : '';
+    const name = m ? esc(m.name) : esc(mat);
+    return '<div class="or-focusbar">' +
+      '<span>正在看物料 <b>' + name + '</b>（' + esc(mat) + '）· 缺口合计 ' + gap +
+      ' · 涉及 <b>' + orderCnt + '</b> 张订单</span>' +
+      '<span style="margin-left:auto;color:var(--primary);cursor:pointer;text-decoration:underline;" ' +
+      'onclick="OrderReadiness.clearMatFocus()">显示全部订单</span>' +
+      '</div>';
   },
 
   // 订单列表表头：只放订单层字段，组件列在展开区的内嵌表里
@@ -877,6 +1093,8 @@ const OrderReadiness = {
   },
 
   _compRow(o, c, x, i) {
+    // 左栏聚焦该物料时，对应组件行高亮（右栏可能同时显示同单其他组件，靠底色定位）
+    const focusCls = this.matFocus === c.mat ? ' or-comp-focus' : '';
     // 工作中心取组件自己的；未指定则继承订单的（同一张订单的组件可能分属不同工作中心）
     const wc = c.wc || o.workCenter;
     const head = '<td style="font-family:monospace;font-size:12px;">' + esc(c.mat) + '</td>' +
@@ -898,7 +1116,7 @@ const OrderReadiness = {
           ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(x.shopGap) + '</span>'
           : '<span style="color:var(--text-muted);">0</span>';
       }
-      return '<tr class="or-comp">' + head +
+      return '<tr class="or-comp' + focusCls + '">' + head +
         '<td class="or-num">' + stockCell + '</td>' +
         '<td class="or-num">' + gapCell + '</td>' +
         '</tr>';
@@ -929,7 +1147,7 @@ const OrderReadiness = {
         esc(atp.availDate) + '</span>';
     }
 
-    let row = '<tr class="or-comp">' + head +
+    let row = '<tr class="or-comp' + focusCls + '">' + head +
       '<td class="or-num">' + availCell + '</td>' +
       '<td class="or-num">' + gapCell + '</td>' +
       '<td>' + dateCell + '</td>' +
