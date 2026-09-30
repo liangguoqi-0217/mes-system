@@ -1023,25 +1023,25 @@ const OrderReadiness = {
       '</tr>' +
       '</tbody></table>' +
 
-      // 供应：与需求表同版式（同 data-table / 同合计行），前 4 列 colspan 占位使数字列对齐
+      // 供应：与需求表同版式（同 data-table / 同合计行），前 5 列 colspan 占位，数字列对齐需求表最右侧「未清数量」列
       '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应 —— 现有库存</div>' +
       '<table class="data-table" style="min-width:800px;">' +
-      '<thead><tr><th colspan="4">供应元素</th>' +
-      '<th style="width:130px;text-align:right;">可用数量</th><th style="width:130px;"></th></tr></thead>' +
+      '<thead><tr><th colspan="5">供应元素</th>' +
+      '<th style="width:130px;text-align:right;">可用数量</th></tr></thead>' +
       '<tbody>' +
-      '<tr><td colspan="4" style="white-space:nowrap;">现有库存（非限制 + 质检）</td>' +
-      '<td class="or-num">' + supplyTxt + '</td><td></td></tr>' +
-      '<tr class="or-sumrow"><td colspan="4" style="text-align:right;">供应合计</td>' +
-      '<td class="or-num">' + supplyTxt + '</td><td></td></tr>' +
+      '<tr><td colspan="5" style="white-space:nowrap;">现有库存（非限制 + 质检）</td>' +
+      '<td class="or-num">' + supplyTxt + '</td></tr>' +
+      '<tr class="or-sumrow"><td colspan="5" style="text-align:right;">供应合计</td>' +
+      '<td class="or-num">' + supplyTxt + '</td></tr>' +
       '</tbody></table>' +
 
       // 判定结果：单独一张，与上面同为 data-table，数字列位置一致
       '<table class="data-table" style="min-width:800px;margin-top:14px;">' +
-      '<thead><tr><th colspan="4">判定结果</th>' +
-      '<th style="width:130px;text-align:right;">差异</th><th style="width:130px;"></th></tr></thead>' +
+      '<thead><tr><th colspan="5">判定结果</th>' +
+      '<th style="width:130px;text-align:right;">差异</th></tr></thead>' +
       '<tbody><tr class="or-sumrow">' +
-      '<td colspan="4" style="text-align:right;font-weight:700;">' + gapLabel + '</td>' +
-      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td><td></td>' +
+      '<td colspan="5" style="text-align:right;font-weight:700;">' + gapLabel + '</td>' +
+      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td>' +
       '</tr></tbody></table>' +
       '</div>';
   },
