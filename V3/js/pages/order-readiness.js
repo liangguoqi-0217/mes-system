@@ -512,7 +512,9 @@ const OrderReadiness = {
     if (!el) return;
     el.innerHTML =
       '<div id="orMatPanel" style="width:' + this.matPanelWidth + 'px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;"></div>' +
-      '<div style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;">' +
+      // 左右分栏线：右栏左边框 + 一道向左的浅投影，把「缺料清单」和「订单表」两块区分开
+      '<div id="orRightPane" style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;' +
+      'border-left:1px solid #d5dbe5;box-shadow:-3px 0 8px rgba(15,23,42,0.05);">' +
       '<div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;min-width:0;background:#fff;"></div>' +
       // 分页条固定在表格底部，不随表格滚动
       '<div id="orPager" style="flex-shrink:0;border-top:1px solid var(--border);background:#fff;"></div>' +
