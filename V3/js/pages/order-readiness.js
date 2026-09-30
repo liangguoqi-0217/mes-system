@@ -1071,7 +1071,7 @@ const OrderReadiness = {
       'onclick="OrderReadiness.clearMatFocus()">显示全部订单</span>' +
       '</div>' +
       '<div style="padding:16px 18px;">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求 —— 流程订单</div>' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求</div>' +
       '<table class="data-table" style="min-width:800px;">' +
       '<thead><tr>' +
       '<th style="width:130px;">流程订单号</th><th style="width:120px;">产品批次</th><th style="width:110px;">产品编码</th>' +
@@ -1086,7 +1086,7 @@ const OrderReadiness = {
       '</tbody></table>' +
 
       // 供应：与需求表同版式（同 data-table / 同合计行、同为 6 列），按库存状态 + 库位展开
-      '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应 —— 现有库存</div>' +
+      '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应</div>' +
       '<table class="data-table" style="min-width:800px;">' +
       '<thead><tr>' +
       '<th style="width:130px;">库存状态</th><th style="width:120px;">库位编码</th><th colspan="2">库位描述</th>' +
@@ -1097,9 +1097,9 @@ const OrderReadiness = {
       '<td class="or-num">' + supplyQtyTxt + '</td><td>' + u + '</td></tr>' +
       '</tbody></table>' +
 
-      // 判定结果：单独一张，与上面同为 data-table，数字列位置一致
+      // 结果：单独一张，与上面同为 data-table，数字列位置一致
       '<table class="data-table" style="min-width:800px;margin-top:14px;">' +
-      '<thead><tr><th colspan="5">判定结果</th>' +
+      '<thead><tr><th colspan="5">结果</th>' +
       '<th style="width:130px;text-align:right;">差异</th></tr></thead>' +
       '<tbody><tr class="or-sumrow">' +
       '<td colspan="5" style="text-align:right;font-weight:700;">' + gapLabel + '</td>' +
