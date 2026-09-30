@@ -19,8 +19,8 @@ const App = {
           ]
         },
         {
-          title:'齐套检查', items: [
-            { id:'order-readiness', label:'订单齐套检查', route:'order-readiness', pageObj:'OrderReadiness' }
+          title:'可用性检查', items: [
+            { id:'order-readiness', label:'可用性检查', route:'order-readiness', pageObj:'OrderReadiness' }
           ]
         }
       ]

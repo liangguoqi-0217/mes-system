@@ -1,4 +1,4 @@
-/* ==================== 生产管理 → 订单齐套检查 ====================
+/* ==================== 生产管理 → 可用性检查 ====================
  * 业务背景：工作中心用户每天打开本页，勾选本工作中心本周要生产的流程订单，让系统逐项对比
  *          订单组件的未清需求与供给，回答"缺不缺料"。
  *
@@ -39,8 +39,8 @@ const OR_WORKCENTER_TEXT = {
 const OR_PLANT_TEXT = { '1000': '山东步长制药工厂', '2001': '陕西步长制药工厂' };
 
 // 订单列表列数：勾选 + 流程订单号 + 产品编码 + 产品描述 + 计划开始/结束日期
-//              + 工作中心编码/描述 + 组件数 + 检查结果 + 展开
-const OR_ORDER_COLS = 11;
+//              + 组件数 + 检查结果 + 展开（工作中心在组件层，订单可跨工作中心）
+const OR_ORDER_COLS = 9;
 
 // 当前登录用户（权限模拟）。isPlantLevel=false 时锁定本工作中心。
 const OR_CURRENT_USER = {
@@ -86,14 +86,14 @@ const OR_ORDERS = [
       { mat: 'MAT-10003', name: '硬脂酸镁', unit: 'KG', reqQty: 5, issuedQty: 0, reqDate: orAddDays(1) },
       { mat: 'MAT-10005', name: '胶囊壳#0', unit: 'EA', reqQty: 500000, issuedQty: 0, reqDate: orAddDays(2) },
       { mat: 'MAT-10009', name: '蔗糖', unit: 'KG', reqQty: 120, issuedQty: 0, reqDate: orAddDays(2) },
-      { mat: 'MAT-10011', name: '纯化水', unit: 'L', reqQty: 800, issuedQty: 0, reqDate: orAddDays(0) }
+      { mat: 'MAT-10011', name: '纯化水', unit: 'L', reqQty: 800, issuedQty: 0, reqDate: orAddDays(0), wc: 'WC-WT-01' }
     ]
   },
   {
     no: '3000000167', mat: 'FG-100002', name: '阿莫西林胶囊包装', plant: '1000', workCenter: 'WC-PROD-01',
     startDate: orAddDays(2), endDate: orAddDays(9), qty: '500', unit: 'KG', status: 'REL', statusName: '已下达',
     components: [
-      { mat: 'MAT-10005', name: '胶囊壳#0', unit: 'EA', reqQty: 300000, issuedQty: 0, reqDate: orAddDays(2) },
+      { mat: 'MAT-10005', name: '胶囊壳#0', unit: 'EA', reqQty: 300000, issuedQty: 0, reqDate: orAddDays(2), wc: 'WC-PROD-02' },
       { mat: 'MAT-10001', name: '阿莫西林原料药', unit: 'KG', reqQty: 400, issuedQty: 100, reqDate: orAddDays(2) },
       { mat: 'MAT-10010', name: '药用铝箔', unit: 'KG', reqQty: 80, issuedQty: 0, reqDate: orAddDays(3) }
     ]
@@ -216,7 +216,7 @@ const OrderReadiness = {
     return `
       <div class="or-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100%;overflow:hidden;">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:14px 24px;flex-shrink:0;">
-          <div style="font-size:18px;font-weight:700;">订单齐套检查</div>
+          <div style="font-size:18px;font-weight:700;">可用性检查</div>
           <div style="font-size:12px;opacity:0.85;margin-top:3px;">
             勾选本工作中心要生产的流程订单，逐项检查组件是否缺料。检查逻辑在下方「检查逻辑」中选择。
           </div>
@@ -235,17 +235,18 @@ const OrderReadiness = {
           .or-orderrow:hover td { background: #f8fafc; }
           .or-orderrow-sel td { background: #f5f9ff; }
           .or-orderrow-sel:hover td { background: #eef4ff; }
-          /* 展开区：组件明细内嵌表 */
+          /* 展开区：组件明细内嵌表 —— 缩进 + 左侧主色竖线，表达「订单 → 组件」的层级 */
           .or-detailrow > td { padding: 0; background: #fbfcfd; border-top: none; }
-          .or-detailrow .data-table { background: #fff; }
-          .or-caret { display:inline-block; width:14px; color: var(--text-muted); font-size:11px; }
+          .or-cmpwrap { margin: 0 16px 12px 40px; padding-left: 10px; border-left: 3px solid var(--primary); }
+          /* 组件行（item）：比订单行更紧凑 */
+          .or-comptable { background: #fff; border: 1px solid var(--border); }
+          .or-comptable th { padding: 5px 8px; font-size: 11px; }
+          .or-comptable td { padding: 5px 8px; font-size: 12px; }
+          /* 展开箭头：加粗 SVG，hover 变色、展开时旋转 */
+          .or-caret { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; color: var(--text-secondary); transition: transform .15s ease, background .15s ease, color .15s ease; }
+          .or-orderrow:hover .or-caret { background:#e2e8f0; color: var(--primary); }
+          .or-caret-open { transform: rotate(90deg); color: var(--primary); }
           .or-orderno { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--primary); }
-          /* 仅单行紧凑模式下分配字段宽度；展开更多条件后去掉该类，字段恢复正常宽度并自然换行 */
-          .or-page .filter-bar-nowrap .or-fg-plant { flex: 1.3 1 110px; }
-          .or-page .filter-bar-nowrap .or-fg-wc { flex: 0.9 1 90px; }
-          .or-page .filter-bar-nowrap .or-fg-logic { flex: 1.3 1 120px; }
-          .or-page .filter-bar-nowrap .or-fg-date { flex: 1.6 1 150px; }
-          .or-page .filter-bar-nowrap .or-fg-status { flex: 0.9 1 90px; }
           .or-comp td { font-size: 13px; }
           .or-num { text-align: right; font-variant-numeric: tabular-nums; }
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
@@ -281,13 +282,13 @@ const OrderReadiness = {
     }[k || this.mode];
   },
 
-  // 按钮与遮罩文案随检查逻辑变化：ATP = 可用性检查；库存对比 = 对比现有库存
+  // 按钮与遮罩文案固定，不随检查逻辑变化
   checkBtnText() {
-    return this.mode === 'atp' ? '执行可用性检查' : '对比现有库存';
+    return '计算是否缺料';
   },
 
   checkingText() {
-    return this.mode === 'atp' ? 'SAP 正在执行可用性检查…' : 'SAP 正在查询库存…';
+    return 'SAP 正在计算是否缺料…';
   },
 
   setMode(k) {
@@ -327,32 +328,33 @@ const OrderReadiness = {
     const dateLabel = isAtp ? '计划开始日期' : '计划开始日期（仅圈定范围）';
 
     el.innerHTML = `
-      <div class="filter-bar${this.moreOpen ? '' : ' filter-bar-nowrap'}">
-        <div class="filter-group or-fg-plant"><label>工厂</label>
+      <div class="filter-bar">
+        <div class="filter-group"><label>工厂</label>
           <select id="orPlant"${isPlant ? '' : ' disabled'}>
             ${isPlant ? plantOpts : '<option value="' + OR_CURRENT_USER.plant + '">' + OR_CURRENT_USER.plant + ' ' + OR_PLANT_TEXT[OR_CURRENT_USER.plant] + '</option>'}
           </select>
         </div>
-        <div class="filter-group or-fg-wc"><label>工作中心</label>
+        <div class="filter-group"><label>工作中心</label>
           <select id="orWorkCenter"${isPlant ? '' : ' disabled'}>
             ${isPlant
               ? '<option value="">全部工作中心</option>' + wcOpts
               : '<option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option>'}
           </select>
         </div>
-        <div class="filter-group or-fg-logic"><label>检查逻辑
+        <div class="filter-group"><label>检查逻辑
           <span style="cursor:help;color:var(--text-muted);font-weight:400;" title="${esc(this.modeTip())}">ⓘ</span></label>
           <select id="orCheckLogic" onchange="OrderReadiness.setMode(this.value)">
-            <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>SAP ATP 可用性检查</option>
-            <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>现有库存对比</option>
+            <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>考虑时间因素、其他部门占用、在途/在制等多种因素</option>
+            <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>仅看现有库存，不考虑时间因素，不考虑其他部门占用</option>
           </select>
         </div>
-        <div class="filter-group or-fg-date"><label>${dateLabel}</label>
+        <div class="filter-group"><label>产品编码</label><input type="text" id="orProductCode" placeholder="如 FG-100001"></div>
+        <div class="filter-group"><label>${dateLabel}</label>
           <div style="display:flex;align-items:center;gap:4px;">
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
         </div>
-        <div class="filter-group or-fg-status"><label>订单状态</label>
+        <div class="filter-group"><label>订单状态</label>
           <select id="orOrderStatus">
             <option value="">全部</option>
             <option value="REL">已下达</option>
@@ -378,12 +380,7 @@ const OrderReadiness = {
   toggleMore() {
     this.moreOpen = !this.moreOpen;
     const bar = document.getElementById('orMoreBar');
-    if (bar) {
-      bar.style.display = this.moreOpen ? 'flex' : 'none';
-      // 展开更多条件后字段变多：去掉单行紧凑，恢复字段正常宽度，按容器宽度自然换行
-      const wrapEl = bar.parentElement;
-      if (wrapEl) wrapEl.classList.toggle('filter-bar-nowrap', !this.moreOpen);
-    }
+    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
     const btn = document.getElementById('orMoreBtn');
     if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
   },
@@ -414,6 +411,7 @@ const OrderReadiness = {
     const from = this._val('orDateFrom');
     const to = this._val('orDateTo');
     const orderKey = this._val('orOrderNo').toLowerCase();
+    const prodKey = this._val('orProductCode').toLowerCase();
     const matKey = this._val('orMatCode').toLowerCase();
     const statusSel = this._val('orOrderStatus');
     const wcSel = this._val('orWorkCenter');
@@ -426,6 +424,7 @@ const OrderReadiness = {
       if (to && o.startDate > to) return false;
       if (statusSel && o.status !== statusSel) return false;
       if (orderKey && (o.no + o.name).toLowerCase().indexOf(orderKey) === -1) return false;
+      if (prodKey && (o.mat || '').toLowerCase().indexOf(prodKey) === -1) return false;
       if (myWc && o.workCenter !== myWc) return false;
       if (matKey && !o.components.some(c => (c.mat + c.name).toLowerCase().indexOf(matKey) !== -1)) return false;
       return true;
@@ -608,11 +607,9 @@ const OrderReadiness = {
           <td style="font-weight:600;">${esc(o.name)}</td>
           <td>${esc(o.startDate)}</td>
           <td>${esc(o.endDate)}</td>
-          <td style="font-family:monospace;font-size:12px;">${esc(o.workCenter)}</td>
-          <td>${esc(OR_WORKCENTER_TEXT[o.workCenter] || o.workCenter)}</td>
           <td class="or-num">${o.components.length}</td>
           <td>${badge}</td>
-          <td style="text-align:center;"><span class="or-caret">${open ? '▾' : '▸'}</span></td>
+          <td style="text-align:center;"><span class="or-caret${open ? ' or-caret-open' : ''}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td>
         </tr>
         <tr class="or-detailrow"${open ? '' : ' style="display:none;"'}>
           <td colspan="${OR_ORDER_COLS}" style="padding:0;">${this._detailHtml(o, cells)}</td>
@@ -634,8 +631,6 @@ const OrderReadiness = {
       { w: '', t: '产品描述' },
       { w: 'width:112px;', t: '计划开始日期' },
       { w: 'width:112px;', t: '计划结束日期' },
-      { w: 'width:112px;', t: '工作中心编码' },
-      { w: 'width:120px;', t: '工作中心描述' },
       { w: 'width:64px;text-align:right;', t: '组件数' },
       { w: 'width:110px;', t: '检查结果' },
       { w: 'width:44px;', t: '' }
@@ -664,33 +659,38 @@ const OrderReadiness = {
       return '<div style="padding:10px 16px 14px 40px;color:var(--text-muted);font-size:12px;">' +
         (this.onlyProblem ? '该订单全部组件齐套，无缺料项' : '无组件') + '</div>';
     }
-    return `<div style="padding:2px 16px 14px 40px;">
-      <table class="data-table" style="min-width:${this.mode === 'atp' ? 760 : 660}px;border:1px solid var(--border);">
+    return `<div class="or-cmpwrap">
+      <table class="data-table or-comptable" style="min-width:${this.mode === 'atp' ? 1120 : 1000}px;">
         <thead>${this._headHtml()}</thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
   },
 
-  // 列随检查逻辑变化：现有库存对比 5 列；SAP ATP 6 列（多出需求日期，缺料行可展开判定依据）
+  // 组件明细（item）列。工作中心在组件层——同一张订单的组件可能分属不同工作中心
+  // 列随检查逻辑变化：现有库存对比 10 列；SAP ATP 11 列（多出 ATP 可用量 / 缺口 / 可用日期）
   _cols() {
-    if (this.mode === 'atp') {
-      return [
-        { w: 'width:130px;', t: '物料编码' },
-        { w: '', t: '物料描述' },
-        { w: 'width:110px;text-align:right;', t: '未清需求', tip: '需求数量 − 已投料数量' },
-        { w: 'width:120px;', t: '需求日期', tip: '组件需求日期，ATP 按此日期在时间轴上校验' },
-        { w: 'width:120px;text-align:right;', t: 'ATP 可用量', tip: '计入在途采购 / 在制订单 / 调拨在途，扣减其他订单占用与安全库存' },
-        { w: 'width:150px;text-align:right;', t: 'ATP 缺口', tip: '缺料量与可满足日期；点击展开判定依据' }
-      ];
-    }
-    return [
-      { w: 'width:130px;', t: '物料编码' },
-      { w: '', t: '物料描述' },
-      { w: 'width:110px;text-align:right;', t: '未清需求', tip: '需求数量 − 已投料数量' },
-      { w: 'width:130px;text-align:right;', t: '现有库存', tip: 'SAP 库存接口：非限制 + 质检' },
-      { w: 'width:150px;text-align:right;', t: '现有库存缺口', tip: '未清需求 − 现有库存（非限制+质检）；不计在途、不扣其他订单占用、不看需求日期' }
+    const base = [
+      { w: 'width:120px;', t: '组件' },
+      { w: '', t: '组件描述' },
+      { w: 'width:104px;', t: '工作中心编码' },
+      { w: 'width:104px;', t: '工作中心描述' },
+      { w: 'width:96px;text-align:right;', t: '需求数量' },
+      { w: 'width:104px;', t: '需求日期', tip: '组件需求日期（SAP 预留 RESB-BDTER），ATP 按此日期在时间轴上校验' },
+      { w: 'width:96px;text-align:right;', t: '已投料量', tip: 'SAP 已发数量' },
+      { w: 'width:100px;text-align:right;', t: '未清数量', tip: '需求数量 − 已投料量' }
     ];
+    if (this.mode === 'atp') {
+      return base.concat([
+        { w: 'width:104px;text-align:right;', t: 'ATP 可用量', tip: '现有库存 + 在途 + 在制 − 安全库存 − 其他订单占用' },
+        { w: 'width:96px;text-align:right;', t: 'ATP 缺口', tip: '未清数量 − ATP 可用量，有负数即缺料' },
+        { w: 'width:120px;', t: '可用日期', tip: 'SAP 可用日期：时间轴上累计供给能覆盖缺口的日期；无在途来源表示没有可补足的供给' }
+      ]);
+    }
+    return base.concat([
+      { w: 'width:104px;text-align:right;', t: '现有库存', tip: 'SAP 库存接口：非限制 + 质检' },
+      { w: 'width:120px;text-align:right;', t: '现有库存缺口', tip: '未清数量 − 现有库存（非限制+质检）；不计在途、不扣其他订单占用、不看需求日期' }
+    ]);
   },
 
   _colCount() { return this._cols().length; },
@@ -715,9 +715,16 @@ const OrderReadiness = {
   },
 
   _compRow(o, c, x, i) {
-    const first = '<td style="padding-left:10px;font-family:monospace;font-size:12px;">' + esc(c.mat) + '</td>' +
+    // 工作中心取组件自己的；未指定则继承订单的（同一张订单的组件可能分属不同工作中心）
+    const wc = c.wc || o.workCenter;
+    const head = '<td style="font-family:monospace;font-size:12px;">' + esc(c.mat) + '</td>' +
       '<td>' + esc(c.name) + '</td>' +
-      '<td class="or-num">' + this._fmt(x.open) + ' <span style="color:var(--text-muted);font-size:11px;">' + esc(c.unit) + '</span></td>';
+      '<td style="font-family:monospace;font-size:11px;">' + esc(wc) + '</td>' +
+      '<td>' + esc(OR_WORKCENTER_TEXT[wc] || wc) + '</td>' +
+      '<td class="or-num">' + this._fmt(c.reqQty) + ' <span style="color:var(--text-muted);font-size:11px;">' + esc(c.unit) + '</span></td>' +
+      '<td style="color:var(--text-secondary);">' + esc(c.reqDate) + '</td>' +
+      '<td class="or-num">' + this._fmt(c.issuedQty) + '</td>' +
+      '<td class="or-num">' + this._fmt(x.open) + '</td>';
 
     if (this.mode !== 'atp') {
       const stockCell = x.st
@@ -729,7 +736,7 @@ const OrderReadiness = {
           ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(x.shopGap) + '</span>'
           : '<span style="color:var(--text-muted);">0</span>';
       }
-      return '<tr class="or-comp">' + first +
+      return '<tr class="or-comp">' + head +
         '<td class="or-num">' + stockCell + '</td>' +
         '<td class="or-num">' + gapCell + '</td>' +
         '</tr>';
@@ -738,22 +745,36 @@ const OrderReadiness = {
     const atp = x.atp;
     const reasonId = 'orReason_' + o.no + '_' + i;
     const availCell = atp ? this._fmt(atp.atpQty) : '<span style="color:var(--text-muted);">—</span>';
-    let gapCell = '<span style="color:var(--text-muted);">—</span>';
-    if (atp) {
-      gapCell = atp.shortQty > 0
-        ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(atp.shortQty) + '</span>'
-          + '<span class="or-sub">' + (atp.availDate ? '预计 ' + esc(atp.availDate) + ' 可满足' : '无可补足来源') + '</span>'
-        : '<span style="color:var(--text-muted);">0</span>';
-    }
     const hasReason = !!(atp && atp.shortQty > 0);
     const reasonBtn = hasReason
       ? ' <span class="or-reasonbtn" onclick="OrderReadiness.toggleReason(\'' + reasonId + '\')">依据 ⓘ</span>'
       : '';
 
-    let row = '<tr class="or-comp">' + first +
-      '<td style="color:var(--text-secondary);">' + esc(c.reqDate) + '</td>' +
+    // 缺口列只放数字，不再堆叠多行（日期挪到「可用日期」列）
+    let gapCell = '<span style="color:var(--text-muted);">—</span>';
+    if (atp) {
+      gapCell = atp.shortQty > 0
+        ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(atp.shortQty) + '</span>' + reasonBtn
+        : '<span style="color:var(--text-muted);">0</span>';
+    }
+
+    // 可用日期（SAP 可用日期）：正常显示 / 晚于需求日标黄 / 无供给来源标红
+    let dateCell = '<span style="color:var(--text-muted);">—</span>';
+    if (atp && atp.shortQty > 0) {
+      if (atp.availDate) {
+        const late = atp.availDate > c.reqDate;
+        dateCell = '<span style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
+          (late ? 'font-weight:600;' : '') + '" title="' + (late ? '晚于需求日期 ' + esc(c.reqDate) : '可满足') + '">' +
+          esc(atp.availDate) + (late ? ' ⚠' : '') + '</span>';
+      } else {
+        dateCell = '<span style="color:var(--danger);font-weight:600;" title="无在途采购、无在制订单，需采购或计划介入">无在途来源</span>';
+      }
+    }
+
+    let row = '<tr class="or-comp">' + head +
       '<td class="or-num">' + availCell + '</td>' +
-      '<td class="or-num">' + gapCell + reasonBtn + '</td>' +
+      '<td class="or-num">' + gapCell + '</td>' +
+      '<td>' + dateCell + '</td>' +
       '</tr>';
 
     if (hasReason) {
@@ -799,8 +820,8 @@ const OrderReadiness = {
       (atp.shortQty > 0 ? '<b>不足</b>' : '已覆盖') + `未清需求 <b>${this._fmt(x.open)}</b> ${u}`);
     if (atp.shortQty > 0) {
       out.push(atp.availDate
-        ? `需求日 <b>${esc(c.reqDate)}</b> 不足，预计 <b>${esc(atp.availDate)}</b> 可补齐`
-        : `需求日 <b>${esc(c.reqDate)}</b> 不足，且 <b>无可补足来源</b>（无在途采购、无在制订单）`);
+        ? `需求日 <b>${esc(c.reqDate)}</b> 不足，可用日期 <b>${esc(atp.availDate)}</b> 可补齐`
+        : `需求日 <b>${esc(c.reqDate)}</b> 不足，且 <b>无在途来源</b>（无在途采购、无在制订单）`);
     }
     return out;
   },
@@ -813,7 +834,7 @@ const OrderReadiness = {
   /* ==================== 操作 ==================== */
 
   resetFilter() {
-    ['orOrderNo', 'orMatCode', 'orOrderStatus'].forEach(id => {
+    ['orOrderNo', 'orProductCode', 'orMatCode', 'orOrderStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
     const wc = document.getElementById('orWorkCenter');
@@ -836,10 +857,10 @@ const OrderReadiness = {
       o.components.forEach(c => {
         const x = this._cell(c);
         if (this.onlyProblem && !x.bad) return;
+        const wc = c.wc || o.workCenter;
         const base = [
-          o.no, o.mat || '', o.name, o.startDate, o.endDate, o.workCenter,
-          OR_WORKCENTER_TEXT[o.workCenter] || o.workCenter,
-          c.mat, c.name, c.unit, c.reqQty, c.issuedQty, x.open, c.reqDate
+          o.no, o.mat || '', o.name, o.startDate, o.endDate,
+          c.mat, c.name, wc, OR_WORKCENTER_TEXT[wc] || wc, c.unit, c.reqQty, c.reqDate, c.issuedQty, x.open
         ];
         if (isAtp) {
           rows.push(base.concat([
@@ -858,17 +879,17 @@ const OrderReadiness = {
     });
     if (!rows.length) return toast('无数据可导出');
     const baseHead = [
-      '流程订单号', '产品编码', '产品描述', '计划开始日期', '计划结束日期', '工作中心编码', '工作中心描述',
-      '物料编码', '物料描述', '单位', '需求数量', '已投料', '未清需求', '需求日期'
+      '流程订单号', '产品编码', '产品描述', '计划开始日期', '计划结束日期',
+      '组件', '组件描述', '组件工作中心编码', '组件工作中心描述', '单位', '需求数量', '需求日期', '已投料量', '未清数量'
     ];
     const head = isAtp
-      ? baseHead.concat(['ATP可用量', 'ATP缺料量', 'ATP预计可满足日期', 'ATP结论', '判定依据']).join(',')
+      ? baseHead.concat(['ATP可用量', 'ATP缺口', '可用日期', 'ATP结论', '判定依据']).join(',')
       : baseHead.concat(['非限制库存', '质检库存', '现有库存合计', '现有库存缺口', '结论']).join(',');
     const csv = '\uFEFF' + head + '\n' + rows.join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = '订单齐套检查_' + (this.mode === 'atp' ? 'ATP' : '现有库存对比') + '.csv';
+    a.download = '可用性检查_' + (this.mode === 'atp' ? 'ATP' : '现有库存对比') + '.csv';
     a.click();
     toast('已导出 ' + rows.length + ' 行');
   }
@@ -882,7 +903,7 @@ if (window.QueryVariant) {
     textFields: ['orOrderNo', 'orMatCode'],
     labels: {
       orPlant: '工厂', orDateFrom: '计划开始日期(起)', orDateTo: '计划开始日期(止)',
-      orOrderStatus: '订单状态', orOrderNo: '流程订单号', orMatCode: '物料编码/描述', orWorkCenter: '工作中心'
+      orOrderStatus: '订单状态', orOrderNo: '流程订单号', orProductCode: '产品编码', orMatCode: '物料编码/描述', orWorkCenter: '工作中心'
     },
     onApply: function () { OrderReadiness.query(); }
   });
