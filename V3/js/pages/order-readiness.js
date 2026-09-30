@@ -325,7 +325,8 @@ const OrderReadiness = {
           .or-comp td { font-size: 13px; }
           .or-num { text-align: right; font-variant-numeric: tabular-nums; }
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-          .or-reasonbtn { color: #92400e; cursor: pointer; font-size: 12px; }
+          .or-reasonbtn { color: var(--text-muted); cursor: pointer; font-size: 13px; margin-left: 4px; }
+          .or-reasonbtn:hover { color: var(--primary); }
           .or-mask { padding: 60px; text-align: center; color: var(--text-muted); font-size: 13px; }
         </style>
 
@@ -756,7 +757,7 @@ const OrderReadiness = {
       return base.concat([
         { w: 'width:104px;text-align:right;', t: 'ATP 可用量', tip: '现有库存 + 在途 + 在制 − 安全库存 − 其他订单占用' },
         { w: 'width:96px;text-align:right;', t: 'ATP 缺口', tip: '未清数量 − ATP 可用量，有负数即缺料' },
-        { w: 'width:120px;', t: '可用日期', tip: 'SAP 可用日期：时间轴上累计供给能覆盖缺口的日期；无在途来源表示没有可补足的供给' }
+        { w: 'width:120px;', t: '可用日期', tip: 'SAP 可用日期：时间轴上累计供给能覆盖缺口的日期；空白表示齐套或长期空缺（无可补足来源）' }
       ]);
     }
     return base.concat([
@@ -818,7 +819,7 @@ const OrderReadiness = {
     const availCell = atp ? this._fmt(atp.atpQty) : '<span style="color:var(--text-muted);">—</span>';
     // 依据按钮：齐套行也能点开看供给/需求构成
     const reasonBtn = atp
-      ? ' <span class="or-reasonbtn" onclick="event.stopPropagation();OrderReadiness.openAtpDetail(\'' + o.no + '\',\'' + c.mat + '\')">依据 ⓘ</span>'
+      ? '<span class="or-reasonbtn" title="查看供需明细" onclick="event.stopPropagation();OrderReadiness.openAtpDetail(\'' + o.no + '\',\'' + c.mat + '\')">ⓘ</span>'
       : '';
 
     // 缺口列只放数字，不再堆叠多行（日期挪到「可用日期」列）
@@ -829,17 +830,13 @@ const OrderReadiness = {
         : '<span style="color:var(--text-muted);">0</span>' + reasonBtn;
     }
 
-    // 可用日期（SAP 可用日期）：正常显示 / 晚于需求日标黄 / 无供给来源标红
-    let dateCell = '<span style="color:var(--text-muted);">—</span>';
-    if (atp && atp.shortQty > 0) {
-      if (atp.availDate) {
-        const late = atp.availDate > c.reqDate;
-        dateCell = '<span style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
-          (late ? 'font-weight:600;' : '') + '" title="' + (late ? '晚于需求日期 ' + esc(c.reqDate) : '可满足') + '">' +
-          esc(atp.availDate) + (late ? ' ⚠' : '') + '</span>';
-      } else {
-        dateCell = '<span style="color:var(--danger);font-weight:600;" title="无在途采购、无在制订单，需采购或计划介入">无在途来源</span>';
-      }
+    // 可用日期（SAP 可用日期）：只有 SAP 给出日期时才显示；齐套或长期空缺（无可补足来源）留空
+    let dateCell = '';
+    if (atp && atp.shortQty > 0 && atp.availDate) {
+      const late = atp.availDate > c.reqDate;
+      dateCell = '<span style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
+        (late ? 'font-weight:600;' : '') + '" title="' + (late ? '晚于需求日期 ' + esc(c.reqDate) : '可满足') + '">' +
+        esc(atp.availDate) + (late ? ' ⚠' : '') + '</span>';
     }
 
     let row = '<tr class="or-comp">' + head +
@@ -875,7 +872,7 @@ const OrderReadiness = {
     if (atp.shortQty > 0) {
       out.push(atp.availDate
         ? `需求日 <b>${esc(c.reqDate)}</b> 不足，可用日期 <b>${esc(atp.availDate)}</b> 可补齐`
-        : `需求日 <b>${esc(c.reqDate)}</b> 不足，且 <b>无在途来源</b>（无在途采购、无在制订单）`);
+        : `需求日 <b>${esc(c.reqDate)}</b> 不足，<b>暂无可用日期</b>（无采购订单 / 在制订单可补足，需采购或计划介入）`);
     }
     return out;
   },
@@ -973,7 +970,7 @@ const OrderReadiness = {
                 short
                   ? (atp.availDate
                     ? `可用日期 <b>${esc(atp.availDate)}</b> —— 该日有供应元素到货，合计由负转正`
-                    : '<b style="color:var(--danger);">无在途来源</b> —— 无采购订单、无在制订单，需采购或计划介入')
+                    : '<b style="color:var(--danger);">暂无可用日期</b> —— 无采购订单 / 在制订单可补足，需采购或计划介入')
                   : '需求日即可满足，无需等待后续供应'}</div>
             </div>
           </div>
