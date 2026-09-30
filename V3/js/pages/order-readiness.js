@@ -325,8 +325,7 @@ const OrderReadiness = {
           .or-comp td { font-size: 13px; }
           .or-num { text-align: right; font-variant-numeric: tabular-nums; }
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-          .or-reasonbtn { color: var(--text-muted); cursor: pointer; font-size: 13px; margin-left: 4px; }
-          .or-reasonbtn:hover { color: var(--primary); }
+          .or-clickable { cursor: pointer; }
           /* 需要强调的数字 / 日期用下划线，不用 ⚠ 之类图标 */
           .or-underline { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
           /* 判定依据弹窗：固定尺寸，元素多时表格在弹窗内部滚动 */
@@ -822,25 +821,25 @@ const OrderReadiness = {
 
     const atp = x.atp;
     const availCell = atp ? this._fmt(atp.atpQty) : '<span style="color:var(--text-muted);">—</span>';
-    // 依据按钮：齐套行也能点开看供给/需求构成
-    const reasonBtn = atp
-      ? '<span class="or-reasonbtn" title="查看供需明细" onclick="event.stopPropagation();OrderReadiness.openAtpDetail(\'' + o.no + '\',\'' + c.mat + '\')">ⓘ</span>'
-      : '';
+    // 缺口数字本身可点（点开供需明细），不再跟一个 ⓘ 图标
+    const detailClick = 'onclick="event.stopPropagation();OrderReadiness.openAtpDetail(\'' + o.no + '\',\'' + c.mat + '\')"';
 
     // 缺口列只放数字，不再堆叠多行（日期挪到「可用日期」列）
     let gapCell = '<span style="color:var(--text-muted);">—</span>';
     if (atp) {
       gapCell = atp.shortQty > 0
-        ? '<span class="or-underline" style="color:var(--danger);font-weight:700;" title="未清数量 − ATP 可用量">-' + this._fmt(atp.shortQty) + '</span>' + reasonBtn
-        : '<span style="color:var(--text-muted);">0</span>' + reasonBtn;
+        ? '<span class="or-underline or-clickable" title="未清数量 − ATP 可用量，点击查看供需明细" ' + detailClick +
+          ' style="color:var(--danger);font-weight:700;">-' + this._fmt(atp.shortQty) + '</span>'
+        : '<span class="or-clickable" title="齐套，点击查看供需明细" ' + detailClick +
+          ' style="color:var(--text-muted);">0</span>';
     }
 
     // 可用日期（SAP 可用日期）：只有 SAP 给出日期时才显示；齐套或长期空缺（无可补足来源）留空
     let dateCell = '';
     if (atp && atp.shortQty > 0 && atp.availDate) {
-      // 晚于需求日：不再加 ⚠，改为橙字加下划线表示「注意」
+      // 晚于需求日：橙字加粗即可，不加图标也不加下划线
       const late = atp.availDate > c.reqDate;
-      dateCell = '<span class="' + (late ? 'or-underline ' : '') + '" style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
+      dateCell = '<span style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
         (late ? 'font-weight:600;' : '') + '" title="' + (late ? '晚于需求日期 ' + esc(c.reqDate) : '可满足') + '">' +
         esc(atp.availDate) + '</span>';
     }
