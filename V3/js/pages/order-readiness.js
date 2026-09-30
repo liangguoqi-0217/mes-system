@@ -18,8 +18,10 @@
  *
  * 不落表：每次点「执行可用性检查」由 SAP 现算，结果只存在于当前页面。
  *
- * 交互：勾选订单 → 执行可用性检查 → 订单结果直接显示在「检查结果」列；
- *       点订单行展开，看该订单的组件明细（内嵌表，独立表头）
+ * 交互：勾选订单 → 执行可用性检查 → 结果看两处：缺失汇总进左栏「缺料清单」、
+ *       单订单级结果在「检查结果」列（仅 SAP ATP 逻辑；朴素逻辑不显示该列，
+ *       保证朴素逻辑下订单列表在检查前 / 检查后的列结构、列宽、行高完全一致）
+ *       点订单号弹窗，看该订单的组件明细
  *       ATP 模式下，缺料行可展开查看「判定依据」（供给构成）
  *
  * 权限：工作中心用户锁定 workCenter，仅能看到本工作中心订单；全厂用户可看全部工作中心。
@@ -1167,7 +1169,7 @@ const OrderReadiness = {
     const body = pg.rows.map(o => {
       const sel = this.selected.indexOf(o.no) !== -1;
       const cells = o.components.map(c => this._cell(c));
-      const badge = this.checked ? this._orderBadge(o, cells) : '';
+      const badge = this._showResultCol() ? this._orderBadge(o, cells) : '';
       return `
         <tr class="or-orderrow${sel ? ' or-orderrow-sel' : ''}">
           <td style="text-align:center;">
@@ -1180,7 +1182,7 @@ const OrderReadiness = {
           <td>${esc(o.statusName || o.status || '—')}</td>
           <td>${esc(o.startDate)}</td>
           <td>${esc(o.endDate)}</td>
-          ${this.checked ? '<td>' + badge + '</td>' : ''}
+          ${this._showResultCol() ? '<td>' + badge + '</td>' : ''}
         </tr>`;
     }).join('');
 
@@ -1287,6 +1289,13 @@ const OrderReadiness = {
       '</div>';
   },
 
+  // 「检查结果」列是否显示：仅 SAP ATP 逻辑且已执行过检查。
+  // 朴素逻辑（检查逻辑 1）恒定不显示 —— 该逻辑下缺料看左栏「缺料清单」和订单弹窗，
+  // 且订单列表在「检查前 / 检查后」保持同一列结构、列宽、行高（颗粒度一致）。
+  _showResultCol() {
+    return this.checked && this.mode !== 'stock';
+  },
+
   // 订单列表表头：只放订单层字段，组件列在展开区的内嵌表里
   _orderCols() {
     const head = [
@@ -1301,8 +1310,8 @@ const OrderReadiness = {
       { w: 'width:100px;', t: '订单状态' },
       { w: 'width:112px;', t: '计划开始日期' },
       { w: 'width:112px;', t: '计划结束日期' },
-      // 检查结果只有执行过检查才有内容，未检查时整列不显示
-      ...(this.checked ? [{ w: 'width:110px;', t: '检查结果' }] : [])
+      // 只有 SAP ATP 逻辑且已检查才出现；朴素逻辑（检查逻辑 1）任何情况下都不显示该列
+      ...(this._showResultCol() ? [{ w: 'width:110px;', t: '检查结果' }] : [])
     ]);
   },
 
