@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>物料视角 Demo（两种方案对比，仅演示）</title>
+<title>物料视角 Demo（六种方案对比，仅演示）</title>
 <style>
   :root{
     --primary:#1E3A5F; --primary-light:#2D5A87;
@@ -63,13 +63,56 @@
   .matrix td.c{text-align:right;font-variant-numeric:tabular-nums;}
   .matrix thead th{text-align:center;}
   .matrix .sub{display:block;font-weight:400;font-size:11px;color:var(--text-muted);}
+
+  /* 方案3 时段表 */
+  .bucket td{text-align:center;font-variant-numeric:tabular-nums;}
+  .bucket th{text-align:center;}
+  .bucket .sup{color:var(--ok);font-weight:600;}
+  .bucket .need{color:var(--danger);font-weight:700;}
+  .bucket .wd{display:block;font-weight:400;font-size:10px;color:var(--text-muted);}
+  /* 方案4 TOP 榜 */
+  .rank{background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 0;max-width:720px;}
+  .rank .row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #f1f3f5;}
+  .rank .row:last-child{border-bottom:none;}
+  .rank .no{width:18px;color:var(--text-muted);font-size:12px;}
+  .rank .nm{width:158px;}
+  .rank .bar{flex:1;height:14px;background:#f1f5f9;border-radius:3px;overflow:hidden;}
+  .rank .bar i{display:block;height:100%;background:var(--danger);}
+  .rank .v{width:132px;text-align:right;color:var(--danger);font-weight:700;font-variant-numeric:tabular-nums;}
+  .rank .tagx{font-size:11px;border:1px solid #fcd34d;background:#fffbeb;color:#92400e;border-radius:20px;padding:2px 8px;white-space:nowrap;}
+  /* 方案5 卡片墙 */
+  .cards{display:flex;gap:12px;flex-wrap:wrap;}
+  .card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px;width:236px;border-top:3px solid var(--danger);}
+  .card.nosrc{border-top-color:var(--warning);}
+  .card .t{font-weight:600;margin-bottom:2px;}
+  .card .c{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--text-muted);}
+  .card .g{font-size:20px;font-weight:700;color:var(--danger);margin:8px 0 4px;font-variant-numeric:tabular-nums;}
+  .card .m{font-size:12px;color:var(--text-secondary);line-height:1.8;}
+  .card .pill{display:inline-block;font-size:11px;background:#f1f5f9;color:var(--text-secondary);border-radius:4px;padding:2px 6px;margin:3px 4px 0 0;}
+  /* 方案5 条形图 */
+  .chart{background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px 16px;max-width:720px;margin-top:14px;}
+  .chart .r{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .chart .lb{width:158px;font-size:12px;}
+  .chart .tk{flex:1;height:18px;background:#f1f5f9;border-radius:3px;overflow:hidden;}
+  .chart .tk i{display:block;height:100%;background:var(--danger);opacity:.85;}
+  .chart .vv{width:118px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;color:var(--danger);font-weight:600;}
+  /* 方案6 分栏 */
+  .split{display:flex;gap:12px;align-items:flex-start;}
+  .split .pane{background:#fff;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+  .split .left{flex:0 0 42%;}
+  .split .right{flex:1;}
+  .split .ph{padding:8px 12px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);}
+  .split table{font-size:12px;}
+  .split th,.split td{padding:6px 9px;}
+  .split tr.sel td{background:#eef4fb;font-weight:600;}
 </style>
 </head>
 <body>
 
-<h1>物料视角 · 两种方案对比 Demo</h1>
+<h1>物料视角 · 六种方案对比 Demo</h1>
 <div class="lead">
-  只画布局和数字，不接业务逻辑。数据用当前 mock 真实算出来的（口径 A：逐单独立，物料缺口 = Σ 各订单缺口）。
+  只画布局和数字，不接业务逻辑。数据用当前 mock 真实算出来的（口径 A：逐单独立，物料缺口 = Σ 各订单缺口）。<br>
+  ① 汇总表 + 下钻　② 物料×订单 交叉表　③ 物料×日期 时段表　④ 缺料 TOP 榜　⑤ 卡片墙 / 条形图　⑥ 左右分栏联动
 </div>
 
 <div class="note">
@@ -261,6 +304,219 @@
 <p class="pros">
   <b>优点：</b>横向一眼看出"哪几张单在抢同一个料"、各抢多少，争抢关系不用点开。<br>
   <b>局限：</b>订单一多列就爆炸（所以只列有缺料的订单，再多就得横向滚动）；物料多的时候行数一样多，但没有展开下钻的空间。
+</p>
+
+<!-- ============ 方案 3 ============ -->
+<h2><span class="tag">方案 3</span>物料 × 日期 时段表（行 = 物料，列 = 日期）</h2>
+<p class="desc">格子是"这一天缺多少"（红）或"这一天有什么到货"（绿）。回答的是<b>什么时候缺、什么时候能补上</b>，而不是哪张单缺。</p>
+
+<table class="bucket">
+  <thead>
+    <tr>
+      <th class="mono" rowspan="2">物料编码</th>
+      <th rowspan="2">物料描述</th>
+      <th rowspan="2">单位</th>
+      <th colspan="7" style="text-align:center;border-bottom:1px solid var(--border);">按需求日期分时段</th>
+      <th class="num" rowspan="2">缺口合计</th>
+    </tr>
+    <tr>
+      <th>09-30<span class="wd">周三</span></th>
+      <th>10-01<span class="wd">周四</span></th>
+      <th>10-02<span class="wd">周五</span></th>
+      <th>10-03<span class="wd">周六</span></th>
+      <th>10-04<span class="wd">周日</span></th>
+      <th>10-05<span class="wd">周一</span></th>
+      <th>10-06<span class="wd">周二</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="mono">MAT-10005</td><td>胶囊壳#0</td><td>EA</td>
+      <td class="mutedc">·</td>
+      <td class="sup">+400,000<br><span style="font-size:10px;">采购到货</span></td>
+      <td class="need">400,000</td>
+      <td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td>
+      <td class="num" style="color:var(--danger);font-weight:700;">400,000</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10001</td><td>阿莫西林原料药</td><td>KG</td>
+      <td class="need">180</td>
+      <td class="mutedc">·</td>
+      <td class="need">180</td>
+      <td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td>
+      <td class="sup">+420<br><span style="font-size:10px;">采购到货</span></td>
+      <td class="num" style="color:var(--danger);font-weight:700;">360</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10002</td><td>淀粉辅料</td><td>KG</td>
+      <td class="need">50</td>
+      <td class="need">100</td>
+      <td class="mutedc">·</td>
+      <td class="sup">+150<br><span style="font-size:10px;">在制完工</span></td>
+      <td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td>
+      <td class="num" style="color:var(--danger);font-weight:700;">150</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10009</td><td>蔗糖</td><td>KG</td>
+      <td class="mutedc">·</td><td class="mutedc">·</td>
+      <td class="need">20</td>
+      <td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td>
+      <td class="num" style="color:var(--danger);font-weight:700;">20</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10003</td><td>硬脂酸镁</td><td>KG</td>
+      <td class="mutedc">·</td>
+      <td class="need">2</td>
+      <td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td><td class="mutedc">·</td>
+      <td class="num" style="color:var(--danger);font-weight:700;">2</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="pros">
+  <b>优点：</b>一眼看出缺料的<b>时间分布</b>和到货节奏——胶囊壳 10-01 到货、10-02 才要，其实不急；阿莫西林要等到 10-06 才有货，肯定赶不上 09-30 开工。<br>
+  <b>局限：</b>看不出是哪张订单要的（得再下钻）；单位不同的物料不能横向加总，只能一行一行看。
+</p>
+
+<!-- ============ 方案 4 ============ -->
+<h2><span class="tag">方案 4</span>缺料 TOP 榜（排行 + 缺口率）</h2>
+<p class="desc">摘要条的"加强形态"：按缺口排序，条形长度画的是<b>缺口率（缺口 ÷ 未清需求）</b>，这样 KG 和 EA 能放在同一张榜里比。</p>
+
+<div class="rank">
+  <div class="row">
+    <span class="no">1</span><span class="nm">胶囊壳#0</span>
+    <span class="bar"><i style="width:50%;"></i></span>
+    <span class="v">-400,000 EA</span>
+    <span class="tagx">10-01 有到货</span>
+  </div>
+  <div class="row">
+    <span class="no">2</span><span class="nm">阿莫西林原料药</span>
+    <span class="bar"><i style="width:40%;"></i></span>
+    <span class="v">-360 KG</span>
+    <span class="tagx">可用 10-06（晚 4 天）</span>
+  </div>
+  <div class="row">
+    <span class="no">3</span><span class="nm">淀粉辅料</span>
+    <span class="bar"><i style="width:25%;"></i></span>
+    <span class="v">-150 KG</span>
+    <span class="tagx">10-03 在制完工</span>
+  </div>
+  <div class="row">
+    <span class="no">4</span><span class="nm">蔗糖</span>
+    <span class="bar"><i style="width:17%;"></i></span>
+    <span class="v">-20 KG</span>
+    <span class="tagx">无在途来源</span>
+  </div>
+  <div class="row">
+    <span class="no">5</span><span class="nm">硬脂酸镁</span>
+    <span class="bar"><i style="width:40%;"></i></span>
+    <span class="v">-2 KG</span>
+    <span class="tagx">无在途来源</span>
+  </div>
+</div>
+
+<p class="pros">
+  <b>优点：</b>最省版面，能常驻在页面顶部（配合任意一种主视图）；排序 + 缺口率让"哪些最紧急"一目了然。<br>
+  <b>局限：</b>只有概览没有明细，不能替代主视图，只能叠加。
+</p>
+
+<!-- ============ 方案 5 ============ -->
+<h2><span class="tag">方案 5</span>缺料卡片墙 / 条形图</h2>
+<p class="desc">同一个数据的两种画法：卡片墙给管理层看，条形图给汇报材料用。信息密度低，干活的人一般不爱用。</p>
+
+<div class="cards">
+  <div class="card">
+    <div class="t">胶囊壳#0</div><div class="c">MAT-10005 · EA</div>
+    <div class="g">-400,000</div>
+    <div class="m">涉及 2 张订单<br>可用日期 2026-10-01</div>
+    <span class="pill">3000000123</span><span class="pill">3000000167</span>
+  </div>
+  <div class="card">
+    <div class="t">阿莫西林原料药</div><div class="c">MAT-10001 · KG</div>
+    <div class="g">-360</div>
+    <div class="m">涉及 2 张订单<br>可用日期 <span class="late">2026-10-06</span></div>
+    <span class="pill">3000000123</span><span class="pill">3000000167</span>
+  </div>
+  <div class="card">
+    <div class="t">淀粉辅料</div><div class="c">MAT-10002 · KG</div>
+    <div class="g">-150</div>
+    <div class="m">涉及 3 张订单<br>可用日期 <span class="late">2026-10-03</span></div>
+    <span class="pill">3000000123</span><span class="pill">3000000201</span><span class="pill">3000000145</span>
+  </div>
+  <div class="card nosrc">
+    <div class="t">蔗糖</div><div class="c">MAT-10009 · KG</div>
+    <div class="g">-20</div>
+    <div class="m">涉及 1 张订单<br><span style="color:var(--danger);font-weight:600;">无在途来源</span></div>
+    <span class="pill">3000000123</span>
+  </div>
+  <div class="card nosrc">
+    <div class="t">硬脂酸镁</div><div class="c">MAT-10003 · KG</div>
+    <div class="g">-2</div>
+    <div class="m">涉及 1 张订单<br><span style="color:var(--danger);font-weight:600;">无在途来源</span></div>
+    <span class="pill">3000000123</span>
+  </div>
+</div>
+
+<div class="chart">
+  <div class="r"><span class="lb">胶囊壳#0（EA）</span><span class="tk"><i style="width:50%"></i></span><span class="vv">400,000</span></div>
+  <div class="r"><span class="lb">阿莫西林原料药（KG）</span><span class="tk"><i style="width:40%"></i></span><span class="vv">360</span></div>
+  <div class="r"><span class="lb">淀粉辅料（KG）</span><span class="tk"><i style="width:25%"></i></span><span class="vv">150</span></div>
+  <div class="r"><span class="lb">蔗糖（KG）</span><span class="tk"><i style="width:17%"></i></span><span class="vv">20</span></div>
+  <div class="r"><span class="lb">硬脂酸镁（KG）</span><span class="tk"><i style="width:40%"></i></span><span class="vv">2</span></div>
+</div>
+
+<p class="pros">
+  <b>优点：</b>视觉冲击强，适合投屏 / 汇报 / 给领导看；卡片能带"涉及订单"之类的附加信息。<br>
+  <b>局限：</b>一屏放不了几个物料，物料一多就得翻页；数字精度不如表格，不能操作（排序、导出、下钻都别扭）。
+</p>
+
+<!-- ============ 方案 6 ============ -->
+<h2><span class="tag">方案 6</span>左右分栏联动（左物料汇总 + 右订单明细）</h2>
+<p class="desc">两个面板并排，点左边任意物料，右边立刻显示"这个料被哪些单要、各缺多少"，不用展开收起。</p>
+
+<div class="split">
+  <div class="pane left">
+    <div class="ph">缺料物料（5 种）</div>
+    <table>
+      <thead><tr><th class="mono">物料编码</th><th>物料描述</th><th class="num">缺口</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">MAT-10005</td><td>胶囊壳#0</td><td class="num" style="color:var(--danger);font-weight:700;">-400,000 EA</td></tr>
+        <tr class="sel"><td class="mono">MAT-10001</td><td>阿莫西林原料药</td><td class="num" style="color:var(--danger);font-weight:700;">-360 KG</td></tr>
+        <tr><td class="mono">MAT-10002</td><td>淀粉辅料</td><td class="num" style="color:var(--danger);font-weight:700;">-150 KG</td></tr>
+        <tr><td class="mono">MAT-10009</td><td>蔗糖</td><td class="num" style="color:var(--danger);font-weight:700;">-20 KG</td></tr>
+        <tr><td class="mono">MAT-10003</td><td>硬脂酸镁</td><td class="num" style="color:var(--danger);font-weight:700;">-2 KG</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="pane right">
+    <div class="ph">MAT-10001 阿莫西林原料药 · 需求合计 1,000 KG · 已投料 100 KG · 缺口 <b style="color:var(--danger);">360 KG</b> · 可用日期 <span class="late">2026-10-06</span></div>
+    <table>
+      <thead><tr>
+        <th class="mono">流程订单号</th><th>产品</th><th>需求日期</th>
+        <th class="num">需求</th><th class="num">已投料</th><th class="num">未清</th>
+        <th class="num">ATP 可用量</th><th class="num">本单缺口</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="mono">3000000123</td><td>阿莫西林颗粒制剂</td><td>2026-09-30</td>
+            <td class="num">600</td><td class="num">0</td><td class="num">600</td>
+            <td class="num">420</td><td class="num" style="color:var(--danger);font-weight:700;">-180</td></tr>
+        <tr><td class="mono">3000000167</td><td>阿莫西林胶囊包装</td><td>2026-10-02</td>
+            <td class="num">400</td><td class="num">100</td><td class="num">300</td>
+            <td class="num">420</td><td class="num" style="color:var(--danger);font-weight:700;">-180</td></tr>
+        <tr><td colspan="3" style="background:#f8fafc;font-weight:700;">合计</td>
+            <td class="num" style="background:#f8fafc;font-weight:700;">1,000</td>
+            <td class="num" style="background:#f8fafc;font-weight:700;">100</td>
+            <td class="num" style="background:#f8fafc;font-weight:700;">900</td>
+            <td class="num mutedc" style="background:#f8fafc;">—</td>
+            <td class="num" style="background:#f8fafc;color:var(--danger);font-weight:700;">-360</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p class="pros">
+  <b>优点：</b>汇总和明细同时可见，来回点不用展开收起，屏幕宽时效率最高。<br>
+  <b>局限：</b>吃掉一整屏宽度，窄屏（笔记本 1366）会很挤；等于把表格区切成两块，订单视角还要不要保留得重新想。
 </p>
 
 </body>
