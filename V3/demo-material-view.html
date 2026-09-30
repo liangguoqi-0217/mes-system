@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>物料视角 Demo（两种方案对比，仅演示）</title>
+<style>
+  :root{
+    --primary:#1E3A5F; --primary-light:#2D5A87;
+    --danger:#DC2626; --warning:#F59E0B; --ok:#16a34a;
+    --border:#e5e7eb; --text:#1f2937; --text-secondary:#4b5563; --text-muted:#9ca3af;
+    --bg:#f8fafc;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       margin:0;padding:28px 32px 60px;background:var(--bg);color:var(--text);font-size:13px;}
+  h1{font-size:19px;margin:0 0 6px;}
+  .lead{color:var(--text-secondary);font-size:13px;margin-bottom:22px;line-height:1.7;}
+  .note{background:#fff;border:1px solid var(--border);border-left:3px solid var(--primary);
+        padding:12px 16px;border-radius:6px;margin-bottom:26px;color:var(--text-secondary);line-height:1.8;}
+  .note b{color:var(--text);}
+
+  h2{font-size:15px;margin:30px 0 4px;display:flex;align-items:center;gap:8px;}
+  h2 .tag{font-size:11px;font-weight:600;background:var(--primary);color:#fff;border-radius:4px;padding:3px 8px;}
+  h2 .tag.alt{background:#64748b;}
+  .desc{color:var(--text-secondary);margin:0 0 12px;line-height:1.7;}
+  .pros{color:var(--text-secondary);margin:10px 0 0;font-size:12px;line-height:1.9;}
+  .pros b{color:var(--text);}
+
+  /* 视角切换 */
+  .segbar{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:#fff;margin-bottom:10px;}
+  .segbar span{padding:6px 16px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
+  .segbar span.on{background:var(--primary);color:#fff;font-weight:600;}
+
+  /* 缺料摘要条 */
+  .sumbar{background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin-bottom:14px;
+          display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;}
+  .sumbar .chip{border:1px solid #fecaca;background:#fef2f2;color:var(--danger);border-radius:20px;padding:3px 10px;font-size:12px;}
+  .sumbar .chip.nosrc{border-color:#fcd34d;background:#fffbeb;color:#92400e;}
+  .sumbar .muted{color:var(--text-muted);}
+
+  table{width:100%;border-collapse:collapse;background:#fff;font-size:13px;}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;}
+  th{background:#f8fafc;font-weight:600;font-size:12px;color:var(--text-secondary);white-space:nowrap;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  td.mono,th.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;}
+  tr.short td{background:#fffbfb;}
+  .gap{color:var(--danger);font-weight:700;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px;cursor:pointer;}
+  .late{color:var(--warning);font-weight:600;}
+  .ok{color:var(--ok);}
+  .mutedc{color:var(--text-muted);}
+  .caret{display:inline-block;width:14px;color:var(--text-muted);transform:rotate(90deg);}
+  .many{color:var(--danger);font-weight:700;}
+
+  /* 展开明细 */
+  .detail td{padding:0;background:#fbfcfd;}
+  .dwrap{margin:10px 16px 12px 40px;padding-left:10px;border-left:3px solid var(--primary);}
+  .dwrap table{font-size:12px;}
+  .dwrap th,.dwrap td{padding:5px 8px;}
+  .dwrap tr.total td{background:#f8fafc;font-weight:700;}
+
+  .col-tip{font-size:11px;color:var(--text-muted);font-weight:400;}
+  .matrix td.c{text-align:right;font-variant-numeric:tabular-nums;}
+  .matrix thead th{text-align:center;}
+  .matrix .sub{display:block;font-weight:400;font-size:11px;color:var(--text-muted);}
+</style>
+</head>
+<body>
+
+<h1>物料视角 · 两种方案对比 Demo</h1>
+<div class="lead">
+  只画布局和数字，不接业务逻辑。数据用当前 mock 真实算出来的（口径 A：逐单独立，物料缺口 = Σ 各订单缺口）。
+</div>
+
+<div class="note">
+  <b>算例：</b>胶囊壳#0 在订单 123 缺 200,000 EA、订单 167 缺 200,000 EA → 物料合计 <b>400,000 EA</b>（共要补这么多）。<br>
+  <b>注意：</b>ATP 可用量是逐单判定的值（同一批库存被各单重复看），<b>不能跨订单相加</b>，所以物料视角只给「需求 / 已投料 / 未清 / 缺口」这些可累加的口径。
+</div>
+
+<!-- ============ 公共部分 ============ -->
+<h2><span class="tag alt">共用</span>视角切换 + 缺料摘要条</h2>
+<p class="desc">两种方案都会带这两块（摘要条也可单独叠在现有的订单视角上）。</p>
+
+<div class="segbar"><span>订单视角</span><span class="on">物料视角</span></div>
+<div>
+  <label style="font-size:12px;color:var(--text-secondary);">
+    <input type="checkbox" checked style="vertical-align:-1px;"> 只看缺料物料
+  </label>
+</div>
+<div class="sumbar" style="margin-top:10px;">
+  <span>已选 6 张订单 ·</span>
+  <b style="color:var(--danger);">5 种物料缺料</b>
+  <span class="chip">胶囊壳#0 −400,000 EA</span>
+  <span class="chip">阿莫西林原料药 −360 KG</span>
+  <span class="chip">淀粉辅料 −150 KG</span>
+  <span class="chip">蔗糖 −20 KG</span>
+  <span class="chip">硬脂酸镁 −2 KG</span>
+  <span class="chip nosrc">2 种无在途来源，需采购介入</span>
+  <span class="muted">（点 chip 定位到该行）</span>
+</div>
+
+<!-- ============ 方案 1 ============ -->
+<h2><span class="tag">方案 1</span>物料汇总表（行 = 物料，点开看订单明细）</h2>
+<p class="desc">一行一个物料，缺口降序；点缺口数字或箭头展开，看到这个料被哪几张单要、各缺多少。</p>
+
+<table>
+  <thead>
+    <tr>
+      <th class="mono">物料编码</th>
+      <th>物料描述</th>
+      <th>单位</th>
+      <th class="num">涉及订单</th>
+      <th class="num">需求合计</th>
+      <th class="num">已投料</th>
+      <th class="num">未清合计</th>
+      <th class="num">缺口合计</th>
+      <th>最晚需求日期</th>
+      <th>可用日期</th>
+      <th>采购关注</th>
+      <th style="width:28px;"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="short">
+      <td class="mono">MAT-10005</td><td>胶囊壳#0</td><td>EA</td>
+      <td class="num many">2</td><td class="num">800,000</td><td class="num">0</td><td class="num">800,000</td>
+      <td class="num"><span class="gap">-400,000</span></td>
+      <td>2026-10-02</td><td class="">2026-10-01</td><td class="mutedc">有在途</td>
+      <td><span class="caret">▸</span></td>
+    </tr>
+    <tr class="short">
+      <td class="mono">MAT-10001</td><td>阿莫西林原料药</td><td>KG</td>
+      <td class="num many">2</td><td class="num">1,000</td><td class="num">100</td><td class="num">900</td>
+      <td class="num"><span class="gap">-360</span></td>
+      <td>2026-10-02</td><td class="late">2026-10-06</td><td class="mutedc">有在途</td>
+      <td><span class="caret">▸</span></td>
+    </tr>
+    <!-- 展开态示例 -->
+    <tr class="detail"><td colspan="12">
+      <div class="dwrap">
+        <table>
+          <thead><tr>
+            <th class="mono">流程订单号</th><th>产品</th><th>需求日期</th>
+            <th class="num">需求</th><th class="num">已投料</th><th class="num">未清</th>
+            <th class="num">ATP 可用量<br><span class="col-tip">逐单判定，不可相加</span></th>
+            <th class="num">本单缺口</th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono">3000000123</td><td>阿莫西林颗粒制剂</td><td>2026-09-30</td>
+              <td class="num">600</td><td class="num">0</td><td class="num">600</td>
+              <td class="num">420</td><td class="num" style="color:var(--danger);font-weight:700;">-180</td>
+            </tr>
+            <tr>
+              <td class="mono">3000000167</td><td>阿莫西林胶囊包装</td><td>2026-10-02</td>
+              <td class="num">400</td><td class="num">100</td><td class="num">300</td>
+              <td class="num">420</td><td class="num" style="color:var(--danger);font-weight:700;">-180</td>
+            </tr>
+            <tr class="total">
+              <td colspan="3">合计</td>
+              <td class="num">1,000</td><td class="num">100</td><td class="num">900</td>
+              <td class="num mutedc">—</td><td class="num" style="color:var(--danger);">-360</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </td></tr>
+    <tr class="short">
+      <td class="mono">MAT-10002</td><td>淀粉辅料</td><td>KG</td>
+      <td class="num many">3</td><td class="num">600</td><td class="num">0</td><td class="num">600</td>
+      <td class="num"><span class="gap">-150</span></td>
+      <td>2026-10-01</td><td class="late">2026-10-03</td><td class="mutedc">有在途</td>
+      <td><span class="caret">▸</span></td>
+    </tr>
+    <tr class="short">
+      <td class="mono">MAT-10009</td><td>蔗糖</td><td>KG</td>
+      <td class="num">1</td><td class="num">120</td><td class="num">0</td><td class="num">120</td>
+      <td class="num"><span class="gap">-20</span></td>
+      <td>2026-10-02</td><td class="mutedc">（空）</td><td class="" style="color:var(--danger);font-weight:600;">无在途来源</td>
+      <td><span class="caret">▸</span></td>
+    </tr>
+    <tr class="short">
+      <td class="mono">MAT-10003</td><td>硬脂酸镁</td><td>KG</td>
+      <td class="num">1</td><td class="num">5</td><td class="num">0</td><td class="num">5</td>
+      <td class="num"><span class="gap">-2</span></td>
+      <td>2026-10-01</td><td class="mutedc">（空）</td><td class="" style="color:var(--danger);font-weight:600;">无在途来源</td>
+      <td><span class="caret">▸</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="pros">
+  <b>优点：</b>物料再多也不乱，列固定；点开就有"哪些单在抢"；能顺带看出"无在途来源"（采购最关心）。<br>
+  <b>局限：</b>不同物料的争抢关系要逐个点开看，不能横向一眼对比。
+</p>
+
+<!-- ============ 方案 2 ============ -->
+<h2><span class="tag">方案 2</span>物料 × 订单 交叉表（行 = 物料，列 = 订单）</h2>
+<p class="desc">格子是"该订单对该物料的缺口"，最右一列合计；只列出有缺口的订单（189、192 无缺口不占列）。</p>
+
+<table class="matrix">
+  <thead>
+    <tr>
+      <th class="mono" rowspan="2">物料编码</th>
+      <th rowspan="2">物料描述</th>
+      <th rowspan="2">单位</th>
+      <th colspan="4" style="text-align:center;border-bottom:1px solid var(--border);">各订单缺口</th>
+      <th class="num" rowspan="2">缺口合计</th>
+    </tr>
+    <tr>
+      <th class="num">3000000123<span class="sub">颗粒制剂</span></th>
+      <th class="num">3000000167<span class="sub">胶囊包装</span></th>
+      <th class="num">3000000201<span class="sub">布洛芬片</span></th>
+      <th class="num">3000000145<span class="sub">维生素C片</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="mono">MAT-10005</td><td>胶囊壳#0</td><td>EA</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">200,000</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">200,000</td>
+      <td class="c mutedc">·</td><td class="c mutedc">·</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">400,000</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10001</td><td>阿莫西林原料药</td><td>KG</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">180</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">180</td>
+      <td class="c mutedc">·</td><td class="c mutedc">·</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">360</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10002</td><td>淀粉辅料</td><td>KG</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">50</td>
+      <td class="c mutedc">·</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">50</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">50</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">150</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10009</td><td>蔗糖</td><td>KG</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">20</td>
+      <td class="c mutedc">·</td><td class="c mutedc">·</td><td class="c mutedc">·</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">20</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10003</td><td>硬脂酸镁</td><td>KG</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">2</td>
+      <td class="c mutedc">·</td><td class="c mutedc">·</td><td class="c mutedc">·</td>
+      <td class="c" style="color:var(--danger);font-weight:700;">2</td>
+    </tr>
+    <tr>
+      <td class="mono">MAT-10004</td><td>维生素C原料</td><td>KG</td>
+      <td class="c mutedc">·</td><td class="c mutedc">·</td>
+      <td class="c ok">0</td><td class="c ok">0</td>
+      <td class="c mutedc">0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="pros">
+  <b>优点：</b>横向一眼看出"哪几张单在抢同一个料"、各抢多少，争抢关系不用点开。<br>
+  <b>局限：</b>订单一多列就爆炸（所以只列有缺料的订单，再多就得横向滚动）；物料多的时候行数一样多，但没有展开下钻的空间。
+</p>
+
+</body>
+</html>
