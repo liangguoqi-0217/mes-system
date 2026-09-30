@@ -260,7 +260,7 @@ const OrderReadiness = {
   modeTip(k) {
     return {
       stock: '只与仓库现有量比（非限制 + 质检）—— 不计在途、不扣其他订单占用、不看需求日期；直观，但不保证开工那天仍够',
-      atp: '计入在途采购 / 在制订单 / 调拨在途，扣减其他订单占用与安全库存，并按组件需求日期在时间轴上校验；缺料行可展开看判定依据'
+      atp: '可用量 = 现有库存 + 在途采购 + 在制订单 − 安全库存 − 其他订单占用，按组件需求日期在时间轴上校验；口径由系统固定，不可调整。缺料行可展开看判定依据'
     }[k || this.mode];
   },
 
@@ -268,7 +268,7 @@ const OrderReadiness = {
     if (this.mode === k) return;
     // 切换逻辑会重绘筛选栏，先把已录入的条件存下来，重绘后回填
     const keep = {};
-    ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orMatCode', 'orWorkCenter', 'orCheckRule'].forEach(id => {
+    ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orMatCode', 'orWorkCenter'].forEach(id => {
       keep[id] = this._val(id);
     });
     this.mode = k;
@@ -301,32 +301,32 @@ const OrderReadiness = {
     const dateLabel = isAtp ? '订单计划开始日' : '订单计划开始日（仅圈定范围）';
 
     el.innerHTML = `
-      <div class="filter-bar" style="flex-wrap:wrap;">
-        <div class="filter-group"><label>工厂</label>
+      <div class="filter-bar filter-bar-nowrap">
+        <div class="filter-group" style="flex:1.3 1 110px;"><label>工厂</label>
           <select id="orPlant"${isPlant ? '' : ' disabled'}>
             ${isPlant ? plantOpts : '<option value="' + OR_CURRENT_USER.plant + '">' + OR_CURRENT_USER.plant + ' ' + OR_PLANT_TEXT[OR_CURRENT_USER.plant] + '</option>'}
           </select>
         </div>
-        <div class="filter-group"><label>车间</label>
+        <div class="filter-group" style="flex:0.9 1 90px;"><label>车间</label>
           <select id="orWorkCenter"${isPlant ? '' : ' disabled'}>
             ${isPlant
               ? '<option value="">全部车间</option>' + wcOpts
               : '<option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option>'}
           </select>
         </div>
-        <div class="filter-group"><label>检查逻辑
+        <div class="filter-group" style="flex:1.3 1 120px;"><label>检查逻辑
           <span style="cursor:help;color:var(--text-muted);font-weight:400;" title="${esc(this.modeTip())}">ⓘ</span></label>
-          <select id="orCheckLogic" style="min-width:150px;" onchange="OrderReadiness.setMode(this.value)">
+          <select id="orCheckLogic" onchange="OrderReadiness.setMode(this.value)">
             <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>SAP ATP 可用性检查</option>
             <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>现有库存对比</option>
           </select>
         </div>
-        <div class="filter-group"><label>${dateLabel}</label>
+        <div class="filter-group" style="flex:1.6 1 150px;"><label>${dateLabel}</label>
           <div style="display:flex;align-items:center;gap:4px;">
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
         </div>
-        <div class="filter-group"><label>订单状态</label>
+        <div class="filter-group" style="flex:0.9 1 90px;"><label>订单状态</label>
           <select id="orOrderStatus">
             <option value="">全部</option>
             <option value="REL">已下达</option>
@@ -334,15 +334,7 @@ const OrderReadiness = {
             <option value="TECO">技术性完成</option>
           </select>
         </div>
-        ${isAtp ? `
-        <div class="filter-group"><label>ATP 检查规则</label>
-          <select id="orCheckRule">
-            <option value="STD">标准规则（沿用 SAP 现有 PP 规则）</option>
-            <option value="STOCK">仅现有库存</option>
-            <option value="TRANS">含在途与在制</option>
-          </select>
-        </div>` : ''}
-        <div class="filter-actions">
+        <div class="filter-actions" style="flex-shrink:0;">
           <button class="btn btn-primary btn-sm" onclick="OrderReadiness.query()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.refresh()">刷新</button>
@@ -352,20 +344,7 @@ const OrderReadiness = {
         <div id="orMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>流程订单号</label><input type="text" id="orOrderNo" placeholder="如 3000000123"></div>
           <div class="filter-group"><label>物料号/描述</label><input type="text" id="orMatCode" placeholder="物料编码或名称"></div>
-          ${isAtp ? `
-          <div class="filter-group"><label>供给范围（计入可用量）</label>
-            <div style="display:flex;gap:12px;align-items:center;height:32px;font-size:13px;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="orIncPO" checked> 在途采购</label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="orIncPRD" checked> 在制订单</label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="orIncTR" checked> 调拨在途</label>
-            </div>
-          </div>
-          <div class="filter-group"><label>扣减项（从库存中扣除）</label>
-            <div style="display:flex;gap:12px;align-items:center;height:32px;font-size:13px;">
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="orDedSafety" checked> 安全库存</label>
-              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" id="orDedResb" checked> 其他订单占用</label>
-            </div>
-          </div>` : ''}
+          <!-- 供给范围与扣减项由系统固定（现有库存 + 在途 + 在制，扣安全库存与其他订单占用），不提供可配置开关 -->
         </div>
       </div>`;
   },
@@ -774,7 +753,7 @@ const OrderReadiness = {
   /* ==================== 操作 ==================== */
 
   resetFilter() {
-    ['orOrderNo', 'orMatCode', 'orOrderStatus', 'orCheckRule'].forEach(id => {
+    ['orOrderNo', 'orMatCode', 'orOrderStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
     const wc = document.getElementById('orWorkCenter');
