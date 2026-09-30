@@ -400,12 +400,11 @@ const OrderReadiness = {
             <div style="font-size:18px;font-weight:700;">可用性检查</div>
             <div style="font-size:12px;opacity:0.85;margin-top:3px;">勾选流程订单，逐项检查组件是否缺料</div>
           </div>
-          <!-- 计算按钮由 renderSummary() 填充：文案随「未检查 / 计算中 / 已检查」变化 -->
+          <!-- 计算按钮由 renderCheckBtn() 填充：文案随「未检查 / 计算中 / 已检查」变化 -->
           <div id="orCheckBtnWrap" style="margin-left:auto;flex-shrink:0;"></div>
         </div>
 
         <div id="orFilterBar" style="flex-shrink:0;"></div>
-        <div id="orSummary" style="flex-shrink:0;"></div>
 
         <style>
           #orTableWrap { scrollbar-width: thin; scrollbar-color: rgba(203,213,225,0.6) transparent; }
@@ -698,7 +697,7 @@ const OrderReadiness = {
       }
     }
     if (window.QueryVariant) QueryVariant.mount('order-readiness');
-    this.renderSummary();
+    this.renderCheckBtn();
     this.renderTable();
   },
 
@@ -977,7 +976,7 @@ const OrderReadiness = {
     this.stockMap = {};
     this.atpMap = {};
 
-    this.renderSummary();
+    this.renderCheckBtn();
     this.renderTable();
   },
 
@@ -996,7 +995,7 @@ const OrderReadiness = {
     });
 
     this.checking = true;
-    this.renderSummary();
+    this.renderCheckBtn();
     this.renderTable();
 
     // 现有库存对比只调库存接口；ATP 调批量可用性检查接口（结果自带库存构成）
@@ -1013,7 +1012,7 @@ const OrderReadiness = {
         const top = this.matAgg();
         this.matFocus = top.length ? top[0].mat : null;
       }
-      this.renderSummary();
+      this.renderCheckBtn();
       this.renderTable();
       toast('SAP 可用性检查完成');
     });
@@ -1034,51 +1033,16 @@ const OrderReadiness = {
     return { open: open, st: st, atp: atp, shopStock: shopStock, shopGap: shopGap, shopShort: shopShort, sapShort: sapShort, bad: bad };
   },
 
-  /* ==================== 汇总条 ==================== */
+  /* ==================== 计算按钮（顶部蓝色标题条内） ==================== */
 
-  renderSummary() {
-    const el = document.getElementById('orSummary');
-    if (!el) return;
-    const selOrders = this.orders.filter(o => this.selected.indexOf(o.no) !== -1);
-    const isAtp = this.mode === 'atp';
-    let compTotal = 0, badCnt = 0, fillableCnt = 0;
-    selOrders.forEach(o => {
-      compTotal += o.components.length;
-      if (this.checked) {
-        o.components.forEach(c => {
-          const x = this._cell(c);
-          if (!x.bad) return;
-          badCnt++;
-          if (x.atp && x.atp.availDate) fillableCnt++;
-        });
-      }
-    });
-
-    const btnText = this.checking ? '处理中…' : this.checkBtnText();
-    // 按钮放在顶部蓝色标题条里：深蓝渐变底上用白底蓝字，避免与背景糊在一起
-    const btn = this.checking
-      ? '<button class="btn btn-sm" style="background:rgba(255,255,255,0.22);color:#fff;" disabled>' + btnText + '</button>'
-      : '<button class="btn btn-sm" style="background:#fff;color:var(--primary);font-weight:600;" onclick="OrderReadiness.runCheck()">' + btnText + '</button>';
-
-    const stat = this.checking
-      ? '<span style="font-size:12px;color:var(--text-secondary);">' + this.checkingText() + '</span>'
-      : (this.checked
-        ? `<span style="font-size:12px;">${isAtp ? '可用性检查判定' : '按现有库存对比'}缺料 <b style="color:var(--danger);">${badCnt}</b> 项` +
-          (isAtp && fillableCnt ? `，其中 <b>${fillableCnt}</b> 项有预计可满足日期` : '') +
-          (badCnt ? '' : '，全部齐套') + '</span>'
-        : `<span style="font-size:12px;color:var(--text-muted);">勾选订单后点击「${btnText}」，由 SAP 现算</span>`);
-
-    // 计算按钮不在这里：它已移到顶部蓝色标题条
+  // 按钮色与采购申请「新建申请」一致（btn-blue）；文案随检查状态变化
+  renderCheckBtn() {
     const wrap = document.getElementById('orCheckBtnWrap');
-    if (wrap) wrap.innerHTML = btn;
-
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:16px;padding:8px 24px;background:#fff;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-        <span style="font-size:13px;">已选 <b>${this.selected.length}</b> / ${this.orders.length} 单</span>
-        <span style="font-size:12px;color:var(--text-secondary);">组件 ${compTotal} 项</span>
-        <span style="width:1px;height:16px;background:var(--border);"></span>
-        ${stat}
-      </div>`;
+    if (!wrap) return;
+    const btnText = this.checking ? '处理中…' : this.checkBtnText();
+    wrap.innerHTML = this.checking
+      ? '<button class="btn btn-blue btn-sm" disabled style="opacity:0.55;cursor:not-allowed;">' + btnText + '</button>'
+      : '<button class="btn btn-blue btn-sm" onclick="OrderReadiness.runCheck()">' + btnText + '</button>';
   },
 
   selectAll(v) {
@@ -1086,7 +1050,7 @@ const OrderReadiness = {
     this.checked = false;
     this.stockMap = {};
     this.atpMap = {};
-    this.renderSummary();
+    this.renderCheckBtn();
     this.renderTable();
   },
 
@@ -1096,7 +1060,7 @@ const OrderReadiness = {
     this.checked = false;
     this.stockMap = {};
     this.atpMap = {};
-    this.renderSummary();
+    this.renderCheckBtn();
     this.renderTable();
   },
 
