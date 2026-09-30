@@ -229,6 +229,12 @@ const OrderReadiness = {
           .or-group:hover td { background: #f1f5f9; }
           .or-caret { display:inline-block; width:14px; color: var(--text-muted); font-size:11px; }
           .or-orderno { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--primary); }
+          /* 仅单行紧凑模式下分配字段宽度；展开更多条件后去掉该类，字段恢复正常宽度并自然换行 */
+          .or-page .filter-bar-nowrap .or-fg-plant { flex: 1.3 1 110px; }
+          .or-page .filter-bar-nowrap .or-fg-wc { flex: 0.9 1 90px; }
+          .or-page .filter-bar-nowrap .or-fg-logic { flex: 1.3 1 120px; }
+          .or-page .filter-bar-nowrap .or-fg-date { flex: 1.6 1 150px; }
+          .or-page .filter-bar-nowrap .or-fg-status { flex: 0.9 1 90px; }
           .or-comp td { font-size: 13px; }
           .or-num { text-align: right; font-variant-numeric: tabular-nums; }
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
@@ -301,32 +307,32 @@ const OrderReadiness = {
     const dateLabel = isAtp ? '订单计划开始日' : '订单计划开始日（仅圈定范围）';
 
     el.innerHTML = `
-      <div class="filter-bar filter-bar-nowrap">
-        <div class="filter-group" style="flex:1.3 1 110px;"><label>工厂</label>
+      <div class="filter-bar${this.moreOpen ? '' : ' filter-bar-nowrap'}">
+        <div class="filter-group or-fg-plant"><label>工厂</label>
           <select id="orPlant"${isPlant ? '' : ' disabled'}>
             ${isPlant ? plantOpts : '<option value="' + OR_CURRENT_USER.plant + '">' + OR_CURRENT_USER.plant + ' ' + OR_PLANT_TEXT[OR_CURRENT_USER.plant] + '</option>'}
           </select>
         </div>
-        <div class="filter-group" style="flex:0.9 1 90px;"><label>车间</label>
+        <div class="filter-group or-fg-wc"><label>车间</label>
           <select id="orWorkCenter"${isPlant ? '' : ' disabled'}>
             ${isPlant
               ? '<option value="">全部车间</option>' + wcOpts
               : '<option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option>'}
           </select>
         </div>
-        <div class="filter-group" style="flex:1.3 1 120px;"><label>检查逻辑
+        <div class="filter-group or-fg-logic"><label>检查逻辑
           <span style="cursor:help;color:var(--text-muted);font-weight:400;" title="${esc(this.modeTip())}">ⓘ</span></label>
           <select id="orCheckLogic" onchange="OrderReadiness.setMode(this.value)">
             <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>SAP ATP 可用性检查</option>
             <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>现有库存对比</option>
           </select>
         </div>
-        <div class="filter-group" style="flex:1.6 1 150px;"><label>${dateLabel}</label>
+        <div class="filter-group or-fg-date"><label>${dateLabel}</label>
           <div style="display:flex;align-items:center;gap:4px;">
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
         </div>
-        <div class="filter-group" style="flex:0.9 1 90px;"><label>订单状态</label>
+        <div class="filter-group or-fg-status"><label>订单状态</label>
           <select id="orOrderStatus">
             <option value="">全部</option>
             <option value="REL">已下达</option>
@@ -352,7 +358,12 @@ const OrderReadiness = {
   toggleMore() {
     this.moreOpen = !this.moreOpen;
     const bar = document.getElementById('orMoreBar');
-    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
+    if (bar) {
+      bar.style.display = this.moreOpen ? 'flex' : 'none';
+      // 展开更多条件后字段变多：去掉单行紧凑，恢复字段正常宽度，按容器宽度自然换行
+      const wrapEl = bar.parentElement;
+      if (wrapEl) wrapEl.classList.toggle('filter-bar-nowrap', !this.moreOpen);
+    }
     const btn = document.getElementById('orMoreBtn');
     if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
   },
