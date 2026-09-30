@@ -406,6 +406,8 @@ const OrderReadiness = {
           .or-matname { font-size: 13px; font-weight: 600; line-height: 1.3; }
           .or-matcode { font-size: 11px; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
           .or-matgap { font-size: 13px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; white-space: nowrap; }
+          /* 过剩：库存多于需求，排在缺料清单最后 */
+          .or-matover { font-size: 13px; font-weight: 700; color: var(--success); font-variant-numeric: tabular-nums; white-space: nowrap; }
           .or-matsub { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; }
           /* 聚焦物料时：右栏顶部提示条 + 组件行高亮 */
           .or-focusbar { display: flex; align-items: center; gap: 10px; padding: 7px 16px; background: #fffbeb;
@@ -448,33 +450,54 @@ const OrderReadiness = {
   /* ==================== 左栏：缺料清单 ==================== */
 
   // 按物料聚合已勾选订单的组件（跟随当前检查逻辑与筛选结果，左榜随条件重算）
+  // 朴素逻辑：需求 = Σ各订单未清数量，供应 = 现有库存（共用，不按单重复算），缺口 = 需求 − 供应
+  //           缺口 > 0 缺料；缺口 < 0 过剩（排序后自然落到清单最后）
+  // SAP 逻辑：沿用每张订单独立判定的 shortQty 累加
   matAgg() {
     if (!this.checked) return [];
+    const isStock = this.mode === 'stock';
     const map = {};
     this.orders.forEach(o => {
       if (this.selected.indexOf(o.no) === -1) return;
       o.components.forEach(c => {
         const x = this._cell(c);
-        const gap = this.mode === 'atp' ? (x.atp ? x.atp.shortQty : 0) : (x.shopGap || 0);
+        const gap = isStock ? (x.shopGap || 0) : (x.atp ? x.atp.shortQty : 0);
         const short = x.bad && gap > 0;
-        if (!this.matShowAll && !short) return;
+        if (!isStock && !this.matShowAll && !short) return;
         let m = map[c.mat];
-        if (!m) m = map[c.mat] = { mat: c.mat, name: c.name, unit: c.unit, gap: 0, req: 0, orders: [], dates: [], noSource: 0, bad: false };
-        if (short) { m.gap += gap; m.bad = true; }
-        m.req += x.open;
-        if (m.orders.indexOf(o.no) === -1) m.orders.push(o.no);
-        if (this.mode === 'atp' && x.atp && gap > 0) {
-          if (x.atp.availDate) m.dates.push(x.atp.availDate); else m.noSource++;
+        if (!m) m = map[c.mat] = {
+          mat: c.mat, name: c.name, unit: c.unit, gap: 0, req: 0,
+          orders: [], dates: [], noSource: 0, bad: false, supply: null, rows: []
+        };
+        if (isStock) {
+          m.req += x.open;                                   // 需求合计：各订单未清相加
+          if (x.shopStock !== null) m.supply = x.shopStock;  // 供应：库存（所有订单共用）
+          m.rows.push({
+            no: o.no, batch: o.batch || '—', prod: o.mat || '—', prodName: o.name,
+            reqQty: c.reqQty, issuedQty: c.issuedQty, open: x.open, reqDate: c.reqDate
+          });
+        } else {
+          if (short) { m.gap += gap; m.bad = true; }
+          m.req += x.open;
+          if (x.atp && gap > 0) {
+            if (x.atp.availDate) m.dates.push(x.atp.availDate); else m.noSource++;
+          }
         }
+        if (m.orders.indexOf(o.no) === -1) m.orders.push(o.no);
       });
     });
     const list = Object.keys(map).map(k => {
       const m = map[k];
+      if (isStock) {
+        // 库存为共用值：按所有订单的需求合计判定，不按单各算一次
+        m.gap = m.supply === null ? 0 : (m.req - m.supply);
+        m.bad = m.gap > 0;
+      }
       m.dates.sort();
       m.availDate = m.dates.length ? m.dates[m.dates.length - 1] : '';   // 取最晚：全部补齐的时间点
       return m;
     });
-    list.sort((a, b) => (b.gap - a.gap) || (a.mat < b.mat ? -1 : 1));
+    list.sort((a, b) => (b.gap - a.gap) || (a.mat < b.mat ? -1 : 1));   // 缺口降序，过剩为负 → 排在最后
     return list;
   },
 
@@ -482,9 +505,12 @@ const OrderReadiness = {
     const el = document.getElementById('orMatPanel');
     if (!el) return;
 
+    const isStock = this.mode === 'stock';
     const all = this.matAgg();
     const badList = all.filter(m => m.bad);
-    const list = this.matShowAll ? all : badList;
+    const overList = isStock ? all.filter(m => m.gap < 0) : [];
+    // 朴素逻辑按缺口排序全量展示（缺料在前、过剩垫底），SAP 逻辑默认只列缺料
+    const list = isStock ? all : (this.matShowAll ? all : badList);
 
     let items = '';
     if (!this.checked) {
@@ -497,35 +523,46 @@ const OrderReadiness = {
       list.forEach(m => {
         const sel = this.matFocus === m.mat;
         const sub = m.orders.length + ' 单' +
-          (this.mode === 'atp'
-            ? (m.noSource ? ' · ' + m.noSource + ' 单无来源' : (m.availDate ? ' · 最晚 ' + m.availDate : ''))
-            : '');
+          (isStock
+            ? (m.supply === null ? '' : ' · 库存 ' + this._fmt(m.supply))
+            : (m.noSource ? ' · ' + m.noSource + ' 单无来源' : (m.availDate ? ' · 最晚 ' + m.availDate : '')));
+        // 缺口 > 0 缺料（红）；缺口 < 0 过剩（绿，带 +）；= 0 齐套（灰）
+        const gapHtml = m.gap > 0
+          ? '<div class="or-matgap">-' + this._fmt(m.gap) + '</div>'
+          : (m.gap < 0
+            ? '<div class="or-matover">+' + this._fmt(-m.gap) + '</div>'
+            : '<div class="or-matsub" style="color:var(--text-muted);">齐套</div>');
         items += '<div class="or-matitem' + (sel ? ' or-matitem-sel' : '') + '" title="' + esc(m.mat + ' ' + m.name) +
-          ' —— 点击在右侧只看含该物料的订单" onclick="OrderReadiness.focusMat(\'' + m.mat + '\')">' +
+          ' —— 点击在右侧看该物料的供需" onclick="OrderReadiness.focusMat(\'' + m.mat + '\')">' +
           '<div style="min-width:0;flex:1;">' +
           '<div class="or-matname" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(m.name) + '</div>' +
           '<div class="or-matcode">' + esc(m.mat) + ' · ' + esc(m.unit) + '</div>' +
           '</div>' +
           '<div style="text-align:right;flex-shrink:0;">' +
-          (m.bad
-            ? '<div class="or-matgap">-' + this._fmt(m.gap) + '</div>'
-            : '<div class="or-matsub" style="color:var(--success);">齐套</div>') +
+          gapHtml +
           '<div class="or-matsub">' + esc(sub) + '</div>' +
           '</div>' +
           '</div>';
       });
     }
 
+    const statHtml = isStock
+      ? '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种' +
+        (overList.length ? ' · 过剩 <b style="color:var(--success);">' + overList.length + '</b> 种' : '') + '</span>'
+      : '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种</span>' +
+        '<label style="margin-left:auto;display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;">' +
+        '<input type="checkbox"' + (this.matShowAll ? ' checked' : '') + ' onchange="OrderReadiness.toggleMatShowAll(this.checked)">含齐套' +
+        '</label>';
+
     el.innerHTML =
       '<div class="or-mathead">' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
       '<b style="font-size:13px;">缺料清单</b>' +
+      '<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">' +
+      (isStock ? '缺口降序' : '') + '</span>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:var(--text-secondary);">' +
-      '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种</span>' +
-      '<label style="margin-left:auto;display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;">' +
-      '<input type="checkbox"' + (this.matShowAll ? ' checked' : '') + ' onchange="OrderReadiness.toggleMatShowAll(this.checked)">含齐套' +
-      '</label>' +
+      statHtml +
       '</div>' +
       '</div>' + items;
   },
@@ -577,6 +614,7 @@ const OrderReadiness = {
     this.checked = false;
     this.stockMap = {};
     this.atpMap = {};
+    this.matFocus = null;
     this.collapsed = this.orders.map(o => o.no);
     this.renderFilterBar();
     Object.keys(keep).forEach(id => {
@@ -763,6 +801,11 @@ const OrderReadiness = {
       this.checking = false;
       // 检查完成后：有问题的订单自动展开，齐套的保持折叠
       this.collapsed = this.orders.filter(o => !this._orderHasProblem(o)).map(o => o.no);
+      // 朴素逻辑：默认直接展示缺料最严重的物料（清单第一条）
+      if (!isAtp) {
+        const top = this.matAgg();
+        this.matFocus = top.length ? top[0].mat : null;
+      }
       this.renderSummary();
       this.renderTable();
       toast('SAP 可用性检查完成');
@@ -886,6 +929,12 @@ const OrderReadiness = {
       return;
     }
 
+    // 朴素逻辑 + 已检查 + 选中物料：右栏换成「该物料的供需详情」（需求 = 各流程订单，供应 = 现有库存）
+    if (this.mode === 'stock' && this.checked && this.matFocus) {
+      this.renderMatDetail(this.matFocus);
+      return;
+    }
+
     // 左栏选中物料：右栏只留含该物料的订单，并强制展开（便于直接看到组件行）
     const focus = this.matFocus;
     const orders = focus ? this.orders.filter(o => o.components.some(c => c.mat === focus)) : this.orders;
@@ -937,6 +986,66 @@ const OrderReadiness = {
       ' · 涉及 <b>' + orderCnt + '</b> 张订单</span>' +
       '<span style="margin-left:auto;color:var(--primary);cursor:pointer;text-decoration:underline;" ' +
       'onclick="OrderReadiness.clearMatFocus()">显示全部订单</span>' +
+      '</div>';
+  },
+
+  // 朴素逻辑选中物料后的右视图：需求 = 各流程订单，供应 = 现有库存（共用），末行给缺口
+  renderMatDetail(mat) {
+    const el = document.getElementById('orTableWrap');
+    if (!el) return;
+    const m = this.matAgg().filter(k => k.mat === mat)[0];
+    if (!m) {
+      el.innerHTML = '<div class="or-mask">所选订单中没有物料 ' + esc(mat) + '</div>';
+      return;
+    }
+    const u = esc(m.unit);
+    const reqTotal = m.rows.reduce((s, r) => s + (r.reqQty || 0), 0);
+    const rows = m.rows.map(r =>
+      '<tr>' +
+      '<td class="or-orderno">' + esc(r.no) + '</td>' +
+      '<td style="font-family:monospace;font-size:12px;">' + esc(r.batch) + '</td>' +
+      '<td style="font-family:monospace;font-size:12px;">' + esc(r.prod) + '</td>' +
+      '<td>' + esc(r.prodName) + '</td>' +
+      '<td class="or-num" title="需求 ' + this._fmt(r.reqQty) + ' − 已投料 ' + this._fmt(r.issuedQty) + '">' + this._fmt(r.reqQty) + '</td>' +
+      '<td class="or-num">' + this._fmt(r.open) + '</td>' +
+      '</tr>').join('');
+
+    const short = m.gap > 0, over = m.gap < 0;
+    const gapTxt = short ? '-' + this._fmt(m.gap) : (over ? '+' + this._fmt(-m.gap) : '0');
+    const gapColor = short ? 'var(--danger)' : (over ? 'var(--success)' : 'var(--text-muted)');
+    const gapLabel = short ? '缺口' : (over ? '过剩' : '齐套');
+
+    el.innerHTML =
+      '<div class="or-focusbar">' +
+      '<span>正在看物料 <b>' + esc(m.name) + '</b>（' + esc(m.mat) + '）· 需求合计 ' + this._fmt(m.req) + ' ' + u +
+      ' · 现有库存 ' + (m.supply === null ? '—' : this._fmt(m.supply)) + ' ' + u + '</span>' +
+      '<span style="margin-left:auto;color:var(--primary);cursor:pointer;text-decoration:underline;" ' +
+      'onclick="OrderReadiness.clearMatFocus()">显示全部订单</span>' +
+      '</div>' +
+      '<div style="padding:16px 18px;">' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求 —— 流程订单' +
+      '<span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:6px;">' + m.rows.length + ' 张</span></div>' +
+      '<table class="data-table" style="min-width:760px;">' +
+      '<thead><tr>' +
+      '<th style="width:130px;">流程订单号</th><th style="width:120px;">产品批次</th><th style="width:110px;">产品编码</th>' +
+      '<th>产品描述</th><th style="width:110px;text-align:right;">需求数量</th><th style="width:110px;text-align:right;">未清数量</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows +
+      '<tr style="background:#f8fafc;font-weight:600;">' +
+      '<td colspan="4" style="text-align:right;">需求合计</td>' +
+      '<td class="or-num">' + this._fmt(reqTotal) + '</td>' +
+      '<td class="or-num">' + this._fmt(m.req) + '</td>' +
+      '</tr>' +
+      '</tbody></table>' +
+      '<table class="data-table" style="min-width:760px;margin-top:16px;">' +
+      '<tbody>' +
+      '<tr><td style="width:220px;">供应 —— 现有库存 <span style="color:var(--text-muted);font-size:11px;">（非限制 + 质检）</span></td>' +
+      '<td class="or-num">' + (m.supply === null ? '—' : this._fmt(m.supply)) + ' ' + u + '</td></tr>' +
+      '<tr style="background:#f8fafc;"><td style="font-weight:700;">' + gapLabel + '</td>' +
+      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td></tr>' +
+      '</tbody></table>' +
+      '<div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8;">' +
+      '朴素逻辑：库存由所有订单共用，按需求合计判定一次，不按每张单各算一次。</div>' +
       '</div>';
   },
 
