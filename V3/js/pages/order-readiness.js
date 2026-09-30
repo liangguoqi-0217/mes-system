@@ -395,11 +395,13 @@ const OrderReadiness = {
   render() {
     return `
       <div class="or-page" style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100%;overflow:hidden;">
-        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:14px 24px;flex-shrink:0;">
-          <div style="font-size:18px;font-weight:700;">可用性检查</div>
-          <div style="font-size:12px;opacity:0.85;margin-top:3px;">
-            勾选本工作中心要生产的流程订单，逐项检查组件是否缺料。检查逻辑在下方「检查逻辑」中选择。
+        <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:14px 24px;flex-shrink:0;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div style="min-width:0;">
+            <div style="font-size:18px;font-weight:700;">可用性检查</div>
+            <div style="font-size:12px;opacity:0.85;margin-top:3px;">勾选流程订单，逐项检查组件是否缺料</div>
           </div>
+          <!-- 计算按钮由 renderSummary() 填充：文案随「未检查 / 计算中 / 已检查」变化 -->
+          <div id="orCheckBtnWrap" style="margin-left:auto;flex-shrink:0;"></div>
         </div>
 
         <div id="orFilterBar" style="flex-shrink:0;"></div>
@@ -1053,9 +1055,10 @@ const OrderReadiness = {
     });
 
     const btnText = this.checking ? '处理中…' : this.checkBtnText();
+    // 按钮放在顶部蓝色标题条里：深蓝渐变底上用白底蓝字，避免与背景糊在一起
     const btn = this.checking
-      ? '<button class="btn btn-secondary btn-sm" disabled>' + btnText + '</button>'
-      : '<button class="btn btn-primary btn-sm" onclick="OrderReadiness.runCheck()">' + btnText + '</button>';
+      ? '<button class="btn btn-sm" style="background:rgba(255,255,255,0.22);color:#fff;" disabled>' + btnText + '</button>'
+      : '<button class="btn btn-sm" style="background:#fff;color:var(--primary);font-weight:600;" onclick="OrderReadiness.runCheck()">' + btnText + '</button>';
 
     const stat = this.checking
       ? '<span style="font-size:12px;color:var(--text-secondary);">' + this.checkingText() + '</span>'
@@ -1065,18 +1068,16 @@ const OrderReadiness = {
           (badCnt ? '' : '，全部齐套') + '</span>'
         : `<span style="font-size:12px;color:var(--text-muted);">勾选订单后点击「${btnText}」，由 SAP 现算</span>`);
 
+    // 计算按钮不在这里：它已移到顶部蓝色标题条
+    const wrap = document.getElementById('orCheckBtnWrap');
+    if (wrap) wrap.innerHTML = btn;
+
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:16px;padding:8px 24px;background:#fff;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-          <input type="checkbox" ${this.orders.length && this.selected.length === this.orders.length ? 'checked' : ''} onclick="OrderReadiness.selectAll(this.checked)">
-          已选 <b>${this.selected.length}</b> / ${this.orders.length} 单
-        </label>
+        <span style="font-size:13px;">已选 <b>${this.selected.length}</b> / ${this.orders.length} 单</span>
         <span style="font-size:12px;color:var(--text-secondary);">组件 ${compTotal} 项</span>
         <span style="width:1px;height:16px;background:var(--border);"></span>
         ${stat}
-        <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-          ${btn}
-        </div>
       </div>`;
   },
 
@@ -1284,7 +1285,7 @@ const OrderReadiness = {
   // 订单列表表头：只放订单层字段，组件列在展开区的内嵌表里
   _orderCols() {
     const head = [
-      { w: 'width:36px;', t: '' },
+      { w: 'width:36px;text-align:center;', t: '' },
       { w: 'width:130px;', t: '流程订单号' }
     ];
     // 产品批次只在朴素逻辑下显示：该逻辑只看库存 vs 未清，按批次追料是主要用法
@@ -1300,8 +1301,14 @@ const OrderReadiness = {
     ]);
   },
 
+  // 表头第一列放全选复选框（与每行的复选框上下对齐），替代原先汇总条里的全选
   _orderHeadHtml() {
-    return '<tr>' + this._orderCols().map(c => '<th style="' + c.w + '">' + c.t + '</th>').join('') + '</tr>';
+    const all = this.orders.length && this.selected.length === this.orders.length;
+    return '<tr>' + this._orderCols().map((c, i) =>
+      '<th style="' + c.w + '">' + (i === 0
+        ? '<input type="checkbox" title="全选本页订单"' + (all ? ' checked' : '') +
+          ' onclick="OrderReadiness.selectAll(this.checked)">'
+        : c.t) + '</th>').join('') + '</tr>';
   },
 
   // 组件明细表（自己的表头）：订单号弹窗里展示，未执行可用性检查时给提示
