@@ -52,6 +52,7 @@ function orFmt(d) {
   const day = String(d.getDate()).padStart(2, '0');
   return d.getFullYear() + '-' + m + '-' + day;
 }
+function orNum(v) { const n = Number(v); return isNaN(n) ? String(v) : n.toLocaleString('en-US'); }
 function orAddDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return orFmt(d); }
 function orRangeToday() { const t = orFmt(new Date()); return { from: t, to: t }; }
 function orRangeWeek() {
@@ -200,7 +201,7 @@ const OrderReadiness = {
   collapsed: [],       // 折叠的订单号
   checked: false,      // 是否已执行 SAP 检查
   checking: false,
-  onlyProblem: false,
+  onlyProblem: true,
   stockMap: {},
   atpMap: {},
 
@@ -212,11 +213,10 @@ const OrderReadiness = {
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:14px 24px;flex-shrink:0;">
           <div style="font-size:18px;font-weight:700;">订单齐套检查</div>
           <div style="font-size:12px;opacity:0.85;margin-top:3px;">
-            勾选本车间要生产的订单，逐项检查组件是否缺料。检查逻辑可在下方切换。
+            勾选本车间要生产的订单，逐项检查组件是否缺料。检查逻辑在下方「检查逻辑」中选择。
           </div>
         </div>
 
-        <div id="orModeBar" style="flex-shrink:0;"></div>
         <div id="orFilterBar" style="flex-shrink:0;"></div>
         <div id="orSummary" style="flex-shrink:0;"></div>
 
@@ -245,7 +245,6 @@ const OrderReadiness = {
   },
 
   init() {
-    this.renderModeBar();
     this.renderFilterBar();
     if (window.QueryVariant) {
       QueryVariant.mount('order-readiness');
@@ -256,25 +255,13 @@ const OrderReadiness = {
     this.query();
   },
 
-  /* ==================== 检查逻辑切换 ==================== */
+  /* ==================== 检查逻辑（切换会重绘筛选栏，条件自动保留） ==================== */
 
-  renderModeBar() {
-    const el = document.getElementById('orModeBar');
-    if (!el) return;
-    const opts = [
-      { k: 'stock', t: '现有库存对比' },
-      { k: 'atp', t: 'SAP ATP 可用性检查' }
-    ];
-    const tip = {
+  modeTip(k) {
+    return {
       stock: '只与仓库现有量比（非限制 + 质检）—— 不计在途、不扣其他订单占用、不看需求日期；直观，但不保证开工那天仍够',
       atp: '计入在途采购 / 在制订单 / 调拨在途，扣减其他订单占用与安全库存，并按组件需求日期在时间轴上校验；缺料行可展开看判定依据'
-    }[this.mode];
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;padding:9px 24px;background:#fff;border-bottom:1px solid var(--border);flex-wrap:wrap;">
-        <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">检查逻辑</span>
-        ${opts.map(o => '<button class="btn btn-sm ' + (this.mode === o.k ? 'btn-primary' : 'btn-secondary') + '" onclick="OrderReadiness.setMode(\'' + o.k + '\')">' + o.t + '</button>').join('')}
-        <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">${tip}</span>
-      </div>`;
+    }[k || this.mode];
   },
 
   setMode(k) {
@@ -289,7 +276,6 @@ const OrderReadiness = {
     this.stockMap = {};
     this.atpMap = {};
     this.collapsed = this.orders.map(o => o.no);
-    this.renderModeBar();
     this.renderFilterBar();
     Object.keys(keep).forEach(id => {
       const e = document.getElementById(id);
@@ -326,6 +312,13 @@ const OrderReadiness = {
             ${isPlant
               ? '<option value="">全部车间</option>' + wcOpts
               : '<option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option>'}
+          </select>
+        </div>
+        <div class="filter-group"><label>检查逻辑
+          <span style="cursor:help;color:var(--text-muted);font-weight:400;" title="${esc(this.modeTip())}">ⓘ</span></label>
+          <select id="orCheckLogic" style="min-width:150px;" onchange="OrderReadiness.setMode(this.value)">
+            <option value="atp"${this.mode === 'atp' ? ' selected' : ''}>SAP ATP 可用性检查</option>
+            <option value="stock"${this.mode === 'stock' ? ' selected' : ''}>现有库存对比</option>
           </select>
         </div>
         <div class="filter-group"><label>${dateLabel}</label>
@@ -599,13 +592,18 @@ const OrderReadiness = {
       let rows = `
         <tr class="or-group" onclick="OrderReadiness.toggleGroup('${o.no}')">
           <td colspan="${this._colCount()}" style="padding:9px 14px;">
+          <div style="display:flex;align-items:center;flex-wrap:wrap;">
             <span class="or-caret">${open ? '▾' : '▸'}</span>
             <input type="checkbox" ${sel ? 'checked' : ''} style="margin-right:8px;" onclick="event.stopPropagation();OrderReadiness.toggleSelect('${o.no}')">
             <span class="or-orderno">${esc(o.no)}</span>
             <span style="margin-left:8px;font-weight:600;">${esc(o.name)}</span>
-            <span style="margin-left:12px;color:var(--text-secondary);">${esc(o.startDate)} 开工</span>
-            <span style="margin-left:8px;color:var(--text-muted);">${o.components.length} 项组件</span>
-            <span style="margin-left:12px;">${badge}</span>
+            <span class="badge badge-gray badge-sm" style="margin-left:8px;">${esc(o.statusName)}</span>
+            <span style="margin-left:12px;color:var(--text-secondary);">${esc(orNum(o.qty))} ${esc(o.unit)}</span>
+            <span style="margin-left:12px;color:var(--text-secondary);">${esc(o.startDate)} ~ ${esc(o.endDate)}</span>
+            <span style="margin-left:12px;color:var(--text-muted);">${o.components.length} 项组件</span>
+            ${OR_CURRENT_USER.isPlantLevel ? '<span style="margin-left:12px;color:var(--text-muted);">' + esc(OR_WORKCENTER_TEXT[o.workCenter] || o.workCenter) + '</span>' : ''}
+            <span style="margin-left:auto;">${badge}</span>
+          </div>
           </td>
         </tr>`;
       if (open) {
