@@ -413,6 +413,8 @@ const OrderReadiness = {
           .or-focusbar { display: flex; align-items: center; gap: 10px; padding: 7px 16px; background: #fffbeb;
             border-bottom: 1px solid #fde68a; font-size: 12px; color: #92400e; flex-wrap: wrap; }
           .or-comp-focus td { background: #fffbeb !important; }
+          /* 物料详情里需求表 / 供应表 / 判定表共用的合计行 */
+          .or-sumrow { background: #f8fafc; font-weight: 600; }
         </style>
 
         <div id="orBody" style="flex:1;display:flex;min-height:0;min-width:0;background:#fff;"></div>
@@ -1006,10 +1008,11 @@ const OrderReadiness = {
       '<td style="font-family:monospace;font-size:12px;">' + esc(r.batch) + '</td>' +
       '<td style="font-family:monospace;font-size:12px;">' + esc(r.prod) + '</td>' +
       '<td>' + esc(r.prodName) + '</td>' +
-      '<td class="or-num" title="需求 ' + this._fmt(r.reqQty) + ' − 已投料 ' + this._fmt(r.issuedQty) + '">' + this._fmt(r.reqQty) + '</td>' +
-      '<td class="or-num">' + this._fmt(r.open) + '</td>' +
+      '<td class="or-num" title="需求 ' + this._fmt(r.reqQty) + ' ' + u + ' − 已投料 ' + this._fmt(r.issuedQty) + ' ' + u + '">' + this._fmt(r.reqQty) + ' ' + u + '</td>' +
+      '<td class="or-num">' + this._fmt(r.open) + ' ' + u + '</td>' +
       '</tr>').join('');
 
+    const supplyTxt = m.supply === null ? '—' : this._fmt(m.supply) + ' ' + u;
     const short = m.gap > 0, over = m.gap < 0;
     const gapTxt = short ? '-' + this._fmt(m.gap) : (over ? '+' + this._fmt(-m.gap) : '0');
     const gapColor = short ? 'var(--danger)' : (over ? 'var(--success)' : 'var(--text-muted)');
@@ -1025,25 +1028,41 @@ const OrderReadiness = {
       '<div style="padding:16px 18px;">' +
       '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求 —— 流程订单' +
       '<span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:6px;">' + m.rows.length + ' 张</span></div>' +
-      '<table class="data-table" style="min-width:760px;">' +
+      '<table class="data-table" style="min-width:800px;">' +
       '<thead><tr>' +
       '<th style="width:130px;">流程订单号</th><th style="width:120px;">产品批次</th><th style="width:110px;">产品编码</th>' +
-      '<th>产品描述</th><th style="width:110px;text-align:right;">需求数量</th><th style="width:110px;text-align:right;">未清数量</th>' +
+      '<th>产品描述</th><th style="width:130px;text-align:right;">需求数量</th><th style="width:130px;text-align:right;">未清数量</th>' +
       '</tr></thead>' +
       '<tbody>' + rows +
-      '<tr style="background:#f8fafc;font-weight:600;">' +
+      '<tr class="or-sumrow">' +
       '<td colspan="4" style="text-align:right;">需求合计</td>' +
-      '<td class="or-num">' + this._fmt(reqTotal) + '</td>' +
-      '<td class="or-num">' + this._fmt(m.req) + '</td>' +
+      '<td class="or-num">' + this._fmt(reqTotal) + ' ' + u + '</td>' +
+      '<td class="or-num">' + this._fmt(m.req) + ' ' + u + '</td>' +
       '</tr>' +
       '</tbody></table>' +
-      '<table class="data-table" style="min-width:760px;margin-top:16px;">' +
+
+      // 供应：与需求表同版式（同 data-table / 同合计行），前 4 列 colspan 占位使数字列对齐
+      '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应 —— 现有库存' +
+      '<span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:6px;">非限制 + 质检</span></div>' +
+      '<table class="data-table" style="min-width:800px;">' +
+      '<thead><tr><th colspan="4">供应元素</th>' +
+      '<th style="width:130px;text-align:right;">可用数量</th><th style="width:130px;"></th></tr></thead>' +
       '<tbody>' +
-      '<tr><td style="width:220px;">供应 —— 现有库存 <span style="color:var(--text-muted);font-size:11px;">（非限制 + 质检）</span></td>' +
-      '<td class="or-num">' + (m.supply === null ? '—' : this._fmt(m.supply)) + ' ' + u + '</td></tr>' +
-      '<tr style="background:#f8fafc;"><td style="font-weight:700;">' + gapLabel + '</td>' +
-      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td></tr>' +
+      '<tr><td colspan="4" style="white-space:nowrap;">现有库存（非限制 + 质检）</td>' +
+      '<td class="or-num">' + supplyTxt + '</td><td></td></tr>' +
+      '<tr class="or-sumrow"><td colspan="4" style="text-align:right;">供应合计</td>' +
+      '<td class="or-num">' + supplyTxt + '</td><td></td></tr>' +
       '</tbody></table>' +
+
+      // 判定结果：单独一张，与上面同为 data-table，数字列位置一致
+      '<table class="data-table" style="min-width:800px;margin-top:14px;">' +
+      '<thead><tr><th colspan="4">判定结果' +
+      '<span style="font-weight:400;color:var(--text-muted);font-size:11px;margin-left:6px;">需求合计 − 供应合计</span></th>' +
+      '<th style="width:130px;text-align:right;">差异</th><th style="width:130px;"></th></tr></thead>' +
+      '<tbody><tr class="or-sumrow">' +
+      '<td colspan="4" style="text-align:right;font-weight:700;">' + gapLabel + '</td>' +
+      '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td><td></td>' +
+      '</tr></tbody></table>' +
       '<div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8;">' +
       '朴素逻辑：库存由所有订单共用，按需求合计判定一次，不按每张单各算一次。</div>' +
       '</div>';
