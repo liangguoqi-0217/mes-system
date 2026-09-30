@@ -327,6 +327,11 @@ const OrderReadiness = {
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
           .or-reasonbtn { color: var(--text-muted); cursor: pointer; font-size: 13px; margin-left: 4px; }
           .or-reasonbtn:hover { color: var(--primary); }
+          /* 需要强调的数字 / 日期用下划线，不用 ⚠ 之类图标 */
+          .or-underline { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
+          /* 判定依据弹窗：固定尺寸，元素多时表格在弹窗内部滚动 */
+          .or-modal { width: 1180px; height: 760px; max-width: 96vw; max-height: 94vh; }
+          .or-modal .modal-body { max-height: none; padding: 22px 26px; }
           .or-mask { padding: 60px; text-align: center; color: var(--text-muted); font-size: 13px; }
         </style>
 
@@ -826,17 +831,18 @@ const OrderReadiness = {
     let gapCell = '<span style="color:var(--text-muted);">—</span>';
     if (atp) {
       gapCell = atp.shortQty > 0
-        ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(atp.shortQty) + '</span>' + reasonBtn
+        ? '<span class="or-underline" style="color:var(--danger);font-weight:700;" title="未清数量 − ATP 可用量">-' + this._fmt(atp.shortQty) + '</span>' + reasonBtn
         : '<span style="color:var(--text-muted);">0</span>' + reasonBtn;
     }
 
     // 可用日期（SAP 可用日期）：只有 SAP 给出日期时才显示；齐套或长期空缺（无可补足来源）留空
     let dateCell = '';
     if (atp && atp.shortQty > 0 && atp.availDate) {
+      // 晚于需求日：不再加 ⚠，改为橙字加下划线表示「注意」
       const late = atp.availDate > c.reqDate;
-      dateCell = '<span style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
+      dateCell = '<span class="' + (late ? 'or-underline ' : '') + '" style="color:' + (late ? 'var(--warning)' : 'var(--text-secondary)') + ';' +
         (late ? 'font-weight:600;' : '') + '" title="' + (late ? '晚于需求日期 ' + esc(c.reqDate) : '可满足') + '">' +
-        esc(atp.availDate) + (late ? ' ⚠' : '') + '</span>';
+        esc(atp.availDate) + '</span>';
     }
 
     let row = '<tr class="or-comp">' + head +
@@ -940,7 +946,7 @@ const OrderReadiness = {
     const short = atp.shortQty > 0;
     cont.innerHTML = `
       <div class="modal-backdrop" onclick="OrderReadiness.closeModal()">
-        <div class="modal modal-md" onclick="event.stopPropagation()">
+        <div class="modal or-modal" onclick="event.stopPropagation()">
           <div class="modal-header">
             <div class="modal-title">判定依据 · <span style="font-family:monospace;color:var(--primary);">${esc(c.mat)}</span> ${esc(c.name)}</div>
             <button class="modal-close" onclick="OrderReadiness.closeModal()">✕</button>
