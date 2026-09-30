@@ -334,12 +334,9 @@ const OrderReadiness = {
   onlyProblem: true,
   stockMap: {},
   atpMap: {},
-  // 布局版本：split=左物料缺口榜 + 右订单表（新）；classic=只有订单表（旧版）。可随时切换对比
-  layout: 'split',
-  matFocus: null,        // 左栏选中的物料编码，右栏据此筛选订单
-  matPanelCollapsed: false,
-  matShowAll: false,     // 左栏是否连带显示齐套物料
-  matPanelWidth: 320,
+  matFocus: null,        // 缺料清单选中的物料编码，右栏据此筛选订单
+  matShowAll: false,     // 缺料清单是否连带显示齐套物料
+  matPanelWidth: 320,    // 左栏固定宽度，不折叠
 
   /* ==================== 渲染 ==================== */
 
@@ -399,7 +396,7 @@ const OrderReadiness = {
           .or-modal { width: 1180px; height: 760px; max-width: 96vw; max-height: 94vh; }
           .or-modal .modal-body { max-height: none; padding: 22px 26px; }
           .or-mask { padding: 60px; text-align: center; color: var(--text-muted); font-size: 13px; }
-          /* 左栏：物料缺口榜 */
+          /* 左栏：缺料清单（固定显示，不折叠） */
           #orMatPanel { background: #f8fafc; scrollbar-width: thin; scrollbar-color: rgba(203,213,225,0.6) transparent; }
           #orMatPanel::-webkit-scrollbar { width: 6px; }
           #orMatPanel::-webkit-scrollbar-thumb { background: rgba(203,213,225,0.6); border-radius: 3px; }
@@ -412,9 +409,6 @@ const OrderReadiness = {
           .or-matcode { font-size: 11px; color: var(--text-muted); font-family: monospace; margin-top: 2px; }
           .or-matgap { font-size: 13px; font-weight: 700; color: var(--danger); font-variant-numeric: tabular-nums; white-space: nowrap; }
           .or-matsub { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; }
-          .or-matstrip { width: 30px; flex-shrink: 0; background: #f8fafc; border-right: 1px solid var(--border);
-            cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 12px; }
-          .or-matstrip:hover { background: #eef4ff; color: var(--primary); }
           /* 聚焦物料时：右栏顶部提示条 + 组件行高亮 */
           .or-focusbar { display: flex; align-items: center; gap: 10px; padding: 7px 16px; background: #fffbeb;
             border-bottom: 1px solid #fde68a; font-size: 12px; color: #92400e; flex-wrap: wrap; }
@@ -426,48 +420,14 @@ const OrderReadiness = {
       </div>`;
   },
 
-  /* ==================== 布局版本：分栏版 / 原版（可随时切换对比） ==================== */
+  /* ==================== 表格区骨架：左「缺料清单」+ 右订单表（固定分栏） ==================== */
 
-  // 表格区骨架：分栏版 = 左物料榜 + 右订单表；原版 = 只有订单表（旧版行为完全一致）
   renderBodyShell() {
     const el = document.getElementById('orBody');
     if (!el) return;
-    const tableWrap = '<div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;min-width:0;background:#fff;"></div>';
-    el.innerHTML = this.layout === 'split'
-      ? '<div id="orMatPanel" style="width:' + (this.matPanelCollapsed ? 30 : this.matPanelWidth) +
-        'px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;"></div>' + tableWrap
-      : tableWrap;
-  },
-
-  setLayout(v) {
-    if (this.layout === v) return;
-    this.layout = v;
-    if (v === 'classic') this.matFocus = null;   // 原版没有左栏，聚焦状态一并清掉
-    try { localStorage.setItem('or_layout_version', v); } catch (e) { /* localStorage 不可用时忽略 */ }
-    this.renderBodyShell();
-    this.renderTable();
-    this._syncLayoutBtn();
-  },
-
-  toggleLayout() {
-    this.setLayout(this.layout === 'split' ? 'classic' : 'split');
-  },
-
-  // 只改按钮文字，不重绘整个筛选栏（避免清掉已录入的筛选条件）
-  _syncLayoutBtn() {
-    const b = document.getElementById('orLayoutBtn');
-    if (!b) return;
-    b.textContent = this.layout === 'split' ? '⧉ 原版视图' : '⧉ 分栏视图';
-    b.title = this.layout === 'split'
-      ? '当前：分栏版（左侧物料缺口榜 + 右侧订单表）。点击切回原版'
-      : '当前：原版（只有订单表）。点击切到分栏版（左侧物料缺口榜 + 右侧订单表）';
-  },
-
-  toggleMatPanel() {
-    this.matPanelCollapsed = !this.matPanelCollapsed;
-    this.renderBodyShell();
-    this.renderMatPanel();
-    this.renderTable();
+    el.innerHTML =
+      '<div id="orMatPanel" style="width:' + this.matPanelWidth + 'px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;"></div>' +
+      '<div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;min-width:0;background:#fff;"></div>';
   },
 
   toggleMatShowAll(v) {
@@ -487,7 +447,7 @@ const OrderReadiness = {
     this.renderTable();
   },
 
-  /* ==================== 左栏：物料缺口榜 ==================== */
+  /* ==================== 左栏：缺料清单 ==================== */
 
   // 按物料聚合已勾选订单的组件（跟随当前检查逻辑与筛选结果，左榜随条件重算）
   matAgg() {
@@ -522,18 +482,7 @@ const OrderReadiness = {
 
   renderMatPanel() {
     const el = document.getElementById('orMatPanel');
-    if (!el || this.layout !== 'split') return;
-
-    if (this.matPanelCollapsed) {
-      el.className = 'or-matstrip';
-      el.style.width = '30px';
-      el.innerHTML = '<span style="writing-mode:vertical-rl;letter-spacing:2px;">物料</span>';
-      el.onclick = function () { OrderReadiness.toggleMatPanel(); };
-      return;
-    }
-    el.className = '';
-    el.style.width = this.matPanelWidth + 'px';
-    el.onclick = null;
+    if (!el) return;
 
     const all = this.matAgg();
     const badList = all.filter(m => m.bad);
@@ -572,9 +521,7 @@ const OrderReadiness = {
     el.innerHTML =
       '<div class="or-mathead">' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
-      '<b style="font-size:13px;">物料缺口榜</b>' +
-      '<span style="margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:13px;padding:2px 5px;border-radius:4px;" ' +
-      'title="收起左栏，订单表占满宽度" onclick="OrderReadiness.toggleMatPanel()">«</span>' +
+      '<b style="font-size:13px;">缺料清单</b>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:var(--text-secondary);">' +
       '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种</span>' +
@@ -586,11 +533,6 @@ const OrderReadiness = {
   },
 
   init() {
-    // 布局版本记忆：上次选的分栏版 / 原版，刷新后保持
-    try {
-      const v = localStorage.getItem('or_layout_version');
-      if (v === 'split' || v === 'classic') this.layout = v;
-    } catch (e) { /* localStorage 不可用时用默认 */ }
     this.renderFilterBar();
     this.renderBodyShell();
     if (window.QueryVariant) {
@@ -712,7 +654,6 @@ const OrderReadiness = {
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.exportData()">导出</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.refresh()">刷新</button>
           <button class="btn btn-secondary btn-sm" onclick="OrderReadiness.resetFilter()">重置</button>
-          <button class="btn btn-secondary btn-sm" id="orLayoutBtn" title="${this.layout === 'split' ? '当前：分栏版（左侧物料缺口榜 + 右侧订单表）。点击切回原版' : '当前：原版（只有订单表）。点击切到分栏版（左侧物料缺口榜 + 右侧订单表）'}" onclick="OrderReadiness.toggleLayout()">${this.layout === 'split' ? '⧉ 原版视图' : '⧉ 分栏视图'}</button>
           <button class="btn btn-secondary btn-sm" id="orMoreBtn" onclick="OrderReadiness.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
         <div id="orMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
