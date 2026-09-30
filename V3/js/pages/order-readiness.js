@@ -486,8 +486,8 @@ const OrderReadiness = {
     const plantOpts = Object.keys(OR_PLANT_TEXT)
       .map(k => '<option value="' + k + '"' + (k === curPlant ? ' selected' : '') + '>' + k + ' ' + OR_PLANT_TEXT[k] + '</option>').join('');
 
-    const isAtp = this.mode === 'atp';
-    const dateLabel = isAtp ? '计划开始日期' : '计划开始日期（仅圈定范围）';
+    // 两种检查逻辑下这个条件作用相同：只圈定要查询的订单范围，不参与缺料判定，所以名称固定
+    const dateLabel = '计划开始日期';
 
     el.innerHTML = `
       <div class="filter-bar">
@@ -511,7 +511,7 @@ const OrderReadiness = {
           </select>
         </div>
         <div class="filter-group"><label>产品编码</label><input type="text" id="orProductCode" placeholder="如 FG-100001"></div>
-        <div class="filter-group"><label>${dateLabel}</label>
+        <div class="filter-group"><label title="只用于圈定要查询的订单范围；缺料判定用的是组件需求日期（SAP 标准逻辑）或现有库存（朴素逻辑）">${dateLabel}</label>
           <div style="display:flex;align-items:center;gap:4px;">
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
