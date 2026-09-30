@@ -382,10 +382,8 @@ const OrderReadiness = {
   rangeKind: 'week',
   orders: [],          // 当前筛选出的订单
   selected: [],        // 勾选的订单号
-  collapsed: [],       // 折叠的订单号
   checked: false,      // 是否已执行 SAP 检查
   checking: false,
-  onlyProblem: true,
   stockMap: {},
   atpMap: {},
   matFocus: null,        // 缺料清单选中的物料编码，右栏据此筛选订单
@@ -417,19 +415,17 @@ const OrderReadiness = {
           .or-orderrow:hover td { background: #f8fafc; }
           .or-orderrow-sel td { background: #f5f9ff; }
           .or-orderrow-sel:hover td { background: #eef4ff; }
-          /* 展开区：组件明细内嵌表 —— 缩进 + 左侧主色竖线，表达「订单 → 组件」的层级 */
-          .or-detailrow > td { padding: 0; background: #fbfcfd; border-top: none; }
-          .or-cmpwrap { margin: 0 16px 12px 40px; padding-left: 10px; border-left: 3px solid var(--primary); }
-          /* 组件行（item）：比订单行更紧凑 */
+          /* 组件明细表：订单号弹窗里展示 */
+          .or-cmpwrap { margin: 12px 0 0; }
           .or-comptable { background: #fff; border: 1px solid var(--border); }
           .or-comptable th { padding: 5px 8px; font-size: 11px; }
           .or-comptable td { padding: 5px 8px; font-size: 12px; }
-          /* 展开箭头：加粗 SVG，hover 变色、展开时旋转 */
-          .or-caret { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; color: var(--text-secondary); transition: transform .15s ease, background .15s ease, color .15s ease; }
-          .or-orderrow:hover .or-caret { background:#e2e8f0; color: var(--primary); }
-          .or-caret-open { transform: rotate(90deg); color: var(--primary); }
+          /* 订单号可点开组件明细 */
           .or-orderno { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--primary); }
+          .or-orderno:hover { text-decoration: underline; }
           .or-comp td { font-size: 13px; }
+          /* 缺料组件行：浅红底（聚焦高亮优先级更高，见 .or-comp-focus） */
+          .or-comp-short td { background: #fff1f2; }
           .or-num { text-align: right; font-variant-numeric: tabular-nums; }
           .or-sub { display:block; font-size: 11px; color: var(--text-muted); margin-top: 1px; }
           .or-clickable { cursor: pointer; }
@@ -686,7 +682,6 @@ const OrderReadiness = {
     this.stockMap = {};
     this.atpMap = {};
     this.matFocus = null;
-    this.collapsed = this.orders.map(o => o.no);
     this.renderFilterBar();
     Object.keys(keep).forEach(id => {
       const e = document.getElementById(id);
@@ -976,7 +971,6 @@ const OrderReadiness = {
 
     // 重新查询后：默认全选、全部折叠、清空上次检查结果
     this.selected = this.orders.map(o => o.no);
-    this.collapsed = this.orders.map(o => o.no);
     this.checked = false;
     this.stockMap = {};
     this.atpMap = {};
@@ -1012,8 +1006,6 @@ const OrderReadiness = {
       else { this.stockMap = res[0]; this.atpMap = {}; }
       this.checked = true;
       this.checking = false;
-      // 检查完成后：有问题的订单自动展开，齐套的保持折叠
-      this.collapsed = this.orders.filter(o => !this._orderHasProblem(o)).map(o => o.no);
       // 朴素逻辑：默认直接展示缺料最严重的物料（清单第一条）
       if (!isAtp) {
         const top = this.matAgg();
@@ -1038,11 +1030,6 @@ const OrderReadiness = {
     // 当前检查逻辑下，该组件是否判缺
     const bad = this.mode === 'atp' ? sapShort : shopShort;
     return { open: open, st: st, atp: atp, shopStock: shopStock, shopGap: shopGap, shopShort: shopShort, sapShort: sapShort, bad: bad };
-  },
-
-  _orderHasProblem(o) {
-    if (!this.checked) return false;
-    return o.components.some(c => this._cell(c).bad);
   },
 
   /* ==================== 汇总条 ==================== */
@@ -1088,18 +1075,9 @@ const OrderReadiness = {
         <span style="width:1px;height:16px;background:var(--border);"></span>
         ${stat}
         <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-            <input type="checkbox" ${this.onlyProblem ? 'checked' : ''} onchange="OrderReadiness.toggleOnlyProblem(this.checked)">
-            只看有问题的
-          </label>
           ${btn}
         </div>
       </div>`;
-  },
-
-  toggleOnlyProblem(v) {
-    this.onlyProblem = v;
-    this.renderTable();
   },
 
   selectAll(v) {
@@ -1121,10 +1099,35 @@ const OrderReadiness = {
     this.renderTable();
   },
 
-  toggleGroup(no) {
-    const i = this.collapsed.indexOf(no);
-    if (i === -1) this.collapsed.push(no); else this.collapsed.splice(i, 1);
-    this.renderTable();
+  // 组件明细改为按需弹窗：点订单号打开，不再占用表格里的展开行
+  openOrderDetail(no) {
+    const o = this.orders.filter(k => k.no === no)[0];
+    if (!o) return;
+    const cont = document.getElementById('orModalContainer');
+    if (!cont) return;
+    const cells = o.components.map(c => this._cell(c));
+    const badge = this.checked ? this._orderBadge(o, cells) : '';
+    cont.innerHTML = `
+      <div class="modal-backdrop" onclick="OrderReadiness.closeModal()">
+        <div class="modal or-modal" onclick="event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title">组件明细 · <span style="font-family:monospace;color:var(--primary);">${esc(o.no)}</span> ${esc(o.name)}</div>
+            <button class="modal-close" onclick="OrderReadiness.closeModal()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="detail-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+              <div class="detail-item"><dt>产品编码</dt><dd style="font-family:monospace;">${esc(o.mat || '—')}</dd></div>
+              ${this.mode === 'stock' ? '<div class="detail-item"><dt>产品批次</dt><dd style="font-family:monospace;">' + esc(o.batch || '—') + '</dd></div>' : ''}
+              <div class="detail-item"><dt>计划期间</dt><dd>${esc(o.startDate)} ~ ${esc(o.endDate)}</dd></div>
+              <div class="detail-item"><dt>检查结果</dt><dd>${badge}</dd></div>
+            </div>
+            ${this._detailHtml(o, cells)}
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="OrderReadiness.closeModal()">关闭</button>
+          </div>
+        </div>
+      </div>`;
   },
 
   /* ==================== 表格：按订单分组 ==================== */
@@ -1159,16 +1162,14 @@ const OrderReadiness = {
 
     const body = orders.map(o => {
       const sel = this.selected.indexOf(o.no) !== -1;
-      const open = this.collapsed.indexOf(o.no) === -1 ||
-        (focus && o.components.some(c => c.mat === focus));
       const cells = o.components.map(c => this._cell(c));
       const badge = this.checked ? this._orderBadge(o, cells) : '';
       return `
-        <tr class="or-orderrow${sel ? ' or-orderrow-sel' : ''}" onclick="OrderReadiness.toggleGroup('${o.no}')">
-          <td style="text-align:center;" onclick="event.stopPropagation()">
+        <tr class="or-orderrow${sel ? ' or-orderrow-sel' : ''}">
+          <td style="text-align:center;">
             <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation();OrderReadiness.toggleSelect('${o.no}')">
           </td>
-          <td class="or-orderno">${esc(o.no)}</td>
+          <td class="or-orderno or-clickable" title="查看该订单组件明细" onclick="OrderReadiness.openOrderDetail('${o.no}')">${esc(o.no)}</td>
           ${this.mode === 'stock' ? '<td style="font-family:monospace;font-size:12px;">' + esc(o.batch || '—') + '</td>' : ''}
           <td style="font-family:monospace;font-size:12px;">${esc(o.mat || '—')}</td>
           <td style="font-weight:600;">${esc(o.name)}</td>
@@ -1176,14 +1177,10 @@ const OrderReadiness = {
           <td>${esc(o.startDate)}</td>
           <td>${esc(o.endDate)}</td>
           ${this.checked ? '<td>' + badge + '</td>' : ''}
-          <td style="text-align:center;"><span class="or-caret${open ? ' or-caret-open' : ''}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td>
-        </tr>
-        <tr class="or-detailrow"${open ? '' : ' style="display:none;"'}>
-          <td colspan="${this._orderCols().length}" style="padding:0;">${this._detailHtml(o, cells)}</td>
         </tr>`;
     }).join('');
 
-    el.innerHTML = focusBar + `<table class="data-table or-ordertable" style="min-width:${this._orderCols().length > 9 ? 1200 : 1080}px;">
+    el.innerHTML = focusBar + `<table class="data-table or-ordertable" style="min-width:${this._orderCols().length > 8 ? 1180 : 1080}px;">
       <thead>${this._orderHeadHtml()}</thead>
       <tbody>${body}</tbody>
     </table>`;
@@ -1299,8 +1296,7 @@ const OrderReadiness = {
       { w: 'width:112px;', t: '计划开始日期' },
       { w: 'width:112px;', t: '计划结束日期' },
       // 检查结果只有执行过检查才有内容，未检查时整列不显示
-      ...(this.checked ? [{ w: 'width:110px;', t: '检查结果' }] : []),
-      { w: 'width:44px;', t: '' }
+      ...(this.checked ? [{ w: 'width:110px;', t: '检查结果' }] : [])
     ]);
   },
 
@@ -1308,24 +1304,19 @@ const OrderReadiness = {
     return '<tr>' + this._orderCols().map(c => '<th style="' + c.w + '">' + c.t + '</th>').join('') + '</tr>';
   },
 
-  // 展开区：组件明细内嵌表（自己的表头），未执行可用性检查时给提示
+  // 组件明细表（自己的表头）：订单号弹窗里展示，未执行可用性检查时给提示
   _detailHtml(o, cells) {
     if (!this.checked) {
-      return '<div style="padding:10px 16px 14px 40px;color:var(--text-muted);font-size:12px;">尚未执行可用性检查 —— 勾选订单后点击「' +
+      return '<div style="padding:14px 2px;color:var(--text-muted);font-size:12px;">尚未执行可用性检查 —— 勾选订单后点击「' +
         this.checkBtnText() + '」，由 SAP 现算</div>';
     }
-    let shown = 0;
+    if (!o.components.length) {
+      return '<div style="padding:14px 2px;color:var(--text-muted);font-size:12px;">该订单没有组件</div>';
+    }
     let rows = '';
     o.components.forEach((c, i) => {
-      const x = cells[i];
-      if (this.onlyProblem && !x.bad) return;
-      shown++;
-      rows += this._compRow(o, c, x, i);
+      rows += this._compRow(o, c, cells[i], i);
     });
-    if (!shown) {
-      return '<div style="padding:10px 16px 14px 40px;color:var(--text-muted);font-size:12px;">' +
-        (this.onlyProblem ? '该订单全部组件齐套，无缺料项' : '无组件') + '</div>';
-    }
     return `<div class="or-cmpwrap">
       <table class="data-table or-comptable" style="min-width:${this.mode === 'atp' ? 1120 : 1000}px;">
         <thead>${this._headHtml()}</thead>
@@ -1384,6 +1375,8 @@ const OrderReadiness = {
   _compRow(o, c, x, i) {
     // 左栏聚焦该物料时，对应组件行高亮（右栏可能同时显示同单其他组件，靠底色定位）
     const focusCls = this.matFocus === c.mat ? ' or-comp-focus' : '';
+    // 缺料行整行浅红底：不再靠「只看有问题的」过滤，改用底色 + 红色缺口数字区分
+    const shortCls = x.bad ? ' or-comp-short' : '';
     // 工作中心取组件自己的；未指定则继承订单的（同一张订单的组件可能分属不同工作中心）
     const wc = c.wc || o.workCenter;
     const head = '<td style="font-family:monospace;font-size:12px;">' + esc(c.mat) + '</td>' +
@@ -1405,7 +1398,7 @@ const OrderReadiness = {
           ? '<span style="color:var(--danger);font-weight:700;">-' + this._fmt(x.shopGap) + '</span>'
           : '<span style="color:var(--text-muted);">0</span>';
       }
-      return '<tr class="or-comp' + focusCls + '">' + head +
+      return '<tr class="or-comp' + shortCls + focusCls + '">' + head +
         '<td class="or-num">' + stockCell + '</td>' +
         '<td class="or-num">' + gapCell + '</td>' +
         '</tr>';
@@ -1436,7 +1429,7 @@ const OrderReadiness = {
         esc(atp.availDate) + '</span>';
     }
 
-    let row = '<tr class="or-comp' + focusCls + '">' + head +
+    let row = '<tr class="or-comp' + shortCls + focusCls + '">' + head +
       '<td class="or-num">' + availCell + '</td>' +
       '<td class="or-num">' + gapCell + '</td>' +
       '<td>' + dateCell + '</td>' +
@@ -1613,7 +1606,6 @@ const OrderReadiness = {
       if (this.selected.indexOf(o.no) === -1) return;
       o.components.forEach(c => {
         const x = this._cell(c);
-        if (this.onlyProblem && !x.bad) return;
         const wc = c.wc || o.workCenter;
         const base = [
           o.no, o.mat || '', o.name, o.startDate, o.endDate,
