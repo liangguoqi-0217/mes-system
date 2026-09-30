@@ -389,6 +389,8 @@ const OrderReadiness = {
   matFocus: null,        // 缺料清单选中的物料编码，右栏据此筛选订单
   matShowAll: false,     // 缺料清单是否连带显示齐套物料
   matPanelWidth: 320,    // 左栏固定宽度，不折叠
+  page: 1,               // 订单表分页（公共组件 Pagination）
+  pageSize: 20,
 
   /* ==================== 渲染 ==================== */
 
@@ -510,7 +512,29 @@ const OrderReadiness = {
     if (!el) return;
     el.innerHTML =
       '<div id="orMatPanel" style="width:' + this.matPanelWidth + 'px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;"></div>' +
-      '<div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;min-width:0;background:#fff;"></div>';
+      '<div style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;">' +
+      '<div id="orTableWrap" style="flex:1;overflow-y:auto;overflow-x:auto;min-width:0;background:#fff;"></div>' +
+      // 分页条固定在表格底部，不随表格滚动
+      '<div id="orPager" style="flex-shrink:0;border-top:1px solid var(--border);background:#fff;"></div>' +
+      '</div>';
+  },
+
+  /* ==================== 分页（公共组件 Pagination） ==================== */
+
+  // 当前右栏要展示的订单：左栏聚焦某物料时只留含该物料的订单
+  _listOrders() {
+    if (!this.matFocus) return this.orders;
+    return this.orders.filter(o => o.components.some(c => c.mat === this.matFocus));
+  },
+
+  totalRows() { return this._listOrders().length; },
+  prevPage() { Pagination.go(this, -1); },
+  nextPage() { Pagination.go(this, 1); },
+  changePageSize(v) { Pagination.setSize(this, v); },
+
+  _clearPager() {
+    const p = document.getElementById('orPager');
+    if (p) p.innerHTML = '';
   },
 
   toggleMatShowAll(v) {
@@ -520,12 +544,14 @@ const OrderReadiness = {
 
   focusMat(mat) {
     this.matFocus = this.matFocus === mat ? null : mat;   // 再点一次取消
+    this.page = 1;   // 右栏换成该物料的订单，回到第一页
     this.renderMatPanel();
     this.renderTable();
   },
 
   clearMatFocus() {
     this.matFocus = null;
+    this.page = 1;
     this.renderMatPanel();
     this.renderTable();
   },
@@ -970,8 +996,9 @@ const OrderReadiness = {
       return true;
     });
 
-    // 重新查询后：默认全选、全部折叠、清空上次检查结果
+    // 重新查询后：默认全选、清空上次检查结果、回到第一页
     this.selected = this.orders.map(o => o.no);
+    this.page = 1;
     this.checked = false;
     this.stockMap = {};
     this.atpMap = {};
@@ -1045,8 +1072,11 @@ const OrderReadiness = {
       : '<button class="btn btn-blue btn-sm" onclick="OrderReadiness.runCheck()">' + btnText + '</button>';
   },
 
+  // 表头全选：只对当前页生效，跨页已勾的保持不动
   selectAll(v) {
-    this.selected = v ? this.orders.map(o => o.no) : [];
+    const nos = Pagination.slice(this._listOrders(), this.page, this.pageSize).rows.map(o => o.no);
+    if (v) nos.forEach(no => { if (this.selected.indexOf(no) === -1) this.selected.push(no); });
+    else this.selected = this.selected.filter(no => nos.indexOf(no) === -1);
     this.checked = false;
     this.stockMap = {};
     this.atpMap = {};
@@ -1103,29 +1133,36 @@ const OrderReadiness = {
     this.renderMatPanel();   // 左栏跟着订单数据一起重算
     if (this.checking) {
       el.innerHTML = '<div class="or-mask">' + this.checkingText() + '</div>';
+      this._clearPager();
       return;
     }
     if (!this.orders.length) {
       el.innerHTML = '<div class="or-mask">当前条件下没有流程订单，请调整筛选条件</div>';
+      this._clearPager();
       return;
     }
 
     // 朴素逻辑 + 已检查 + 选中物料：右栏换成「该物料的供需详情」（需求 = 各流程订单，供应 = 现有库存）
     if (this.mode === 'stock' && this.checked && this.matFocus) {
       this.renderMatDetail(this.matFocus);
+      this._clearPager();
       return;
     }
 
-    // 左栏选中物料：右栏只留含该物料的订单，并强制展开（便于直接看到组件行）
+    // 左栏选中物料：右栏只留含该物料的订单
     const focus = this.matFocus;
-    const orders = focus ? this.orders.filter(o => o.components.some(c => c.mat === focus)) : this.orders;
-    const focusBar = focus ? this._focusBarHtml(focus, orders.length) : '';
-    if (focus && !orders.length) {
+    const list = this._listOrders();
+    const focusBar = focus ? this._focusBarHtml(focus, list.length) : '';
+    if (!list.length) {
       el.innerHTML = focusBar + '<div class="or-mask">没有订单含物料 ' + esc(focus) + '</div>';
+      this._clearPager();
       return;
     }
 
-    const body = orders.map(o => {
+    // 只渲染当前页
+    const pg = Pagination.slice(list, this.page, this.pageSize);
+    this.page = pg.stat.page;   // 页码越界时由组件纠正回来
+    const body = pg.rows.map(o => {
       const sel = this.selected.indexOf(o.no) !== -1;
       const cells = o.components.map(c => this._cell(c));
       const badge = this.checked ? this._orderBadge(o, cells) : '';
@@ -1149,6 +1186,8 @@ const OrderReadiness = {
       <thead>${this._orderHeadHtml()}</thead>
       <tbody>${body}</tbody>
     </table>`;
+
+    Pagination.render('orPager', 'OrderReadiness', pg.stat, { total: list.length, unit: '单' });
   },
 
   // 聚焦某物料时右栏顶部的提示条：只留退出入口
@@ -1267,7 +1306,8 @@ const OrderReadiness = {
 
   // 表头第一列放全选复选框（与每行的复选框上下对齐），替代原先汇总条里的全选
   _orderHeadHtml() {
-    const all = this.orders.length && this.selected.length === this.orders.length;
+    const rows = Pagination.slice(this._listOrders(), this.page, this.pageSize).rows;
+    const all = rows.length && rows.every(o => this.selected.indexOf(o.no) !== -1);
     return '<tr>' + this._orderCols().map((c, i) =>
       '<th style="' + c.w + '">' + (i === 0
         ? '<input type="checkbox" title="全选本页订单"' + (all ? ' checked' : '') +
