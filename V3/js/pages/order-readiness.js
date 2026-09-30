@@ -510,7 +510,6 @@ const OrderReadiness = {
     const isStock = this.mode === 'stock';
     const all = this.matAgg();
     const badList = all.filter(m => m.bad);
-    const overList = isStock ? all.filter(m => m.gap < 0) : [];
     // 朴素逻辑按缺口排序全量展示（缺料在前、过剩垫底），SAP 逻辑默认只列缺料
     const list = isStock ? all : (this.matShowAll ? all : badList);
 
@@ -548,23 +547,14 @@ const OrderReadiness = {
       });
     }
 
-    const statHtml = isStock
-      ? '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种' +
-        (overList.length ? ' · 过剩 <b style="color:var(--success);">' + overList.length + '</b> 种' : '') + '</span>'
-      : '<span>缺料 <b style="color:var(--danger);">' + badList.length + '</b> 种</span>' +
-        '<label style="margin-left:auto;display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;">' +
-        '<input type="checkbox"' + (this.matShowAll ? ' checked' : '') + ' onchange="OrderReadiness.toggleMatShowAll(this.checked)">含齐套' +
-        '</label>';
-
     el.innerHTML =
       '<div class="or-mathead">' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
       '<b style="font-size:13px;">缺料清单</b>' +
-      '<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">' +
-      (isStock ? '缺口降序' : '') + '</span>' +
-      '</div>' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-top:5px;font-size:12px;color:var(--text-secondary);">' +
-      statHtml +
+      (isStock ? '' :
+        '<label style="margin-left:auto;display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;">' +
+        '<input type="checkbox"' + (this.matShowAll ? ' checked' : '') + ' onchange="OrderReadiness.toggleMatShowAll(this.checked)">含齐套' +
+        '</label>') +
       '</div>' +
       '</div>' + items;
   },
@@ -978,14 +968,9 @@ const OrderReadiness = {
     </table>`;
   },
 
-  // 聚焦某物料时右栏顶部的提示条：说明在看什么、缺多少、怎么退出
-  _focusBarHtml(mat, orderCnt) {
-    const m = this.matAgg().filter(k => k.mat === mat)[0];
-    const gap = m ? '<b>-' + this._fmt(m.gap) + '</b> ' + esc(m.unit) : '';
-    const name = m ? esc(m.name) : esc(mat);
+  // 聚焦某物料时右栏顶部的提示条：只留退出入口
+  _focusBarHtml() {
     return '<div class="or-focusbar">' +
-      '<span>正在看物料 <b>' + name + '</b>（' + esc(mat) + '）· 缺口合计 ' + gap +
-      ' · 涉及 <b>' + orderCnt + '</b> 张订单</span>' +
       '<span style="margin-left:auto;color:var(--primary);cursor:pointer;text-decoration:underline;" ' +
       'onclick="OrderReadiness.clearMatFocus()">显示全部订单</span>' +
       '</div>';
@@ -1020,14 +1005,11 @@ const OrderReadiness = {
 
     el.innerHTML =
       '<div class="or-focusbar">' +
-      '<span>正在看物料 <b>' + esc(m.name) + '</b>（' + esc(m.mat) + '）· 需求合计 ' + this._fmt(m.req) + ' ' + u +
-      ' · 现有库存 ' + (m.supply === null ? '—' : this._fmt(m.supply)) + ' ' + u + '</span>' +
       '<span style="margin-left:auto;color:var(--primary);cursor:pointer;text-decoration:underline;" ' +
       'onclick="OrderReadiness.clearMatFocus()">显示全部订单</span>' +
       '</div>' +
       '<div style="padding:16px 18px;">' +
-      '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求 —— 流程订单' +
-      '<span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:6px;">' + m.rows.length + ' 张</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">需求 —— 流程订单</div>' +
       '<table class="data-table" style="min-width:800px;">' +
       '<thead><tr>' +
       '<th style="width:130px;">流程订单号</th><th style="width:120px;">产品批次</th><th style="width:110px;">产品编码</th>' +
@@ -1042,8 +1024,7 @@ const OrderReadiness = {
       '</tbody></table>' +
 
       // 供应：与需求表同版式（同 data-table / 同合计行），前 4 列 colspan 占位使数字列对齐
-      '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应 —— 现有库存' +
-      '<span style="font-weight:400;color:var(--text-muted);font-size:12px;margin-left:6px;">非限制 + 质检</span></div>' +
+      '<div style="font-size:13px;font-weight:700;margin:16px 0 8px;">供应 —— 现有库存</div>' +
       '<table class="data-table" style="min-width:800px;">' +
       '<thead><tr><th colspan="4">供应元素</th>' +
       '<th style="width:130px;text-align:right;">可用数量</th><th style="width:130px;"></th></tr></thead>' +
@@ -1056,15 +1037,12 @@ const OrderReadiness = {
 
       // 判定结果：单独一张，与上面同为 data-table，数字列位置一致
       '<table class="data-table" style="min-width:800px;margin-top:14px;">' +
-      '<thead><tr><th colspan="4">判定结果' +
-      '<span style="font-weight:400;color:var(--text-muted);font-size:11px;margin-left:6px;">需求合计 − 供应合计</span></th>' +
+      '<thead><tr><th colspan="4">判定结果</th>' +
       '<th style="width:130px;text-align:right;">差异</th><th style="width:130px;"></th></tr></thead>' +
       '<tbody><tr class="or-sumrow">' +
       '<td colspan="4" style="text-align:right;font-weight:700;">' + gapLabel + '</td>' +
       '<td class="or-num" style="font-weight:700;color:' + gapColor + ';">' + gapTxt + ' ' + u + '</td><td></td>' +
       '</tr></tbody></table>' +
-      '<div style="margin-top:10px;font-size:11px;color:var(--text-muted);line-height:1.8;">' +
-      '朴素逻辑：库存由所有订单共用，按需求合计判定一次，不按每张单各算一次。</div>' +
       '</div>';
   },
 
