@@ -47,9 +47,7 @@ const OR_WC_PLANT = {
   'WC-PROD-11': '2001', 'WC-PACK-11': '2001', 'WC-WT-11': '2001'
 };
 
-// 订单列表列数：勾选 + 流程订单号 + 产品编码 + 产品描述 + 计划开始/结束日期
-//              + 组件数 + 检查结果 + 展开（工作中心在组件层，订单可跨工作中心）
-const OR_ORDER_COLS = 9;
+// 订单列表列数由 _orderCols() 动态决定（朴素逻辑多一列「产品批次」）
 
 // 当前登录用户（权限模拟）。isPlantLevel=true：厂级，工厂与工作中心都可下拉选择；
 // 改成 false 即模拟车间用户：两项锁定为其所属值，下拉禁用。
@@ -88,7 +86,7 @@ function orRangeMonth() {
 
 const OR_ORDERS = [
   {
-    no: '3000000123', mat: 'FG-100001', name: '阿莫西林颗粒制剂', plant: '1000', workCenter: 'WC-PROD-01',
+    no: '3000000123', batch: 'BP2409001', mat: 'FG-100001', name: '阿莫西林颗粒制剂', plant: '1000', workCenter: 'WC-PROD-01',
     startDate: orAddDays(0), endDate: orAddDays(8), qty: '1200', unit: 'KG', status: 'REL', statusName: '已下达',
     components: [
       { mat: 'MAT-10001', name: '阿莫西林原料药', unit: 'KG', reqQty: 600, issuedQty: 0, reqDate: orAddDays(0) },
@@ -100,7 +98,7 @@ const OR_ORDERS = [
     ]
   },
   {
-    no: '3000000167', mat: 'FG-100002', name: '阿莫西林胶囊包装', plant: '1000', workCenter: 'WC-PROD-01',
+    no: '3000000167', batch: 'BP2409002', mat: 'FG-100002', name: '阿莫西林胶囊包装', plant: '1000', workCenter: 'WC-PROD-01',
     startDate: orAddDays(2), endDate: orAddDays(9), qty: '500', unit: 'KG', status: 'REL', statusName: '已下达',
     components: [
       { mat: 'MAT-10005', name: '胶囊壳#0', unit: 'EA', reqQty: 300000, issuedQty: 0, reqDate: orAddDays(2), wc: 'WC-PROD-02' },
@@ -109,7 +107,7 @@ const OR_ORDERS = [
     ]
   },
   {
-    no: '3000000201', mat: 'FG-100003', name: '布洛芬片（第一批）', plant: '1000', workCenter: 'WC-PROD-01',
+    no: '3000000201', batch: 'BP2409003', mat: 'FG-100003', name: '布洛芬片（第一批）', plant: '1000', workCenter: 'WC-PROD-01',
     startDate: orAddDays(1), endDate: orAddDays(4), qty: '600', unit: 'KG', status: 'REL', statusName: '已下达',
     components: [
       { mat: 'MAT-10004', name: '布洛芬原料', unit: 'KG', reqQty: 200, issuedQty: 0, reqDate: orAddDays(1) },
@@ -117,7 +115,7 @@ const OR_ORDERS = [
     ]
   },
   {
-    no: '3000000145', mat: 'FG-100004', name: '维生素C片', plant: '1000', workCenter: 'WC-PROD-02',
+    no: '3000000145', batch: 'BP2409004', mat: 'FG-100004', name: '维生素C片', plant: '1000', workCenter: 'WC-PROD-02',
     startDate: orAddDays(0), endDate: orAddDays(6), qty: '800', unit: 'KG', status: 'REL', statusName: '已下达',
     components: [
       { mat: 'MAT-10004', name: '维生素C原料', unit: 'KG', reqQty: 150, issuedQty: 0, reqDate: orAddDays(0) },
@@ -125,21 +123,21 @@ const OR_ORDERS = [
     ]
   },
   {
-    no: '3000000189', mat: 'FG-200001', name: '注射用水配制', plant: '1000', workCenter: 'WC-WT-01',
+    no: '3000000189', batch: 'BP2409005', mat: 'FG-200001', name: '注射用水配制', plant: '1000', workCenter: 'WC-WT-01',
     startDate: orAddDays(3), endDate: orAddDays(5), qty: '5000', unit: 'L', status: 'REL', statusName: '已下达',
     components: [
       { mat: 'MAT-20001', name: '注射用水', unit: 'L', reqQty: 5000, issuedQty: 0, reqDate: orAddDays(3) }
     ]
   },
   {
-    no: '3000000192', mat: 'FG-100004', name: '维生素C片（第二批）', plant: '1000', workCenter: 'WC-PROD-02',
+    no: '3000000192', batch: 'BP2409006', mat: 'FG-100004', name: '维生素C片（第二批）', plant: '1000', workCenter: 'WC-PROD-02',
     startDate: orAddDays(7), endDate: orAddDays(13), qty: '900', unit: 'KG', status: 'CRTD', statusName: '已创建',
     components: [
       { mat: 'MAT-10004', name: '维生素C原料', unit: 'KG', reqQty: 230, issuedQty: 0, reqDate: orAddDays(7) }
     ]
   },
   {
-    no: '3000000311', mat: 'FG-300001', name: '口服液配制', plant: '2001', workCenter: 'WC-PROD-11',
+    no: '3000000311', batch: 'BP2409007', mat: 'FG-300001', name: '口服液配制', plant: '2001', workCenter: 'WC-PROD-11',
     startDate: orAddDays(1), endDate: orAddDays(6), qty: '3000', unit: 'L', status: 'REL', statusName: '已下达',
     components: [
       { mat: 'MAT-10009', name: '蔗糖', unit: 'KG', reqQty: 200, issuedQty: 0, reqDate: orAddDays(1) },
@@ -147,7 +145,7 @@ const OR_ORDERS = [
     ]
   },
   {
-    no: '3000000315', mat: 'FG-300002', name: '口服液包装', plant: '2001', workCenter: 'WC-PACK-11',
+    no: '3000000315', batch: 'BP2409008', mat: 'FG-300002', name: '口服液包装', plant: '2001', workCenter: 'WC-PACK-11',
     startDate: orAddDays(4), endDate: orAddDays(9), qty: '3000', unit: 'L', status: 'CRTD', statusName: '已创建',
     components: [
       { mat: 'MAT-10010', name: '药用铝箔', unit: 'KG', reqQty: 60, issuedQty: 0, reqDate: orAddDays(4) }
@@ -909,6 +907,7 @@ const OrderReadiness = {
             <input type="checkbox" ${sel ? 'checked' : ''} onclick="event.stopPropagation();OrderReadiness.toggleSelect('${o.no}')">
           </td>
           <td class="or-orderno">${esc(o.no)}</td>
+          ${this.mode === 'stock' ? '<td style="font-family:monospace;font-size:12px;">' + esc(o.batch || '—') + '</td>' : ''}
           <td style="font-family:monospace;font-size:12px;">${esc(o.mat || '—')}</td>
           <td style="font-weight:600;">${esc(o.name)}</td>
           <td>${esc(o.startDate)}</td>
@@ -918,11 +917,11 @@ const OrderReadiness = {
           <td style="text-align:center;"><span class="or-caret${open ? ' or-caret-open' : ''}"><svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M6 3.5l4.5 4.5L6 12.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></td>
         </tr>
         <tr class="or-detailrow"${open ? '' : ' style="display:none;"'}>
-          <td colspan="${OR_ORDER_COLS}" style="padding:0;">${this._detailHtml(o, cells)}</td>
+          <td colspan="${this._orderCols().length}" style="padding:0;">${this._detailHtml(o, cells)}</td>
         </tr>`;
     }).join('');
 
-    el.innerHTML = focusBar + `<table class="data-table or-ordertable" style="min-width:1080px;">
+    el.innerHTML = focusBar + `<table class="data-table or-ordertable" style="min-width:${this._orderCols().length > 9 ? 1200 : 1080}px;">
       <thead>${this._orderHeadHtml()}</thead>
       <tbody>${body}</tbody>
     </table>`;
@@ -943,9 +942,13 @@ const OrderReadiness = {
 
   // 订单列表表头：只放订单层字段，组件列在展开区的内嵌表里
   _orderCols() {
-    return [
+    const head = [
       { w: 'width:36px;', t: '' },
-      { w: 'width:130px;', t: '流程订单号' },
+      { w: 'width:130px;', t: '流程订单号' }
+    ];
+    // 产品批次只在朴素逻辑下显示：该逻辑只看库存 vs 未清，按批次追料是主要用法
+    if (this.mode === 'stock') head.push({ w: 'width:120px;', t: '产品批次' });
+    return head.concat([
       { w: 'width:110px;', t: '产品编码' },
       { w: '', t: '产品描述' },
       { w: 'width:112px;', t: '计划开始日期' },
@@ -953,7 +956,7 @@ const OrderReadiness = {
       { w: 'width:64px;text-align:right;', t: '组件数' },
       { w: 'width:110px;', t: '检查结果' },
       { w: 'width:44px;', t: '' }
-    ];
+    ]);
   },
 
   _orderHeadHtml() {
