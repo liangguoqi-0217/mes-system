@@ -471,6 +471,34 @@ const OrderReadiness = {
           .or-comp-focus td { background: #fffbeb !important; }
           /* 物料详情里需求表 / 供应表 / 判定表共用的合计行 */
           .or-sumrow { background: #f8fafc; font-weight: 600; }
+
+          /* 工作中心多选：按钮摘要 + 勾选面板（替代原生多选列表框，避免撑高筛选栏） */
+          .or-wc { position: relative; }
+          .or-wc-btn {
+            display: flex; align-items: center; gap: 6px; width: 100%; min-width: 180px; height: 34px;
+            padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: #fff; font-size: 13px; color: var(--text); cursor: pointer; text-align: left;
+          }
+          .or-wc-btn:hover { border-color: var(--primary); }
+          .or-wc-sum { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .or-wc-sum.or-wc-empty { color: var(--text-muted); }
+          .or-wc-caret { color: var(--text-muted); font-size: 10px; flex-shrink: 0; }
+          .or-wc-panel {
+            position: absolute; z-index: 40; top: calc(100% + 4px); left: 0; min-width: 220px;
+            max-height: 236px; overflow: auto; padding: 6px; background: #fff;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.14);
+          }
+          .or-wc-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px;
+            font-size: 13px; font-weight: 400; color: var(--text); cursor: pointer; }
+          .or-wc-item:hover { background: #f1f5f9; }
+          .or-wc-item input[type="checkbox"] { width: 14px; height: 14px; min-width: 0; padding: 0; margin: 0;
+            border-radius: 3px; accent-color: var(--primary); flex-shrink: 0; }
+          .or-wc-code { margin-left: auto; font-size: 11px; color: var(--text-muted); font-family: monospace; }
+          .or-wc-ops { display: flex; align-items: center; gap: 12px; margin-top: 4px; padding: 7px 8px 3px;
+            border-top: 1px solid var(--border); font-size: 12px; }
+          .or-wc-ops a { color: var(--primary); cursor: pointer; }
+          .or-wc-ops a:hover { text-decoration: underline; }
         </style>
 
         <div id="orBody" style="flex:1;display:flex;min-height:0;min-width:0;background:#fff;"></div>
@@ -707,13 +735,120 @@ const OrderReadiness = {
     return vals.filter(Boolean);
   },
 
-  // 切换工厂：工作中心列表跟着换，默认带出该工厂下的默认工作中心，并立即重查
+  // 工作中心控件：按钮（已选摘要）+ 勾选面板。隐藏的原生多选 select 作为数据源，
+  // 查询变式模块按 id 读写它，无需改动通用模块。
+  _wcControlHtml(plant, selArr) {
+    const sel = Array.isArray(selArr) ? selArr : (selArr ? [selArr] : []);
+    const items = Object.keys(OR_WORKCENTER_TEXT).filter(k => OR_WC_PLANT[k] === plant);
+    return '<div class="or-wc" id="orWcBox">' +
+      '<button type="button" class="or-wc-btn" onclick="OrderReadiness.toggleWcPanel(event)">' +
+      '<span class="or-wc-sum' + (sel.length ? '' : ' or-wc-empty') + '" id="orWcSum">' + this._wcSummary(items, sel) + '</span>' +
+      '<span class="or-wc-caret">▾</span></button>' +
+      '<div class="or-wc-panel" id="orWcPanel" style="display:none;">' +
+      items.map(k => '<label class="or-wc-item"><input type="checkbox" value="' + k + '"' +
+        (sel.indexOf(k) !== -1 ? ' checked' : '') + ' onchange="OrderReadiness.onWcToggle(this)">' +
+        '<span>' + esc(OR_WORKCENTER_TEXT[k]) + '</span>' +
+        '<span class="or-wc-code">' + k + '</span></label>').join('') +
+      '<div class="or-wc-ops"><a onclick="OrderReadiness.wcAll(true)">全选</a>' +
+      '<a onclick="OrderReadiness.wcAll(false)">清空</a>' +
+      '<span style="margin-left:auto;color:var(--text-muted);" id="orWcCount">已选 ' + sel.length + '</span></div>' +
+      '</div>' +
+      '<select id="orWorkCenter" multiple style="display:none;">' + this._wcOptions(plant, sel) + '</select>' +
+      '</div>';
+  },
+
+  // 按钮上的已选摘要：1~2 个列名字，更多则「首个 等 N 个」
+  _wcSummary(items, sel) {
+    const names = items.filter(k => sel.indexOf(k) !== -1).map(k => OR_WORKCENTER_TEXT[k]);
+    if (!names.length) return '请选择工作中心';
+    if (names.length <= 2) return names.join('、');
+    return names[0] + ' 等 ' + names.length + ' 个';
+  },
+
+  toggleWcPanel(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const p = document.getElementById('orWcPanel');
+    if (!p) return;
+    const willOpen = p.style.display === 'none';
+    p.style.display = willOpen ? 'block' : 'none';
+    if (willOpen) this._bindWcOutside();
+    else this.closeWcPanel();
+  },
+
+  closeWcPanel() {
+    const p = document.getElementById('orWcPanel');
+    if (p) p.style.display = 'none';
+    if (this._wcOutside) {
+      document.removeEventListener('click', this._wcOutside);
+      this._wcOutside = null;
+    }
+  },
+
+  // 点面板外任意处收起（延迟绑定，避免本次点击立刻触发关闭）
+  _bindWcOutside() {
+    if (this._wcOutside) return;
+    const self = this;
+    this._wcOutside = function (ev) {
+      const box = document.getElementById('orWcBox');
+      if (box && box.contains && box.contains(ev.target)) return;
+      self.closeWcPanel();
+    };
+    setTimeout(() => document.addEventListener('click', this._wcOutside), 0);
+  },
+
+  // 勾选单个工作中心：同步到隐藏 select（数据源）并刷新摘要，不重建面板以免打断连续勾选
+  onWcToggle(el) {
+    const sel = document.getElementById('orWorkCenter');
+    if (sel && sel.options) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === el.value) sel.options[i].selected = !!el.checked;
+      }
+    }
+    this._syncWcSum();
+  },
+
+  wcAll(on) {
+    const sel = document.getElementById('orWorkCenter');
+    if (sel && sel.options) {
+      for (let i = 0; i < sel.options.length; i++) sel.options[i].selected = !!on;
+    }
+    const panel = document.getElementById('orWcPanel');
+    if (panel && panel.getElementsByTagName) {
+      const boxes = panel.getElementsByTagName('input');
+      for (let i = 0; i < boxes.length; i++) {
+        if (boxes[i].type === 'checkbox') boxes[i].checked = !!on;
+      }
+    }
+    this._syncWcSum();
+  },
+
+  _syncWcSum() {
+    const plant = this._val('orPlant') || OR_CURRENT_USER.plant;
+    const items = Object.keys(OR_WORKCENTER_TEXT).filter(k => OR_WC_PLANT[k] === plant);
+    const vals = this._wcVals();
+    const sum = document.getElementById('orWcSum');
+    if (sum) {
+      sum.textContent = this._wcSummary(items, vals);
+      sum.className = 'or-wc-sum' + (vals.length ? '' : ' or-wc-empty');
+    }
+    const cnt = document.getElementById('orWcCount');
+    if (cnt) cnt.textContent = '已选 ' + vals.length;
+  },
+
+  // 按指定选中项重建工作中心控件（变式回填 / 重置 / 切换工厂后调用）；不传则沿用当前已选
+  syncWcFromSelect(plant, selArr) {
+    if (!OR_CURRENT_USER.isPlantLevel) return;
+    const p = plant || this._val('orPlant') || OR_CURRENT_USER.plant;
+    const sel = selArr || this._wcVals();
+    const box = document.getElementById('orWcBox');
+    if (box) box.outerHTML = this._wcControlHtml(p, sel);
+  },
+
+  // 切换工厂：工作中心选项跟着换（重建控件），默认带出该工厂下的默认工作中心，并立即重查
   onPlantChange() {
     const plant = this._val('orPlant') || OR_CURRENT_USER.plant;
-    const sel = document.getElementById('orWorkCenter');
-    if (sel && OR_CURRENT_USER.isPlantLevel) {
-      sel.innerHTML = this._wcOptions(plant, this._defaultWc(plant));
-    }
+    this.closeWcPanel();
+    this.syncWcFromSelect(plant, [this._defaultWc(plant)]);
     this.query();
   },
 
@@ -732,9 +867,7 @@ const OrderReadiness = {
     // 必输条件：工厂 / 工作中心 / 检查逻辑 / 计划开始日期（起止）
     const req = '<span style="color:var(--danger);margin-left:2px;">*</span>';
     const wcCur = this._wcVals();
-    const wcOpts = this._wcOptions(curPlant, wcCur.length ? wcCur : [this._defaultWc(curPlant)]);
-    // 多选高度按该工厂实际工作中心数自适应（最多 4 行），避免多余空白
-    const wcSize = Math.min(4, Math.max(1, Object.keys(OR_WORKCENTER_TEXT).filter(k => OR_WC_PLANT[k] === curPlant).length));
+    const wcSel = wcCur.length ? wcCur : [this._defaultWc(curPlant)];
 
     el.innerHTML = `
       <div class="filter-bar">
@@ -745,7 +878,7 @@ const OrderReadiness = {
         </div>
         <div class="filter-group"><label>工作中心${req}${isPlant ? '<span style="font-weight:400;color:var(--text-muted);font-size:11px;">可多选</span>' : ''}</label>
           ${isPlant
-            ? '<select id="orWorkCenter" multiple size="' + wcSize + '" style="min-width:150px;">' + wcOpts + '</select>'
+            ? this._wcControlHtml(curPlant, wcSel)
             : '<select id="orWorkCenter" disabled><option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option></select>'}
         </div>
         <div class="filter-group"><label>检查逻辑${req}
@@ -1456,12 +1589,12 @@ const OrderReadiness = {
     ['orOrderNo', 'orProductCode', 'orMatCode', 'orOrderStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
-    // 重置：工厂回到登录用户所属工厂，工作中心列表跟着换并带出该工厂默认工作中心
+    // 重置：工厂回到登录用户所属工厂，工作中心控件重建并带出该工厂默认工作中心
+    this.closeWcPanel();
     const plant = document.getElementById('orPlant');
     if (plant && OR_CURRENT_USER.isPlantLevel) {
       plant.value = OR_CURRENT_USER.plant;
-      const wc = document.getElementById('orWorkCenter');
-      if (wc) wc.innerHTML = this._wcOptions(OR_CURRENT_USER.plant, [this._defaultWc(OR_CURRENT_USER.plant)]);
+      this.syncWcFromSelect(OR_CURRENT_USER.plant, [this._defaultWc(OR_CURRENT_USER.plant)]);
     }
     this.setRange('week', true);
     this.query();
@@ -1529,6 +1662,8 @@ if (window.QueryVariant) {
       orPlant: '工厂', orDateFrom: '计划开始日期(起)', orDateTo: '计划开始日期(止)',
       orOrderStatus: '订单状态', orOrderNo: '流程订单号', orProductCode: '产品编码', orMatCode: '物料编码/描述', orWorkCenter: '工作中心'
     },
-    onApply: function () { OrderReadiness.query(); }
+    onApply: function () { OrderReadiness.query(); },
+    // 变式回填后会直接写 select 的值，这里把工作中心控件（按钮摘要 + 勾选面板）重新对齐
+    syncFilter: function () { OrderReadiness.syncWcFromSelect(); }
   });
 }
