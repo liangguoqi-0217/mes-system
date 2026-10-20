@@ -1,29 +1,70 @@
 // ===== 检验批管理页面 =====
-// PRD v1.0 - 质量管理 → 质量检验 → 检验批管理
-// ✨ v2.2 - 2026-07-07: 移除跨工厂检验协同功能（协同按钮/弹窗/生成确认）
+// PRD v2.0 - 质量管理 → 质量检验 → 检验批管理
+// v2.2 - 2026-07-07: 移除跨工厂检验协同功能（协同按钮/弹窗/生成确认）
+// ✨ v3.0 - 2026-10-20: 重构检验批生成模式
+//    · 01/02/03/04/05/06/08：SAP 自动生成检验批，MES 定时抓取后落库（拉取型）
+//    · 89：MES 手工创建，调用 SAP 接口取得检验批号后落库（推送型）
+//    · 使用决策（UD）在 MES 执行；检验结果实时回传 SAP
 const InspectionBatch = {
-  _version: '2.1-20260617',
-  activeTab: 'pending', // 'pending' | 'list'
+  _version: '3.0-20261020',
+  activeTab: 'list', // 'list' | 'sync'
   page: 1, pageSize: 10,
   filtered: [],
 
-  // ==================== 模拟数据 ====================
+  // ==================== 检验类型与生成模式 ====================
 
-  // 待生成检验批的物料凭证（从 SAP 抽取）
-  pendingDocs: [
-    { id:'MD001', docNo:'4900000123', year:'2026', materialCode:'MAT-10001', materialName:'阿莫西林原料药', sapBatch:'SAP-BT-20260601', supplierBatch:'AM2026H14', movementType:'101', movementName:'采购收货', quantity:'500.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', storageLocation:'SL01', storageName:'原材料仓库', receiptDate:'2026-06-14', status:'INIT' },
-    { id:'MD002', docNo:'4900000124', year:'2026', materialCode:'MAT-10002', materialName:'淀粉辅料', sapBatch:'SAP-BT-20260602', supplierBatch:'DF2606I14', movementType:'101', movementName:'采购收货', quantity:'1000.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', storageLocation:'SL01', storageName:'原材料仓库', receiptDate:'2026-06-14', status:'INIT' },
-    { id:'MD003', docNo:'4900000125', year:'2026', materialCode:'MAT-10003', materialName:'硬脂酸镁', sapBatch:'SAP-BT-20260603', supplierBatch:'YM2606J15', movementType:'101', movementName:'采购收货', quantity:'25.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', storageLocation:'SL01', storageName:'原材料仓库', receiptDate:'2026-06-15', status:'INIT' },
-    { id:'MD004', docNo:'4900000126', year:'2026', materialCode:'MAT-20001', materialName:'胶囊壳#0', sapBatch:'SAP-BT-20260604', supplierBatch:'JN2026K15', movementType:'101', movementName:'采购收货', quantity:'500000.000', unit:'EA', plant:'1000', plantName:'山东步长制药工厂', storageLocation:'SL02', storageName:'包材仓库', receiptDate:'2026-06-15', status:'INIT' },
-    { id:'MD005', docNo:'4900000127', year:'2026', materialCode:'MAT-10004', materialName:'对乙酰氨基酚', sapBatch:'SAP-BT-20260605', supplierBatch:'DA2606L16', movementType:'101', movementName:'采购收货', quantity:'300.000', unit:'KG', plant:'2002', plantName:'山东丹红制药工厂', storageLocation:'SL01', storageName:'原材料仓库', receiptDate:'2026-06-16', status:'INIT' }
+  // 检验类型：01/02/03/04/05/06/08 由 SAP 自动生成，MES 定时抓取；89 由 MES 创建并回 SAP 取号
+  inspectTypeOptions: [
+    { code:'01', name:'采购收货检验', createMode:'SAP_AUTO',   sourceDocType:'MAT_DOC',    bindObject:'物料+批次' },
+    { code:'02', name:'生产入库检验', createMode:'SAP_AUTO',   sourceDocType:'PROD_ORDER', bindObject:'物料+批次' },
+    { code:'03', name:'生产过程检验', createMode:'SAP_AUTO',   sourceDocType:'PROD_ORDER', bindObject:'订单+工序' },
+    { code:'04', name:'其他收货检验', createMode:'SAP_AUTO',   sourceDocType:'MAT_DOC',    bindObject:'物料+批次' },
+    { code:'05', name:'发货检验',     createMode:'SAP_AUTO',   sourceDocType:'DELIVERY',   bindObject:'物料+批次' },
+    { code:'06', name:'库存转储检验', createMode:'SAP_AUTO',   sourceDocType:'MAT_DOC',    bindObject:'物料+批次' },
+    { code:'08', name:'复检',         createMode:'SAP_AUTO',   sourceDocType:'NONE',      bindObject:'物料+批次' },
+    { code:'89', name:'手工检验批',   createMode:'MES_MANUAL', sourceDocType:'NONE',       bindObject:'物料+批次' }
   ],
 
-  // 已生成的检验批
+  createModeOptions: [
+    { code:'SAP_AUTO',   name:'SAP 自动生成' },
+    { code:'MES_MANUAL', name:'MES 手工创建' }
+  ],
+
+  syncStatusOptions: [
+    { code:'SYNCED',  name:'已同步'   },
+    { code:'PENDING', name:'同步中'   },
+    { code:'FAILED',  name:'同步失败' }
+  ],
+
+  sourceDocTypeOptions: [
+    { code:'MAT_DOC',    name:'物料凭证' },
+    { code:'PROD_ORDER', name:'生产订单' },
+    { code:'DELIVERY',   name:'交货单'   },
+    { code:'NONE',       name:'无来源'   }
+  ],
+
+  getInspectTypeName(code) {
+    const t = this.inspectTypeOptions.find(x => x.code === code);
+    return t ? `${code} ${t.name}` : code;
+  },
+
+  // ==================== 模拟数据 ====================
+
+  // 同步任务日志（MES 定时抓取 SAP 检验批）
+  syncLogData: [
+    { id:'J001', jobId:'JOB-20261020-001', jobName:'SAP 检验批定时抓取', execTime:'2026-10-20 00:00:05', range:'2026-10-19 23:55:00 ~ 2026-10-20 00:00:00', total:12, success:12, failed:0, status:'SUCCESS', duration:'3.2s' },
+    { id:'J002', jobId:'JOB-20261020-002', jobName:'SAP 检验批状态同步', execTime:'2026-10-20 00:05:00', range:'2026-10-19 00:00:00 ~ 2026-10-20 00:00:00', total:8, success:8, failed:0, status:'SUCCESS', duration:'1.8s' },
+    { id:'J003', jobId:'JOB-20261020-003', jobName:'SAP 检验批定时抓取', execTime:'2026-10-20 00:10:00', range:'2026-10-20 00:05:00 ~ 2026-10-20 00:10:00', total:9, success:7, failed:2, status:'PARTIAL', duration:'4.1s', failReason:'接口超时（2 条）' },
+    { id:'J004', jobId:'JOB-20261019-001', jobName:'复检到期批量生成', execTime:'2026-10-19 00:00:00', range:'复检到期日 <= 2026-10-19', total:5, success:5, failed:0, status:'SUCCESS', duration:'2.6s' },
+    { id:'J005', jobId:'JOB-20261019-002', jobName:'SAP 检验批定时抓取', execTime:'2026-10-19 23:55:00', range:'2026-10-19 23:50:00 ~ 2026-10-19 23:55:00', total:6, success:0, failed:6, status:'FAILED', duration:'—', failReason:'SAP 接口连接失败' }
+  ],
+
+  // 检验批主表（SAP 抓取入库 / MES 手工创建）
   batchData: [
-    { id:'B001', batchNo:'1000-2606-001', docNo:'4900000100', materialCode:'MAT-10005', materialName:'布洛芬原料药', sapBatch:'SAP-BT-20260501', supplierBatch:'BT202606A1', quantity:'200.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CRTD', statusName:'已创建', createTime:'2026-06-14 09:00:00', createBy:'张工', updateTime:'2026-06-14 09:00:00' },
-    { id:'B002', batchNo:'1000-2606-002', docNo:'4900000101', materialCode:'MAT-10006', materialName:'维生素C原料', sapBatch:'SAP-BT-20260502', supplierBatch:'AK2606B02', quantity:'150.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'SAMP', statusName:'取样中', createTime:'2026-06-14 10:30:00', createBy:'李工', updateTime:'2026-06-14 14:00:00' },
-    { id:'B003', batchNo:'1000-2606-003', docNo:'4900000102', materialCode:'MAT-10007', materialName:'葡萄糖原料', sapBatch:'SAP-BT-20260510', supplierBatch:'GL2026C05', quantity:'800.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'INSP', statusName:'检验中', createTime:'2026-06-15 08:15:00', createBy:'张工', updateTime:'2026-06-16 09:00:00' },
-    { id:'B004', batchNo:'2001-2606-001', docNo:'4900000103', materialCode:'MAT-10008', materialName:'盐酸克林霉素', sapBatch:'SAP-BT-20260512', supplierBatch:'YK2606D08', quantity:'50.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'IP-2001-001', purposeCode:'QC-02', purposeName:'中间品检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-16 11:00:00', createBy:'王工', updateTime:'2026-06-17 08:30:00',
+    { id:'B001', batchNo:'100000012301', sapLotNo:'100000012301', inspectType:'01', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000100', materialCode:'MAT-10005', materialName:'布洛芬原料药', sapBatch:'SAP-BT-20260501', supplierBatch:'BT202606A1', quantity:'200.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CRTD', statusName:'已创建', createTime:'2026-06-14 09:00:00', createBy:'张工', updateTime:'2026-06-14 09:00:00', syncStatus:'SYNCED', syncTime:'2026-06-14 00:00:12', syncJobId:'JOB-20260614-001' },
+    { id:'B002', batchNo:'100000012302', sapLotNo:'100000012302', inspectType:'01', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000101', materialCode:'MAT-10006', materialName:'维生素C原料', sapBatch:'SAP-BT-20260502', supplierBatch:'AK2606B02', quantity:'150.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'SAMP', statusName:'取样中', createTime:'2026-06-14 10:30:00', createBy:'李工', updateTime:'2026-06-14 14:00:00', syncStatus:'SYNCED', syncTime:'2026-06-14 00:00:12', syncJobId:'JOB-20260614-001' },
+    { id:'B003', batchNo:'100000012303', sapLotNo:'100000012303', inspectType:'01', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000102', materialCode:'MAT-10007', materialName:'葡萄糖原料', sapBatch:'SAP-BT-20260510', supplierBatch:'GL2026C05', quantity:'800.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'INSP', statusName:'检验中', createTime:'2026-06-15 08:15:00', createBy:'张工', updateTime:'2026-06-16 09:00:00', syncStatus:'SYNCED', syncTime:'2026-06-15 00:00:08', syncJobId:'JOB-20260615-001' },
+    { id:'B004', batchNo:'100000012304', sapLotNo:'100000012304', inspectType:'02', createMode:'SAP_AUTO', sourceDocType:'PROD_ORDER', sourceDocNo:'6000000121', materialCode:'MAT-10008', materialName:'盐酸克林霉素', sapBatch:'SAP-BT-20260512', supplierBatch:'YK2606D08', quantity:'50.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'IP-2001-001', purposeCode:'QC-02', purposeName:'中间品检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-16 11:00:00', createBy:'王工', updateTime:'2026-06-17 08:30:00', syncStatus:'SYNCED', syncTime:'2026-06-16 00:10:22', syncJobId:'JOB-20260616-001',
     inspectionVerdict:'passed', inspectionResults:[
       { micCode:'2001-MIC-001', micName:'外观', micType:'qualitative', methodName:'目视检查法', unit:'', lowerSpec:'—', upperSpec:'合格', value:'合格', verdict:'合格' },
       { micCode:'2001-MIC-002', micName:'pH值', micType:'quantitative', methodName:'pH值测定法', unit:'pH', lowerSpec:'3.5', upperSpec:'5.5', value:'4.62', verdict:'合格' },
@@ -31,11 +72,11 @@ const InspectionBatch = {
       { micCode:'2001-MIC-004', micName:'水分', micType:'quantitative', methodName:'干燥失重法', unit:'%', lowerSpec:'0', upperSpec:'2.0', value:'1.3', verdict:'合格' },
       { micCode:'2001-MIC-005', micName:'有关物质', micType:'quantitative', methodName:'HPLC法', unit:'%', lowerSpec:'0', upperSpec:'1.0', value:'0.82', verdict:'合格' }
     ] },
-    { id:'B005', batchNo:'2002-2606-001', docNo:'4900000104', materialCode:'MAT-20002', materialName:'注射用水', sapBatch:'SAP-BT-20260515', supplierBatch:'ZS2606E10', quantity:'2000.000', unit:'L', plant:'2002', plantName:'山东丹红制药工厂', planNo:'IP-2002-001', purposeCode:'QC-03', purposeName:'成品检验', status:'DEC', statusName:'已决策', createTime:'2026-06-13 07:00:00', createBy:'赵工', updateTime:'2026-06-14 16:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-14 16:00:00' },
-    { id:'B006', batchNo:'1000-2606-004', docNo:'4900000105', materialCode:'MAT-10009', materialName:'甘露醇辅料', sapBatch:'SAP-BT-20260518', supplierBatch:'GL2606F12', quantity:'100.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CLSD', statusName:'已关闭', createTime:'2026-06-12 09:30:00', createBy:'张工', updateTime:'2026-06-13 17:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-13 10:00:00', closeTime:'2026-06-13 17:00:00' },
-    { id:'B007', batchNo:'1000-2606-005', docNo:'4900000106', materialCode:'MAT-10010', materialName:'微晶纤维素', sapBatch:'SAP-BT-20260520', supplierBatch:'WX2026G13', quantity:'300.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'CANC', statusName:'已取消', createTime:'2026-06-11 10:00:00', createBy:'李工', updateTime:'2026-06-12 08:00:00', cancelReason:'SAP 凭证冲销，自动取消' },
+    { id:'B005', batchNo:'100000012305', sapLotNo:'100000012305', inspectType:'02', createMode:'SAP_AUTO', sourceDocType:'PROD_ORDER', sourceDocNo:'6000000122', materialCode:'MAT-20002', materialName:'注射用水', sapBatch:'SAP-BT-20260515', supplierBatch:'ZS2606E10', quantity:'2000.000', unit:'L', plant:'2002', plantName:'山东丹红制药工厂', planNo:'IP-2002-001', purposeCode:'QC-03', purposeName:'成品检验', status:'DEC', statusName:'已决策', createTime:'2026-06-13 07:00:00', createBy:'赵工', updateTime:'2026-06-14 16:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-14 16:00:00', syncStatus:'SYNCED', syncTime:'2026-06-14 00:05:00', syncJobId:'JOB-20260614-001' },
+    { id:'B006', batchNo:'100000012306', sapLotNo:'100000012306', inspectType:'01', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000105', materialCode:'MAT-10009', materialName:'甘露醇辅料', sapBatch:'SAP-BT-20260518', supplierBatch:'GL2606F12', quantity:'100.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CLSD', statusName:'已关闭', createTime:'2026-06-12 09:30:00', createBy:'张工', updateTime:'2026-06-13 17:00:00', decision:'release', decisionBy:'QA经理', decisionTime:'2026-06-13 10:00:00', closeTime:'2026-06-13 17:00:00', syncStatus:'SYNCED', syncTime:'2026-06-13 00:05:00', syncJobId:'JOB-20260613-001' },
+    { id:'B007', batchNo:'100000012307', sapLotNo:'100000012307', inspectType:'01', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000106', materialCode:'MAT-10010', materialName:'微晶纤维素', sapBatch:'SAP-BT-20260520', supplierBatch:'WX2026G13', quantity:'300.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-01', purposeName:'来料检验', status:'CANC', statusName:'已取消', createTime:'2026-06-11 10:00:00', createBy:'李工', updateTime:'2026-06-12 08:00:00', cancelReason:'SAP 凭证冲销，自动取消', syncStatus:'SYNCED', syncTime:'2026-06-12 00:05:00', syncJobId:'JOB-20260612-001' },
     // 其他工厂检验批数据（演示用）
-    { id:'B008', batchNo:'2001-2606-008', docNo:'4900000180', materialCode:'MAT-10001', materialName:'阿莫西林原料药', sapBatch:'SAP-BT-20260601', supplierBatch:'AM2026H14', quantity:'500.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'2001-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-15 08:00:00', createBy:'刘工', updateTime:'2026-06-17 14:00:00',
+    { id:'B008', batchNo:'100000012308', sapLotNo:'100000012308', inspectType:'03', createMode:'SAP_AUTO', sourceDocType:'PROD_ORDER', sourceDocNo:'6000000231', materialCode:'MAT-10001', materialName:'阿莫西林原料药', sapBatch:'SAP-BT-20260601', supplierBatch:'AM2026H14', quantity:'500.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'2001-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-15 08:00:00', createBy:'刘工', updateTime:'2026-06-17 14:00:00', syncStatus:'SYNCED', syncTime:'2026-06-15 00:00:22', syncJobId:'JOB-20260615-002',
       decision:'pending', decisionBy:'', decisionTime:'', inspectionVerdict:'passed', inspectionRemark:'所有项目均合格',
       crossPlantOps: [
         { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'按常规取样方案', status:'done', sampledBy:'王工', sampleTime:'2026-06-16 09:30', sampleQty:'5.000', samplingPlanName:'SP-001 常规取样方案' },
@@ -61,7 +102,7 @@ const InspectionBatch = {
         }
       ]
     },
-    { id:'B009', batchNo:'2002-2606-003', docNo:'4900000185', materialCode:'MAT-10002', materialName:'淀粉辅料', sapBatch:'SAP-BT-20260602', supplierBatch:'DF2606I14', quantity:'1000.000', unit:'KG', plant:'2002', plantName:'山东丹红制药工厂', planNo:'2002-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'INSP', statusName:'检验中', createTime:'2026-06-14 09:00:00', createBy:'陈工', updateTime:'2026-06-17 11:00:00',
+    { id:'B009', batchNo:'100000012309', sapLotNo:'100000012309', inspectType:'89', createMode:'MES_MANUAL', sourceDocType:'NONE', sourceDocNo:'', materialCode:'MAT-10002', materialName:'淀粉辅料', sapBatch:'SAP-BT-20260602', supplierBatch:'DF2606I14', quantity:'1000.000', unit:'KG', plant:'2002', plantName:'山东丹红制药工厂', planNo:'2002-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'INSP', statusName:'检验中', createTime:'2026-06-14 09:00:00', createBy:'陈工', updateTime:'2026-06-17 11:00:00', syncStatus:'SYNCED', syncTime:'2026-06-14 09:00:00', syncJobId:'—',
       crossPlantOps: [
         { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'按取样方案执行', status:'done', sampledBy:'周工', sampleTime:'2026-06-15 14:00', sampleQty:'3.000', samplingPlanName:'SP-002 辅料取样方案' },
         { opNum:'0020', opType:'inspection', opTypeName:'理化检验', workCenterName:'理化实验室', description:'理化项目检验', status:'done', doneBy:'吴工', doneTime:'2026-06-16 11:00',
@@ -75,7 +116,12 @@ const InspectionBatch = {
           { micCode:'2002-MIC-004', micName:'大肠埃希菌', micType:'qualitative', methodName:'薄膜过滤法', defaultCode:'未检出', value:'', verdict:'' }
         ]}
       ]
-    }
+    },
+    // ============ 以下为新增演示数据：覆盖 08 复检 / 04 其他 / 05 发货 / 06 转储 ============
+    { id:'B010', batchNo:'100000012310', sapLotNo:'100000012310', inspectType:'08', createMode:'SAP_AUTO', sourceDocType:'NONE', sourceDocNo:'', materialCode:'MAT-10005', materialName:'布洛芬原料药', sapBatch:'SAP-BT-20261001', supplierBatch:'BT2026J20', quantity:'200.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CRTD', statusName:'已创建', createTime:'2026-10-19 00:00:00', createBy:'复检JOB', updateTime:'2026-10-19 00:00:00', syncStatus:'SYNCED', syncTime:'2026-10-19 00:00:00', syncJobId:'JOB-20261019-001' },
+    { id:'B011', batchNo:'100000012311', sapLotNo:'100000012311', inspectType:'04', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000501', materialCode:'MAT-30001', materialName:'中转辅料-白砂糖', sapBatch:'SAP-BT-20261015', supplierBatch:'', quantity:'500.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-003', purposeCode:'QC-01', purposeName:'来料检验', status:'CRTD', statusName:'已创建', createTime:'2026-10-18 10:00:00', createBy:'张工', updateTime:'2026-10-18 10:00:00', syncStatus:'FAILED', syncTime:'2026-10-18 00:00:00', syncJobId:'JOB-20261018-002' },
+    { id:'B012', batchNo:'100000012312', sapLotNo:'100000012312', inspectType:'05', createMode:'SAP_AUTO', sourceDocType:'DELIVERY', sourceDocNo:'8800000123', materialCode:'MAT-10006', materialName:'维生素C原料', sapBatch:'SAP-BT-20260502', supplierBatch:'', quantity:'150.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-002', purposeCode:'QC-03', purposeName:'成品检验', status:'CRTD', statusName:'已创建', createTime:'2026-10-17 14:30:00', createBy:'李工', updateTime:'2026-10-17 14:30:00', syncStatus:'SYNCED', syncTime:'2026-10-17 14:35:00', syncJobId:'JOB-20261017-003' },
+    { id:'B013', batchNo:'100000012313', sapLotNo:'100000012313', inspectType:'06', createMode:'SAP_AUTO', sourceDocType:'MAT_DOC', sourceDocNo:'4900000301', materialCode:'MAT-10009', materialName:'甘露醇辅料', sapBatch:'SAP-BT-20261012', supplierBatch:'', quantity:'100.000', unit:'KG', plant:'1000', plantName:'山东步长制药工厂', planNo:'IP-1000-001', purposeCode:'QC-01', purposeName:'来料检验', status:'CRTD', statusName:'已创建', createTime:'2026-10-16 11:00:00', createBy:'王工', updateTime:'2026-10-16 11:00:00', syncStatus:'SYNCED', syncTime:'2026-10-16 11:05:00', syncJobId:'JOB-20261016-002' }
   ],
 
   // 检验计划选项（从 ipData 动态构建）
@@ -114,13 +160,18 @@ const InspectionBatch = {
             <div style="font-size:18px;font-weight:700;">检验批管理</div>
             <div style="font-size:13px;opacity:0.8;">质量管理 → 质量检验 → 检验批管理</div>
           </div>
-
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
+              onclick="InspectionBatch.syncNow()" title="手动触发一次 SAP 检验批抓取">立即同步</button>
+            <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
+              onclick="InspectionBatch.openManualCreate()" title="创建 89 型手工检验批（调用 SAP 接口取号）">+ 手工创建</button>
+          </div>
         </div>
 
         <!-- Tabs -->
         <div class="tabs" style="margin:0;padding:0 24px;background:white;border-bottom:1px solid var(--border);flex-shrink:0;">
-          <div class="tab ${this.activeTab==='pending'?'active':''}" id="ibTabPending" onclick="InspectionBatch.switchTab('pending')">⏳ 待生成检验批 <span class="badge badge-yellow badge-sm" style="margin-left:4px;">${this.pendingDocs.length}</span></div>
-          <div class="tab ${this.activeTab==='list'?'active':''}" id="ibTabList" onclick="InspectionBatch.switchTab('list')">📋 检验批列表</div>
+          <div class="tab ${this.activeTab==='list'?'active':''}" id="ibTabList" onclick="InspectionBatch.switchTab('list')">📋 检验批列表 <span class="badge badge-blue badge-sm" style="margin-left:4px;">${this.batchData.length}</span></div>
+          <div class="tab ${this.activeTab==='sync'?'active':''}" id="ibTabSync" onclick="InspectionBatch.switchTab('sync')">🔄 同步任务${this._failedSyncCount() ? ` <span class="badge badge-red badge-sm" style="margin-left:4px;">${this._failedSyncCount()}</span>` : ''}</div>
         </div>
 
         <!-- 统计卡片（仅列表tab显示） -->
@@ -138,6 +189,9 @@ const InspectionBatch = {
   },
 
   init() {
+    // 补全检验类型 → 生成方式 / 来源单据 / 同步信息的派生字段
+    this._normalize();
+
     // 查询变式：进入页面自动回填（默认变式 > 上次查询条件），不自动执行查询
     if (window.QueryVariant) {
       QueryVariant.mount('inspection-batch');
@@ -148,21 +202,258 @@ const InspectionBatch = {
     this.renderStats();
     this.renderFilterBar();
     this.renderTable();
-    this.renderPagination();
+    // 同步任务页签的分页由 doRenderSyncTable 自行渲染
+    if (this.activeTab === 'list') this.renderPagination();
   },
 
   switchTab(tab) {
     this.activeTab = tab;
     this.page = 1;
-    document.getElementById('ibTabList').className = 'tab' + (tab==='list'?' active':'');
-    document.getElementById('ibTabPending').className = 'tab' + (tab==='pending'?' active':'');
-    document.getElementById('ibStatsRow').style.display = tab==='list'?'':'none';
+    const listEl = document.getElementById('ibTabList');
+    const syncEl = document.getElementById('ibTabSync');
+    if (listEl) listEl.className = 'tab' + (tab==='list'?' active':'');
+    if (syncEl) syncEl.className = 'tab' + (tab==='sync'?' active':'');
+    const statsEl = document.getElementById('ibStatsRow');
+    if (statsEl) statsEl.style.display = tab==='list'?'':'none';
     this.init();
   },
 
   refresh() {
     this.init();
     toast('数据已刷新');
+  },
+
+  // ==================== 生成模式与同步 ====================
+
+  // 数据归一化：根据检验类型补全生成模式、来源单据类型、同步信息
+  _normalize() {
+    this.batchData.forEach(b => {
+      const t = this.inspectTypeOptions.find(x => x.code === b.inspectType);
+      b.inspectTypeName = t ? t.name : '未定义';
+      b.createMode = b.createMode || (t ? t.createMode : 'SAP_AUTO');
+      b.sourceDocType = b.sourceDocType || (t ? t.sourceDocType : 'NONE');
+      if (b.sourceDocNo === undefined) b.sourceDocNo = '';
+      if (b.sapLotNo === undefined) b.sapLotNo = b.batchNo;
+      if (!b.syncStatus) b.syncStatus = 'SYNCED';
+      if (!b.syncTime) b.syncTime = b.createTime;
+      if (!b.syncJobId) b.syncJobId = '—';
+    });
+  },
+
+  // 同步失败的检验批条数（需要人工重试）
+  _failedSyncCount() {
+    return this.batchData.filter(b => b.syncStatus === 'FAILED').length;
+  },
+
+  // 单个重试
+  retrySync(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return;
+    b.syncStatus = 'PENDING';
+    this.init();
+    toast(`检验批 ${b.batchNo} 正在重新同步...`);
+    setTimeout(() => {
+      b.syncStatus = 'SYNCED';
+      b.syncTime = this._now() + ':00';
+      b.syncJobId = 'JOB-MANUAL-' + Date.now().toString().slice(-6);
+      this.init();
+      toast(`检验批 ${b.batchNo} 同步成功`);
+    }, 800);
+  },
+
+  // 批量重试全部失败项
+  retryAllFailed() {
+    const failed = this.batchData.filter(b => b.syncStatus === 'FAILED');
+    if (!failed.length) { toast('当前没有同步失败的记录'); return; }
+    failed.forEach(b => { b.syncStatus = 'PENDING'; });
+    this.init();
+    toast(`正在重试 ${failed.length} 条同步失败记录...`);
+    setTimeout(() => {
+      failed.forEach(b => {
+        b.syncStatus = 'SYNCED';
+        b.syncTime = this._now() + ':00';
+        b.syncJobId = 'JOB-BATCH-' + Date.now().toString().slice(-6);
+      });
+      this.init();
+      toast(`${failed.length} 条记录同步成功`);
+    }, 1000);
+  },
+
+  // 立即同步（手动触发抓取 JOB）
+  syncNow() {
+    toast('已触发 SAP 检验批抓取任务，正在后台执行...');
+    setTimeout(() => {
+      const n = 3 + Math.floor(Math.random() * 5);
+      const jobId = 'JOB-MANUAL-' + Date.now().toString().slice(-6);
+      this.syncLogData.unshift({
+        id: 'J' + (this.syncLogData.length + 1),
+        jobId,
+        jobName: 'SAP 检验批定时抓取（手动）',
+        execTime: this._now(),
+        range: '增量：最近 5 分钟',
+        total: n, success: n, failed: 0,
+        status: 'SUCCESS', duration: (1 + Math.random() * 3).toFixed(1) + 's'
+      });
+      this.init();
+      toast(`同步完成，新增 ${n} 条检验批`);
+    }, 1200);
+  },
+
+  // ==================== 手工创建检验批（89 型）====================
+
+  openManualCreate() {
+    const planOptions = this.getPlanOptions('');
+    const planSelectOpts = planOptions.map(p => `<option value="${p.no}">${p.no} — ${p.name}</option>`).join('');
+
+    showModal(
+      '手工创建检验批（类型 89）',
+      `<div style="padding:4px 0;">
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e293b;">
+          <div style="font-weight:600;margin-bottom:4px;">📌 创建说明</div>
+          <div style="color:var(--text-secondary);line-height:1.6;">
+            类型 89 的检验批由 MES 发起创建。提交后将<strong>调用 SAP 接口生成检验批号</strong>，
+            SAP 返回批号后 MES 落库；检验结果保存时<strong>实时回传 SAP</strong>。
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>工厂<span class="req">*</span></label>
+            <select id="ibMcFactory">
+              <option value="">请选择</option>
+              ${this.factoryOptions.map(f => `<option value="${f.code}">${f.code} — ${f.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>物料编码<span class="req">*</span></label>
+            <input type="text" id="ibMcMaterial" placeholder="如 MAT-10001">
+          </div>
+          <div class="form-group">
+            <label>SAP 批次号<span class="req">*</span></label>
+            <input type="text" id="ibMcSapBatch" placeholder="如 SAP-BT-20261001">
+          </div>
+          <div class="form-group">
+            <label>供应商批次号</label>
+            <input type="text" id="ibMcSuppBatch" placeholder="可选">
+          </div>
+          <div class="form-group">
+            <label>检验数量<span class="req">*</span></label>
+            <input type="number" id="ibMcQty" step="0.001" min="0" placeholder="如 500.000">
+          </div>
+          <div class="form-group">
+            <label>单位<span class="req">*</span></label>
+            <select id="ibMcUnit">
+              <option value="KG">KG</option>
+              <option value="G">G</option>
+              <option value="L">L</option>
+              <option value="EA">EA</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>用途代码<span class="req">*</span></label>
+            <select id="ibMcPurpose">
+              ${this.purposeOptions.map(p => `<option value="${p.code}">${p.code} - ${p.name}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>检验计划<span class="req">*</span></label>
+            <select id="ibMcPlan" onchange="InspectionBatch.onPlanChange()">
+              <option value="">请选择</option>
+              ${planSelectOpts}
+            </select>
+          </div>
+        </div>
+        <div id="ibMcPlanPreview" style="margin-top:16px;"></div>
+        <div class="form-group full" style="margin-top:12px;">
+          <label>备注</label>
+          <textarea id="ibMcRemark" placeholder="可选填写备注信息" rows="2" style="width:100%;"></textarea>
+        </div>
+      </div>`,
+      [
+        { text:'取消', cls:'btn-secondary', action: closeModal },
+        { text:'提交并取号', cls:'btn-primary', action: ()=>{ InspectionBatch.submitManualCreate(); } }
+      ],
+      'modal-xl'
+    );
+
+    this._genPlanOptions = planOptions;
+  },
+
+  submitManualCreate() {
+    const plant = document.getElementById('ibMcFactory')?.value || '';
+    const material = (document.getElementById('ibMcMaterial')?.value || '').trim();
+    const sapBatch = (document.getElementById('ibMcSapBatch')?.value || '').trim();
+    const suppBatch = (document.getElementById('ibMcSuppBatch')?.value || '').trim();
+    const qty = document.getElementById('ibMcQty')?.value || '';
+    const unit = document.getElementById('ibMcUnit')?.value || '';
+    const purpose = document.getElementById('ibMcPurpose')?.value || '';
+    const planNo = document.getElementById('ibMcPlan')?.value || '';
+    const remark = (document.getElementById('ibMcRemark')?.value || '').trim();
+
+    if (!plant) { toast('请选择工厂'); return; }
+    if (!material) { toast('请填写物料编码'); return; }
+    if (!sapBatch) { toast('请填写 SAP 批次号'); return; }
+    if (!qty || parseFloat(qty) <= 0) { toast('请填写有效的检验数量'); return; }
+    if (!planNo) { toast('请选择检验计划'); return; }
+
+    const purposeObj = this.purposeOptions.find(p => p.code === purpose);
+    const now = this._now() + ':00';
+
+    // 模拟调用 SAP 取号接口
+    const sapLotNo = String(100000012300 + Math.floor(Math.random() * 900));
+
+    const newBatch = {
+      id: 'B' + String(this.batchData.length + 1).padStart(3, '0'),
+      batchNo: sapLotNo,
+      sapLotNo: sapLotNo,
+      inspectType: '89',
+      inspectTypeName: '手工检验批',
+      createMode: 'MES_MANUAL',
+      sourceDocType: 'NONE',
+      sourceDocNo: '',
+      materialCode: material,
+      materialName: material,
+      sapBatch,
+      supplierBatch: suppBatch,
+      quantity: qty,
+      unit,
+      plant,
+      plantName: (this.factoryOptions.find(f => f.code === plant) || {}).name || '',
+      planNo,
+      purposeCode: purpose,
+      purposeName: purposeObj ? purposeObj.name : '',
+      status: 'CRTD',
+      statusName: '已创建',
+      createTime: now,
+      createBy: '当前用户',
+      updateTime: now,
+      syncStatus: 'SYNCED',
+      syncTime: now,
+      syncJobId: '—',
+      remark
+    };
+
+    this.batchData.unshift(newBatch);
+    closeModal();
+    toast(`检验批 ${sapLotNo} 已创建（SAP 返回批号）`);
+    this.init();
+  },
+
+  // 查看生成来源信息
+  renderSourceInfo(b) {
+    const modeBadge = b.createMode === 'MES_MANUAL'
+      ? `<span class="badge badge-purple badge-sm">MES 手工创建</span>`
+      : `<span class="badge badge-blue badge-sm">SAP 自动生成</span>`;
+    return `<div style="background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;padding:12px 16px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">生成来源</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px 20px;font-size:13px;">
+        <div><span style="color:var(--text-muted);">检验类型：</span><strong>${esc(this.getInspectTypeName(b.inspectType)||'')}</strong></div>
+        <div><span style="color:var(--text-muted);">生成方式：</span>${modeBadge}</div>
+        <div><span style="color:var(--text-muted);">来源单据：</span>${esc(b.sourceDocNo||'—')}${b.sourceDocType&&b.sourceDocType!=='NONE'?` <span style="font-size:12px;color:var(--text-muted);">(${esc(b.sourceDocType)})</span>`:''}</div>
+        <div><span style="color:var(--text-muted);">绑定对象：</span>${esc((this.inspectTypeOptions.find(x=>x.code===b.inspectType)||{}).bindObject||'—')}</div>
+        <div><span style="color:var(--text-muted);">同步时间：</span>${esc(b.syncTime||'—')}</div>
+        <div><span style="color:var(--text-muted);">同步任务：</span><span style="font-family:monospace;font-size:12px;">${esc(b.syncJobId||'—')}</span></div>
+      </div>
+    </div>`;
   },
 
   // ==================== 统计卡片 ====================
@@ -180,13 +471,15 @@ const InspectionBatch = {
     const crtd = d.filter(b => b.status==='CRTD').length;
     const samp = d.filter(b => b.status==='SAMP'||b.status==='INSP').length;
     const done = d.filter(b => b.status==='DONE').length;
-    const today = d.filter(b => b.createTime && b.createTime.startsWith('2026-06-17')).length;
+    const today = d.filter(b => b.createTime && b.createTime.startsWith(this._now().split(' ')[0])).length;
+    const syncFailed = this._failedSyncCount();
 
     return `<div class="stats-row" style="padding:12px 24px 0;">
       <div class="stat-card"><div class="stat-icon blue">📊</div><div><div class="stat-label">检验批总数</div><div class="stat-value">${total}</div></div></div>
       <div class="stat-card"><div class="stat-icon yellow">⏳</div><div><div class="stat-label">待处理</div><div class="stat-value">${crtd+samp}</div></div></div>
       <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-label">已完成</div><div class="stat-value">${done}</div></div></div>
       <div class="stat-card"><div class="stat-icon blue">📅</div><div><div class="stat-label">今日新增</div><div class="stat-value">${today}</div></div></div>
+      <div class="stat-card"><div class="stat-icon red">🔄</div><div><div class="stat-label">同步失败</div><div class="stat-value">${syncFailed}</div></div></div>
     </div>`;
   },
 
@@ -197,47 +490,207 @@ const InspectionBatch = {
     if (!el) return;
 
     if (this.activeTab === 'list') {
-      el.innerHTML = `<div class="filter-bar">
+      el.innerHTML = `<div class="filter-bar" style="display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;">
         <div class="filter-group"><label>工厂</label><select id="ibFactory">
           <option value="">全部</option>
           ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
         </select></div>
         <div class="filter-group"><label>物料编码</label><input type="text" id="ibMaterial" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibSuppBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibSapBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>状态</label><select id="ibStatus">
+        <div class="filter-group"><label>检验类型</label><select id="ibInspectType">
           <option value="">全部</option>
-          <option value="CRTD">已创建</option>
-          <option value="SAMP">取样中</option>
-          <option value="INSP">检验中</option>
-          <option value="DONE">检验完成</option>
-          <option value="DEC">已决策</option>
-          <option value="CLSD">已关闭</option>
-          <option value="CANC">已取消</option>
+          ${this.inspectTypeOptions.map(t => `<option value="${t.code}">${t.code} - ${t.name}</option>`).join('')}
         </select></div>
-        <div class="filter-actions">
+        <div class="filter-group"><label>生成方式</label><select id="ibCreateMode">
+          <option value="">全部</option>
+          ${this.createModeOptions.map(c => `<option value="${c.code}">${c.name}</option>`).join('')}
+        </select></div>
+        <div class="filter-actions" style="margin-left:auto;display:flex;gap:8px;flex-shrink:0;">
           <button class="btn btn-primary btn-sm" onclick="InspectionBatch.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetFilter()">重置</button>
           <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.exportData()">导出</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.refresh()">刷新</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.toggleMore()" id="ibMoreToggle">更多条件 ▾</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetFilter()">重置</button>
+        </div>
+        <!-- 更多条件：与上方条件同容器、同底色、无分隔线，独占一整行 -->
+        <div id="ibMorePanel" style="display:none;width:100%;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;">
+          <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibSuppBatch" placeholder="模糊查询"></div>
+          <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibSapBatch" placeholder="模糊查询"></div>
+          <div class="filter-group"><label>同步状态</label><select id="ibSyncStatus">
+            <option value="">全部</option>
+            ${this.syncStatusOptions.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}
+          </select></div>
+          <div class="filter-group"><label>状态</label><select id="ibStatus">
+            <option value="">全部</option>
+            <option value="CRTD">已创建</option>
+            <option value="SAMP">取样中</option>
+            <option value="INSP">检验中</option>
+            <option value="DONE">检验完成</option>
+            <option value="DEC">已决策</option>
+            <option value="CLSD">已关闭</option>
+            <option value="CANC">已取消</option>
+          </select></div>
         </div>
       </div>`;
     } else {
-      el.innerHTML = `<div class="filter-bar">
-        <div class="filter-group"><label>工厂</label><select id="ibPendFactory">
+      el.innerHTML = `<div class="filter-bar" style="display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;">
+        <div class="filter-group"><label>任务名称</label><select id="ibSyncJob">
           <option value="">全部</option>
-          ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
+          <option value="SAP 检验批定时抓取">SAP 检验批定时抓取</option>
+          <option value="SAP 检验批状态同步">SAP 检验批状态同步</option>
+          <option value="复检到期批量生成">复检到期批量生成</option>
         </select></div>
-        <div class="filter-group"><label>物料编码</label><input type="text" id="ibPendMaterial" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibPendSuppBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibPendSapBatch" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>过账日期</label><input type="date" id="ibPendReceiptDate"></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="InspectionBatch.searchPending()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetPendingFilter()">重置</button>
+        <div class="filter-group"><label>执行结果</label><select id="ibSyncResult">
+          <option value="">全部</option>
+          <option value="SUCCESS">成功</option>
+          <option value="PARTIAL">部分成功</option>
+          <option value="FAILED">失败</option>
+        </select></div>
+        <div class="filter-group"><label>执行日期</label><input type="date" id="ibSyncDate"></div>
+        <div class="filter-actions" style="margin-left:auto;display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn btn-primary btn-sm" onclick="InspectionBatch.searchSyncLog()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.exportData()">导出</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.refresh()">刷新</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.retryAllFailed()">批量重试</button>
+          <button class="btn btn-secondary btn-sm" onclick="InspectionBatch.resetSyncFilter()">重置</button>
         </div>
       </div>`;
     }
+  },
+
+  toggleMore() {
+    const p = document.getElementById('ibMorePanel');
+    const b = document.getElementById('ibMoreToggle');
+    if (!p) return;
+    const show = p.style.display === 'none';
+    if (show) {
+      p.style.display = 'flex';
+      if (b) b.textContent = '更多条件 ▴';
+    } else {
+      p.style.display = 'none';
+      if (b) b.textContent = '更多条件 ▾';
+    }
+  },
+
+  searchSyncLog() {
+    const job = document.getElementById('ibSyncJob')?.value || '';
+    const result = document.getElementById('ibSyncResult')?.value || '';
+    const date = document.getElementById('ibSyncDate')?.value || '';
+
+    this.syncFiltered = this.syncLogData.filter(l => {
+      if (job && l.jobName !== job) return false;
+      if (result && l.status !== result) return false;
+      if (date && !(l.execTime || '').startsWith(date)) return false;
+      return true;
+    });
+    this.syncPage = 1;
+    this.doRenderSyncTable();
+  },
+
+  resetSyncFilter() {
+    ['ibSyncJob', 'ibSyncResult', 'ibSyncDate'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    this.syncFiltered = [...this.syncLogData];
+    this.syncPage = 1;
+    this.doRenderSyncTable();
+  },
+
+  syncFiltered: [],
+  syncPage: 1,
+
+  doRenderSyncTable() {
+    this.syncFiltered = this.syncFiltered && this.syncFiltered.length ? this.syncFiltered : [...this.syncLogData];
+    const start = (this.syncPage - 1) * this.pageSize;
+    const page = this.syncFiltered.slice(start, start + this.pageSize);
+    const el = document.getElementById('ibTableWrapper');
+    if (!el) return;
+
+    const statusMap = {
+      SUCCESS: { cls: 'badge-green',   label: '成功'     },
+      PARTIAL: { cls: 'badge-yellow', label: '部分成功' },
+      FAILED:  { cls: 'badge-red',    label: '失败'     }
+    };
+
+
+
+    el.innerHTML = `<table class="data-table" style="min-width:1200px;">
+      <thead><tr>
+        <th style="width:50px;">序号</th>
+        <th style="width:180px;">任务编号</th>
+        <th style="width:220px;">任务名称</th>
+        <th style="width:300px;">抓取区间</th>
+        <th style="width:80px;">总数</th>
+        <th style="width:80px;">成功</th>
+        <th style="width:80px;">失败</th>
+        <th style="width:100px;">结果</th>
+        <th style="width:90px;">耗时</th>
+        <th style="width:150px;">执行时间</th>
+        <th style="width:130px;">操作</th>
+      </tr></thead>
+      <tbody>${page.map((l, i) => {
+        const s = statusMap[l.status] || { cls: 'badge-gray', label: l.status };
+        return `<tr>
+          <td>${start + i + 1}</td>
+          <td style="font-family:monospace;font-size:12px;">${esc(l.jobId)}</td>
+          <td>${esc(l.jobName)}</td>
+          <td style="font-size:12px;color:var(--text-secondary);">${esc(l.range)}</td>
+          <td>${l.total}</td>
+          <td style="color:#15803d;font-weight:600;">${l.success}</td>
+          <td style="color:${l.failed > 0 ? '#dc2626' : 'inherit'};font-weight:${l.failed > 0 ? 600 : 400};">${l.failed}</td>
+          <td><span class="badge ${s.cls} badge-sm">${s.label}</span></td>
+          <td style="font-size:12px;">${esc(l.duration)}</td>
+          <td style="font-size:12px;">${esc(l.execTime)}</td>
+          <td><button class="btn btn-blue btn-sm" onclick="InspectionBatch.openSyncDetail('${l.id}')">查看</button></td>
+        </tr>`;
+      }).join('')}
+    </table>`;
+
+    this.renderSyncPagination();
+  },
+
+  renderSyncPagination() {
+    const total = this.syncFiltered.length;
+    const totalPages = Math.ceil(total / this.pageSize) || 1;
+    const el = document.getElementById('ibPagination');
+    if (!el) return;
+    el.innerHTML = `<div class="list-toolbar">
+      <div class="list-info"><span class="list-count">共 ${total} 条同步记录</span></div>
+      <div class="pagination">
+        <button class="pagination-btn" ${this.syncPage <= 1 ? 'disabled' : ''} onclick="InspectionBatch.prevSyncPage()">‹</button>
+        <span class="pagination-info">第 ${this.syncPage} / ${totalPages} 页</span>
+        <button class="pagination-btn" ${this.syncPage >= totalPages ? 'disabled' : ''} onclick="InspectionBatch.nextSyncPage()">›</button>
+        <select class="page-size-select" onchange="InspectionBatch.changeSyncPageSize()">
+          <option value="10" ${this.pageSize === 10 ? 'selected' : ''}>10条</option>
+          <option value="20" ${this.pageSize === 20 ? 'selected' : ''}>20条</option>
+          <option value="50" ${this.pageSize === 50 ? 'selected' : ''}>50条</option>
+        </select>
+      </div>
+    </div>`;
+  },
+
+  openSyncDetail(logId) {
+    const l = this.syncLogData.find(x => x.id === logId);
+    if (!l) return toast('同步记录未找到');
+    showModal(
+      `同步任务明细 — ${l.jobId}`,
+      `<div style="padding:4px 0;font-size:13px;">
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px 24px;padding:14px 16px;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;margin-bottom:16px;">
+          <div><span style="color:var(--text-muted);">任务编号：</span><strong style="font-family:monospace;">${esc(l.jobId)}</strong></div>
+          <div><span style="color:var(--text-muted);">任务名称：</span><strong>${esc(l.jobName)}</strong></div>
+          <div><span style="color:var(--text-muted);">抓取区间：</span><strong>${esc(l.range)}</strong></div>
+          <div><span style="color:var(--text-muted);">执行时间：</span><strong>${esc(l.execTime)}</strong></div>
+          <div><span style="color:var(--text-muted);">处理总数：</span><strong>${l.total}</strong></div>
+          <div><span style="color:var(--text-muted);">成功 / 失败：</span><strong>${l.success} / ${l.failed}</strong></div>
+          <div><span style="color:var(--text-muted);">耗时：</span><strong>${esc(l.duration)}</strong></div>
+          <div><span style="color:var(--text-muted);">失败原因：</span><strong>${esc(l.failReason || '—')}</strong></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.7;">
+          · 自动抓取型（01/02/03/04/05/06/08）由 SAP 生成检验批，MES 通过定时任务增量拉取后落库<br/>
+          · 抓取失败的记录会标记为「同步失败」，可在列表行内点击「重试同步」重新拉取<br/>
+          · 所有同步记录保留任务编号与执行时间，作为审计追踪依据
+        </div>
+      </div>`,
+      [{ text:'关闭', cls:'btn-secondary', action: closeModal }],
+      'modal-lg'
+    );
   },
 
   search() {
@@ -246,38 +699,43 @@ const InspectionBatch = {
     const suppBatch = (document.getElementById('ibSuppBatch')?.value||'').trim();
     const sapBatch = (document.getElementById('ibSapBatch')?.value||'').trim();
     const status = document.getElementById('ibStatus')?.value||'';
+    const inspectType = document.getElementById('ibInspectType')?.value||'';
+    const createMode = document.getElementById('ibCreateMode')?.value||'';
+    const syncStatus = document.getElementById('ibSyncStatus')?.value||'';
 
     this.filtered = this.batchData.filter(b => {
       if (factory && b.plant !== factory) return false;
       if (material && !b.materialCode.includes(material) && !b.materialName.includes(material)) return false;
-      if (suppBatch && !b.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
-      if (sapBatch && !b.sapBatch.toLowerCase().includes(sapBatch.toLowerCase())) return false;
+      if (suppBatch && !(b.supplierBatch||'').toLowerCase().includes(suppBatch.toLowerCase())) return false;
+      if (sapBatch && !(b.sapBatch||'').toLowerCase().includes(sapBatch.toLowerCase())) return false;
       if (status && b.status !== status) return false;
+      if (inspectType && b.inspectType !== inspectType) return false;
+      if (createMode && b.createMode !== createMode) return false;
+      if (syncStatus && b.syncStatus !== syncStatus) return false;
       return true;
     });
     this.page = 1;
-    this.renderTable();
+    this.renderBatchTable();
     this.renderPagination();
-  
+
     // 查询变式：保存"上次查询条件"并记录手工字段的最近输入
     if (window.QueryVariant) {
       QueryVariant.saveAuto('inspection-batch');
       QueryVariant.recordUsed('inspection-batch');
     }
-},
+  },
 
   resetFilter() {
     ['ibMaterial','ibSuppBatch','ibSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const s = document.getElementById('ibStatus'); if (s) s.value = '';
-    const f = document.getElementById('ibFactory'); if (f) f.value = '';
+    ['ibStatus','ibFactory','ibInspectType','ibCreateMode','ibSyncStatus'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filtered = [...this.batchData];
     this.page = 1;
-    this.renderTable();
+    this.renderBatchTable();
     this.renderPagination();
-  
+
     // 查询变式：重置时解除变式选中并清除"上次查询条件"
     if (window.QueryVariant) QueryVariant.resetSelection('inspection-batch');
-},
+  },
 
   exportData() { toast('导出功能开发中...'); },
 
@@ -288,8 +746,26 @@ const InspectionBatch = {
       this.filtered = [...this.batchData];
       this.renderBatchTable();
     } else {
-      this.renderPendingTable();
+      this.doRenderSyncTable();
     }
+  },
+
+  // 生成方式徽章
+  getCreateModeBadge(mode) {
+    return mode === 'MES_MANUAL'
+      ? '<span class="badge badge-purple badge-sm">MES 手工</span>'
+      : '<span class="badge badge-blue badge-sm">SAP 自动</span>';
+  },
+
+  // 同步状态徽章
+  getSyncStatusBadge(status) {
+    const map = {
+      SYNCED: { cls:'badge-green',  label:'已同步'   },
+      PENDING:{ cls:'badge-blue',   label:'同步中'   },
+      FAILED: { cls:'badge-red',    label:'同步失败' }
+    };
+    const m = map[status] || { cls:'badge-gray', label:status || '—' };
+    return `<span class="badge ${m.cls} badge-sm">${m.label}</span>`;
   },
 
   renderBatchTable() {
@@ -298,18 +774,22 @@ const InspectionBatch = {
     const el = document.getElementById('ibTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1550px;">
+    el.innerHTML = `<table class="data-table" style="min-width:2100px;">
       <thead><tr>
         <th style="width:50px;">序号</th>
-        <th style="width:200px;">检验批号</th>
+        <th style="width:160px;">检验批号</th>
+        <th style="width:150px;">检验类型</th>
+        <th style="width:110px;">生成方式</th>
+        <th style="width:130px;">来源单据</th>
         <th style="width:150px;">供应商批次号</th>
         <th style="width:120px;">物料编码</th>
         <th style="width:140px;">物料名称</th>
-        <th style="width:100px;">检验计划</th>
-        <th style="width:80px;">数量</th>
-        <th style="width:80px;">状态</th>
-        <th style="width:100px;">工厂</th>
-        <th style="width:80px;">创建人</th>
+        <th style="width:110px;">检验计划</th>
+        <th style="width:90px;">数量</th>
+        <th style="width:90px;">状态</th>
+        <th style="width:110px;">同步状态</th>
+        <th style="width:140px;">工厂</th>
+        <th style="width:90px;">创建人</th>
         <th style="width:140px;">创建时间</th>
         <th style="width:140px;">更新时间</th>
         <th style="width:290px;">操作</th>
@@ -320,15 +800,21 @@ const InspectionBatch = {
 
   renderBatchRow(b, idx) {
     const statusBadge = this.getStatusBadgeHtml(b.status);
+    const modeBadge = this.getCreateModeBadge(b.createMode);
+    const syncBadge = this.getSyncStatusBadge(b.syncStatus);
     return `<tr>
       <td>${idx}</td>
       <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(b.batchNo)}</td>
-      <td style="font-weight:700;font-size:13px;">${esc(b.supplierBatch)}</td>
+      <td><span class="badge badge-gray badge-sm" style="font-family:monospace;">${esc(this.getInspectTypeName(b.inspectType)||'')}</span></td>
+      <td>${modeBadge}</td>
+      <td style="font-family:monospace;font-size:12px;color:var(--text-secondary);">${esc(b.sourceDocNo||'—')}</td>
+      <td style="font-weight:700;font-size:13px;">${esc(b.supplierBatch||'—')}</td>
       <td style="font-family:monospace;font-size:12px;">${esc(b.materialCode)}</td>
       <td>${esc(b.materialName)}</td>
       <td style="font-family:monospace;font-size:11px;">${esc(b.planNo)}</td>
       <td>${b.quantity} ${esc(b.unit)}</td>
       <td>${statusBadge}</td>
+      <td>${syncBadge}</td>
       <td>${esc(b.plantName)}</td>
       <td>${esc(b.createBy)}</td>
       <td style="font-size:12px;">${b.createTime||'—'}</td>
@@ -361,177 +847,24 @@ const InspectionBatch = {
     const samplingOp = ops.find(o => o.opType === 'sampling');
     const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
 
+    const retryBtn = b.syncStatus === 'FAILED'
+      ? `<button class="btn btn-danger btn-sm" onclick="InspectionBatch.retrySync('${b.id}')" title="重新从 SAP 拉取该检验批">重试同步</button>`
+      : '';
+
     return `<div class="table-actions">
       <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
       <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
       <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>
-      <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">详情</button>
+      <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
+      ${retryBtn}
     </div>`;
   },
 
-  _executeGenerate(docId) {
-    const doc = this.pendingDocs.find(d => d.id === docId);
-    if (!doc) return;
-
-    const planNo = document.getElementById('ibGenPlan')?.value;
-    const purpose = document.getElementById('ibGenPurpose')?.value;
-    const remark = document.getElementById('ibGenRemark')?.value||'';
-
-    // 校验 SAP 凭证冲销
-    if (Math.random() < 0.05) {
-      toast('该凭证已被冲销，无法生成检验批');
-      return;
-    }
-
-    if (!planNo) { toast('请选择检验计划'); return; }
-
-    // 生成检验批号
-    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const yy = today.slice(2,4);
-    const mm = today.slice(4,6);
-    const count = this.batchData.filter(b => b.plant===doc.plant).length + 1;
-    const batchNo = `${doc.plant}-${yy}${mm}-${String(count).padStart(3,'0')}`;
-
-    const plan = (this._genPlanOptions || []).find(p => p.no === planNo);
-    const purposeObj = this.purposeOptions.find(p => p.code === purpose);
-
-    const refHist = document.getElementById('ibRefHist')?.checked;
-    const now = new Date().toISOString().replace('T',' ').slice(0,19);
-
-    const newBatch = {
-      id: 'B' + String(this.batchData.length+1).padStart(3,'0'),
-      batchNo,
-      docNo: doc.docNo,
-      materialCode: doc.materialCode,
-      materialName: doc.materialName,
-      sapBatch: doc.sapBatch,
-      supplierBatch: doc.supplierBatch,
-      quantity: doc.quantity,
-      unit: doc.unit,
-      plant: doc.plant,
-      plantName: doc.plantName,
-      planNo: planNo,
-      planName: plan?.name||'',
-      purposeCode: purpose,
-      purposeName: purposeObj?.name||'',
-      status: 'CRTD',
-      statusName: '已创建',
-      createTime: now,
-      createBy: '张工',
-      updateTime: now,
-      remark: remark || (refHist ? '已引用历史检验结果，待逐项核对' : ''),
-      refHistBatch: refHist ? (this.batchData.filter(b=>b.supplierBatch===doc.supplierBatch&&b.status==='CANC')[0]?.batchNo||'') : ''
-    };
-
-    this.batchData.unshift(newBatch);
-    this.pendingDocs = this.pendingDocs.filter(d => d.id !== docId);
-
-    closeModal();
-    toast(`检验批 ${batchNo} 已生成！${refHist ? '历史结果已引用，请核对确认。' : ''}`);
-    this.init();
-  },
-
-  doGenerate(docId) {
-    const doc = this.pendingDocs.find(d => d.id === docId);
-    if (!doc) {
-      toast('该凭证已不存在（可能已生成检验批），请刷新页面重试');
-      return;
-    }
-
-    const planNo = document.getElementById('ibGenPlan')?.value;
-    const purpose = document.getElementById('ibGenPurpose')?.value;
-    const remark = document.getElementById('ibGenRemark')?.value||'';
-
-    // 校验 SAP 凭证冲销（模拟实时校验）
-    if (Math.random() < 0.05) {
-      toast('该凭证已被冲销，无法生成检验批');
-      return;
-    }
-
-    if (!planNo) { toast('请选择检验计划'); return; }
-
-    this._executeGenerate(docId);
-  },
-
-  renderPendingTable() {
-    this.pendingFiltered = [...this.pendingDocs];
-    this.pendingPage = 1;
-    this.doRenderPendingTable();
-  },
-
-  doRenderPendingTable() {
-    const start = (this.pendingPage-1)*this.pageSize;
-    const page = this.pendingFiltered.slice(start, start+this.pageSize);
-    const el = document.getElementById('ibTableWrapper');
-    if (!el) return;
-
-    el.innerHTML = `<table class="data-table" style="min-width:1200px;">
-      <thead><tr>
-        <th style="width:50px;">序号</th>
-        <th style="width:140px;">物料凭证号</th>
-        <th style="width:150px;">供应商批次号</th>
-        <th style="width:120px;">物料编码</th>
-        <th style="width:140px;">物料名称</th>
-        <th style="width:100px;">数量</th>
-        <th style="width:80px;">移动类型</th>
-        <th style="width:100px;">工厂</th>
-        <th style="width:80px;">库存地点</th>
-        <th style="width:100px;">收货日期</th>
-        <th style="width:120px;">操作</th>
-      </tr></thead>
-      <tbody>${page.map((d,i) => this.renderPendingRow(d, start+i+1)).join('')}</tbody>
-    </table>`;
-
-    this.renderPendingPagination();
-  },
-
-  renderPendingRow(d, idx) {
-    return `<tr>
-      <td>${idx}</td>
-      <td style="color:#2563eb;font-weight:600;font-family:monospace;">${esc(d.docNo)}</td>
-      <td style="font-weight:700;font-size:13px;">${esc(d.supplierBatch)}</td>
-      <td style="font-family:monospace;font-size:12px;">${esc(d.materialCode)}</td>
-      <td>${esc(d.materialName)}</td>
-      <td>${d.quantity} ${esc(d.unit)}</td>
-      <td><span class="badge badge-blue">${esc(d.movementName)}</span></td>
-      <td>${esc(d.plantName)}</td>
-      <td>${esc(d.storageName)}</td>
-      <td>${d.receiptDate}</td>
-      <td><button class="btn btn-sm btn-blue" onclick="InspectionBatch.openGenerateModal('${d.id}')">生成检验批</button></td>
-    </tr>`;
-  },
-
-  // ==================== 待生成 - 筛选 ====================
-
-  pendingFiltered: [],
-  pendingPage: 1,
-
-  searchPending() {
-    const factory = document.getElementById('ibPendFactory')?.value||'';
-    const material = (document.getElementById('ibPendMaterial')?.value||'').trim();
-    const suppBatch = (document.getElementById('ibPendSuppBatch')?.value||'').trim();
-    const sapBatch = (document.getElementById('ibPendSapBatch')?.value||'').trim();
-    const receiptDate = document.getElementById('ibPendReceiptDate')?.value||'';
-
-    this.pendingFiltered = this.pendingDocs.filter(d => {
-      if (factory && d.plant !== factory) return false;
-      if (material && !d.materialCode.includes(material) && !d.materialName.includes(material)) return false;
-      if (suppBatch && !d.supplierBatch.toLowerCase().includes(suppBatch.toLowerCase())) return false;
-      if (sapBatch && !d.sapBatch.toLowerCase().includes(sapBatch.toLowerCase())) return false;
-      if (receiptDate && d.receiptDate !== receiptDate) return false;
-      return true;
-    });
-    this.pendingPage = 1;
-    this.doRenderPendingTable();
-  },
-
-  resetPendingFilter() {
-    ['ibPendMaterial','ibPendSuppBatch','ibPendSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    const f = document.getElementById('ibPendFactory'); if (f) f.value = '';
-    const r = document.getElementById('ibPendReceiptDate'); if (r) r.value = '';
-    this.pendingFiltered = [...this.pendingDocs];
-    this.pendingPage = 1;
-    this.doRenderPendingTable();
+  prevSyncPage() { if (this.syncPage>1) { this.syncPage--; this.doRenderSyncTable(); } },
+  nextSyncPage() { if (this.syncPage<Math.ceil(this.syncFiltered.length/this.pageSize)) { this.syncPage++; this.doRenderSyncTable(); } },
+  changeSyncPageSize() {
+    const sel = document.querySelector('#ibPagination .page-size-select');
+    if (sel) { this.pageSize = parseInt(sel.value); this.syncPage = 1; this.doRenderSyncTable(); }
   },
 
   // ==================== 分页 ====================
@@ -557,25 +890,6 @@ const InspectionBatch = {
     </div>`;
   },
 
-  renderPendingPagination() {
-    const total = this.pendingFiltered.length;
-    const totalPages = Math.ceil(total/this.pageSize)||1;
-
-    document.getElementById('ibPagination').innerHTML = `<div class="list-toolbar">
-      <div class="list-info"><span class="list-count">共 ${total} 条待处理凭证</span></div>
-      <div class="pagination">
-        <button class="pagination-btn" ${this.pendingPage<=1?'disabled':''} onclick="InspectionBatch.prevPendingPage()">‹</button>
-        <span class="pagination-info">第 ${this.pendingPage} / ${totalPages} 页</span>
-        <button class="pagination-btn" ${this.pendingPage>=totalPages?'disabled':''} onclick="InspectionBatch.nextPendingPage()">›</button>
-        <select class="page-size-select" onchange="InspectionBatch.changePendingPageSize()">
-          <option value="10" ${this.pageSize===10?'selected':''}>10条</option>
-          <option value="20" ${this.pageSize===20?'selected':''}>20条</option>
-          <option value="50" ${this.pageSize===50?'selected':''}>50条</option>
-        </select>
-      </div>
-    </div>`;
-  },
-
   prevPage() { if (this.page>1) { this.page--; this.renderBatchTable(); this.renderPagination(); } },
   nextPage() { if (this.page<Math.ceil(this.filtered.length/this.pageSize)) { this.page++; this.renderBatchTable(); this.renderPagination(); } },
   changePageSize() {
@@ -583,86 +897,10 @@ const InspectionBatch = {
     if (sel) { this.pageSize = parseInt(sel.value); this.page = 1; this.renderBatchTable(); this.renderPagination(); }
   },
 
-  prevPendingPage() { if (this.pendingPage>1) { this.pendingPage--; this.doRenderPendingTable(); } },
-  nextPendingPage() { if (this.pendingPage<Math.ceil(this.pendingFiltered.length/this.pageSize)) { this.pendingPage++; this.doRenderPendingTable(); } },
-  changePendingPageSize() {
-    const sel = document.querySelector('#ibPagination .page-size-select');
-    if (sel) { this.pageSize = parseInt(sel.value); this.pendingPage = 1; this.doRenderPendingTable(); }
-  },
-
-  // ==================== 生成检验批弹窗 ====================
-
-  openGenerateModal(docId) {
-    const doc = this.pendingDocs.find(d => d.id === docId);
-    if (!doc) return toast('凭证未找到');
-
-    // 获取该物料可用的检验计划
-    const planOptions = this.getPlanOptions(doc.materialCode);
-    const planSelectOpts = planOptions.map(p => `<option value="${p.no}">${p.no} — ${p.name}</option>`).join('');
-
-    // 历史检验批检测
-    const histBatches = this.batchData.filter(b =>
-      b.supplierBatch === doc.supplierBatch && b.status === 'CANC'
-    );
-    const histNote = histBatches.length > 0
-      ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;">
-          <strong>⚠️ 发现历史记录：</strong>该供应商批次号 <em style="font-weight:700;">${esc(doc.supplierBatch)}</em> 在近期存在已取消的检验批 <strong>${esc(histBatches[0].batchNo)}</strong>，是否引用其检验结果？
-          <div style="margin-top:8px;">
-            <label style="cursor:pointer;"><input type="checkbox" id="ibRefHist"> 引用历史检验结果（需逐项核对确认）</label>
-          </div>
-        </div>`
-      : '';
-
-    showModal(
-      '生成检验批',
-      `<div style="padding:4px 0;">
-        ${histNote}
-        <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
-          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">物料凭证信息</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 24px;font-size:13px;">
-            <div><span style="color:var(--text-muted);">凭证号：</span><strong>${esc(doc.docNo)}</strong></div>
-            <div><span style="color:var(--text-muted);">移动类型：</span>${esc(doc.movementName)}</div>
-            <div><span style="color:var(--text-muted);">数量：</span>${doc.quantity} ${esc(doc.unit)}</div>
-            <div><span style="color:var(--text-muted);">物料编码：</span><strong>${esc(doc.materialCode)}</strong></div>
-            <div><span style="color:var(--text-muted);">物料名称：</span>${esc(doc.materialName)}</div>
-            <div><span style="color:var(--text-muted);">工厂：</span>${esc(doc.plantName)}</div>
-            <div><span style="color:var(--text-muted);">供应商批次号：</span><strong style="color:#2563eb;">${esc(doc.supplierBatch)}</strong></div>
-            <div><span style="color:var(--text-muted);">SAP批次号：</span><span style="font-family:monospace;">${esc(doc.sapBatch)}</span></div>
-            <div></div>
-          </div>
-        </div>
-        <div class="form-grid">
-          <div class="form-group"><label>用途代码<span class="req">*</span></label><select id="ibGenPurpose">
-            ${this.purposeOptions.map(p => `<option value="${p.code}">${p.code} - ${p.name}</option>`).join('')}
-          </select></div>
-          <div class="form-group"><label>检验计划<span class="req">*</span></label><select id="ibGenPlan" onchange="InspectionBatch.onPlanChange()">
-            <option value="">请选择</option>
-            ${planSelectOpts || '<option value="" disabled>暂无匹配的检验计划</option>'}
-          </select></div>
-        </div>
-        <!-- 检验计划详情预览 -->
-        <div id="ibPlanPreview" style="margin-top:16px;"></div>
-        <div class="form-group full" style="margin-top:12px;">
-          <label>备注</label>
-          <textarea id="ibGenRemark" placeholder="可选填写备注信息" rows="2" style="width:100%;"></textarea>
-        </div>
-      </div>`,
-      [
-        { text:'取消', cls:'btn-secondary', action: closeModal },
-        { text:'确认生成', cls:'btn-primary', action: ()=>{ InspectionBatch.doGenerate(docId); } }
-      ],
-      'modal-xl'
-    );
-
-    // 存储当前 docId 和 planOptions 引用，供 onPlanChange 使用
-    this._genDocId = docId;
-    this._genPlanOptions = planOptions;
-  },
-
   // 检验计划选择变更 → 展示计划详情
   onPlanChange() {
-    const selVal = document.getElementById('ibGenPlan')?.value;
-    const previewEl = document.getElementById('ibPlanPreview');
+    const selVal = document.getElementById('ibMcPlan')?.value;
+    const previewEl = document.getElementById('ibMcPlanPreview');
     if (!previewEl) return;
 
     if (!selVal) {
@@ -916,14 +1154,15 @@ const InspectionBatch = {
     }).join('');
 
     return `
+      ${this.renderSourceInfo(b)}
       <div style="background:#f8fafc;border-radius:8px;padding:14px 16px;margin-bottom:16px;">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px 20px;font-size:13px;">
           <div><span style="color:var(--text-muted);">物料编码：</span><span style="font-family:monospace;">${esc(b.materialCode)}</span></div>
-          <div><span style="color:var(--text-muted);">物料名称：</span><strong>${esc(b.materialName)}</strong></div>
+        <div><span style="color:var(--text-muted);">物料名称：</span><strong>${esc(b.materialName)}</strong></div>
           <div><span style="color:var(--text-muted);">数量：</span>${b.quantity} ${esc(b.unit)}</div>
-          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch)}</strong></div>
+          <div><span style="color:var(--text-muted);">供应商批次：</span><strong style="color:#2563eb;">${esc(b.supplierBatch || '—')}</strong></div>
           <div><span style="color:var(--text-muted);">SAP批次：</span><span style="font-family:monospace;font-size:12px;">${esc(b.sapBatch)}</span></div>
-          <div><span style="color:var(--text-muted);">凭证号：</span><span style="font-family:monospace;">${esc(b.docNo)}</span></div>
+          <div><span style="color:var(--text-muted);">来源单据：</span><span style="font-family:monospace;">${esc(b.sourceDocNo || '—')}</span></div>
         </div>
       </div>
       <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px;">检验工序清单 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">（来源：检验计划 ${esc(b.planNo)} · 点击工序展开特性）</span></div>
