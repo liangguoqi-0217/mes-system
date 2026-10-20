@@ -1,5 +1,5 @@
 /* ==================== 生产管理 → 可用性检查 ====================
- * 业务背景：工作中心用户每天打开本页，勾选本工作中心本周要生产的流程订单，让系统逐项对比
+ * 业务背景：资源用户每天打开本页，勾选本资源本周要生产的流程订单，让系统逐项对比
  *          订单组件的未清需求与供给，回答"缺不缺料"。
  *
  * 两套计算逻辑，进页面后由用户在顶部切换（二选一，不同时展示）：
@@ -24,7 +24,7 @@
  *       点订单号弹窗，看该订单的组件明细
  *       ATP 模式下，缺料行可展开查看「判定依据」（供给构成）
  *
- * 权限：工作中心用户锁定 workCenter，仅能看到本工作中心订单；全厂用户可看全部工作中心。
+ * 权限：资源用户锁定 workCenter，仅能看到本资源订单；全厂用户可看全部资源。
  *       页面不提供手动切换视角的入口（真实环境权限由登录用户决定，不能由用户自己放开）。
  *       原型里改 OR_CURRENT_USER.isPlantLevel 即可模拟不同登录身份。
  * ============================================================ */
@@ -43,7 +43,7 @@ const OR_WORKCENTER_TEXT = {
 
 const OR_PLANT_TEXT = { '1000': '山东步长制药工厂', '2001': '陕西步长制药工厂' };
 
-// 工作中心归属工厂 —— 「工厂 → 工作中心」级联的数据源
+// 资源归属工厂 —— 「工厂 → 资源」级联的数据源
 const OR_WC_PLANT = {
   'WC-PROD-01': '1000', 'WC-PROD-02': '1000', 'WC-PROD-03': '1000', 'WC-WT-01': '1000',
   'WC-PROD-11': '2001', 'WC-PACK-11': '2001', 'WC-WT-11': '2001'
@@ -51,7 +51,7 @@ const OR_WC_PLANT = {
 
 // 订单列表列数由 _orderCols() 动态决定（朴素逻辑多一列「产品批次」）
 
-// 当前登录用户（权限模拟）。isPlantLevel=true：厂级，工厂与工作中心都可下拉选择；
+// 当前登录用户（权限模拟）。isPlantLevel=true：厂级，工厂与资源都可下拉选择；
 // 改成 false 即模拟车间用户：两项锁定为其所属值，下拉禁用。
 const OR_CURRENT_USER = {
   name: '全厂计划员',
@@ -70,6 +70,8 @@ function orFmt(d) {
 function orNum(v) { const n = Number(v); return isNaN(n) ? String(v) : n.toLocaleString('en-US'); }
 function orAddDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return orFmt(d); }
 function orRangeToday() { const t = orFmt(new Date()); return { from: t, to: t }; }
+// 默认区间：当天 ~ 下一周（当天 + 7 天）
+function orRangeNext7() { return { from: orFmt(new Date()), to: orAddDays(7) }; }
 function orRangeWeek() {
   const d = new Date();
   const wd = d.getDay() === 0 ? 7 : d.getDay();
@@ -381,7 +383,7 @@ const OrSapApi = {
 const OrderReadiness = {
   mode: 'atp',         // stock=现有库存对比 / atp=SAP ATP 可用性检查
   moreOpen: false,
-  rangeKind: 'week',
+  rangeKind: 'next7',   // 默认日期区间：当天 ~ 下一周（当天 + 7 天）
   orders: [],          // 当前筛选出的订单
   selected: [],        // 勾选的订单号
   checked: false,      // 是否已执行 SAP 检查
@@ -473,7 +475,7 @@ const OrderReadiness = {
           /* 物料详情里需求表 / 供应表 / 判定表共用的合计行 */
           .or-sumrow { background: #f8fafc; font-weight: 600; }
 
-          /* 工作中心多选：按钮摘要 + 勾选面板（替代原生多选列表框，避免撑高筛选栏） */
+          /* 资源多选：按钮摘要 + 勾选面板（替代原生多选列表框，避免撑高筛选栏） */
           .or-wc { position: relative; }
           .or-wc-btn {
             display: flex; align-items: center; gap: 6px; width: 100%; min-width: 180px; height: 34px;
@@ -672,7 +674,7 @@ const OrderReadiness = {
       QueryVariant.restore('order-readiness');
       QueryVariant.bindRecent('order-readiness');
     }
-    if (!this._val('orDateFrom')) this.setRange('week', true);
+    if (!this._val('orDateFrom')) this.setRange('next7', true);
     this.query();
   },
 
@@ -707,7 +709,7 @@ const OrderReadiness = {
     ['orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orProductCode', 'orMatCode', 'orPlant'].forEach(id => {
       keep[id] = this._val(id);
     });
-    const keepWc = this._wcVals();   // 工作中心是多选，单独保存
+    const keepWc = this._wcVals();   // 资源是多选，单独保存
     this.mode = k;
     this.checked = false;
     this.stockMap = {};
@@ -733,7 +735,7 @@ const OrderReadiness = {
 
   /* ==================== 筛选栏 ==================== */
 
-  // 工作中心选项：按工厂过滤 —— 工厂 → 工作中心 级联。sel 为已选编码数组（厂级可多选）
+  // 资源选项：按工厂过滤 —— 工厂 → 资源 级联。sel 为已选编码数组（厂级可多选）
   _wcOptions(plant, sel) {
     const selArr = Array.isArray(sel) ? sel : (sel ? [sel] : []);
     return Object.keys(OR_WORKCENTER_TEXT)
@@ -741,14 +743,14 @@ const OrderReadiness = {
       .map(k => '<option value="' + k + '"' + (selArr.indexOf(k) !== -1 ? ' selected' : '') + '>' + OR_WORKCENTER_TEXT[k] + '</option>').join('');
   },
 
-  // 默认工作中心：当前用户所属工作中心（须属于该工厂），否则该工厂第一个
+  // 默认资源：当前用户所属资源（须属于该工厂），否则该工厂第一个
   _defaultWc(plant) {
     if (OR_WC_PLANT[OR_CURRENT_USER.workCenter] === plant) return OR_CURRENT_USER.workCenter;
     const keys = Object.keys(OR_WORKCENTER_TEXT).filter(k => OR_WC_PLANT[k] === plant);
     return keys[0] || '';
   },
 
-  // 工作中心取值：厂级取多选结果；车间用户固定为登录用户所属工作中心
+  // 资源取值：厂级取多选结果；车间用户固定为登录用户所属资源
   _wcVals() {
     if (!OR_CURRENT_USER.isPlantLevel) return [OR_CURRENT_USER.workCenter];
     const e = document.getElementById('orWorkCenter');
@@ -761,7 +763,7 @@ const OrderReadiness = {
     return vals.filter(Boolean);
   },
 
-  // 工作中心控件：按钮（已选摘要）+ 勾选面板。隐藏的原生多选 select 作为数据源，
+  // 资源控件：按钮（已选摘要）+ 勾选面板。隐藏的原生多选 select 作为数据源，
   // 查询变式模块按 id 读写它，无需改动通用模块。
   _wcControlHtml(plant, selArr) {
     const sel = Array.isArray(selArr) ? selArr : (selArr ? [selArr] : []);
@@ -786,7 +788,7 @@ const OrderReadiness = {
   // 按钮上的已选摘要：1~2 个列名字，更多则「首个 等 N 个」
   _wcSummary(items, sel) {
     const names = items.filter(k => sel.indexOf(k) !== -1).map(k => OR_WORKCENTER_TEXT[k]);
-    if (!names.length) return '请选择工作中心';
+    if (!names.length) return '请选择资源';
     if (names.length <= 2) return names.join('、');
     return names[0] + ' 等 ' + names.length + ' 个';
   },
@@ -822,7 +824,7 @@ const OrderReadiness = {
     setTimeout(() => document.addEventListener('click', this._wcOutside), 0);
   },
 
-  // 勾选单个工作中心：同步到隐藏 select（数据源）并刷新摘要，不重建面板以免打断连续勾选
+  // 勾选单个资源：同步到隐藏 select（数据源）并刷新摘要，不重建面板以免打断连续勾选
   onWcToggle(el) {
     const sel = document.getElementById('orWorkCenter');
     if (sel && sel.options) {
@@ -861,7 +863,7 @@ const OrderReadiness = {
     if (cnt) cnt.textContent = '已选 ' + vals.length;
   },
 
-  // 按指定选中项重建工作中心控件（变式回填 / 重置 / 切换工厂后调用）；不传则沿用当前已选
+  // 按指定选中项重建资源控件（变式回填 / 重置 / 切换工厂后调用）；不传则沿用当前已选
   syncWcFromSelect(plant, selArr) {
     if (!OR_CURRENT_USER.isPlantLevel) return;
     const p = plant || this._val('orPlant') || OR_CURRENT_USER.plant;
@@ -870,7 +872,7 @@ const OrderReadiness = {
     if (box) box.outerHTML = this._wcControlHtml(p, sel);
   },
 
-  // 切换工厂：工作中心选项跟着换（重建控件），默认带出该工厂下的默认工作中心，并立即重查
+  // 切换工厂：资源选项跟着换（重建控件），默认带出该工厂下的默认资源，并立即重查
   onPlantChange() {
     const plant = this._val('orPlant') || OR_CURRENT_USER.plant;
     this.closeWcPanel();
@@ -888,9 +890,9 @@ const OrderReadiness = {
       .map(k => '<option value="' + k + '"' + (k === curPlant ? ' selected' : '') + '>' + k + ' ' + OR_PLANT_TEXT[k] + '</option>').join('');
 
     // 两种检查逻辑下这个条件作用相同：只圈定要查询的订单范围，不参与缺料判定，所以名称固定
-    const dateLabel = '计划开始日期';
+    const dateLabel = '基本开始日期';
 
-    // 必输条件：工厂 / 工作中心 / 检查逻辑 / 计划开始日期（起止）
+    // 必输条件：工厂 / 资源 / 检查逻辑 / 基本开始日期（起止）
     const req = '<span style="color:var(--danger);margin-left:2px;">*</span>';
     const wcCur = this._wcVals();
     const wcSel = wcCur.length ? wcCur : [this._defaultWc(curPlant)];
@@ -902,7 +904,7 @@ const OrderReadiness = {
             ${isPlant ? plantOpts : '<option value="' + OR_CURRENT_USER.plant + '">' + OR_CURRENT_USER.plant + ' ' + OR_PLANT_TEXT[OR_CURRENT_USER.plant] + '</option>'}
           </select>
         </div>
-        <div class="filter-group"><label>工作中心${req}${isPlant ? '<span style="font-weight:400;color:var(--text-muted);font-size:11px;">可多选</span>' : ''}</label>
+        <div class="filter-group"><label>资源${req}${isPlant ? '<span style="font-weight:400;color:var(--text-muted);font-size:11px;">可多选</span>' : ''}</label>
           ${isPlant
             ? this._wcControlHtml(curPlant, wcSel)
             : '<select id="orWorkCenter" disabled><option value="' + OR_CURRENT_USER.workCenter + '">' + OR_WORKCENTER_TEXT[OR_CURRENT_USER.workCenter] + '</option></select>'}
@@ -951,13 +953,14 @@ const OrderReadiness = {
     if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
   },
 
-  // 填充默认日期区间（本周）。快捷按钮已取消，仅用于进页面与重置时自动填充，日期区间仍可手动改
+  // 填充日期区间。默认 next7 = 当天 ~ 下一周（当天 + 7 天），仅用于进页面与重置时自动填充，区间仍可手动改
   setRange(kind, silent) {
     this.rangeKind = kind;
     let r;
     if (kind === 'today') r = orRangeToday();
+    else if (kind === 'week') r = orRangeWeek();
     else if (kind === 'month') r = orRangeMonth();
-    else r = orRangeWeek();
+    else r = orRangeNext7();
     const f = document.getElementById('orDateFrom');
     const t = document.getElementById('orDateTo');
     if (f) f.value = r.from;
@@ -980,13 +983,13 @@ const OrderReadiness = {
     const prodKey = this._val('orProductCode').toLowerCase();
     const matKey = this._val('orMatCode').toLowerCase();
     const statusSel = this._val('orOrderStatus');
-    const myWc = this._wcVals();   // 已选工作中心（厂级可多选，车间用户为所属工作中心）
+    const myWc = this._wcVals();   // 已选资源（厂级可多选，车间用户为所属资源）
 
-    // 必输校验：工厂 / 工作中心 / 检查逻辑 / 计划开始日期（起止）
+    // 必输校验：工厂 / 资源 / 检查逻辑 / 基本开始日期（起止）
     if (!plant) return toast('请选择工厂');
-    if (!myWc.length) return toast('请选择工作中心');
+    if (!myWc.length) return toast('请选择资源');
     if (!this._val('orCheckLogic')) return toast('请选择检查逻辑');
-    if (!from || !to) return toast('请填写计划开始日期（起）与（止）');
+    if (!from || !to) return toast('请填写基本开始日期（起）与（止）');
 
     this.orders = OR_ORDERS.filter(o => {
       if (o.plant !== plant) return false;
@@ -1308,8 +1311,8 @@ const OrderReadiness = {
       { w: 'width:110px;', t: '产品编码' },
       { w: '', t: '产品描述' },
       { w: 'width:100px;', t: '订单状态' },
-      { w: 'width:112px;', t: '计划开始日期' },
-      { w: 'width:112px;', t: '计划结束日期' },
+      { w: 'width:112px;', t: '基本开始日期' },
+      { w: 'width:112px;', t: '基本完成日期' },
       // 只有 SAP ATP 逻辑且已检查才出现；朴素逻辑（检查逻辑 1）任何情况下都不显示该列
       ...(this._showResultCol() ? [{ w: 'width:110px;', t: '检查结果' }] : [])
     ]);
@@ -1347,14 +1350,14 @@ const OrderReadiness = {
     </div>`;
   },
 
-  // 组件明细（item）列。工作中心在组件层——同一张订单的组件可能分属不同工作中心
+  // 组件明细（item）列。资源在组件层——同一张订单的组件可能分属不同资源
   // 列随检查逻辑变化：现有库存对比 10 列；SAP ATP 11 列（多出 ATP 可用量 / 缺口 / 可用日期）
   _cols() {
     const base = [
       { w: 'width:120px;', t: '组件' },
       { w: '', t: '组件描述' },
-      { w: 'width:104px;', t: '工作中心编码' },
-      { w: 'width:104px;', t: '工作中心描述' },
+      { w: 'width:104px;', t: '资源编码' },
+      { w: 'width:104px;', t: '资源描述' },
       { w: 'width:96px;text-align:right;', t: '需求数量' },
       { w: 'width:104px;', t: '需求日期', tip: '组件需求日期（SAP 预留 RESB-BDTER），ATP 按此日期在时间轴上校验' },
       { w: 'width:96px;text-align:right;', t: '已投料量', tip: 'SAP 已发数量' },
@@ -1399,7 +1402,7 @@ const OrderReadiness = {
     const focusCls = this.matFocus === c.mat ? ' or-comp-focus' : '';
     // 缺料行整行浅红底：不再靠「只看有问题的」过滤，改用底色 + 红色缺口数字区分
     const shortCls = x.bad ? ' or-comp-short' : '';
-    // 工作中心取组件自己的；未指定则继承订单的（同一张订单的组件可能分属不同工作中心）
+    // 资源取组件自己的；未指定则继承订单的（同一张订单的组件可能分属不同资源）
     const wc = c.wc || o.workCenter;
     const head = '<td style="font-family:monospace;font-size:12px;">' + esc(c.mat) + '</td>' +
       '<td>' + esc(c.name) + '</td>' +
@@ -1560,7 +1563,7 @@ const OrderReadiness = {
           <div class="modal-body">
             <div class="detail-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
               <div class="detail-item"><dt>流程订单</dt><dd style="font-family:monospace;">${esc(o.no)}</dd></div>
-              <div class="detail-item"><dt>工作中心</dt><dd>${esc(wc)} ${esc(OR_WORKCENTER_TEXT[wc] || '')}</dd></div>
+              <div class="detail-item"><dt>资源</dt><dd>${esc(wc)} ${esc(OR_WORKCENTER_TEXT[wc] || '')}</dd></div>
               <div class="detail-item"><dt>需求日期</dt><dd>${esc(c.reqDate)}</dd></div>
               <div class="detail-item"><dt>未清数量</dt><dd><b>${this._fmt(x.open)} ${u}</b>（需求 ${this._fmt(c.reqQty)} − 已投料 ${this._fmt(c.issuedQty)}）</dd></div>
             </div>
@@ -1604,14 +1607,14 @@ const OrderReadiness = {
     ['orOrderNo', 'orProductCode', 'orMatCode', 'orOrderStatus'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
-    // 重置：工厂回到登录用户所属工厂，工作中心控件重建并带出该工厂默认工作中心
+    // 重置：工厂回到登录用户所属工厂，资源控件重建并带出该工厂默认资源
     this.closeWcPanel();
     const plant = document.getElementById('orPlant');
     if (plant && OR_CURRENT_USER.isPlantLevel) {
       plant.value = OR_CURRENT_USER.plant;
       this.syncWcFromSelect(OR_CURRENT_USER.plant, [this._defaultWc(OR_CURRENT_USER.plant)]);
     }
-    this.setRange('week', true);
+    this.setRange('next7', true);
     this.query();
     if (window.QueryVariant) QueryVariant.resetSelection('order-readiness');
   },
@@ -1650,8 +1653,8 @@ const OrderReadiness = {
     });
     if (!rows.length) return toast('无数据可导出');
     const baseHead = [
-      '流程订单号', '产品编码', '产品描述', '计划开始日期', '计划结束日期',
-      '组件', '组件描述', '组件工作中心编码', '组件工作中心描述', '单位', '需求数量', '需求日期', '已投料量', '未清数量'
+      '流程订单号', '产品编码', '产品描述', '基本开始日期', '基本完成日期',
+      '组件', '组件描述', '组件资源编码', '组件资源描述', '单位', '需求数量', '需求日期', '已投料量', '未清数量'
     ];
     const head = isAtp
       ? baseHead.concat(['ATP可用量', 'ATP缺口', '可用日期', 'ATP结论', '判定依据']).join(',')
@@ -1673,11 +1676,11 @@ if (window.QueryVariant) {
     fields: ['orPlant', 'orDateFrom', 'orDateTo', 'orOrderStatus', 'orOrderNo', 'orMatCode', 'orWorkCenter'],
     textFields: ['orOrderNo', 'orMatCode'],
     labels: {
-      orPlant: '工厂', orDateFrom: '计划开始日期(起)', orDateTo: '计划开始日期(止)',
-      orOrderStatus: '订单状态', orOrderNo: '流程订单号', orProductCode: '产品编码', orMatCode: '物料编码/描述', orWorkCenter: '工作中心'
+      orPlant: '工厂', orDateFrom: '基本开始日期(起)', orDateTo: '基本开始日期(止)',
+      orOrderStatus: '订单状态', orOrderNo: '流程订单号', orProductCode: '产品编码', orMatCode: '物料编码/描述', orWorkCenter: '资源'
     },
     onApply: function () { OrderReadiness.query(); },
-    // 变式回填后会直接写 select 的值，这里把工作中心控件（按钮摘要 + 勾选面板）重新对齐
+    // 变式回填后会直接写 select 的值，这里把资源控件（按钮摘要 + 勾选面板）重新对齐
     syncFilter: function () { OrderReadiness.syncWcFromSelect(); }
   });
 }
