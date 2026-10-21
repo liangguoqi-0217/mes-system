@@ -11,6 +11,31 @@ const InspectionBatch = {
   page: 1, pageSize: 10,
   filtered: [],
 
+  // ==================== 检验批状态机 ====================
+  // 主线：CRTD 已创建 → SAMP 取样中 → INSP 检验中 → DONE 检验完成 → DEC 已决策 → CLSD 已关闭
+  // 旁路：非终态均可 → CANC 已取消（如 SAP 凭证冲销）
+  // next/nextLabel 决定详情页底部该出现哪个推进按钮；终态为 null 则不再出现按钮
+  statusFlow: [
+    { code:'CRTD', name:'已创建',   badge:'badge-blue',   desc:'SAP 生成或 MES 手工创建后落地，尚未取样，可暂存草稿',   next:'SAMP', nextLabel:'提交检验' },
+    { code:'SAMP', name:'取样中',   badge:'badge-yellow', desc:'已提交检验，按取样方案取样，样品待送实验室',           next:'INSP', nextLabel:'送检并开始录入' },
+    { code:'INSP', name:'检验中',   badge:'badge-purple', desc:'样品已接收，检验特性逐项检测与录入中',                 next:'DONE', nextLabel:'完成检验' },
+    { code:'DONE', name:'检验完成', badge:'badge-green',  desc:'全部检验特性已录入并自动判定，等待 QA 使用决策',       next:'DEC',  nextLabel:'使用决策' },
+    { code:'DEC',  name:'已决策',   badge:'badge-blue',   desc:'QA 已作出使用决策，待库存过账后关闭',                 next:'CLSD', nextLabel:'关闭检验批' },
+    { code:'CLSD', name:'已关闭',   badge:'badge-gray',   desc:'检验批已关闭归档，数据只读不可修改',                   next:null,   nextLabel:'' },
+    { code:'CANC', name:'已取消',   badge:'badge-red',    desc:'检验批已取消（如 SAP 凭证冲销），不再执行',            next:null,   nextLabel:'' }
+  ],
+
+  getStatusMeta(code) {
+    return this.statusFlow.find(s => s.code === code)
+      || { code: code, name: code, badge: 'badge-gray', desc: '—', next: null, nextLabel: '' };
+  },
+
+  // 是否为终态（终态不出现推进按钮）
+  _isFinalStatus(code) {
+    const m = this.getStatusMeta(code);
+    return !m.next;
+  },
+
   // ==================== 检验类型与生成模式 ====================
 
   // 检验类型：01/02/03/04/05/06/08 由 SAP 自动生成，MES 定时抓取；89 由 MES 创建并回 SAP 取号
@@ -148,6 +173,36 @@ const InspectionBatch = {
     { code:'2002', name:'山东丹红制药工厂' }
   ],
 
+  // ==================== 检验批状态机 ====================
+  // 正向流转：CRTD 已创建 → SAMP 取样中 → INSP 检验中 → DONE 检验完成 → DEC 已决策 → CLSD 已关闭
+  // 旁路终态：CANC 已取消（任意非终态可取消）
+  // next = 允许的下一步；nextLabel = 详情弹窗底部推进按钮文案；desc = 给操作用户看的状态说明
+  statusFlow: [
+    { code:'CRTD', name:'已创建',   badge:'badge-gray',   desc:'检验批已生成，等待取样', next:'SAMP', nextLabel:'提交检验' },
+    { code:'SAMP', name:'取样中',   badge:'badge-blue',   desc:'已下达取样任务，等待现场取样完成', next:'INSP', nextLabel:'开始检验' },
+    { code:'INSP', name:'检验中',   badge:'badge-yellow', desc:'样品已送达，检验特性正在逐项检测', next:'DONE', nextLabel:'完成检验' },
+    { code:'DONE', name:'检验完成', badge:'badge-purple', desc:'全部检验特性已出结果，等待质量判定', next:'DEC',  nextLabel:'使用决策' },
+    { code:'DEC',  name:'已决策',   badge:'badge-green',  desc:'已完成使用决策（放行/让步/退回/报废），待关闭归档', next:'CLSD', nextLabel:'关闭检验批' },
+    { code:'CLSD', name:'已关闭',   badge:'badge-gray',   desc:'检验批已关闭，数据归档，不可再修改', next:null,   nextLabel:'' },
+    { code:'CANC', name:'已取消',   badge:'badge-red',    desc:'检验批已取消（如 SAP 凭证冲销），流程终止', next:null, nextLabel:'' }
+  ],
+
+  // 取状态元数据（容错：未知状态返回灰色兜底）
+  getStatusMeta(status) {
+    return this.statusFlow.find(s => s.code === status)
+      || { code: status, name: status || '未知', badge: 'badge-gray', desc: '—', next: null, nextLabel: '' };
+  },
+
+  // 该状态下允许出现的操作（用于列表行按钮的显隐控制）
+  getAllowedActions(b) {
+    const acts = [];
+    if (b.status === 'CRTD') acts.push('sampling');
+    if (b.status === 'SAMP') acts.push('sampling', 'result');
+    if (b.status === 'INSP') acts.push('result');
+    if (b.status === 'DONE') acts.push('decision');
+    return acts;
+  },
+
   // ==================== 渲染页面 ====================
 
   render() {
@@ -170,12 +225,9 @@ const InspectionBatch = {
 
         <!-- Tabs -->
         <div class="tabs" style="margin:0;padding:0 24px;background:white;border-bottom:1px solid var(--border);flex-shrink:0;">
-          <div class="tab ${this.activeTab==='list'?'active':''}" id="ibTabList" onclick="InspectionBatch.switchTab('list')">📋 检验批列表 <span class="badge badge-blue badge-sm" style="margin-left:4px;">${this.batchData.length}</span></div>
-          <div class="tab ${this.activeTab==='sync'?'active':''}" id="ibTabSync" onclick="InspectionBatch.switchTab('sync')">🔄 同步任务${this._failedSyncCount() ? ` <span class="badge badge-red badge-sm" style="margin-left:4px;">${this._failedSyncCount()}</span>` : ''}</div>
+          <div class="tab ${this.activeTab==='list'?'active':''}" id="ibTabList" onclick="InspectionBatch.switchTab('list')">📋 检验批列表</div>
+          <div class="tab ${this.activeTab==='sync'?'active':''}" id="ibTabSync" onclick="InspectionBatch.switchTab('sync')">🔄 同步任务</div>
         </div>
-
-        <!-- 统计卡片（仅列表tab显示） -->
-        <div id="ibStatsRow" style="flex-shrink:0;${this.activeTab==='list'?'':'display:none;'}"></div>
 
         <!-- 筛选栏 -->
         <div id="ibFilterBar" style="flex-shrink:0;"></div>
@@ -199,7 +251,6 @@ const InspectionBatch = {
       QueryVariant.bindRecent('inspection-batch');
     }
 
-    this.renderStats();
     this.renderFilterBar();
     this.renderTable();
     // 同步任务页签的分页由 doRenderSyncTable 自行渲染
@@ -213,8 +264,6 @@ const InspectionBatch = {
     const syncEl = document.getElementById('ibTabSync');
     if (listEl) listEl.className = 'tab' + (tab==='list'?' active':'');
     if (syncEl) syncEl.className = 'tab' + (tab==='sync'?' active':'');
-    const statsEl = document.getElementById('ibStatsRow');
-    if (statsEl) statsEl.style.display = tab==='list'?'':'none';
     this.init();
   },
 
@@ -453,33 +502,6 @@ const InspectionBatch = {
         <div><span style="color:var(--text-muted);">同步时间：</span>${esc(b.syncTime||'—')}</div>
         <div><span style="color:var(--text-muted);">同步任务：</span><span style="font-family:monospace;font-size:12px;">${esc(b.syncJobId||'—')}</span></div>
       </div>
-    </div>`;
-  },
-
-  // ==================== 统计卡片 ====================
-
-  renderStats() {
-    const stats = this.getStats();
-    const el = document.getElementById('ibStatsRow');
-    if (!el) return;
-    el.innerHTML = stats;
-  },
-
-  getStats() {
-    const d = this.batchData;
-    const total = d.length;
-    const crtd = d.filter(b => b.status==='CRTD').length;
-    const samp = d.filter(b => b.status==='SAMP'||b.status==='INSP').length;
-    const done = d.filter(b => b.status==='DONE').length;
-    const today = d.filter(b => b.createTime && b.createTime.startsWith(this._now().split(' ')[0])).length;
-    const syncFailed = this._failedSyncCount();
-
-    return `<div class="stats-row" style="padding:12px 24px 0;">
-      <div class="stat-card"><div class="stat-icon blue">📊</div><div><div class="stat-label">检验批总数</div><div class="stat-value">${total}</div></div></div>
-      <div class="stat-card"><div class="stat-icon yellow">⏳</div><div><div class="stat-label">待处理</div><div class="stat-value">${crtd+samp}</div></div></div>
-      <div class="stat-card"><div class="stat-icon green">✅</div><div><div class="stat-label">已完成</div><div class="stat-value">${done}</div></div></div>
-      <div class="stat-card"><div class="stat-icon blue">📅</div><div><div class="stat-label">今日新增</div><div class="stat-value">${today}</div></div></div>
-      <div class="stat-card"><div class="stat-icon red">🔄</div><div><div class="stat-label">同步失败</div><div class="stat-value">${syncFailed}</div></div></div>
     </div>`;
   },
 
@@ -823,18 +845,10 @@ const InspectionBatch = {
     </tr>`;
   },
 
+  // 状态徽章：统一从状态机 statusFlow 取色与名称，保证列表与详情一致
   getStatusBadgeHtml(status) {
-    const map = {
-      CRTD: { cls:'badge-blue', label:'已创建' },
-      SAMP: { cls:'badge-yellow', label:'取样中' },
-      INSP: { cls:'badge-purple', label:'检验中' },
-      DONE: { cls:'badge-green', label:'检验完成' },
-      DEC:  { cls:'badge-blue', label:'已决策' },
-      CLSD: { cls:'badge-gray', label:'已关闭' },
-      CANC: { cls:'badge-red', label:'已取消' }
-    };
-    const m = map[status] || { cls:'badge-gray', label:status };
-    return `<span class="badge ${m.cls}">${m.label}</span>`;
+    const m = this.getStatusMeta(status);
+    return `<span class="badge ${m.badge}">${esc(m.name)}</span>`;
   },
 
   getBatchActions(b) {
@@ -850,6 +864,14 @@ const InspectionBatch = {
     const retryBtn = b.syncStatus === 'FAILED'
       ? `<button class="btn btn-danger btn-sm" onclick="InspectionBatch.retrySync('${b.id}')" title="重新从 SAP 拉取该检验批">重试同步</button>`
       : '';
+
+    // 终态（已关闭 / 已取消）：数据只读，不再出现取样、结果录入、使用决策等动作按钮
+    if (this._isFinalStatus(b.status)) {
+      return `<div class="table-actions">
+        <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
+        ${retryBtn}
+      </div>`;
+    }
 
     return `<div class="table-actions">
       <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
@@ -1040,6 +1062,9 @@ const InspectionBatch = {
         <span style="font-size:13px;color:var(--text-secondary);">${esc(b.plantName)}</span>
       </div>
 
+      <!-- 状态追踪：当前状态 / 流转进度 / 下一步 -->
+      ${this.renderStatusTrack(b)}
+
       <!-- 顶部标签页（方案A：基本信息 / 取样记录 / 结果录入 / 使用决策 / 操作流水） -->
       <div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px;">
         <div class="form-tab active" data-ibtab="base" onclick="InspectionBatch._switchIbTab(this)">基本信息</div>
@@ -1056,12 +1081,103 @@ const InspectionBatch = {
       <div class="ib-tab-panel" data-ibpanel="flow">${this._renderFlowTab(b)}</div>
     </div>`;
 
-    // 底部全局操作按钮：仅保留「关闭」
-    const footerBtns = [
-      { text:'关闭', cls:'btn-secondary', action: closeModal }
-    ];
+    // 底部操作按钮：按当前状态决定该出现哪些
+    // CRTD 已创建 → 暂存 + 提交检验；其余非终态 → 该状态对应的推进动作；CLSD/CANC 终态 → 仅关闭
+    const footerBtns = [];
+    const statusMeta = this.getStatusMeta(b.status);
+    if (b.status === 'CRTD') {
+      footerBtns.push({ text:'暂存', cls:'btn-secondary', action: () => { InspectionBatch.saveDraft(batchId); } });
+    }
+    if (statusMeta.next) {
+      footerBtns.push({
+        text: (b.status === 'CRTD' ? '提交检验' : statusMeta.nextLabel),
+        cls: 'btn-primary',
+        action: () => { InspectionBatch.advanceStatus(batchId); }
+      });
+    }
+    footerBtns.push({ text:'关闭', cls:'btn-secondary', action: closeModal });
 
     showModal(`检验批详情 — ${b.batchNo}`, bodyHtml, footerBtns, 'modal-xl');
+  },
+
+  // ==================== 状态追踪与状态推进 ====================
+
+  // 状态追踪：当前状态徽章 + 流转进度条 + 状态说明与下一步
+  renderStatusTrack(b) {
+    const meta = this.getStatusMeta(b.status);
+    const cancelled = b.status === 'CANC';
+    const steps = this.statusFlow.filter(s => s.code !== 'CANC');
+    const curIdx = steps.findIndex(s => s.code === b.status);
+
+    const nodes = steps.map((s, i) => {
+      const done = !cancelled && i < curIdx;
+      const cur  = !cancelled && i === curIdx;
+      const dotBg = done ? '#f0fdf4' : cur ? '#eff6ff' : '#f8fafc';
+      const dotBd = done ? '#16a34a' : cur ? 'var(--primary)' : '#e5e7eb';
+      const dotFg = done ? '#15803d' : cur ? 'var(--primary)' : '#9ca3af';
+      const lineL = i === 0 ? 'transparent' : ((!cancelled && i <= curIdx) ? '#16a34a' : '#e5e7eb');
+      const lineR = i === steps.length - 1 ? 'transparent' : ((!cancelled && i < curIdx) ? '#16a34a' : '#e5e7eb');
+      return `<div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;">
+          <div style="flex:1;height:2px;background:${lineL};"></div>
+          <div style="width:26px;height:26px;border-radius:50%;background:${dotBg};border:2px solid ${dotBd};color:${dotFg};font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${done ? '✓' : (i + 1)}</div>
+          <div style="flex:1;height:2px;background:${lineR};"></div>
+        </div>
+        <div style="margin-top:6px;text-align:center;font-size:12px;color:${dotFg};font-weight:${cur ? 600 : 400};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.name)}</div>
+      </div>`;
+    }).join('');
+
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:13px;color:var(--text-muted);">当前状态</span>
+          <span class="badge ${meta.badge}" style="font-size:13px;padding:3px 10px;">${esc(b.statusName || meta.name)}</span>
+          ${b.status === 'CRTD' ? '<span style="font-size:12px;color:var(--text-muted);">草稿，可暂存</span>' : ''}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);">最近更新：${esc(b.updateTime || '—')}</div>
+      </div>
+      ${cancelled ? '' : `<div style="display:flex;align-items:flex-start;">${nodes}</div>`}
+      <div style="margin-top:14px;padding:8px 12px;background:#f8fafc;border-radius:6px;font-size:12px;color:var(--text-secondary);line-height:1.6;">
+        ${esc(meta.desc)}
+        ${meta.next
+          ? `<span style="color:var(--text-muted);">　→　下一步：</span><strong>${esc(meta.nextLabel)}</strong><span style="color:var(--text-muted);">（${esc(this.getStatusMeta(meta.next).name)}）</span>`
+          : '<span style="color:var(--text-muted);">　该检验批已处于终态，不可再推进，数据只读。</span>'}
+      </div>
+    </div>`;
+  },
+
+  // 按状态机推进到下一状态
+  advanceStatus(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return;
+    const meta = this.getStatusMeta(b.status);
+    if (!meta.next) { toast('该检验批已处于终态，无法继续推进'); return; }
+
+    // 使用决策与关闭走各自的既有流程（都会再开弹窗，需先关闭当前详情）
+    if (meta.next === 'DEC')  { closeModal(); this.openDecision(batchId); return; }
+    if (meta.next === 'CLSD') { closeModal(); this.closeBatch(batchId);   return; }
+
+    const nextMeta = this.getStatusMeta(meta.next);
+    const now = this._now() + ':00';
+    b.statusLog = b.statusLog || [];
+    b.statusLog.push({ from: meta.name, to: nextMeta.name, by: '当前用户', time: now });
+    b.status = nextMeta.code;
+    b.statusName = nextMeta.name;
+    b.updateTime = now;
+
+    closeModal();
+    toast(`检验批 ${b.batchNo} 已推进，状态更新为「${nextMeta.name}」`);
+    this.init();
+  },
+
+  // 暂存草稿：状态保持不变（仍为「已创建」），仅记录时间戳
+  saveDraft(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    if (!b) return;
+    b.updateTime = this._now() + ':00';
+    closeModal();
+    toast(`检验批 ${b.batchNo} 已暂存，状态仍为「${this.getStatusMeta(b.status).name}」，可继续编辑`);
+    this.init();
   },
 
   // ==================== 方案A：查看弹窗标签页内容 ====================
@@ -1263,7 +1379,13 @@ const InspectionBatch = {
       <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;">📅 操作流水（审计轨迹）</div>
       <div style="font-size:13px;">`;
     html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.createTime)}</span> — 创建检验批（${esc(b.createBy)}）</div></div>`;
-    if (b.status !== 'CRTD') html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#eab308;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.updateTime)}</span> — 状态更新为"${esc(b.statusName)}"</div></div>`;
+    if ((b.statusLog || []).length) {
+      b.statusLog.forEach(l => {
+        html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#2563eb;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(l.time)}</span> — 状态流转：<strong>${esc(l.from)} → ${esc(l.to)}</strong>（${esc(l.by || '当前用户')}）</div></div>`;
+      });
+    } else if (b.status !== 'CRTD') {
+      html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#eab308;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.updateTime)}</span> — 状态更新为"${esc(b.statusName)}"</div></div>`;
+    }
     if (b.decisionTime) html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:${(b.decision || '').startsWith('A') ? '#22c55e' : '#dc2626'};margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.decisionTime)}</span> — 决策：<strong>${esc(b.decision || '')} ${esc(b.decisionDesc || '')}</strong>（${esc(b.decisionBy || '')}）${b.qualityScore != null ? ` — 得分：${b.qualityScore}分` : ''}</div></div>`;
     if (b.closeTime) html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#6b7280;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.closeTime)}</span> — 已关闭归档</div></div>`;
     if (b.cancelReason) html += `<div style="display:flex;gap:12px;padding:6px 0;"><div style="width:8px;height:8px;border-radius:50%;background:#dc2626;margin-top:6px;flex-shrink:0;"></div><div><span style="color:var(--text-muted);">${esc(b.updateTime)}</span> — ${esc(b.cancelReason)}</div></div>`;
