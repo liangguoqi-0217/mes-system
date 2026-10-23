@@ -39,7 +39,8 @@ const App = {
         },
         {
           title:'质量检验', items: [
-            { id:'inspection-batch', label:'检验批管理', route:'inspection-batch' }
+            { id:'inspection-batch', label:'检验批管理', route:'inspection-batch' },
+            { id:'retention-sample', label:'留样管理', route:'retention-sample' }
           ]
         }
 
@@ -188,6 +189,7 @@ const App = {
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
+    'retention-sample': RetentionSample,
     'defect-code': DefectCode,
     'cost-object': CostObject,
     'job-list': ScheduledJob,
