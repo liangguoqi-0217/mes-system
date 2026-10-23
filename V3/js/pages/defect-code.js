@@ -33,14 +33,11 @@ const DC_CATALOG_TYPES = [
   { code: 'E', text: '缺陷位置' }
 ];
 
-/* ---------- 常量：同步批次（后台导入批次，用于「更多条件」筛选） ---------- */
-const DC_BATCHES = ['SYNC-2026102301', 'SYNC-2026101601'];
-
-/* ---------- Mock：代码组 + 代码（后台自 SAP 导入） ---------- */
+/* ---------- Mock：代码组 + 代码（后台自 SAP 导入，导入的均为生效数据） ---------- */
 const DC_GROUPS = [
   { type: '9', group: 'QM-DF-01', text: '片剂外观缺陷', codes: [
     ['001', '裂纹'], ['002', '黑点/斑点'], ['003', '变色'], ['004', '缺角/碎片'],
-    ['005', '粘连'], ['006', '麻点', 'deleted'] ] },
+    ['005', '粘连'], ['006', '麻点'] ] },
   { type: '9', group: 'QM-DF-02', text: '含量与溶出缺陷', codes: [
     ['001', '含量偏低'], ['002', '含量偏高'], ['003', '溶出度不合格'],
     ['004', '含量均匀度超标'], ['005', '有关物质超标'] ] },
@@ -54,7 +51,7 @@ const DC_GROUPS = [
 
   { type: '3', group: 'QM-UD-01', text: '使用决策（放行类）', codes: [
     ['A1', '放行'], ['A2', '让步接收'], ['A3', '返工'], ['A5', '报废/销毁'],
-    ['A6', '降级使用'], ['A7', '重新加工', 'deleted'] ] },
+    ['A6', '降级使用'], ['A7', '重新加工'] ] },
   { type: '3', group: 'QM-UD-02', text: '使用决策（拒收类）', codes: [
     ['R1', '拒收退回供应商'], ['R2', '隔离待处理'], ['R3', '待复检'] ] },
 
@@ -149,10 +146,7 @@ const DC_CODES = (function () {
         codeGroupText: g.text,
         code: c[0],
         codeText: c[1],
-        status: c[2] || 'active',
-        selectedSets: belong[key] || [],
-        // 早期批次导入的代码（用于「同步批次」筛选演示）
-        syncBatch: (g.group === 'QM-DR-01' || g.group === 'QM-AT-02') ? 'SYNC-2026101601' : 'SYNC-2026102301'
+        selectedSets: belong[key] || []
       });
     });
   });
@@ -201,7 +195,7 @@ const DefectCode = {
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0;flex-wrap:wrap;">
           <div>
             <div style="font-size:18px;font-weight:700;">目录类型管理</div>
-            <div style="font-size:13px;opacity:0.85;">SAP QM 目录（QS41 代码组 / QS51 选择集）· 仅质量相关目录类型 · 只读</div>
+            <div style="font-size:13px;opacity:0.85;">查询质量相关的目录与代码</div>
           </div>
         </div>
 
@@ -258,14 +252,11 @@ const DefectCode = {
       ? `<option value="">全部工厂</option>` + plants.map(p => `<option value="${p}">${p} ${DC_PLANTS[p]}</option>`).join('')
       : plants.map(p => `<option value="${p}" selected>${p} ${DC_PLANTS[p]}</option>`).join('');
 
-    const batchOpts = DC_BATCHES.map(b => `<option value="${b}">${b}</option>`).join('');
-
     el.innerHTML = `
       <div class="filter-bar" style="flex-wrap:wrap;">
+        <div class="filter-group"><label>工厂</label><select id="dcPlant" ${this.isAdmin() ? '' : 'disabled'}>${plantOpts}</select></div>
         <div class="filter-group"><label>目录类型</label><select id="dcCatalogType"><option value="">全部</option>${typeOpts}</select></div>
         <div class="filter-group"><label>代码组</label><select id="dcCodeGroup"><option value="">全部</option>${groupOpts}</select></div>
-        <div class="filter-group"><label>代码 / 代码描述</label><input type="text" id="dcKeyword" placeholder="如 001 或 裂纹"></div>
-        <div class="filter-group"><label>选择集</label><select id="dcSelectedSet"><option value="">全部</option>${setOpts}</select></div>
         <div class="filter-actions">
           <button class="btn btn-primary btn-sm" onclick="DefectCode.search()">查询</button>
           <button class="btn btn-secondary btn-sm" onclick="DefectCode.exportData()">导出</button>
@@ -274,13 +265,9 @@ const DefectCode = {
           <button class="btn btn-secondary btn-sm" id="dcMoreBtn" onclick="DefectCode.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
         </div>
         <div id="dcMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
-          <div class="filter-group"><label>工厂</label><select id="dcPlant" ${this.isAdmin() ? '' : 'disabled'}>${plantOpts}</select></div>
+          <div class="filter-group"><label>代码 / 代码描述</label><input type="text" id="dcKeyword" placeholder="如 001 或 裂纹"></div>
           <div class="filter-group"><label>代码组描述</label><input type="text" id="dcGroupDesc" placeholder="如 外观"></div>
-          <div class="filter-group"><label>代码状态</label><select id="dcStatus">
-            <option value="valid">仅有效代码</option>
-            <option value="all">全部代码</option>
-          </select></div>
-          <div class="filter-group"><label>同步批次</label><select id="dcBatch"><option value="">全部</option>${batchOpts}</select></div>
+          <div class="filter-group"><label>选择集</label><select id="dcSelectedSet"><option value="">全部</option>${setOpts}</select></div>
         </div>
       </div>`;
   },
@@ -309,10 +296,9 @@ const DefectCode = {
   },
 
   resetFilter() {
-    ['dcCatalogType', 'dcCodeGroup', 'dcKeyword', 'dcSelectedSet', 'dcGroupDesc', 'dcBatch'].forEach(id => {
+    ['dcCatalogType', 'dcCodeGroup', 'dcKeyword', 'dcGroupDesc', 'dcSelectedSet'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
-    const st = document.getElementById('dcStatus'); if (st) st.value = 'valid';
     const pl = document.getElementById('dcPlant');
     if (pl && this.isAdmin()) pl.value = '';
     this.search();
@@ -328,8 +314,19 @@ const DefectCode = {
   },
 
   // 基础行：一代码一行，选择集列只带当前用户有权查看的部分
+  // 排序：目录类型（SAP 定义顺序）→ 代码组 → 代码，保证相同值相邻，供合并单元格使用
   _baseRows() {
-    return DC_CODES.map(r => Object.assign({}, r, { _sets: this._visibleSetsOf(r) }));
+    const order = {};
+    DC_CATALOG_TYPES.forEach((t, i) => { order[t.code] = i; });
+    return DC_CODES
+      .map(r => Object.assign({}, r, { _sets: this._visibleSetsOf(r) }))
+      .sort(function (a, b) {
+        const oa = order[a.catalogType] == null ? 99 : order[a.catalogType];
+        const ob = order[b.catalogType] == null ? 99 : order[b.catalogType];
+        if (oa !== ob) return oa - ob;
+        if (a.codeGroup !== b.codeGroup) return a.codeGroup < b.codeGroup ? -1 : 1;
+        return a.code < b.code ? -1 : (a.code > b.code ? 1 : 0);
+      });
   },
 
   renderTable() {
@@ -338,8 +335,6 @@ const DefectCode = {
     const kw = this._val('dcKeyword').toLowerCase();
     const setKey = this._val('dcSelectedSet');
     const groupDesc = this._val('dcGroupDesc').toLowerCase();
-    const status = this._val('dcStatus') || 'valid';
-    const batch = this._val('dcBatch');
 
     this.filtered = this._baseRows().filter(r => {
       if (type && r.catalogType !== type) return false;
@@ -347,8 +342,6 @@ const DefectCode = {
       if (groupDesc && r.codeGroupText.toLowerCase().indexOf(groupDesc) === -1) return false;
       if (kw && r.code.toLowerCase().indexOf(kw) === -1 &&
           r.codeText.toLowerCase().indexOf(kw) === -1) return false;
-      if (status === 'valid' && r.status !== 'active') return false;
-      if (batch && r.syncBatch !== batch) return false;
       if (setKey && !r._sets.some(s => (s.plant + '|' + s.set) === setKey)) return false;
       return true;
     });
@@ -373,15 +366,46 @@ const DefectCode = {
         <th style="min-width:280px;">选择集</th>
       </tr>`;
 
+    const spans = this._mergeSpans(page);
     const body = page.length
-      ? page.map((r, i) => this.renderRow(r, start + i + 1)).join('')
+      ? page.map((r, i) => this.renderRow(r, start + i + 1, spans[i])).join('')
       : `<tr><td colspan="8" class="empty-cell">暂无符合条件的目录记录</td></tr>`;
 
     el.innerHTML = `<table class="data-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   },
 
-  renderRow(r, idx) {
-    const deleted = r.status !== 'active';
+  // 当前页内计算合并跨度：目录类型 / 目录类型描述 / 代码组 / 代码组描述 四列
+  // 返回每行的 {type, typeText, group, groupText}；为 0 表示该格被上方合并掉，不输出 td
+  // 注：合并在当前页内进行，跨页不合并（分页表格的常规做法）
+  _mergeSpans(rows) {
+    const cols = [
+      { k: 'type', get: function (r) { return r.catalogType; } },
+      { k: 'typeText', get: function (r) { return r.catalogTypeText; } },
+      { k: 'group', get: function (r) { return r.codeGroup; } },
+      { k: 'groupText', get: function (r) { return r.codeGroupText; } }
+    ];
+    const spans = rows.map(function () { return {}; });
+    cols.forEach(function (col) {
+      let i = 0;
+      while (i < rows.length) {
+        let j = i + 1;
+        while (j < rows.length && col.get(rows[j]) === col.get(rows[i])) j++;
+        spans[i][col.k] = j - i;
+        for (let m = i + 1; m < j; m++) spans[m][col.k] = 0;
+        i = j;
+      }
+    });
+    return spans;
+  },
+
+  renderRow(r, idx, span) {
+    span = span || {};
+    const cell = function (n, html, style) {
+      if (n === 0) return '';                       // 被上方合并，不渲染
+      if (n == null) n = 1;
+      const rs = n > 1 ? ` rowspan="${n}"` : '';
+      return `<td${rs} style="${style || ''}vertical-align:middle;">${html}</td>`;
+    };
 
     // 选择集单元格：只渲染本视角可见的选择集，超过 3 个折叠为 +N
     let setCell;
@@ -393,14 +417,14 @@ const DefectCode = {
       setCell = shown + (rest > 0 ? `<span class="dc-chip" title="${esc(r._sets.slice(3).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join('；'))}">+${rest}</span>` : '');
     }
 
-    return `<tr${deleted ? ' style="opacity:0.55;"' : ''}>
+    return `<tr>
       <td>${idx}</td>
-      <td style="font-family:monospace;font-size:12px;font-weight:600;">${esc(r.catalogType)}</td>
-      <td>${esc(r.catalogTypeText)}</td>
-      <td style="font-family:monospace;font-size:12px;font-weight:600;">${esc(r.codeGroup)}</td>
-      <td>${esc(r.codeGroupText)}</td>
+      ${cell(span.type, esc(r.catalogType), 'font-family:monospace;font-size:12px;font-weight:600;')}
+      ${cell(span.typeText, esc(r.catalogTypeText), '')}
+      ${cell(span.group, esc(r.codeGroup), 'font-family:monospace;font-size:12px;font-weight:600;')}
+      ${cell(span.groupText, esc(r.codeGroupText), '')}
       <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(r.code)}</td>
-      <td>${esc(r.codeText)}${deleted ? ' <span class="badge badge-gray badge-sm">已删除标记</span>' : ''}</td>
+      <td>${esc(r.codeText)}</td>
       <td>${setCell}</td>
     </tr>`;
   },
@@ -442,7 +466,7 @@ const DefectCode = {
     this.filtered.forEach((r, i) => {
       const sets = (r._sets || []).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join(' / ');
       const cells = [String(i + 1), r.catalogType, r.catalogTypeText, r.codeGroup, r.codeGroupText,
-        r.code, r.codeText + (r.status !== 'active' ? '（已删除标记）' : ''), sets];
+        r.code, r.codeText, sets];
       lines.push(cells.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
     });
     const csv = '\uFEFF' + lines.join('\n');
@@ -461,13 +485,11 @@ const DefectCode = {
 if (window.QueryVariant) {
   QueryVariant.register({
     pageId: 'defect-code',
-    fields: ['dcCatalogType', 'dcCodeGroup', 'dcKeyword', 'dcSelectedSet',
-      'dcPlant', 'dcGroupDesc', 'dcStatus', 'dcBatch'],
+    fields: ['dcPlant', 'dcCatalogType', 'dcCodeGroup', 'dcKeyword', 'dcGroupDesc', 'dcSelectedSet'],
     textFields: ['dcKeyword', 'dcGroupDesc'],
     labels: {
-      dcCatalogType: '目录类型', dcCodeGroup: '代码组', dcKeyword: '代码/代码描述',
-      dcSelectedSet: '选择集', dcPlant: '工厂', dcGroupDesc: '代码组描述',
-      dcStatus: '代码状态', dcBatch: '同步批次'
+      dcPlant: '工厂', dcCatalogType: '目录类型', dcCodeGroup: '代码组',
+      dcKeyword: '代码/代码描述', dcGroupDesc: '代码组描述', dcSelectedSet: '选择集'
     },
     onApply: function () { DefectCode.search(); }
   });
