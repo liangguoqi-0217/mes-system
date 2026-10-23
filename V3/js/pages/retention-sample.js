@@ -5,7 +5,7 @@
 //   1. MES 只承载业务过程与最终结果记录，**不做审批**——销毁不再有申请/QA审批，调用不再有审批与电子签名；
 //      审批在纸质或 eQMS 完成，MES 记录定稿后的事实。
 //   2. 只有一个页面：留样台账。观察与销毁作为行项目按钮入口，不再单独开 Tab；
-//      观察待办由「待观察」统计卡 + 状态筛选补齐，销毁历史由「已销毁」状态筛选查看。
+//      观察待办由状态筛选「待观察」补齐，销毁历史由状态筛选「已销毁」查看。
 //   3. 追溯：点「查看」打开只读详情弹窗，4 个页签——基本信息 / 调用记录 / 观察记录 / 销毁记录；
 //      操作一律只在台账行项目按钮上，详情弹窗底部只有「关闭」。
 //
@@ -311,30 +311,6 @@ const RetentionSample = {
     </div>`;
   },
 
-  // ==================== 统计卡 ====================
-
-  _stat() {
-    const today = new Date();
-    let inStock = 0, expiring = 0, expired = 0, destroyed = 0, toObserve = 0;
-    this.sampleData.forEach(s => {
-      if (s.status === 'DESTROYED') { destroyed++; return; }
-      if (s.status === 'REG') return;                     // 待入库不计入在库
-      inStock++;
-      const due = new Date(s.dueDate);
-      if (!isNaN(due.getTime())) {
-        const days = Math.round((due - today) / 86400000);
-        if (days < 0) expired++;
-        else if (days <= 90) expiring++;
-      }
-    });
-    this.observeData.forEach(o => {
-      if (o.actualDate) return;
-      const s = this.sampleData.find(x => x.id === o.sampleId);
-      if (s && s.status !== 'DESTROYED') toObserve++;
-    });
-    return { inStock: inStock, toObserve: toObserve, expiring: expiring, expired: expired, destroyed: destroyed };
-  },
-
   // ==================== 台账表格 ====================
 
   renderTable() {
@@ -355,21 +331,10 @@ const RetentionSample = {
     });
 
     const { page } = this._paged(this.filtered);
-    const stat = this._stat();
     const el = document.getElementById('rsTableWrapper');
     if (!el) return;
 
-    const cards = `
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:14px 24px;background:#f8fafc;border-bottom:1px solid var(--border);">
-        ${[['在库', stat.inStock, '#16a34a'], ['待观察（次）', stat.toObserve, '#6366f1'],
-           ['90 天内到期', stat.expiring, '#f59e0b'], ['已到期', stat.expired, '#dc2626'], ['已销毁', stat.destroyed, '#64748b']]
-          .map(c => `<div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;">
-            <div style="font-size:12px;color:var(--text-muted);">${c[0]}</div>
-            <div style="font-size:22px;font-weight:700;color:${c[2]};">${c[1]}</div>
-          </div>`).join('')}
-      </div>`;
-
-    el.innerHTML = cards + `<table class="data-table" style="min-width:1180px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1180px;">
       <thead><tr>
         <th style="width:160px;">留样编号</th>
         <th style="width:190px;">物料</th>
