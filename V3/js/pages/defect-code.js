@@ -362,7 +362,6 @@ const DefectCode = {
 
     const head = `
       <tr>
-        <th style="width:56px;">序号</th>
         <th style="width:90px;">目录类型</th>
         <th style="width:130px;">目录类型描述</th>
         <th style="width:120px;">代码组</th>
@@ -374,8 +373,8 @@ const DefectCode = {
 
     const spans = this._mergeSpans(page);
     const body = page.length
-      ? page.map((r, i) => this.renderRow(r, start + i + 1, spans[i])).join('')
-      : `<tr><td colspan="8" class="empty-cell">暂无符合条件的目录记录</td></tr>`;
+      ? page.map((r, i) => this.renderRow(r, spans[i])).join('')
+      : `<tr><td colspan="7" class="empty-cell">暂无符合条件的目录记录</td></tr>`;
 
     el.innerHTML = `<table class="data-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   },
@@ -404,7 +403,7 @@ const DefectCode = {
     return spans;
   },
 
-  renderRow(r, idx, span) {
+  renderRow(r, span) {
     span = span || {};
     const cell = function (n, html, style) {
       if (n === 0) return '';                       // 被上方合并，不渲染
@@ -427,7 +426,6 @@ const DefectCode = {
     const cls = (span.group > 0 ? ' dc-group-start' : '') + (span.type > 0 ? ' dc-type-start' : '');
 
     return `<tr class="${cls.trim()}">
-      <td>${idx}</td>
       ${cell(span.type, esc(r.catalogType), 'font-family:monospace;font-size:12px;font-weight:600;')}
       ${cell(span.typeText, esc(r.catalogTypeText), '')}
       ${cell(span.group, esc(r.codeGroup), 'font-family:monospace;font-size:12px;font-weight:600;')}
@@ -470,11 +468,11 @@ const DefectCode = {
 
   exportData() {
     if (!this.filtered || this.filtered.length === 0) return toast('无数据可导出');
-    const head = ['序号', '目录类型', '目录类型描述', '代码组', '代码组描述', '代码', '代码描述', '选择集（工厂）'];
+    const head = ['目录类型', '目录类型描述', '代码组', '代码组描述', '代码', '代码描述', '选择集（工厂）'];
     const lines = [head.join(',')];
-    this.filtered.forEach((r, i) => {
+    this.filtered.forEach(r => {
       const sets = (r._sets || []).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join(' / ');
-      const cells = [String(i + 1), r.catalogType, r.catalogTypeText, r.codeGroup, r.codeGroupText,
+      const cells = [r.catalogType, r.catalogTypeText, r.codeGroup, r.codeGroupText,
         r.code, r.codeText, sets];
       lines.push(cells.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
     });
