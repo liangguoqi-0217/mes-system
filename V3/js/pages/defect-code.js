@@ -207,6 +207,12 @@ const DefectCode = {
           #dcTableWrapper::-webkit-scrollbar-thumb { background: rgba(203,213,225,0.6); border-radius: 3px; }
           #dcTableWrapper::-webkit-scrollbar-track { background: transparent; }
           .dc-chip { display:inline-block;background:#f1f5f9;color:#1E3A5F;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:11px;margin:2px 6px 2px 0;white-space:nowrap;line-height:1.6; }
+          /* 目录网格：全边框 + 层级分隔线，便于看清 目录类型 → 代码组 → 代码 的归属关系 */
+          #dcTableWrapper .data-table { border-collapse: collapse; }
+          #dcTableWrapper .data-table th,
+          #dcTableWrapper .data-table td { border: 1px solid #e5e7eb; }
+          #dcTableWrapper .data-table tr.dc-group-start td { border-top: 1px solid #cbd5e1; }
+          #dcTableWrapper .data-table tr.dc-type-start td { border-top: 2px solid #94a3b8; }
         </style>
         <div class="table-wrapper" id="dcTableWrapper" style="flex:1;overflow:auto;width:100%;min-width:0;"></div>
         <div id="dcPagination" style="flex-shrink:0;"></div>
@@ -417,7 +423,10 @@ const DefectCode = {
       setCell = shown + (rest > 0 ? `<span class="dc-chip" title="${esc(r._sets.slice(3).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join('；'))}">+${rest}</span>` : '');
     }
 
-    return `<tr>
+    // 层级分隔：新目录类型 / 新代码组的起始行加粗分隔线
+    const cls = (span.group > 0 ? ' dc-group-start' : '') + (span.type > 0 ? ' dc-type-start' : '');
+
+    return `<tr class="${cls.trim()}">
       <td>${idx}</td>
       ${cell(span.type, esc(r.catalogType), 'font-family:monospace;font-size:12px;font-weight:600;')}
       ${cell(span.typeText, esc(r.catalogTypeText), '')}
