@@ -34,7 +34,7 @@ const App = {
             { id:'inspection-method', label:'检验方法', route:'inspection-method' },
             { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
             { id:'inspection-plan', label:'检验计划', route:'inspection-plan' },
-            { id:'defect-code', label:'缺陷代码目录', route:'defect-code' }
+            { id:'defect-code', label:'目录类型管理', route:'defect-code' }
           ]
         },
         {

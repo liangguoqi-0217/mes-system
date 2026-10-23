@@ -1,4 +1,4 @@
-/* ==================== 缺陷代码目录（SAP QM Catalog） ====================
+/* ==================== 目录类型管理（SAP QM Catalog） ====================
  * SAP 目录（QM-PT-BD-CAT）层级：目录类型 → 代码组 → 代码 → 选择集（工厂级）
  *   目录类型 TQ15/TQ15T（集团级）  代码组 QPGR/QPGT（集团级）
  *   代码     QPCD/QPCDT（集团级）  选择集 QPAM/QPAS（工厂级 plant-wide）
@@ -33,8 +33,7 @@ const DC_CATALOG_TYPES = [
   { code: 'E', text: '缺陷位置' }
 ];
 
-/* ---------- 常量：同步信息（后台导入批次） ---------- */
-const DC_SYNC = { time: '2026-10-23 02:00', batch: 'SYNC-2026102301', rows: 76 };
+/* ---------- 常量：同步批次（后台导入批次，用于「更多条件」筛选） ---------- */
 const DC_BATCHES = ['SYNC-2026102301', 'SYNC-2026101601'];
 
 /* ---------- Mock：代码组 + 代码（后台自 SAP 导入） ---------- */
@@ -201,18 +200,9 @@ const DefectCode = {
         <!-- 标题栏 -->
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0;flex-wrap:wrap;">
           <div>
-            <div style="font-size:18px;font-weight:700;">缺陷代码目录</div>
+            <div style="font-size:18px;font-weight:700;">目录类型管理</div>
             <div style="font-size:13px;opacity:0.85;">SAP QM 目录（QS41 代码组 / QS51 选择集）· 仅质量相关目录类型 · 只读</div>
           </div>
-          <div style="font-size:12px;opacity:0.9;text-align:right;line-height:1.6;">
-            最近同步：${DC_SYNC.time}<br>批次 ${DC_SYNC.batch} · 共 ${DC_SYNC.rows} 条
-          </div>
-        </div>
-
-        <!-- 只读说明 + 评审提示 -->
-        <div style="flex-shrink:0;padding:10px 24px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.7;">
-          <div>本页数据由系统后台每日 02:00 从 SAP 目录自动导入（目录类型 / 代码组 / 代码 / 选择集），页面<b>只读</b>，不提供新建、修改、删除与导入操作；如需变更请在 SAP 中维护后等待下次同步。</div>
-          <div style="margin-top:4px;color:var(--text-muted);">${this._scopeNote()}</div>
         </div>
 
         <div id="dcFilterBar" style="flex-shrink:0;"></div>
@@ -227,16 +217,6 @@ const DefectCode = {
         <div class="table-wrapper" id="dcTableWrapper" style="flex:1;overflow:auto;width:100%;min-width:0;"></div>
         <div id="dcPagination" style="flex-shrink:0;"></div>
       </div>`;
-  },
-
-  // 当前权限范围说明：选择集按用户工厂授权隔离，代码为集团级全员可见
-  _scopeNote() {
-    const total = DC_CODES.length;
-    const hit = DC_CODES.filter(r => this._visibleSetsOf(r).length > 0).length;
-    const scope = this.isAdmin()
-      ? '全部工厂'
-      : (DC_PLANTS[this.userFactory()] || '') + '（' + this.userFactory() + '）';
-    return `当前权限范围：${scope} · 可见选择集 ${this.visibleSets().length} 个 · 目录共 ${total} 条代码，其中 ${hit} 条已被收录进选择集；选择集列只显示你有权查看的工厂数据，未收录的代码该列显示「—」。`;
   },
 
   init() {
@@ -254,7 +234,7 @@ const DefectCode = {
     this.page = 1;
     this.renderTable();
     this.renderPagination();
-    toast('数据已刷新（最近同步 ' + DC_SYNC.time + '）');
+    toast('数据已刷新');
   },
 
   /* ==================== 筛选栏 ==================== */
@@ -470,7 +450,7 @@ const DefectCode = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = '缺陷代码目录_' + new Date().toISOString().substring(0, 10) + '.csv';
+    a.download = '目录类型管理_' + new Date().toISOString().substring(0, 10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
     toast('导出成功（共 ' + this.filtered.length + ' 行）');
