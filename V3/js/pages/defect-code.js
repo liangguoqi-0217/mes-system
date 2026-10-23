@@ -9,10 +9,9 @@
  *
  * 权限：目录类型/代码组/代码为集团级，全员可见；选择集为工厂级，按用户工厂授权隔离。
  *   管理员可见全部工厂选择集，普通用户仅可见本厂选择集。
+ *   隔离粒度采用「① 列级过滤」：一代码一行，目录所有代码均展示，
+ *   选择集列只渲染当前用户有权限工厂的选择集，无则显示「—」。
  *   注：真实环境过滤必须在后端 SQL 完成，此处前端过滤仅用于原型演示。
- *
- * ★ 评审用：三种权限粒度视图（V1 列级 / V2 行级展开 / V3 行级去重）通过顶部切换器
- *   对比效果，用户定稿后只保留一种，届时删除 view / _demoRole 切换器与 _modeNote()。
  * ==================================================================== */
 
 /* ---------- 常量：工厂 ---------- */
@@ -168,25 +167,22 @@ const DefectCode = {
   filtered: [],
   moreOpen: false,
 
-  /* ★ 评审用：视图方案 V1 列级 / V2 行级展开 / V3 行级去重 */
-  view: 'V1',
-  /* ★ 评审用：演示视角 null=跟随登录用户，'admin' / '2001' / '2002' */
-  _demoRole: null,
-
   /* ==================== 权限 ==================== */
 
   isAdmin() {
-    if (this._demoRole) return this._demoRole === 'admin';
     return (window.currentUserId === 'admin') || (window.currentUserRole === 'admin');
   },
 
-  // 当前视角可见工厂（管理员：全部；普通用户：仅本厂）
+  // 当前用户所属工厂
+  userFactory() { return (window.currentUser && window.currentUser.factory) || '2001'; },
+
+  // 当前可见工厂（管理员：全部或筛选指定；普通用户：仅本厂）
   visiblePlants() {
     if (this.isAdmin()) {
       const p = this._val('dcPlant');
       return p ? [p] : Object.keys(DC_PLANTS);
     }
-    return [this._demoRole || (window.currentUser && window.currentUser.factory) || '2001'];
+    return [this.userFactory()];
   },
 
   // 当前视角可见的选择集（供下拉与统计用）
@@ -208,18 +204,15 @@ const DefectCode = {
             <div style="font-size:18px;font-weight:700;">缺陷代码目录</div>
             <div style="font-size:13px;opacity:0.85;">SAP QM 目录（QS41 代码组 / QS51 选择集）· 仅质量相关目录类型 · 只读</div>
           </div>
-          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
-            <div style="font-size:12px;opacity:0.9;text-align:right;line-height:1.6;">
-              最近同步：${DC_SYNC.time}<br>批次 ${DC_SYNC.batch} · 共 ${DC_SYNC.rows} 条
-            </div>
-            ${this._switcherHtml()}
+          <div style="font-size:12px;opacity:0.9;text-align:right;line-height:1.6;">
+            最近同步：${DC_SYNC.time}<br>批次 ${DC_SYNC.batch} · 共 ${DC_SYNC.rows} 条
           </div>
         </div>
 
         <!-- 只读说明 + 评审提示 -->
         <div style="flex-shrink:0;padding:10px 24px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);line-height:1.7;">
           <div>本页数据由系统后台每日 02:00 从 SAP 目录自动导入（目录类型 / 代码组 / 代码 / 选择集），页面<b>只读</b>，不提供新建、修改、删除与导入操作；如需变更请在 SAP 中维护后等待下次同步。</div>
-          <div style="margin-top:4px;color:var(--text-muted);">${this._modeNote()}</div>
+          <div style="margin-top:4px;color:var(--text-muted);">${this._scopeNote()}</div>
         </div>
 
         <div id="dcFilterBar" style="flex-shrink:0;"></div>
@@ -230,61 +223,20 @@ const DefectCode = {
           #dcTableWrapper::-webkit-scrollbar-thumb { background: rgba(203,213,225,0.6); border-radius: 3px; }
           #dcTableWrapper::-webkit-scrollbar-track { background: transparent; }
           .dc-chip { display:inline-block;background:#f1f5f9;color:#1E3A5F;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:11px;margin:2px 6px 2px 0;white-space:nowrap;line-height:1.6; }
-          .dc-seg-btn { padding:5px 12px;font-size:12px;border-radius:6px;border:1px solid rgba(255,255,255,0.45);background:transparent;color:#fff;cursor:pointer; }
-          .dc-seg-btn.on { background:#fff;color:var(--primary);font-weight:700;border-color:#fff; }
-          .dc-seg-btn:disabled { opacity:0.45;cursor:not-allowed; }
         </style>
         <div class="table-wrapper" id="dcTableWrapper" style="flex:1;overflow:auto;width:100%;min-width:0;"></div>
         <div id="dcPagination" style="flex-shrink:0;"></div>
       </div>`;
   },
 
-  /* ★ 评审用：视图方案 + 演示视角切换器（定稿后删除） */
-  _switcherHtml() {
-    const vBtn = (v, label) => `<button class="dc-seg-btn ${this.view === v ? 'on' : ''}" onclick="DefectCode.setView('${v}')">${label}</button>`;
-    const rBtn = (r, label) => `<button class="dc-seg-btn ${this._roleKey() === r ? 'on' : ''}" onclick="DefectCode.setRole('${r}')">${label}</button>`;
-    return `
-      <div style="display:flex;gap:16px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:12px;opacity:0.85;">视图方案</span>
-          ${vBtn('V1', '① 列级')}
-          ${vBtn('V2', '② 行级展开')}
-          ${vBtn('V3', '③ 行级去重')}
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:12px;opacity:0.85;">演示视角</span>
-          ${rBtn('admin', '管理员')}
-          ${rBtn('2001', '2001 质检员')}
-          ${rBtn('2002', '2002 质检员')}
-        </div>
-      </div>`;
-  },
-
-  _roleKey() { return this.isAdmin() ? 'admin' : (this._demoRole || (window.currentUser && window.currentUser.factory) || '2001'); },
-
-  _modeNote() {
+  // 当前权限范围说明：选择集按用户工厂授权隔离，代码为集团级全员可见
+  _scopeNote() {
     const total = DC_CODES.length;
-    const setCount = this.visibleSets().length;
     const hit = DC_CODES.filter(r => this._visibleSetsOf(r).length > 0).length;
-    const scope = this.isAdmin() ? '全部工厂' : (DC_PLANTS[this._roleKey()] || this._roleKey()) + ' 厂';
-    const head = `当前视角：${scope}（可见选择集 ${setCount} 个；目录共 ${total} 条代码，其中 ${hit} 条被本视角选择集收录）`;
-    if (this.view === 'V1') {
-      return head + ' ・ <b>① 列级过滤</b>：所有代码都显示，选择集列只出现你有权限的选择集，没有则显示「—」。';
-    }
-    if (this.view === 'V2') {
-      return head + ' ・ <b>② 行级展开</b>：一个代码被 N 个选择集收录就显示 N 行，未被本视角收录的代码不显示（同一代码会重复出现）。';
-    }
-    return head + ' ・ <b>③ 行级去重</b>：只显示被本视角选择集收录过的代码，一代码一行；未被收录的代码完全查不到。';
-  },
-
-  setView(v) { this.view = v; this._rerender(); },
-  setRole(r) { this._demoRole = r; this._rerender(); },
-
-  _rerender() {
-    const ca = document.getElementById('contentArea');
-    if (!ca) return;
-    ca.innerHTML = this.render();
-    this.init();
+    const scope = this.isAdmin()
+      ? '全部工厂'
+      : (DC_PLANTS[this.userFactory()] || '') + '（' + this.userFactory() + '）';
+    return `当前权限范围：${scope} · 可见选择集 ${this.visibleSets().length} 个 · 目录共 ${total} 条代码，其中 ${hit} 条已被收录进选择集；选择集列只显示你有权查看的工厂数据，未收录的代码该列显示「—」。`;
   },
 
   init() {
@@ -321,7 +273,7 @@ const DefectCode = {
       .map(s => `<option value="${s.plant}|${s.set}">${s.plant} ${s.set} ${s.text}</option>`).join('');
 
     // 工厂：管理员可选全部/指定；普通用户锁定本厂（只读）
-    const plants = this.isAdmin() ? Object.keys(DC_PLANTS) : [this._roleKey()];
+    const plants = this.isAdmin() ? Object.keys(DC_PLANTS) : [this.userFactory()];
     const plantOpts = this.isAdmin()
       ? `<option value="">全部工厂</option>` + plants.map(p => `<option value="${p}">${p} ${DC_PLANTS[p]}</option>`).join('')
       : plants.map(p => `<option value="${p}" selected>${p} ${DC_PLANTS[p]}</option>`).join('');
@@ -395,22 +347,9 @@ const DefectCode = {
     return (r.selectedSets || []).filter(s => plants.indexOf(s.plant) !== -1);
   },
 
-  // 按视图方案生成基础行
+  // 基础行：一代码一行，选择集列只带当前用户有权查看的部分
   _baseRows() {
-    const rows = [];
-    DC_CODES.forEach(r => {
-      const sets = this._visibleSetsOf(r);
-      if (this.view === 'V2') {
-        if (sets.length === 0) return;                       // 未被本视角收录 → 不出现
-        sets.forEach(s => rows.push(Object.assign({}, r, { _sets: sets, _one: s })));
-      } else if (this.view === 'V3') {
-        if (sets.length === 0) return;                       // 未被本视角收录 → 查不到
-        rows.push(Object.assign({}, r, { _sets: sets, _one: null }));
-      } else {
-        rows.push(Object.assign({}, r, { _sets: sets, _one: null }));  // V1：全部代码都显示
-      }
-    });
-    return rows;
+    return DC_CODES.map(r => Object.assign({}, r, { _sets: this._visibleSetsOf(r) }));
   },
 
   renderTable() {
@@ -430,12 +369,7 @@ const DefectCode = {
           r.codeText.toLowerCase().indexOf(kw) === -1) return false;
       if (status === 'valid' && r.status !== 'active') return false;
       if (batch && r.syncBatch !== batch) return false;
-      if (setKey) {
-        const hit = this.view === 'V2'
-          ? (r._one && (r._one.plant + '|' + r._one.set) === setKey)
-          : r._sets.some(s => (s.plant + '|' + s.set) === setKey);
-        if (!hit) return false;
-      }
+      if (setKey && !r._sets.some(s => (s.plant + '|' + s.set) === setKey)) return false;
       return true;
     });
 
@@ -469,11 +403,9 @@ const DefectCode = {
   renderRow(r, idx) {
     const deleted = r.status !== 'active';
 
-    // 选择集单元格
+    // 选择集单元格：只渲染本视角可见的选择集，超过 3 个折叠为 +N
     let setCell;
-    if (this.view === 'V2') {
-      setCell = this._chip(r._one);
-    } else if (r._sets.length === 0) {
+    if (r._sets.length === 0) {
       setCell = `<span style="color:var(--text-muted);">—</span>`;
     } else {
       const shown = r._sets.slice(0, 3).map(s => this._chip(s)).join('');
@@ -528,8 +460,7 @@ const DefectCode = {
     const head = ['序号', '目录类型', '目录类型描述', '代码组', '代码组描述', '代码', '代码描述', '选择集（工厂）'];
     const lines = [head.join(',')];
     this.filtered.forEach((r, i) => {
-      const sets = (this.view === 'V2' ? [r._one] : r._sets).filter(Boolean)
-        .map(s => s.plant + ' ' + s.set + ' ' + s.setText).join(' / ');
+      const sets = (r._sets || []).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join(' / ');
       const cells = [String(i + 1), r.catalogType, r.catalogTypeText, r.codeGroup, r.codeGroupText,
         r.code, r.codeText + (r.status !== 'active' ? '（已删除标记）' : ''), sets];
       lines.push(cells.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
