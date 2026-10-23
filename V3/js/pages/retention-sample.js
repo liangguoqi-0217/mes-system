@@ -6,7 +6,8 @@
 //      审批在纸质或 eQMS 完成，MES 记录定稿后的事实。
 //   2. 只有一个页面：留样台账。观察与销毁作为行项目按钮入口，不再单独开 Tab；
 //      观察待办由「待观察」统计卡 + 状态筛选补齐，销毁历史由「已销毁」状态筛选查看。
-//   3. 追溯：点「查看」可看到该留样的全部操作内容（操作流水 / 分类明细 两种视图可切换）。
+//   3. 追溯：点「查看」打开只读详情弹窗，4 个页签——基本信息 / 调用记录 / 观察记录 / 销毁记录；
+//      操作一律只在台账行项目按钮上，详情弹窗底部只有「关闭」。
 //
 // SAP 边界（只有两个动作过账）：
 //   · 留样登记 → 移动类型 311（生产/仓库库位 → 留样室库位）
@@ -17,7 +18,6 @@ const RetentionSample = {
   page: 1, pageSize: 10,
   filtered: [],
   moreOpen: false,
-  detailView: 'timeline', // timeline | blocks
 
   // ==================== 字典 ====================
 
@@ -773,138 +773,44 @@ const RetentionSample = {
     ], 'modal-md');
   },
 
-  // ==================== 详情：操作流水 / 分类明细 双视图 ====================
+  // ==================== 详情（只读）：4 个页签 ====================
+  // 原则：操作只放在台账行项目按钮上；本弹窗纯查看，底部只有「关闭」
 
-  openDetail(sid, view) {
+  openDetail(sid) {
     const s = this.sampleData.find(x => x.id === sid);
     if (!s) return;
-    this.detailView = view || this.detailView || 'timeline';
-
-    const tabBtn = (code, label) => `<button class="btn btn-sm ${this.detailView === code ? 'btn-primary' : 'btn-secondary'}"
-      onclick="RetentionSample.openDetail('${sid}','${code}')">${label}</button>`;
-    const body = this.detailView === 'timeline' ? this._detailTimeline(s) : this._detailBlocks(s);
-    const foot = s.status === 'DESTROYED' ? '' : `
-      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:10px;">
-        ${s.status === 'REG'
-          ? `<button class="btn btn-primary btn-sm" onclick="closeModal();RetentionSample.openPutaway('${sid}')">入库上架</button>` : ''}
-        ${s.status === 'CALLED'
-          ? `<button class="btn btn-success btn-sm" onclick="closeModal();RetentionSample.openReturn('${sid}')">登记归还</button>`
-          : (s.status === 'REG' ? '' : `<button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="closeModal();RetentionSample.openCall('${sid}')">登记调用</button>`)}
-        ${s.status === 'REG' ? '' : `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="closeModal();RetentionSample.openObserve('${sid}')">留样观察</button>`}
-        ${s.status === 'REG' ? '' : `<button class="btn btn-danger btn-sm" onclick="closeModal();RetentionSample.openDestroy('${sid}')">销毁登记</button>`}
-      </div>`;
-
     showModal('留样详情 — ' + s.sampleNo, `
       <div style="padding:4px 0;font-size:13px;">
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          ${tabBtn('timeline', '操作流水')}${tabBtn('blocks', '分类明细')}
+        <div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px;">
+          <div class="form-tab active" data-rstab="base" onclick="RetentionSample._switchRsTab(this)">基本信息</div>
+          <div class="form-tab" data-rstab="call" onclick="RetentionSample._switchRsTab(this)">调用记录</div>
+          <div class="form-tab" data-rstab="observe" onclick="RetentionSample._switchRsTab(this)">观察记录</div>
+          <div class="form-tab" data-rstab="destroy" onclick="RetentionSample._switchRsTab(this)">销毁记录</div>
         </div>
-        ${body}
-        ${foot}
+        <div class="ib-tab-panel active" data-rspanel="base">${this._renderRsBaseTab(s)}</div>
+        <div class="ib-tab-panel" data-rspanel="call">${this._renderRsCallTab(s)}</div>
+        <div class="ib-tab-panel" data-rspanel="observe">${this._renderRsObserveTab(s)}</div>
+        <div class="ib-tab-panel" data-rspanel="destroy">${this._renderRsDestroyTab(s)}</div>
       </div>`, [{ text: '关闭', cls: 'btn-secondary', action: closeModal }], 'modal-lg');
   },
 
-  // 视图一：操作流水（倒序时间线）
-  _detailTimeline(s) {
-    const ev = this._events(s);
-    if (!ev.length) return '<div style="color:var(--text-muted);">暂无操作记录</div>';
-    const dot = { 登记: '#2563eb', 入库上架: '#0ea5e9', 留样观察: '#6366f1', 留样调用: '#f59e0b', 留样归还: '#16a34a', 留样销毁: '#dc2626' };
-    return `<div style="padding:4px 6px;">
-      ${ev.map((e, i) => `
-        <div style="display:flex;gap:12px;">
-          <div style="display:flex;flex-direction:column;align-items:center;width:14px;flex-shrink:0;">
-            <div style="width:10px;height:10px;border-radius:50%;background:${dot[e.title] || '#94a3b8'};margin-top:4px;"></div>
-            ${i < ev.length - 1 ? '<div style="flex:1;width:2px;background:#e2e8f0;margin:4px 0;"></div>' : ''}
-          </div>
-          <div style="padding-bottom:16px;flex:1;">
-            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;">
-              <span style="font-weight:600;">${esc(e.title)}</span>
-              <span style="color:var(--text-muted);font-size:12px;">${esc(e.time || '—')}</span>
-              <span style="color:var(--text-muted);font-size:12px;">· ${esc(e.who || '—')}</span>
-            </div>
-            <div style="font-size:12.5px;color:var(--text-secondary);margin-top:3px;">${esc(e.desc)}</div>
-          </div>
-        </div>`).join('')}
-    </div>`;
+  _switchRsTab(el) {
+    const wrap = el.closest('.modal-body') || document;
+    wrap.querySelectorAll('.form-tab').forEach(t => t.classList.remove('active'));
+    wrap.querySelectorAll('.ib-tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    const panel = wrap.querySelector('.ib-tab-panel[data-rspanel="' + el.dataset.rstab + '"]');
+    if (panel) panel.classList.add('active');
   },
 
-  // 操作事件（用于时间线）
-  _events(s) {
-    const ev = [];
-    ev.push({
-      time: s.registerTime, title: '登记', who: s.registerBy,
-      desc: `留样 ${s.sampleQty} ${s.unit} · 保存条件 ${s.storageCondition} · 期限规则 ${s.keepRule} · 到期 ${s.dueDate} · SAP 311 凭证 ${s.sapDocNo}`
-    });
-    if (s.location) {
-      ev.push({
-        time: s.putawayTime || s.registerTime, title: '入库上架', who: s.registerBy,
-        desc: `${s.room} / ${s.cabinet} / ${s.shelf}（${s.location}）· 条码 ${s.labelNo}`
-      });
-    }
-    this.observeData.filter(o => o.sampleId === s.id && o.actualDate).forEach(o => {
-      ev.push({
-        time: o.actualDate, title: '留样观察', who: o.observer,
-        desc: `第 ${o.seq}/${o.total} 次 · ${o.item} · ${o.result === 'OK' ? '正常' : '异常'}`
-          + (o.remark ? ' · ' + o.remark : '') + (o.abnormalNo ? ' · 异常单 ' + o.abnormalNo : '')
-      });
-    });
-    (s.calls || []).forEach(c => {
-      ev.push({
-        time: c.time, title: '留样调用', who: c.by,
-        desc: `${c.dept || '—'} · ${c.purpose} · 取用 ${c.qty} ${c.unit}`
-      });
-      if (c.returnTime) {
-        ev.push({
-          time: c.returnTime, title: '留样归还', who: c.returnBy,
-          desc: `归还 ${c.qty} ${c.unit}` + (c.returnCond === 'NG' ? ' · 样品破损/污染，转待销毁' : ' · 样品完好')
-        });
-      }
-    });
-    if (s.status === 'DESTROYED') {
-      ev.push({
-        time: s.destroyDate, title: '留样销毁', who: (s.destroyBy1 || '—') + ' / ' + (s.destroyBy2 || '—'),
-        desc: `${this.getMethodName(s.destroyMethod)} · ${s.destroyQty || '—'} ${s.unit} · 见证 ${s.witness || '—'}`
-          + (s.destroyReason ? ' · 原因：' + s.destroyReason : '') + ` · SAP 551 凭证 ${s.sapDestroyDoc || '—'}`
-      });
-    }
-    const key = e => ((e.time || '').length === 10 ? (e.time + ' 00:00') : (e.time || ''));
-    return ev.sort((a, b) => key(b).localeCompare(key(a)));
-  },
-
-  // 视图二：分类明细（基础信息 + 调用表 + 观察表）
-  _detailBlocks(s) {
+  // 页签一：基本信息（留样档案 + SAP 登记凭证）
+  _renderRsBaseTab(s) {
     const m = this.getStatusMeta(s.status);
-    const calls = (s.calls || []).length
-      ? `<table class="data-table">
-          <thead><tr><th>调用单号</th><th>取用人</th><th>用途</th><th>数量</th><th>取用时间</th><th>归还</th></tr></thead>
-          <tbody>${s.calls.map(c => `<tr>
-            <td style="font-family:monospace;font-size:12px;">${esc(c.callNo)}</td>
-            <td>${esc(c.by)}${c.dept ? '（' + esc(c.dept) + '）' : ''}</td>
-            <td style="font-size:12px;">${esc(c.purpose)}</td>
-            <td>${esc(c.qty)} ${esc(c.unit)}</td>
-            <td style="font-size:12px;">${esc(c.time)}</td>
-            <td style="font-size:12px;">${c.returnTime ? esc(c.returnTime) + ' · ' + esc(c.returnBy) : '<span style="color:#dc2626;">未归还</span>'}</td>
-          </tr>`).join('')}</tbody></table>`
-      : '<div style="color:var(--text-muted);font-size:12px;margin-top:6px;">暂无调用记录</div>';
-    const obs = this.observeData.filter(o => o.sampleId === s.id).sort((a, b) => a.seq - b.seq);
-    const obsHtml = obs.length
-      ? `<table class="data-table">
-          <thead><tr><th>观察次序</th><th>计划日期</th><th>实际观察</th><th>观察人</th><th>结果</th><th>观察记录</th></tr></thead>
-          <tbody>${obs.map(o => `<tr>
-            <td style="font-size:12px;">第 ${o.seq} / ${o.total} 次</td>
-            <td style="font-size:12px;">${esc(o.planDate)}</td>
-            <td style="font-size:12px;">${esc(o.actualDate || '—')}</td>
-            <td style="font-size:12px;">${esc(o.observer || '—')}</td>
-            <td>${o.result === 'OK' ? '<span class="badge badge-green">正常</span>' : o.result === 'NG' ? '<span class="badge badge-red">异常</span>' : '<span class="badge badge-gray">待观察</span>'}</td>
-            <td style="font-size:12px;">${esc(o.remark || '—')}${o.abnormalNo ? '<div style="color:#dc2626;font-size:11px;">异常单 ' + esc(o.abnormalNo) + '</div>' : ''}</td>
-          </tr>`).join('')}</tbody></table>`
-      : '<div style="color:var(--text-muted);font-size:12px;margin-top:6px;">暂无观察任务</div>';
-
     return `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 24px;padding:14px 16px;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;">
+        <div><span style="color:var(--text-muted);">留样编号：</span><span style="font-family:monospace;font-weight:600;color:#1E3A5F;">${esc(s.sampleNo)}</span></div>
         <div><span style="color:var(--text-muted);">状态：</span><span class="badge ${m.badge}">${esc(m.name)}</span></div>
         <div><span style="color:var(--text-muted);">工厂：</span>${esc(s.plant)} ${esc(this.getPlantName(s.plant))}</div>
-        <div><span style="color:var(--text-muted);">留样编号：</span>${esc(s.sampleNo)}</div>
         <div><span style="color:var(--text-muted);">物料：</span>${esc(s.materialCode)} ${esc(s.materialName)}</div>
         <div><span style="color:var(--text-muted);">来源批次：</span>${esc(s.sourceBatch || '—')}</div>
         <div><span style="color:var(--text-muted);">关联检验批：</span>${esc(s.inspectBatchNo || '—')}</div>
@@ -913,6 +819,7 @@ const RetentionSample = {
         <div><span style="color:var(--text-muted);">期限规则：</span>${esc(s.keepRule)}</div>
         <div><span style="color:var(--text-muted);">位置：</span>${s.location ? esc(s.room) + ' / ' + esc(s.cabinet) + ' / ' + esc(s.shelf) + '（' + esc(s.location) + '）' : '未入库'}</div>
         <div><span style="color:var(--text-muted);">登记：</span>${esc(s.registerBy)} ${esc(s.registerTime)}</div>
+        <div><span style="color:var(--text-muted);">入库上架：</span>${esc(s.putawayTime || '—')}</div>
         <div><span style="color:var(--text-muted);">条码标签：</span>${esc(s.labelNo)}</div>
         <div><span style="color:var(--text-muted);">有效期：</span>${esc(s.validDate)}</div>
         <div><span style="color:var(--text-muted);">留样到期日：</span>${esc(s.dueDate)}</div>
@@ -920,11 +827,66 @@ const RetentionSample = {
         <div style="grid-column:span 3;"><span style="color:var(--text-muted);">SAP 登记凭证：</span>
           ${esc(s.sapDocNo)}（移动类型 ${esc(s.sapMoveType)}，${esc(s.sapSyncTime)}）
           ${s.destroyNo ? ` · 销毁单 ${esc(s.destroyNo)} · 报废凭证 ${esc(s.sapDestroyDoc || '—')}（移动类型 ${esc(s.sapDestroyMoveType || '551')}）` : ''}</div>
-      </div>
-      <div style="margin-top:18px;font-weight:700;">调用记录</div>
-      ${calls}
-      <div style="margin-top:18px;font-weight:700;">观察记录</div>
-      ${obsHtml}`;
+      </div>`;
+  },
+
+  // 页签二：调用记录（含归还）
+  _renderRsCallTab(s) {
+    const calls = s.calls || [];
+    if (!calls.length) return '<div style="color:var(--text-muted);font-size:12px;">暂无调用记录</div>';
+    return `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">共 ${calls.length} 条调用记录</div>
+      <table class="data-table">
+        <thead><tr><th>调用单号</th><th>取用人</th><th>用途</th><th>数量</th><th>取用时间</th><th>归还时间 / 归还人</th><th>样品状态</th></tr></thead>
+        <tbody>${calls.map(c => `<tr>
+          <td style="font-family:monospace;font-size:12px;">${esc(c.callNo)}</td>
+          <td>${esc(c.by)}${c.dept ? '（' + esc(c.dept) + '）' : ''}</td>
+          <td style="font-size:12px;">${esc(c.purpose)}</td>
+          <td>${esc(c.qty)} ${esc(c.unit)}</td>
+          <td style="font-size:12px;">${esc(c.time)}</td>
+          <td style="font-size:12px;">${c.returnTime ? esc(c.returnTime) + ' · ' + esc(c.returnBy) : '<span style="color:#dc2626;">未归还</span>'}</td>
+          <td style="font-size:12px;">${c.returnTime ? (c.returnCond === 'NG' ? '<span class="badge badge-red">破损 / 污染</span>' : '<span class="badge badge-green">完好</span>') : '—'}</td>
+        </tr>`).join('')}</tbody></table>`;
+  },
+
+  // 页签三：观察记录（按时间点）
+  _renderRsObserveTab(s) {
+    const obs = this.observeData.filter(o => o.sampleId === s.id).sort((a, b) => a.seq - b.seq);
+    if (!obs.length) return '<div style="color:var(--text-muted);font-size:12px;">暂无观察任务</div>';
+    const done = obs.filter(o => o.actualDate).length;
+    return `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${esc(s.observeFreq)} · 共 ${obs[0].total} 次，已完成 ${done} 次</div>
+      <table class="data-table">
+        <thead><tr><th>观察次序</th><th>计划日期</th><th>实际观察</th><th>观察人</th><th>观察项目</th><th>结果</th><th>观察记录</th></tr></thead>
+        <tbody>${obs.map(o => `<tr>
+          <td style="font-size:12px;">第 ${o.seq} / ${o.total} 次</td>
+          <td style="font-size:12px;">${esc(o.planDate)}</td>
+          <td style="font-size:12px;">${esc(o.actualDate || '—')}</td>
+          <td style="font-size:12px;">${esc(o.observer || '—')}</td>
+          <td style="font-size:12px;">${esc(o.item)}</td>
+          <td>${o.result === 'OK' ? '<span class="badge badge-green">正常</span>' : o.result === 'NG' ? '<span class="badge badge-red">异常</span>' : '<span class="badge badge-gray">待观察</span>'}</td>
+          <td style="font-size:12px;">${esc(o.remark || '—')}${o.abnormalNo ? '<div style="color:#dc2626;font-size:11px;">异常单 ' + esc(o.abnormalNo) + '</div>' : ''}</td>
+        </tr>`).join('')}</tbody></table>`;
+  },
+
+  // 页签四：销毁记录（未销毁显示占位）
+  _renderRsDestroyTab(s) {
+    if (s.status !== 'DESTROYED') {
+      return `<div style="padding:24px 16px;text-align:center;color:var(--text-muted);background:#f8fafc;border:1px dashed var(--border);border-radius:8px;">
+        该留样尚未销毁（留样到期日 ${esc(s.dueDate)}）
+        <div style="font-size:12px;margin-top:6px;">销毁在台账行项目的「销毁」按钮中登记，登记后过账 SAP 移动类型 551。</div>
+      </div>`;
+    }
+    return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 24px;padding:14px 16px;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;">
+      <div><span style="color:var(--text-muted);">销毁单号：</span><span style="font-family:monospace;">${esc(s.destroyNo || '—')}</span></div>
+      <div><span style="color:var(--text-muted);">销毁日期：</span>${esc(s.destroyDate || '—')}</div>
+      <div><span style="color:var(--text-muted);">销毁方式：</span>${esc(this.getMethodName(s.destroyMethod))}</div>
+      <div><span style="color:var(--text-muted);">销毁数量：</span>${esc(s.destroyQty || '—')} ${esc(s.unit)}</div>
+      <div><span style="color:var(--text-muted);">销毁原因：</span>${esc(s.destroyReason || '—')}</div>
+      <div><span style="color:var(--text-muted);">执行人：</span>${esc(s.destroyBy1 || '—')} / ${esc(s.destroyBy2 || '—')}</div>
+      <div><span style="color:var(--text-muted);">见证人：</span>${esc(s.witness || '—')}</div>
+      <div style="grid-column:span 2;"><span style="color:var(--text-muted);">SAP 报废凭证：</span>
+        ${esc(s.sapDestroyDoc || '—')}（移动类型 ${esc(s.sapDestroyMoveType || '551')}）</div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);">销毁后留样余量已清零，台账为只读终态。</div>`;
   },
 
   // ==================== 留样规则配置 ====================
