@@ -364,7 +364,7 @@ const RetentionSample = {
          <div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(s.location)}</div>`
       : '<span style="color:var(--text-muted);">未入库</span>';
 
-    return `<tr${s.status === 'DESTROYED' ? ' style="opacity:0.62;"' : ''}>
+    return `<tr>
       <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(s.sampleNo)}</td>
       <td>${esc(s.materialName)}
         <div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(s.materialCode)}</div></td>
@@ -377,15 +377,9 @@ const RetentionSample = {
     </tr>`;
   },
 
-  // 行操作：终态（已销毁）只留「查看」，其余固定 4 个按钮（不适用的置灰）
+  // 行操作：无论什么状态，始终 4 个按钮，且不置灰（各状态可做什么，后续按业务规则细化）
+  //   第 1 个：待入库→入库；调用中→归还；其余→调用
   getRowActions(s) {
-    if (s.status === 'DESTROYED') {
-      return `<button class="btn btn-blue btn-sm" onclick="RetentionSample.openDetail('${s.id}')">查看</button>`;
-    }
-    const off = 'disabled style="opacity:0.45;cursor:not-allowed;"';
-    const gray = (label, color) => `<button class="btn btn-sm" style="background:${color};color:#fff;" ${off}>${label}</button>`;
-
-    // 第一个按钮：待入库→入库；调用中→归还；其余→调用
     let first;
     if (s.status === 'REG') {
       first = `<button class="btn btn-primary btn-sm" onclick="RetentionSample.openPutaway('${s.id}')">入库</button>`;
@@ -394,13 +388,9 @@ const RetentionSample = {
     } else {
       first = `<button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="RetentionSample.openCall('${s.id}')">调用</button>`;
     }
-    const obsBtn = s.status === 'REG'
-      ? gray('观察', '#0ea5e9')
-      : `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="RetentionSample.openObserve('${s.id}')">观察</button>`;
-    const desBtn = s.status === 'REG'
-      ? `<button class="btn btn-danger btn-sm" ${off}>销毁</button>`
-      : `<button class="btn btn-danger btn-sm" onclick="RetentionSample.openDestroy('${s.id}')">销毁</button>`;
-    return first + obsBtn + desBtn
+    return first
+      + `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="RetentionSample.openObserve('${s.id}')">观察</button>`
+      + `<button class="btn btn-danger btn-sm" onclick="RetentionSample.openDestroy('${s.id}')">销毁</button>`
       + `<button class="btn btn-blue btn-sm" onclick="RetentionSample.openDetail('${s.id}')">查看</button>`;
   },
 
