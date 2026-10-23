@@ -188,6 +188,7 @@ const App = {
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
+    'defect-code': DefectCode,
     'cost-object': CostObject,
     'job-list': ScheduledJob,
     'reg-doc-list': RegDocList,
