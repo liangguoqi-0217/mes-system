@@ -378,10 +378,10 @@ const RetentionSample = {
   },
 
   // 行操作：无论什么状态，始终 4 个按钮，文案固定、不置灰
-  //   作业（先弹动作选择弹窗，再选 入库上架 / 调用登记 / 归还登记）
+  //   流转（先弹动作选择弹窗，再选 入库上架 / 调用登记 / 归还登记）
   //   观察 / 销毁 / 查看
   getRowActions(s) {
-    return `<button class="btn btn-primary btn-sm" onclick="RetentionSample.openOperation('${s.id}')">作业</button>`
+    return `<button class="btn btn-primary btn-sm" onclick="RetentionSample.openOperation('${s.id}')">流转</button>`
       + `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="RetentionSample.openObserve('${s.id}')">观察</button>`
       + `<button class="btn btn-danger btn-sm" onclick="RetentionSample.openDestroy('${s.id}')">销毁</button>`
       + `<button class="btn btn-blue btn-sm" onclick="RetentionSample.openDetail('${s.id}')">查看</button>`;
@@ -424,10 +424,10 @@ const RetentionSample = {
         <div style="margin-top:14px;">${c.pill}</div>
       </div>`;
 
-    showModal('📌 选择留样作业', `
+    showModal('📌 选择流转方式', `
       <div style="padding:8px 0;">
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px;text-align:center;">
-          请选择要在该留样上执行的作业
+          请选择要在该留样上执行的流转动作
         </div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;text-align:center;">
           ${esc(s.sampleNo)} · ${esc(s.materialName)} · 余量 ${esc(s.remainQty)} ${esc(s.unit)}
