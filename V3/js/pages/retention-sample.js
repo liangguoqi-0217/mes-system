@@ -377,21 +377,62 @@ const RetentionSample = {
     </tr>`;
   },
 
-  // 行操作：无论什么状态，始终 4 个按钮，且不置灰（各状态可做什么，后续按业务规则细化）
-  //   第 1 个：待入库→入库；调用中→归还；其余→调用
+  // 行操作：无论什么状态，始终 4 个按钮，文案固定、不置灰
+  //   作业（先弹动作选择弹窗，再选 入库上架 / 调用登记 / 归还登记）
+  //   观察 / 销毁 / 查看
   getRowActions(s) {
-    let first;
-    if (s.status === 'REG') {
-      first = `<button class="btn btn-primary btn-sm" onclick="RetentionSample.openPutaway('${s.id}')">入库</button>`;
-    } else if (s.status === 'CALLED') {
-      first = `<button class="btn btn-success btn-sm" onclick="RetentionSample.openReturn('${s.id}')">归还</button>`;
-    } else {
-      first = `<button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="RetentionSample.openCall('${s.id}')">调用</button>`;
-    }
-    return first
+    return `<button class="btn btn-primary btn-sm" onclick="RetentionSample.openOperation('${s.id}')">作业</button>`
       + `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="RetentionSample.openObserve('${s.id}')">观察</button>`
       + `<button class="btn btn-danger btn-sm" onclick="RetentionSample.openDestroy('${s.id}')">销毁</button>`
       + `<button class="btn btn-blue btn-sm" onclick="RetentionSample.openDetail('${s.id}')">查看</button>`;
+  },
+
+  // 动作选择弹窗：固定入口，用户先选要做的作业，再进入对应业务弹窗
+  openOperation(sid) {
+    const s = this.sampleData.find(x => x.id === sid);
+    if (!s) return;
+    const m = this.getStatusMeta(s.status);
+    const items = [
+      { key: 'putaway', title: '入库上架', apply: '待入库',
+        desc: '指定留样室 / 柜 / 层与位置编码，扫码上架，留样转「在库」' },
+      { key: 'call', title: '调用登记', apply: '在库 / 即将到期 / 已到期',
+        desc: '登记取用人、部门、用途与取用数量，扣减余量（只登记台账，不动 SAP 库存）' },
+      { key: 'return', title: '归还登记', apply: '调用中',
+        desc: '登记归还人与样品状态；完好回「在库」，破损 / 污染转「已到期」待销毁' }
+    ];
+    const cur = s.status === 'REG' ? 'putaway' : (s.status === 'CALLED' ? 'return' : 'call');
+    const rows = items.map(it => {
+      const now = it.key === cur;
+      return `<div onclick="RetentionSample._pickOperation('${sid}','${it.key}')"
+        style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;
+               border:1px solid ${now ? 'var(--primary)' : 'var(--border)'};border-radius:8px;
+               background:${now ? '#f0f9ff' : '#fff'};">
+        <div style="flex:1;">
+          <div style="font-weight:600;">${it.title}${now ? ' <span class="badge badge-blue">当前状态</span>' : ''}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${it.desc}</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);text-align:right;white-space:nowrap;">
+          <div>适用 ${it.apply}</div>
+          <div style="margin-top:6px;color:var(--primary);">选择 ›</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    showModal('作业 — ' + s.sampleNo, `
+      <div style="padding:4px 0;font-size:13px;">
+        <div style="background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;padding:10px 16px;margin-bottom:14px;">
+          ${esc(s.materialName)} · 余量 ${esc(s.remainQty)} ${esc(s.unit)}
+          · 当前状态 <span class="badge ${m.badge}">${esc(m.name)}</span>
+        </div>
+        ${rows}
+      </div>`, [{ text: '取消', cls: 'btn-secondary', action: closeModal }], 'modal-md');
+  },
+
+  _pickOperation(sid, key) {
+    closeModal();
+    if (key === 'putaway') this.openPutaway(sid);
+    else if (key === 'call') this.openCall(sid);
+    else this.openReturn(sid);
   },
 
   _paged(list) {
