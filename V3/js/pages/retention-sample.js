@@ -387,52 +387,56 @@ const RetentionSample = {
       + `<button class="btn btn-blue btn-sm" onclick="RetentionSample.openDetail('${s.id}')">查看</button>`;
   },
 
-  // 动作选择弹窗：固定入口，用户先选要做的作业，再进入对应业务弹窗
+  // 动作选择弹窗：与「新建采购申请」选择创建方式同款（居中引导语 + 大卡片网格，整卡可点）
   openOperation(sid) {
     const s = this.sampleData.find(x => x.id === sid);
     if (!s) return;
     const m = this.getStatusMeta(s.status);
-    const items = [
-      { key: 'putaway', title: '入库上架', apply: '待入库',
-        desc: '指定留样室 / 柜 / 层与位置编码，扫码上架，留样转「在库」' },
-      { key: 'call', title: '调用登记', apply: '在库 / 即将到期 / 已到期',
-        desc: '登记取用人、部门、用途与取用数量，扣减余量（只登记台账，不动 SAP 库存）' },
-      { key: 'return', title: '归还登记', apply: '调用中',
-        desc: '登记归还人与样品状态；完好回「在库」，破损 / 污染转「已到期」待销毁' }
-    ];
     const cur = s.status === 'REG' ? 'putaway' : (s.status === 'CALLED' ? 'return' : 'call');
-    const rows = items.map(it => {
-      const now = it.key === cur;
-      return `<div onclick="RetentionSample._pickOperation('${sid}','${it.key}')"
-        style="display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;
-               border:1px solid ${now ? 'var(--primary)' : 'var(--border)'};border-radius:8px;
-               background:${now ? '#f0f9ff' : '#fff'};">
-        <div style="flex:1;">
-          <div style="font-weight:600;">${it.title}${now ? ' <span class="badge badge-blue">当前状态</span>' : ''}</div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${it.desc}</div>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);text-align:right;white-space:nowrap;">
-          <div>适用 ${it.apply}</div>
-          <div style="margin-top:6px;color:var(--primary);">选择 ›</div>
-        </div>
+    const cards = [
+      { key: 'putaway', title: '入库上架', emoji: '📥',
+        desc: '指定留样室 / 柜 / 层与位置编码<br>上架后留样转为「在库」',
+        call: `RetentionSample.openPutaway('${sid}')`,
+        bg: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '#bfdbfe', hover: '#3b82f6',
+        titleColor: '#1e40af', shadow: 'rgba(59,130,246,.12)',
+        pill: '<span class="badge badge-blue" style="padding:6px 18px;border-radius:16px;font-size:12px;cursor:pointer;">开始上架 →</span>' },
+      { key: 'call', title: '调用登记', emoji: '📤',
+        desc: '投诉 / 调查 / 注册取用<br>登记取用人与数量，扣减余量',
+        call: `RetentionSample.openCall('${sid}')`,
+        bg: 'linear-gradient(135deg,#eef2ff,#e0e7ff)', border: '#c7d2fe', hover: '#6366f1',
+        titleColor: '#4338ca', shadow: 'rgba(99,102,241,.12)',
+        pill: '<span class="badge" style="padding:6px 18px;border-radius:16px;font-size:12px;background:#6366f1;color:#fff;cursor:pointer;">开始调用 →</span>' },
+      { key: 'return', title: '归还登记', emoji: '🔄',
+        desc: '登记归还人与时间<br>确认样品状态，完好回「在库」',
+        call: `RetentionSample.openReturn('${sid}')`,
+        bg: 'linear-gradient(135deg,#ecfdf5,#d1fae5)', border: '#86efac', hover: '#10b981',
+        titleColor: '#065f46', shadow: 'rgba(16,185,129,.12)',
+        pill: '<span class="badge" style="padding:6px 18px;border-radius:16px;font-size:12px;background:#10b981;color:#fff;cursor:pointer;">开始归还 →</span>' }
+    ];
+    const card = c => `
+      <div onclick="closeModal();${c.call}"
+        style="background:${c.bg};border:1.5px solid ${c.border};border-radius:12px;padding:24px 14px;cursor:pointer;transition:all .22s;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:190px;"
+        onmouseenter="this.style.borderColor='${c.hover}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 14px ${c.shadow}'"
+        onmouseleave="this.style.borderColor='${c.border}';this.style.transform='translateY(0)';this.style.boxShadow='none'">
+        <div style="font-size:40px;margin-bottom:8px;">${c.emoji}</div>
+        <div style="font-size:16px;font-weight:700;color:${c.titleColor};margin-bottom:6px;">${c.title}${c.key === cur ? ' <span class="badge badge-blue" style="font-size:11px;">当前状态</span>' : ''}</div>
+        <div style="font-size:12px;color:#4b5563;line-height:1.5;">${c.desc}</div>
+        <div style="margin-top:14px;">${c.pill}</div>
       </div>`;
-    }).join('');
 
-    showModal('作业 — ' + s.sampleNo, `
-      <div style="padding:4px 0;font-size:13px;">
-        <div style="background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;padding:10px 16px;margin-bottom:14px;">
-          ${esc(s.materialName)} · 余量 ${esc(s.remainQty)} ${esc(s.unit)}
+    showModal('📌 选择留样作业', `
+      <div style="padding:8px 0;">
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px;text-align:center;">
+          请选择要在该留样上执行的作业
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;text-align:center;">
+          ${esc(s.sampleNo)} · ${esc(s.materialName)} · 余量 ${esc(s.remainQty)} ${esc(s.unit)}
           · 当前状态 <span class="badge ${m.badge}">${esc(m.name)}</span>
         </div>
-        ${rows}
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+          ${cards.map(card).join('')}
+        </div>
       </div>`, [{ text: '取消', cls: 'btn-secondary', action: closeModal }], 'modal-md');
-  },
-
-  _pickOperation(sid, key) {
-    closeModal();
-    if (key === 'putaway') this.openPutaway(sid);
-    else if (key === 'call') this.openCall(sid);
-    else this.openReturn(sid);
   },
 
   _paged(list) {
