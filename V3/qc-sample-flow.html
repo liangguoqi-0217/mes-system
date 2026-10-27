@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QC 样品全流程（请验 → 放行）| 陕西步长</title>
+<style>
+  :root{
+    --navy:#1E3A5F;
+    --navy-weak:#2c4a70;
+    --bg:#f8fafc;
+    --line:#e5e7eb;
+    --line-2:#d1d5db;
+    --muted:#6b7280;
+    --ink:#1f2937;
+    --ok:#16a34a;
+    --warn:#b45309;
+    --danger:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;
+  }
+  .wrap{width:100%;padding:0 28px 40px;}
+
+  /* ---------- header ---------- */
+  .head{padding:26px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px;}
+  .head h1{margin:0 0 6px;font-size:20px;font-weight:600;letter-spacing:.5px;}
+  .head p{margin:0;color:var(--muted);font-size:13px;}
+  .head .src{margin-top:8px;font-size:12px;color:var(--muted);}
+  .head .src code{background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-size:12px;color:var(--ink);}
+
+  /* ---------- tabs ---------- */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+  .tab{
+    background:#fff;border:1px solid var(--line);border-radius:6px;
+    padding:7px 14px;font-size:13px;color:var(--muted);cursor:pointer;transition:.15s;
+  }
+  .tab:hover{border-color:var(--line-2);color:var(--ink);}
+  .tab.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  /* ---------- status bar ---------- */
+  .statusbar{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:18px;
+  }
+  .statusbar .lb{font-size:12px;color:var(--muted);margin-right:6px;}
+  .pill{
+    border:1px solid var(--line);border-radius:14px;padding:3px 12px;font-size:12px;
+    color:var(--muted);background:#fff;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .pill:hover{border-color:var(--line-2);color:var(--ink);}
+  .pill.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .arrow{color:var(--line-2);font-size:12px;}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;}
+
+  /* ---------- lanes ---------- */
+  .lanes{padding:6px 0;}
+  .lane{display:grid;grid-template-columns:132px minmax(0,1fr);gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);}
+  .lane:last-child{border-bottom:none;}
+  .lane-name{font-size:13px;color:var(--ink);font-weight:600;line-height:1.4;padding-top:4px;}
+  .lane-name span{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;}
+  .lane-steps{display:flex;gap:10px;flex-wrap:wrap;}
+  .card{
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+    min-width:168px;cursor:pointer;transition:.15s;position:relative;
+  }
+  .card:hover{border-color:var(--line-2);background:#fcfcfd;}
+  .card.on{border-color:var(--navy);box-shadow:inset 3px 0 0 var(--navy);}
+  .card .no{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:20px;height:20px;border-radius:50%;background:var(--bg);border:1px solid var(--line);
+    font-size:11px;color:var(--muted);margin-right:6px;
+  }
+  .card.on .no{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .card .nm{font-size:13px;font-weight:600;}
+  .card .st{margin-top:5px;font-size:11px;color:var(--muted);}
+  .card .st b{color:var(--navy);font-weight:600;}
+  .card .tagx{
+    display:inline-block;margin-top:6px;font-size:11px;padding:1px 7px;border-radius:4px;
+    background:#f3f4f6;color:var(--muted);border:1px solid var(--line);
+  }
+  .card.dim{opacity:.42;}
+
+  /* ---------- detail ---------- */
+  .detail{position:sticky;top:18px;}
+  .detail .hd{padding:14px 18px;border-bottom:1px solid var(--line);}
+  .detail .hd h3{margin:0;font-size:15px;font-weight:600;}
+  .detail .hd .who{margin-top:4px;font-size:12px;color:var(--muted);}
+  .detail .bd{padding:14px 18px;max-height:calc(100vh - 160px);overflow:auto;}
+  .blk{margin-bottom:16px;}
+  .blk:last-child{margin-bottom:0;}
+  .blk h4{
+    margin:0 0 7px;font-size:12px;font-weight:600;color:var(--ink);
+    border-left:3px solid var(--navy);padding-left:8px;
+  }
+  .blk p{margin:0;font-size:13px;color:var(--ink);}
+  .kv{font-size:13px;}
+  .kv .row{display:flex;gap:8px;padding:4px 0;border-bottom:1px dashed var(--line);}
+  .kv .row:last-child{border-bottom:none;}
+  .kv .k{width:74px;flex:none;color:var(--muted);font-size:12px;}
+  .kv .v{min-width:0;word-break:break-word;}
+  ul.tight{margin:0;padding-left:18px;font-size:13px;}
+  ul.tight li{margin:2px 0;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:2px 8px;color:var(--ink);}
+  .chip.n{background:#fff;border-color:var(--navy);color:var(--navy);}
+  .flowline{display:flex;align-items:center;gap:8px;font-size:13px;}
+  .flowline .s{
+    border:1px solid var(--line);border-radius:4px;padding:2px 10px;background:#fff;font-size:12px;
+  }
+  .flowline .s.to{border-color:var(--navy);color:var(--navy);font-weight:600;}
+  .note{
+    background:var(--bg);border:1px solid var(--line);border-radius:6px;
+    padding:9px 11px;font-size:12px;color:var(--muted);
+  }
+  .note.warn{border-color:#fcd34d;color:var(--warn);background:#fffbeb;}
+
+  /* ---------- rules ---------- */
+  .sechead{margin:26px 0 12px;font-size:14px;font-weight:600;color:var(--ink);border-left:3px solid var(--navy);padding-left:10px;}
+  .rules{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+  .rule{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;}
+  .rule h5{margin:0 0 8px;font-size:13px;font-weight:600;}
+  .rule .big{font-size:13px;color:var(--ink);}
+  .rule .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  .rule ul{margin:6px 0 0;padding-left:18px;font-size:12px;color:var(--muted);}
+  .rule ul li{margin:2px 0;}
+
+  /* ---------- table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;}
+  .tblbox{border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .tblscroll{max-height:320px;overflow-y:auto;overflow-x:hidden;}
+  thead th{
+    text-align:left;color:var(--muted);font-weight:600;padding:10px 14px;
+    border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;
+  }
+  tbody td{padding:10px 14px;border-bottom:1px solid var(--line);}
+  tbody tr:last-child td{border-bottom:none;}
+  code{background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:12px;}
+
+  .foot{margin-top:24px;font-size:12px;color:var(--muted);}
+  @media (max-width:1180px){
+    .grid{grid-template-columns:minmax(0,1fr);}
+    .detail{position:static;}
+    .detail .bd{max-height:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1>QC 样品全流程：请验 → 取样 → 检验 → 报告 → 放行</h1>
+    <p>陕西步长制药 质量控制部 · 依据现行受控文件整理 · 点击任意步骤查看单据、字段与系统状态</p>
+    <div class="src">
+      依据文件：<code>ZSX-SMP-CNAS-023 样品管理程序</code>
+      <code>ZSX-SMP-QA-062 委托取样管理规程</code>
+      <code>ZSX-SOP-QC-734/735/736/737/739 取样</code>
+      <code>ZSX-SMP-QC-042 记录与报告书</code>
+      <code>ZSX-SOP-QC-733 报告书打印复核</code>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="statusbar" id="statusbar">
+    <span class="lb">样品状态机</span>
+  </div>
+
+  <div class="grid">
+    <div class="panel lanes" id="lanes"></div>
+    <div class="panel detail">
+      <div class="hd">
+        <h3 id="dTitle">请验</h3>
+        <div class="who" id="dWho"></div>
+      </div>
+      <div class="bd" id="dBody"></div>
+    </div>
+  </div>
+
+  <div class="sechead">关键业务规则（系统硬校验点）</div>
+  <div class="rules" id="rules"></div>
+
+  <div class="sechead">配套单据与台账</div>
+  <div class="tblbox">
+    <div class="tblscroll">
+      <table>
+        <thead><tr><th style="width:230px">记录名称</th><th style="width:170px">编号</th><th>用途 / 归属环节</th></tr></thead>
+        <tbody id="recs"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">
+    说明：本页仅用于需求沟通与方案设计，具体执行以现行受控文件为准。流程中「中间产品、成品」的取样由车间质量员执行（非 QC），已在分支中单列。
+  </div>
+</div>
+
+<script>
+/* ============ 泳道 ============ */
+var LANES = [
+  {id:'L1', name:'请验方', sub:'物流部 / 生产车间'},
+  {id:'L2', name:'取样方', sub:'QC取样员 / 车间质量员 / 供应商'},
+  {id:'L3', name:'样品管理员', sub:'收样 · 编号 · 发放'},
+  {id:'L4', name:'检验班组长', sub:'分样 · 记录发放'},
+  {id:'L5', name:'检验员', sub:'理化 / 微生物 / 仪器'},
+  {id:'L6', name:'复核与签发', sub:'复核人 · 检验主管 · 部门经理'},
+  {id:'L7', name:'QA / 放行', sub:'库房质量员 · 质量管理员'},
+  {id:'L8', name:'留样与销毁', sub:'留样管理员 · 样品管理员'}
+];
+
+/* ============ 分支 ============ */
+var BRANCHES = [
+  {id:'B1', name:'原辅料 / 中药材 / 内包材 / 工艺用水', hint:'由 QC 取样员取样'},
+  {id:'B2', name:'中间产品 / 成品', hint:'由车间质量员取样'},
+  {id:'B3', name:'委托取样内包材', hint:'供应商取样，样品箱随货'}
+];
+
+/* ============ 步骤 ============ */
+var STEPS = [
+  {
+    no:1, lane:'L1', name:'请验', status:'待取样',
+    who:'物流部库管员（物料类）／生产车间（中间产品、成品）／工艺用水按 ZSX-SMP-QC-032 频次触发',
+    branches:{
+      B1:{who:'物流部库管员（到货初验合格后请验）'},
+      B2:{who:'生产车间（工序完工后请验；脑心通胶囊混合粉辐照灭菌后由物流部请验）'},
+      B3:{who:'物流部库管员（初验时识别出供应商样品箱后请验）'}
+    },
+    out:[{n:'原辅材料请验单', c:'LD-R-020（00）'}],
+    fields:['样品名称','请验者','请验部门','请验日期','编号','供货单位','批号','规格','件数','数量','备注'],
+    flow:['（新建）','待取样'],
+    basis:['ZSX-SOP-QC-734/735/736','ZSX-SOP-QC-739','ZSX-SMP-QC-032（工艺用水）'],
+    sys:[
+      '请验单线上化，物料主数据（物料代码、供应商、规格）自动带入',
+      '工艺用水、环境监测等按周期自动生成请验任务，不需人工开单',
+      '对应郭芸需求①：生产物料直接从系统调取、QC 电子确认、打印表单作为样品接收台账'
+    ],
+    note:'工艺用水的取样点编号与频次不在取样 SOP 中，挂在《工艺用水质量监控规程》ZSX-SMP-QC-032，需另行索取。'
+  },
+  {
+    no:2, lane:'L2', name:'取样', status:'已取样',
+    who:'QC 授权取样员',
+    branches:{
+      B1:{
+        who:'QC 取样员（原辅料、中药材/饮片、内包材、外包材、工艺用水）',
+        sys:[
+          '取样件数：n≤3 逐件；4≤n≤300 取 √n+1 件；n>300 取 √n/2+1 件（中药材、外包材另有规则）',
+          '取样量按各类物料「取样量一览表」，含理化量 / 生测量 / 留样量',
+          '取样顺序：内包材 → 辅料 → 原料药，换品种须换套袖与手套',
+          '工艺用水：先采微生物后采理化，取样到检验 ≤8h，超 2h 冷藏且 ≤24h'
+        ]
+      },
+      B2:{
+        who:'车间质量员 / 质量安全员（QA 授权）；脑心通胶囊混合粉辐照灭菌后由 QC 取样室取样',
+        sys:[
+          '中间产品：混合工序后取样，或在生产前/中/后分时段取样',
+          '内包装后待包装品：在线随机取样（前、中、后）',
+          '成品：按批随机抽检验样、留样、稳定性考察样、送检样',
+          '取样后发放盖检验专用章的《中间产品抽检单》《成品抽检通知单》《成品留样通知单》'
+        ]
+      },
+      B3:{
+        who:'受托供应商在其生产内包装过程中同步取样；QC 取样员仅做开箱核查',
+        sys:[
+          '适用 5 种内包材、8 家受托供应商（见《委托取样供应商审批表》）',
+          '样品箱与货物随行，库管员随请验单、厂检报告单一并移交 QC 取样员',
+          '核查异常 → 反馈 QA 库房 QA → 必要时公司取样室重新取样',
+          '同一批号再次采购时，改由 QC 在公司取样室自取样（关键判断逻辑）'
+        ]
+      }
+    },
+    out:[{n:'取样记录', c:'QC-R-S201/S202/S203'},{n:'样品签', c:'QA-R-116'},{n:'取样证', c:'—'},{n:'委托样品核查记录', c:'QC-R-567'}],
+    fields:['取样日期','样品名称','物料编号','批号','包装规格','批量','总件数','取样件数','取样量','取样工具','取样人','取样编号','取样地点','样品来源','供应商名称'],
+    flow:['待取样','已取样'],
+    basis:['ZSX-SOP-QC-734（原辅料、内包材）','ZSX-SOP-QC-735（中药材、饮片）','ZSX-SOP-QC-736（外包材）','ZSX-SOP-QC-737（工艺用水）','ZSX-SOP-QC-739（中间产品、成品）','ZSX-SMP-QA-062（委托取样）'],
+    sys:[
+      '取样任务分派到人；取样量由系统按物料规则自动计算',
+      '样品签打印（品名、批号、来源、贮存条件、取样人、日期）'
+    ]
+  },
+  {
+    no:3, lane:'L3', name:'收样与编号', status:'待检',
+    who:'样品管理员（不在岗时由培训合格人员接替）',
+    out:[{n:'样品接收、发放及销毁台账', c:'QC-R-S241'}],
+    fields:['样品名称','批号','规格','数量','生产日期','有效期','包装','外观','样品编号','状态'],
+    flow:['已取样','待检'],
+    basis:['ZSX-SMP-CNAS-023 4.1 / 4.2'],
+    sys:[
+      '★ 生成唯一样品编号：类别代码 - 年 - 月 - 流水号，例 YF-2026-05-018',
+      '★ 送检量校验：至少满足检验量 3 倍；免留样类 2 倍',
+      '信息不全 / 量不足 → 暂停受理，告知送检方并记录',
+      '不符合 → 拒收 / 暂存 / 重新抽样，记录不符合事项',
+      '标识样品状态为「待检」，样品签信息须清晰可追溯'
+    ],
+    note:'类别代码：YC 中药材及饮片、YF 原辅料、NBC 内包材、WBC 外包材、CP 成品、ZJ 中间产品、WD 稳定性、GS 工艺用水、KQ 压缩空气、HJ 环境监测、YZ 验证类、WT 外部委托、KY 科研、QT 其他。'
+  },
+  {
+    no:4, lane:'L4', name:'分样与发放记录', status:'已分发',
+    who:'样品管理员 → 检验班组长 → 检验员',
+    out:[{n:'检验记录发放、更换台账', c:'QC-R-S259'},{n:'样品检验信息台账', c:'—'}],
+    fields:['样品编号','检验项目','空白记录编号','发放数量','领取人','发放日期'],
+    flow:['待检','已分发'],
+    basis:['ZSX-SMP-CNAS-023 4.3','ZSX-SMP-QC-042 4.6'],
+    sys:[
+      '★ 每批检品只能对应发放一份空白检验记录',
+      '空白记录受控发放，电子版开启防删除防更改',
+      '班组长在台账上签字确认，样品与记录一并发至检验员'
+    ]
+  },
+  {
+    no:5, lane:'L5', name:'检验', status:'在检',
+    who:'理化检验员 / 微生物检验员 / 精密仪器操作员',
+    out:[{n:'检验操作记录', c:'QC-R-PC-RM-407（03）等'},{n:'辅助记录（仪器、试液、灭菌）', c:'QC-R-S101 等'}],
+    fields:['仪器名称/型号/编号','环境温度/湿度','试剂名称/厂家/批号/级别','对照品名称/来源/批号/特性量值','溶液配制批号/浓度','色谱条件','系统适用性实测值','计算过程','项目结论'],
+    flow:['已分发','在检'],
+    basis:['ZSX-SOP-QC-760 紫外','ZSX-SOP-QC-774 液相','ZSX-SOP-QC-803 气相','ZSX-SOP-QC-804 原子吸收'],
+    sys:[
+      '★ 自动化采集：录入取样量后自动算浓度，仪器数据直接进结果（郭芸需求④）',
+      '★ 非自动化采集：理化 / 微生物数据手工录入并自动进报告（郭芸需求⑤）',
+      '系统适用性硬校验：分离度、拖尾因子、S/N≥10、6 针 RSD、系统再确认针并入计算',
+      '杂质带校正因子（如 ×0.7）与定量限计算，须结构化才能自动出结果',
+      '仪器校准 / 确认状态接入，到期提前预警；检验进度可视'
+    ],
+    note:'检验完成 → 状态改「检毕」，样品返还各班组检毕区，不得随意丢弃或混用。'
+  },
+  {
+    no:6, lane:'L6', name:'复核', status:'已复核',
+    who:'有资质的第二人（复核人）',
+    out:[{n:'检验记录（复核签名）', c:'—'}],
+    fields:['复核人','复核日期'],
+    flow:['在检','已复核'],
+    basis:['ZSX-SOP-QC-730 检验复核标准操作规程','ZSX-SMP-QC-042 4.5'],
+    sys:[
+      '复核内容：项目完整、填写无误、检验依据正确、计算正确、双人签名',
+      '复核错误由复核人负责，检验错误由检验人负责',
+      '系统内复核权限与检验权限必须为不同账号（职责分离）'
+    ],
+    note:'《检验复核标准操作规程》ZSX-SOP-QC-730 尚未提供，需索取。'
+  },
+  {
+    no:7, lane:'L6', name:'出报告书', status:'检毕',
+    who:'班组长（模板）/ 经培训合格人员（打印）',
+    out:[{n:'检验报告书（8 类模板）', c:'—'}],
+    fields:['报告书编号','物料编号','检品名称','批号','型号','批量','规格','生产厂家','供货厂家','检验项目（全检/部分检验）','请验单位','收检日期','报告日期','检验依据','检验项目 / 标准规定 / 检验结果 / 项目结论','结论'],
+    flow:['已复核','检毕'],
+    basis:['ZSX-SOP-QC-733（14）'],
+    sys:[
+      '★ 检验依据须带版本号：如 ZSX-TS-QA-407(03) 及 ZSX-SOP-QC-407(03)',
+      '★ 模板锁定，非授权不可改；变更须主管、经理审核、质量负责人批准',
+      '★ 每个检验项设阈值，触发自动报警（郭芸需求⑧）',
+      '报告书编号 = 样品编号；成品发货 G+、批记录归档 N+、出口 C+、科研 RD+',
+      '业务关联部门可查看检验进度与终版报告书'
+    ]
+  },
+  {
+    no:8, lane:'L6', name:'签审与盖章', status:'已签批',
+    who:'检验人 → 复核人 → 负责人（成品：副经理复核、部门经理签发）',
+    out:[{n:'检验报告书正本（盖章）', c:'—'}],
+    fields:['检验人','复核人','负责人','检验专用章'],
+    flow:['检毕','已签批'],
+    basis:['ZSX-SOP-QC-733 4.2'],
+    sys:[
+      '★ 三级审核：检验人 → 复核人 → 负责人',
+      '★ 两级例外：工艺用水、环境监测、外包材只到复核人',
+      '成品：检验人核签 → 部门副经理复核 → 部门经理审签盖章',
+      '不在岗时可授权经培训合格人员接替',
+      '电子签章需求（郭芸需求⑧）落在此步'
+    ]
+  },
+  {
+    no:9, lane:'L7', name:'评价与放行', status:'已放行',
+    who:'中药材管理员 / QA 库房质量员 / 检验组长（外包材）',
+    branches:{
+      B1:{who:'中药材及饮片 → 中药材管理员；原辅料、内包材 → 质量保证部库房质量员；外包材 → 检验组长审核放行'},
+      B2:{who:'成品 → 质量管理员评价放行；中间产品 → 报告书发至车间质量员'},
+      B3:{who:'同内包材：质量保证部库房质量员评价放行'}
+    },
+    out:[{n:'物料审核放行单', c:'—'}],
+    fields:['物料名称','规格','批（数）量','供应商','报告书编号','审核项目','审核标准','审核结果','备注','放行人','放行日期'],
+    flow:['已签批','已放行'],
+    basis:['物料审核放行单（现行样本）'],
+    sys:[
+      '★ 放行前 5 项审核：① 供应商为批准的合格供应商 ② 有供应商检验报告单且项目齐全、结果符合规定 ③ 初验包装完整、标签符合规定 ④ 数量与请验单一致 ⑤ 按规定取样检验、记录报告完整、结果符合规定',
+      '★ 放行后回写库存状态（SAP 侧 321/331 现状表由专人执行，陕西步长放行集中在王博）',
+      'QA 需求⑫：系统直接抓取检验结果及报告单'
+    ],
+    note:'《放行管理规程》尚未提供，中间产品、成品放行单样式也未提供，建议一并索取。'
+  },
+  {
+    no:10, lane:'L8', name:'留样 / 销毁 / 归档', status:'已归档',
+    who:'留样管理员 / 样品管理员 / 质量监督员',
+    out:[{n:'留样台账', c:'QA-R-161'},{n:'样品销毁申请单', c:'QC-R-S239'},{n:'样品销毁记录', c:'QC-R-S240'}],
+    fields:['留样编号','留样量','贮存条件','留样期限','销毁方式','销毁人','监督人','审批人'],
+    flow:['已放行','已归档'],
+    basis:['ZSX-SMP-CNAS-023 4.6 / 4.7','ZSX-SOP-QC-739 取样量一览表'],
+    sys:[
+      '★ 留样期限：成品有效期后 1 年；中药材、饮片、原辅料放行后 2 年；外部委托出报告后 1 个月',
+      '★ 免留样：中间产品、工艺/清洁验证样品、纯化水与压缩空气、环境监控微生物样、易挥发危险液体、包装材料',
+      '★ 销毁两条审批链：检验剩余（班组长审核 → 检验主管批准 → 样品管理员监督）；留样超期（质量负责人审核 → 最高管理者批准 → 质量监督员监督）',
+      '★ 毒麻样品（罂粟壳）双人双锁、单独台账，市药监局监督下深埋或焚烧',
+      '销毁方式：手撕、剪碎、混合，使其无法重复利用；同步更新台账销毁栏',
+      '保存期限：检验记录 5 年；仪器维修记录至报废；科研、毒麻记录长期'
+    ],
+    note:'郭芸需求⑥（余量自动计算 + 销毁提醒 + 电子审批销毁申请）与 QA 需求⑬（留样台账、目检/销毁预警）均落在此步。'
+  }
+];
+
+/* ============ 状态机 ============ */
+var STATUSES = ['待取样','已取样','待检','已分发','在检','已复核','检毕','已签批','已放行','已归档'];
+
+/* ============ 规则卡 ============ */
+var RULES = [
+  {t:'样品编号规则', big:'类别代码 - 年 - 月 - 流水号', sub:'例：YF-2026-05-018（原辅料，2026年5月第18个样）',
+   li:['YC 中药材及饮片 · YF 原辅料 · NBC 内包材 · WBC 外包材','CP 成品 · ZJ 中间产品 · WD 稳定性 · GS 工艺用水','KQ 压缩空气 · HJ 环境监测 · YZ 验证类 · WT 外部委托','KY 科研产品 · QT 其他 · 流水号按类别+年月重置']},
+  {t:'送检量校验', big:'≥ 检验量 3 倍', sub:'1/3 检验、1/3 复核、1/3 留样',
+   li:['免留样类别只需 2 倍','量不足或信息不全 → 暂停受理并告知送检方','系统在收样环节强制校验']},
+  {t:'取样件数', big:'n≤3 逐件 / 4~300 √n+1 / >300 √n/2+1', sub:'中药材与外包材另有专门规则',
+   li:['中药材：＜5 件逐件；5~99 抽 5 件；100~1000 抽 5%','贵重药材（人参、三七等）不论件数逐件','外包材按固定量：膜类 4m、标签 5 枚、纸盒 6 个']},
+  {t:'留样期限', big:'成品效期后 1 年 / 原辅料放行后 2 年', sub:'外部委托样品出报告后 1 个月',
+   li:['留样室：常温 10~30℃、湿度 45~65%；阴凉 20℃以下','留样专柜专库、建台账，毒麻品双人双锁','留样仅限复核、验证、核查、内控使用']},
+  {t:'报告签审', big:'三级：检验人 → 复核人 → 负责人', sub:'工艺用水、环境监测、外包材为两级',
+   li:['成品：检验人 → 部门副经理 → 部门经理','报告正文四列：项目 / 标准规定 / 检验结果 / 项目结论','检验依据须带版本号，模板锁定不可随意改']},
+  {t:'放行审核 5 项', big:'供应商 · 供应商报告 · 初验 · 数量 · 检验', sub:'结论：已审核，同意放行',
+   li:['物料审核放行单由 QA / 库房质量员执行','中药材由中药材管理员评价放行','放行后回写库存状态，更新 SAP']}
+];
+
+/* ============ 记录清单 ============ */
+var RECS = [
+  ['原辅材料请验单','LD-R-020（00）','请验环节，物流部库管员开具'],
+  ['样品接收、发放及销毁台账','QC-R-S241','样品管理员主台账，贯穿全生命周期'],
+  ['检验记录发放、更换台账','QC-R-S259','空白记录受控发放与更换'],
+  ['待包装品、成品接收、分发及销毁台账','QC-R-S263','中间产品、成品线'],
+  ['验证样品接收分发台账','QC-R-S242','工艺验证、清洁验证样品'],
+  ['委托样品核查记录','QC-R-567','委托取样开箱核查（QA-062）'],
+  ['样品销毁申请单 / 样品销毁记录','QC-R-S239 / QC-R-S240','销毁审批与执行'],
+  ['留样台账','QA-R-161','留样管理与到期销毁'],
+  ['中药材（中药饮片）取样台账','QC-R-S201','中药材取样'],
+  ['原辅料取样台账','QC-R-S202','原辅料取样'],
+  ['包装材料取样记录','QC-R-S203','包材取样'],
+  ['中间产品取样记录 / 成品取样记录','QA-R-133 / QA-R-138','车间质量员取样'],
+  ['样品签','QA-R-116','样品标识：品名、批号、来源、贮存条件、取样人、日期'],
+  ['检验记录（理化/微生物）','QC-R-PC-RM-407 等','按 QC-R-【类别】-【对象】-流水号 编号'],
+  ['检验报告书补发申请','QC-R-S244','报告书丢失补发']
+];
+
+/* ============ 渲染 ============ */
+var curBranch = 'B1';
+var curStep = 1;
+
+function el(id){return document.getElementById(id);}
+
+function renderTabs(){
+  el('tabs').innerHTML = BRANCHES.map(function(b){
+    return '<div class="tab'+(b.id===curBranch?' on':'')+'" data-b="'+b.id+'">'+b.name+'<span style="opacity:.7"> · '+b.hint+'</span></div>';
+  }).join('');
+  Array.prototype.forEach.call(el('tabs').children, function(t){
+    t.onclick = function(){ curBranch = t.getAttribute('data-b'); renderTabs(); renderLanes(); select(curStep); };
+  });
+}
+
+function renderStatus(){
+  var html = '<span class="lb">样品状态机</span>';
+  STATUSES.forEach(function(s,i){
+    if(i) html += '<span class="arrow">›</span>';
+    var on = (STEPS[curStep-1] && STEPS[curStep-1].status===s);
+    html += '<span class="pill'+(on?' on':'')+'" data-s="'+s+'">'+s+'</span>';
+  });
+  el('statusbar').innerHTML = html;
+  Array.prototype.forEach.call(el('statusbar').querySelectorAll('.pill'), function(p){
+    p.onclick = function(){
+      var s = p.getAttribute('data-s');
+      var st = STEPS.filter(function(x){return x.status===s;})[0];
+      if(st) select(st.no);
+    };
+  });
+}
+
+function renderLanes(){
+  el('lanes').innerHTML = LANES.map(function(l){
+    var cards = STEPS.filter(function(s){return s.lane===l.id;}).map(function(s){
+      return '<div class="card" data-no="'+s.no+'">'
+        + '<div><span class="no">'+s.no+'</span><span class="nm">'+s.name+'</span></div>'
+        + '<div class="st">状态 → <b>'+s.status+'</b></div>'
+        + '<span class="tagx">'+l.sub+'</span>'
+        + '</div>';
+    }).join('');
+    return '<div class="lane"><div class="lane-name">'+l.name+'<span>'+l.sub+'</span></div>'
+      + '<div class="lane-steps">'+cards+'</div></div>';
+  }).join('');
+  Array.prototype.forEach.call(el('lanes').querySelectorAll('.card'), function(c){
+    c.onclick = function(){ select(parseInt(c.getAttribute('data-no'),10)); };
+  });
+  highlight();
+}
+
+function highlight(){
+  Array.prototype.forEach.call(el('lanes').querySelectorAll('.card'), function(c){
+    c.classList.toggle('on', parseInt(c.getAttribute('data-no'),10)===curStep);
+  });
+}
+
+function pick(v, fallback){
+  if(v && typeof v === 'object' && !Array.isArray(v)) return v;
+  return fallback || null;
+}
+
+function select(no){
+  curStep = no;
+  var s = STEPS.filter(function(x){return x.no===no;})[0];
+  highlight(); renderStatus();
+
+  el('dTitle').textContent = no + '. ' + s.name;
+  var b = pick(s.branches, {})[curBranch];
+  el('dWho').textContent = (b && b.who) ? b.who : s.who;
+
+  var sys = (s.sys || []).slice();
+  if(b && b.sys) sys = b.sys.concat(sys);
+
+  var html = '';
+  html += '<div class="blk"><h4>状态流转</h4><div class="flowline">'
+    + '<span class="s">'+s.flow[0]+'</span><span class="arrow">→</span>'
+    + '<span class="s to">'+s.flow[1]+'</span></div></div>';
+
+  html += '<div class="blk"><h4>输出单据 / 记录</h4><div class="kv">'
+    + s.out.map(function(o){return '<div class="row"><div class="k">记录</div><div class="v">'+o.n+' <code>'+o.c+'</code></div></div>';}).join('')
+    + '</div></div>';
+
+  html += '<div class="blk"><h4>关键字段</h4><div class="chips">'
+    + s.fields.map(function(f){return '<span class="chip">'+f+'</span>';}).join('')
+    + '</div></div>';
+
+  html += '<div class="blk"><h4>系统要点 / 业务规则</h4><ul class="tight">'
+    + sys.map(function(x){return '<li>'+x+'</li>';}).join('')
+    + '</ul></div>';
+
+  html += '<div class="blk"><h4>依据文件</h4><div class="chips">'
+    + s.basis.map(function(x){return '<span class="chip n">'+x+'</span>';}).join('')
+    + '</div></div>';
+
+  if(s.note) html += '<div class="blk"><div class="note'+(s.no===5||s.no===9?'':'')+'">'+s.note+'</div></div>';
+
+  el('dBody').innerHTML = html;
+  el('dBody').scrollTop = 0;
+}
+
+function renderRules(){
+  el('rules').innerHTML = RULES.map(function(r){
+    return '<div class="rule"><h5>'+r.t+'</h5><div class="big">'+r.big+'</div>'
+      + '<div class="sub">'+r.sub+'</div><ul>'+r.li.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
+  }).join('');
+}
+
+function renderRecs(){
+  el('recs').innerHTML = RECS.map(function(r){
+    return '<tr><td>'+r[0]+'</td><td><code>'+r[1]+'</code></td><td>'+r[2]+'</td></tr>';
+  }).join('');
+}
+
+renderTabs(); renderLanes(); renderRules(); renderRecs(); select(1);
+</script>
+</body>
+</html>
