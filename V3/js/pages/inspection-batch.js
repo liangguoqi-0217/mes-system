@@ -535,12 +535,7 @@ const InspectionBatch = {
         </div>
         <!-- 更多条件：与上方条件同容器、同底色、无分隔线，独占一整行 -->
         <div id="ibMorePanel" style="display:none;width:100%;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;">
-          <div class="filter-group"><label>供应商批次号</label><input type="text" id="ibSuppBatch" placeholder="模糊查询"></div>
           <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibSapBatch" placeholder="模糊查询"></div>
-          <div class="filter-group"><label>同步状态</label><select id="ibSyncStatus">
-            <option value="">全部</option>
-            ${this.syncStatusOptions.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}
-          </select></div>
           <div class="filter-group"><label>状态</label><select id="ibStatus">
             <option value="">全部</option>
             <option value="CRTD">已创建</option>
@@ -718,22 +713,18 @@ const InspectionBatch = {
   search() {
     const factory = document.getElementById('ibFactory')?.value||'';
     const material = (document.getElementById('ibMaterial')?.value||'').trim();
-    const suppBatch = (document.getElementById('ibSuppBatch')?.value||'').trim();
     const sapBatch = (document.getElementById('ibSapBatch')?.value||'').trim();
     const status = document.getElementById('ibStatus')?.value||'';
     const inspectType = document.getElementById('ibInspectType')?.value||'';
     const createMode = document.getElementById('ibCreateMode')?.value||'';
-    const syncStatus = document.getElementById('ibSyncStatus')?.value||'';
 
     this.filtered = this.batchData.filter(b => {
       if (factory && b.plant !== factory) return false;
       if (material && !b.materialCode.includes(material) && !b.materialName.includes(material)) return false;
-      if (suppBatch && !(b.supplierBatch||'').toLowerCase().includes(suppBatch.toLowerCase())) return false;
       if (sapBatch && !(b.sapBatch||'').toLowerCase().includes(sapBatch.toLowerCase())) return false;
       if (status && b.status !== status) return false;
       if (inspectType && b.inspectType !== inspectType) return false;
       if (createMode && b.createMode !== createMode) return false;
-      if (syncStatus && b.syncStatus !== syncStatus) return false;
       return true;
     });
     this.page = 1;
@@ -748,8 +739,8 @@ const InspectionBatch = {
   },
 
   resetFilter() {
-    ['ibMaterial','ibSuppBatch','ibSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    ['ibStatus','ibFactory','ibInspectType','ibCreateMode','ibSyncStatus'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['ibMaterial','ibSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['ibStatus','ibFactory','ibInspectType','ibCreateMode'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filtered = [...this.batchData];
     this.page = 1;
     this.renderBatchTable();
@@ -796,24 +787,20 @@ const InspectionBatch = {
     const el = document.getElementById('ibTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:2100px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1700px;">
       <thead><tr>
         <th style="width:50px;">序号</th>
         <th style="width:160px;">检验批号</th>
         <th style="width:150px;">检验类型</th>
         <th style="width:110px;">生成方式</th>
         <th style="width:130px;">来源单据</th>
-        <th style="width:150px;">供应商批次号</th>
         <th style="width:120px;">物料编码</th>
         <th style="width:140px;">物料名称</th>
-        <th style="width:110px;">检验计划</th>
         <th style="width:90px;">数量</th>
         <th style="width:90px;">状态</th>
-        <th style="width:110px;">同步状态</th>
         <th style="width:140px;">工厂</th>
         <th style="width:90px;">创建人</th>
         <th style="width:140px;">创建时间</th>
-        <th style="width:140px;">更新时间</th>
         <th style="width:290px;">操作</th>
       </tr></thead>
       <tbody>${page.map((b,i) => this.renderBatchRow(b, start+i+1)).join('')}</tbody>
@@ -823,24 +810,19 @@ const InspectionBatch = {
   renderBatchRow(b, idx) {
     const statusBadge = this.getStatusBadgeHtml(b.status);
     const modeBadge = this.getCreateModeBadge(b.createMode);
-    const syncBadge = this.getSyncStatusBadge(b.syncStatus);
     return `<tr>
       <td>${idx}</td>
       <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(b.batchNo)}</td>
       <td><span class="badge badge-gray badge-sm" style="font-family:monospace;">${esc(this.getInspectTypeName(b.inspectType)||'')}</span></td>
       <td>${modeBadge}</td>
       <td style="font-family:monospace;font-size:12px;color:var(--text-secondary);">${esc(b.sourceDocNo||'—')}</td>
-      <td style="font-weight:700;font-size:13px;">${esc(b.supplierBatch||'—')}</td>
       <td style="font-family:monospace;font-size:12px;">${esc(b.materialCode)}</td>
       <td>${esc(b.materialName)}</td>
-      <td style="font-family:monospace;font-size:11px;">${esc(b.planNo)}</td>
       <td>${b.quantity} ${esc(b.unit)}</td>
       <td>${statusBadge}</td>
-      <td>${syncBadge}</td>
       <td>${esc(b.plantName)}</td>
       <td>${esc(b.createBy)}</td>
       <td style="font-size:12px;">${b.createTime||'—'}</td>
-      <td style="font-size:12px;">${b.updateTime||'—'}</td>
       <td><div class="table-actions">${this.getBatchActions(b)}</div></td>
     </tr>`;
   },
@@ -2056,9 +2038,9 @@ const InspectionBatch = {
 if (window.QueryVariant) {
   QueryVariant.register({
     pageId: 'inspection-batch',
-    fields: ['ibFactory', 'ibMaterial', 'ibSuppBatch', 'ibSapBatch', 'ibStatus'],
-    textFields: ['ibMaterial', 'ibSuppBatch', 'ibSapBatch'],
-    labels: { ibFactory: '工厂', ibMaterial: '物料编码', ibSuppBatch: '供应商批次号', ibSapBatch: 'SAP批次号', ibStatus: '状态' },
+    fields: ['ibFactory', 'ibMaterial', 'ibSapBatch', 'ibStatus'],
+    textFields: ['ibMaterial', 'ibSapBatch'],
+    labels: { ibFactory: '工厂', ibMaterial: '物料编码', ibSapBatch: 'SAP批次号', ibStatus: '状态' },
     onApply: function () { InspectionBatch.search(); }
   });
 }
