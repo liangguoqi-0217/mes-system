@@ -101,7 +101,7 @@ const BatchChar = {
         </select></div>
         <div class="filter-group"><label>物料号 <span style="color:#dc2626;">*</span></label><input type="text" id="bcMaterial" placeholder="物料号"></div>
         <div class="filter-group"><label>批次 <span style="color:#dc2626;">*</span></label><input type="text" id="bcBatch" placeholder="批次号"></div>
-        ${FilterActions.render({ pageId: 'batch-char', scope: "BatchChar", onReset: "resetFilter" })}
+        ${FilterActions.render({ pageId: 'batch-char', scope: "BatchChar" })}
       </div>`;
     } else {
       const range = this._defaultDateRange();
@@ -117,7 +117,7 @@ const BatchChar = {
             <input type="date" id="bcLogEnd" value="${range.end}">
           </div>
         </div>
-        ${FilterActions.render({ pageId: 'batch-char', scope: "BatchChar", onReset: "resetFilter" })}
+        ${FilterActions.render({ pageId: 'batch-char', scope: "BatchChar" })}
       </div>`;
     }
   },

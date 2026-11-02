@@ -263,7 +263,7 @@ const DefectCode = {
         <div class="filter-group"><label>工厂</label><select id="dcPlant" ${this.isAdmin() ? '' : 'disabled'}>${plantOpts}</select></div>
         <div class="filter-group"><label>目录类型</label><select id="dcCatalogType"><option value="">全部</option>${typeOpts}</select></div>
         <div class="filter-group"><label>代码组</label><select id="dcCodeGroup"><option value="">全部</option>${groupOpts}</select></div>
-        ${FilterActions.render({ pageId: 'defect-code', scope: "DefectCode", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreBtnId: "dcMoreBtn", moreOpen: this.moreOpen })}
+        ${FilterActions.render({ pageId: 'defect-code', scope: "DefectCode", onExport: "exportData", onMore: "toggleMore", moreBtnId: "dcMoreBtn", moreOpen: this.moreOpen })}
         <div id="dcMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>代码 / 代码描述</label><input type="text" id="dcKeyword" placeholder="如 001 或 裂纹"></div>
           <div class="filter-group"><label>代码组描述</label><input type="text" id="dcGroupDesc" placeholder="如 外观"></div>

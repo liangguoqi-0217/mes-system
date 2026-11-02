@@ -90,7 +90,7 @@ const MaintPreventive = {
         <div class="filter-group"><label>计划名称</label><input type="text" id="pvName" value="${esc(f.name)}" onchange="MaintPreventive.pFilter.name=this.value;MaintPreventive.searchPlan()" placeholder="计划名称"></div>
         <div class="filter-group"><label>策略类型</label><select id="pvPlanType" onchange="MaintPreventive.pFilter.planType=this.value;MaintPreventive.searchPlan()"><option value="">全部类型</option>${typeOpts}</select></div>
         <div class="filter-group"><label>状态</label><select id="pvStatus" onchange="MaintPreventive.pFilter.status=this.value;MaintPreventive.searchPlan()"><option value="">全部状态</option>${statusOpts}</select></div>
-        ${FilterActions.render({ pageId: 'maintenance-preventive', scope: "MaintPreventive", onSearch: "searchPlan", onReset: "resetPlanFilter" })}
+        ${FilterActions.render({ pageId: 'maintenance-preventive', scope: "MaintPreventive", onSearch: "searchPlan" })}
       </div>
       <div class="table-wrapper" style="flex:1;overflow:auto;margin-top:12px;"><table class="data-table"><thead><tr>
         <th>计划编码</th><th>计划描述</th><th>策略类型</th><th>周期</th><th>设备/位置</th><th>工作中心</th><th>版本</th><th>状态</th><th>操作</th>
@@ -726,7 +726,7 @@ const MaintPreventive = {
         <div class="filter-group"><label>关联计划</label><input type="text" value="${esc(f.planName)}" onchange="MaintPreventive.sFilter.planName=this.value;MaintPreventive.searchSchedule()" placeholder="计划名称"></div>
         <div class="filter-group"><label>触发类型</label><select onchange="MaintPreventive.sFilter.triggerType=this.value;MaintPreventive.searchSchedule()"><option value="">全部</option>${trigOpts}</select></div>
         <div class="filter-group"><label>状态</label><select onchange="MaintPreventive.sFilter.status=this.value;MaintPreventive.searchSchedule()"><option value="">全部</option>${sOpts}</select></div>
-        ${FilterActions.render({ pageId: 'maintenance-preventive', scope: "MaintPreventive", onSearch: "searchSchedule", onReset: "resetScheduleFilter" })}
+        ${FilterActions.render({ pageId: 'maintenance-preventive', scope: "MaintPreventive", onSearch: "searchSchedule" })}
       </div>
       <div class="table-wrapper" style="flex:1;overflow:auto;margin-top:12px;"><table class="data-table"><thead><tr>
         <th>调度编码</th><th>关联维护计划</th><th>触发类型</th><th>执行频率</th><th>覆盖设备</th><th>状态</th><th>最近生成</th><th>下次预计</th><th>操作</th>
@@ -859,7 +859,7 @@ const MaintPreventive = {
         <div class="filter-group"><label>调度方案</label><select onchange="MaintPreventive.aFilter.scheduleId=this.value;MaintPreventive.searchAuto()"><option value="">全部方案</option>${schedOpts}</select></div>
         <div class="filter-group"><label>设备</label><input type="text" value="${esc(f.eqInfo)}" onchange="MaintPreventive.aFilter.eqInfo=this.value;MaintPreventive.searchAuto()" placeholder="编码/名称"></div>
         <div class="filter-group"><label>生成状态</label><select onchange="MaintPreventive.aFilter.result=this.value;MaintPreventive.searchAuto()"><option value="">全部</option>${resOpts}</select></div>
-        ${FilterActions.render({ pageId: 'maintenance-preventive', scope: "MaintPreventive", onSearch: "searchAuto", onReset: "resetAutoFilter" })}
+        ${FilterActions.render({ pageId: 'maintenance-preventive', scope: "MaintPreventive", onSearch: "searchAuto" })}
       </div>
       <div class="table-wrapper" style="flex:1;overflow:auto;margin-top:12px;"><table class="data-table"><thead><tr>
         <th>调度方案</th><th>设备</th><th>计划生成时间</th><th>实际生成时间</th><th>生成结果</th><th>工单编号</th><th>失败原因</th><th>操作</th>

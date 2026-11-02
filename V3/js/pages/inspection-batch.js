@@ -528,7 +528,7 @@ const InspectionBatch = {
           <option value="CLSD">已关闭</option>
           <option value="CANC">已取消</option>
         </select></div>
-        ${FilterActions.render({ pageId: 'inspection-batch', scope: "InspectionBatch", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreBtnId: "ibMoreToggle" })}
+        ${FilterActions.render({ pageId: 'inspection-batch', scope: "InspectionBatch", onExport: "exportData", onMore: "toggleMore", moreBtnId: "ibMoreToggle" })}
         <!-- 更多条件：与上方条件同容器、同底色、无分隔线，独占一整行 -->
         <div id="ibMorePanel" style="display:none;width:100%;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;">
           <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibSapBatch" placeholder="模糊查询"></div>
@@ -549,7 +549,7 @@ const InspectionBatch = {
           <option value="FAILED">失败</option>
         </select></div>
         <div class="filter-group"><label>执行日期</label><input type="date" id="ibSyncDate"></div>
-        ${FilterActions.render({ pageId: 'inspection-batch', scope: "InspectionBatch", onSearch: "searchSyncLog", onReset: "resetSyncFilter", onExport: "exportData", extra: [{ text: "批量重试", onclick: "InspectionBatch.retryAllFailed()" }] })}
+        ${FilterActions.render({ pageId: 'inspection-batch', scope: "InspectionBatch", onSearch: "searchSyncLog", onExport: "exportData", extra: [{ text: "批量重试", onclick: "InspectionBatch.retryAllFailed()" }] })}
       </div>`;
     }
   },

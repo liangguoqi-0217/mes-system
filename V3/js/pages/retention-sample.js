@@ -297,7 +297,7 @@ const RetentionSample = {
       <div class="filter-group"><label>留样状态</label><select id="rsStatus">
         <option value="">全部</option>${statOpts}<option value="TO_OBSERVE">待观察</option>
       </select></div>
-      ${FilterActions.render({ pageId: 'retention-sample', scope: "RetentionSample", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreOpen: this.moreOpen })}
+      ${FilterActions.render({ pageId: 'retention-sample', scope: "RetentionSample", onExport: "exportData", onMore: "toggleMore", moreOpen: this.moreOpen })}
       <div id="rsMoreBar" style="${moreStyle}">
         <div class="filter-group"><label>留样位置</label><input type="text" id="rsLocation" placeholder="如 A-03 或 留样室A"></div>
         <div class="filter-group"><label>来源批次</label><input type="text" id="rsBatch" placeholder="SAP 批次号"></div>

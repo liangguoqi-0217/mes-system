@@ -169,7 +169,7 @@ const MaterialDocReversal = {
         <option value="部分过账">部分过账</option>
         <option value="已冲销">已冲销</option>
       </select></div>
-      ${FilterActions.render({ pageId: 'material-doc-reversal', scope: "MaterialDocReversal", onReset: "resetFilter", onExport: "exportData" })}
+      ${FilterActions.render({ pageId: 'material-doc-reversal', scope: "MaterialDocReversal", onExport: "exportData" })}
     </div>`;
   },
 

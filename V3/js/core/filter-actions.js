@@ -2,14 +2,16 @@
  * 公共筛选操作区组件（FilterActions）
  *
  * 全站列表页的筛选栏右侧按钮区统一由本组件渲染，固定 5 个按钮：
- *   查询(primary) → 重置 → 导出 → 我的变式 → 更多条件 ▾/▴
+ *   查询(primary) → 打印 → 导出 → 我的变式 → 更多条件 ▾/▴
  * 页面专属按钮（如「批量重试」）通过 extra 追加在末尾。
  *
  * 约定：
- *   1. 不再有「刷新」按钮，重新取数用「查询 / 重置」。
- *   2. 「更多条件」始终显示；页面没有折叠条件时点击提示「该页面暂无更多条件」。
- *   3. 「我的变式」由本组件渲染（id 固定 qvOpenBtn），QueryVariant.mount 检测到后不再重复插入。
- *   4. 容器样式（靠右、不换行、不被挤走）统一由 common.css 的 .filter-actions 提供，
+ *   1. 不提供「刷新」和「重置」按钮：重新取数用「查询」，清空条件直接清空字段。
+ *   2. 「打印」默认走通用打印（PrintHelper：筛选条件 + 当前表格，A4 视图）；
+ *      页面有专门打印模板时传 onPrint。
+ *   3. 「更多条件」始终显示；页面没有折叠条件时点击提示「该页面暂无更多条件」。
+ *   4. 「我的变式」由本组件渲染（id 固定 qvOpenBtn），QueryVariant.mount 检测到后不再重复插入。
+ *   5. 容器样式（靠右、不换行、不被挤走）统一由 common.css 的 .filter-actions 提供，
  *      页面不要再写内联 style。
  *
  * 用法（页面 renderFilterBar 内直接插值）：
@@ -17,7 +19,7 @@
  *     pageId:   'inspection-batch',        // 查询变式 id（取自 QueryVariant.register 的 pageId）
  *     scope:    'InspectionBatch',         // 页面对象名
  *     onSearch: 'search',                  // 默认 search
- *     onReset:  'resetFilter',             // 默认 reset
+ *     onPrint:  'printList',               // 不传则走 PrintHelper 通用打印
  *     onExport: 'exportData',              // 不传则走「导出功能开发中」提示
  *     onMore:   'toggleMore',              // 不传则点击提示「该页面暂无更多条件」
  *     moreOpen: this.moreOpen,             // 控制 ▾ / ▴
@@ -64,9 +66,9 @@ window.FilterActions = (function () {
     html += '<button class="' + BTN_PRIMARY + '" onclick="' +
       _esc(_call(scope, cfg.onSearch || 'search')) + '">查询</button>';
 
-    // 2 重置
+    // 2 打印（未接入时走通用打印：当前筛选结果 + 表格）
     html += '<button class="' + BTN + '" onclick="' +
-      _esc(_call(scope, cfg.onReset || 'reset')) + '">重置</button>';
+      _esc(_call(scope, cfg.onPrint, 'FilterActions.print()')) + '">打印</button>';
 
     // 3 导出（未接入时给统一提示）
     html += '<button class="' + BTN + '" onclick="' +
@@ -102,6 +104,12 @@ window.FilterActions = (function () {
     // 页面未接入导出
     exportTodo: function () {
       if (window.toast) toast('导出功能开发中...');
+    },
+
+    // 打印：优先用 PrintHelper 生成 A4 打印视图，缺失时退回浏览器打印
+    print: function () {
+      if (window.PrintHelper) PrintHelper.printCurrentTable();
+      else window.print();
     },
 
     // 打开查询变式弹窗；未启用查询变式的页面给提示

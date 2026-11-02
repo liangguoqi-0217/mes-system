@@ -45,7 +45,7 @@ const PMAutoGen = {
         '<div class="filter-group"><label>调度方案</label><select id="mgScheduleId" onchange="PMAutoGen.genFilter.scheduleId=this.value;PMAutoGen.searchGen()"><option value="" '+(f.scheduleId?'':'selected')+'>全部方案</option>'+schedOpts+'</select></div>'+
         '<div class="filter-group"><label>设备</label><input id="mgEqInfo" value="'+esc(f.eqInfo)+'" onchange="PMAutoGen.genFilter.eqInfo=this.value;PMAutoGen.searchGen()" placeholder="编码/名称"></div>'+
         '<div class="filter-group"><label>生成状态</label><select id="mgResult" onchange="PMAutoGen.genFilter.result=this.value;PMAutoGen.searchGen()"><option value="" '+(f.result?'':'selected')+'>全部状态</option>'+resOpts+'</select></div>'+
-        FilterActions.render({ pageId: 'pm-workorder-generation', scope: 'PMAutoGen', onSearch: 'searchGen', onReset: 'resetGenFilter', onExport: 'exportLog' })+
+        FilterActions.render({ pageId: 'pm-workorder-generation', scope: 'PMAutoGen', onSearch: 'searchGen', onExport: 'exportLog' })+
       '</div>'+
       // 表格
       '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>调度方案</th><th>设备</th><th>计划生成时间</th><th>实际生成时间</th><th>生成结果</th><th>工单编号</th><th>失败原因</th><th>操作</th></tr></thead>'+
@@ -105,7 +105,7 @@ const PMAutoGen = {
     '<div class="filter-bar">'+
       '<div class="filter-group"><label>调度编码</label><input value="'+esc(f.scheduleCode)+'" onchange="PMAutoGen.logFilter.scheduleCode=this.value;PMAutoGen.searchLog()" placeholder="调度编码"></div>'+
       '<div class="filter-group"><label>生成状态</label><select onchange="PMAutoGen.logFilter.genStatus=this.value;PMAutoGen.searchLog()"><option value="" '+(f.genStatus?'':'selected')+'>全部状态</option>'+sOpts+'</select></div>'+
-      FilterActions.render({ pageId: 'pm-workorder-generation', scope: 'PMAutoGen', onSearch: 'searchLog', onReset: 'resetLogFilter', onExport: 'exportLog' })+
+      FilterActions.render({ pageId: 'pm-workorder-generation', scope: 'PMAutoGen', onSearch: 'searchLog', onExport: 'exportLog' })+
     '</div>'+
     '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>日志编号</th><th>调度方案</th><th>生成类型</th><th>涉及设备</th><th>生成结果</th><th>失败原因</th><th>操作人</th><th>操作时间</th><th>操作</th></tr></thead>'+
     '<tbody>'+pageData.map(d=>{

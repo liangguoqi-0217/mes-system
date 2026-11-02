@@ -236,7 +236,7 @@ const StabilityPlan = {
     const el = document.getElementById('spFilterBar');
     if (!el) return;
     const btn = `
-        ${FilterActions.render({ pageId: 'stability-plan', scope: "StabilityPlan", onReset: "resetFilter", onExport: "exportData" })}`;
+        ${FilterActions.render({ pageId: 'stability-plan', scope: "StabilityPlan", onExport: "exportData" })}`;
 
     if (this.activeTab === 'protocol') {
       const typeOpts = this.typeOptions.map(t => `<option value="${t.code}">${t.name}</option>`).join('');

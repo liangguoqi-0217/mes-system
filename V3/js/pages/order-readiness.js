@@ -922,7 +922,7 @@ const OrderReadiness = {
             <input type="date" id="orDateFrom"><span style="color:var(--text-muted);">~</span><input type="date" id="orDateTo">
           </div>
         </div>
-        ${FilterActions.render({ pageId: 'order-readiness', scope: "OrderReadiness", onSearch: "query", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreBtnId: "orMoreBtn", moreOpen: this.moreOpen })}
+        ${FilterActions.render({ pageId: 'order-readiness', scope: "OrderReadiness", onSearch: "query", onExport: "exportData", onMore: "toggleMore", moreBtnId: "orMoreBtn", moreOpen: this.moreOpen })}
         <div id="orMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>流程订单号</label><input type="text" id="orOrderNo" placeholder="如 3000000123"></div>
           <div class="filter-group"><label>订单状态</label>

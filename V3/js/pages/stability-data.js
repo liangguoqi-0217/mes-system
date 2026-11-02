@@ -190,7 +190,7 @@ const StabilityData = {
     const el = document.getElementById('sdFilterBar');
     if (!el) return;
     const btn = `
-        ${FilterActions.render({ pageId: 'stability-data', scope: "StabilityData", onReset: "resetFilter", onExport: "exportData" })}`;
+        ${FilterActions.render({ pageId: 'stability-data', scope: "StabilityData", onExport: "exportData" })}`;
     const condOpts = `<option value="">全部</option><option value="LT">长期 25℃/60%RH</option><option value="AC">加速 40℃/75%RH</option>`;
 
     if (this.activeTab === 'chamber') {
