@@ -818,15 +818,13 @@ const InspectionBatch = {
       ? `<button class="btn btn-danger btn-sm" onclick="InspectionBatch.retrySync('${b.id}')" title="重新从 SAP 拉取该检验批">重试同步</button>`
       : '';
 
-    // 终态（已关闭 / 已取消）：业务动作不可用，但按钮位置保留并置灰，
-    // 与其他行的按钮数目保持一致；悬停提示原因，避免行与行按钮跳变
+    // 终态（已关闭 / 已取消）：按钮照常显示（与其他行数目一致），
+    // 点击时由 notifyBlocked 提示当前状态不支持该操作，不置灰、不隐藏
     if (this._isFinalStatus(b.status)) {
-      const why = this.getStatusMeta(b.status).name + '的检验批不可再执行业务操作';
-      const off = 'disabled style="opacity:.45;cursor:not-allowed;" title="' + why + '"';
       return `<div class="table-actions">
-        <button class="btn btn-sm" ${off} style="background:#f59e0b;color:#fff;">取样</button>
-        <button class="btn btn-sm" ${off} style="background:#6366f1;color:#fff;">结果录入</button>
-        <button class="btn btn-success btn-sm" ${off}>使用决策</button>
+        <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.notifyBlocked('${b.id}','取样')" title="执行取样">取样</button>
+        <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.notifyBlocked('${b.id}','结果录入')" title="选择工序录入检验结果">结果录入</button>
+        <button class="btn btn-success btn-sm" onclick="InspectionBatch.notifyBlocked('${b.id}','使用决策')" title="使用决策">使用决策</button>
         <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
         ${retryBtn}
       </div>`;
@@ -839,6 +837,13 @@ const InspectionBatch = {
       <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
       ${retryBtn}
     </div>`;
+  },
+
+  // 终态（已关闭 / 已取消）点击业务按钮时的提示：按钮照常显示，点击才告知原因
+  notifyBlocked(id, action) {
+    const b = this.batchData.find(x => x.id === id);
+    const name = b ? this.getStatusMeta(b.status).name : '当前';
+    toast(`检验批 ${b ? b.batchNo : ''} 状态为「${name}」，不支持「${action}」操作`);
   },
 
   prevSyncPage() { if (this.syncPage>1) { this.syncPage--; this.doRenderSyncTable(); } },
