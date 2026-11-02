@@ -818,9 +818,15 @@ const InspectionBatch = {
       ? `<button class="btn btn-danger btn-sm" onclick="InspectionBatch.retrySync('${b.id}')" title="重新从 SAP 拉取该检验批">重试同步</button>`
       : '';
 
-    // 终态（已关闭 / 已取消）：数据只读，不再出现取样、结果录入、使用决策等动作按钮
+    // 终态（已关闭 / 已取消）：业务动作不可用，但按钮位置保留并置灰，
+    // 与其他行的按钮数目保持一致；悬停提示原因，避免行与行按钮跳变
     if (this._isFinalStatus(b.status)) {
+      const why = this.getStatusMeta(b.status).name + '的检验批不可再执行业务操作';
+      const off = 'disabled style="opacity:.45;cursor:not-allowed;" title="' + why + '"';
       return `<div class="table-actions">
+        <button class="btn btn-sm" ${off} style="background:#f59e0b;color:#fff;">取样</button>
+        <button class="btn btn-sm" ${off} style="background:#6366f1;color:#fff;">结果录入</button>
+        <button class="btn btn-success btn-sm" ${off}>使用决策</button>
         <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
         ${retryBtn}
       </div>`;
