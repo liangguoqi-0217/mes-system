@@ -518,13 +518,15 @@ const InspectionBatch = {
           ${this.factoryOptions.map(f => `<option value="${f.code}">${f.name}</option>`).join('')}
         </select></div>
         <div class="filter-group"><label>物料编码</label><input type="text" id="ibMaterial" placeholder="模糊查询"></div>
-        <div class="filter-group"><label>检验类型</label><select id="ibInspectType">
+        <div class="filter-group"><label>状态</label><select id="ibStatus">
           <option value="">全部</option>
-          ${this.inspectTypeOptions.map(t => `<option value="${t.code}">${t.code} - ${t.name}</option>`).join('')}
-        </select></div>
-        <div class="filter-group"><label>生成方式</label><select id="ibCreateMode">
-          <option value="">全部</option>
-          ${this.createModeOptions.map(c => `<option value="${c.code}">${c.name}</option>`).join('')}
+          <option value="CRTD">已创建</option>
+          <option value="SAMP">取样中</option>
+          <option value="INSP">检验中</option>
+          <option value="DONE">检验完成</option>
+          <option value="DEC">已决策</option>
+          <option value="CLSD">已关闭</option>
+          <option value="CANC">已取消</option>
         </select></div>
         <div class="filter-actions" style="margin-left:auto;display:flex;gap:8px;flex-shrink:0;">
           <button class="btn btn-primary btn-sm" onclick="InspectionBatch.search()">查询</button>
@@ -536,16 +538,6 @@ const InspectionBatch = {
         <!-- 更多条件：与上方条件同容器、同底色、无分隔线，独占一整行 -->
         <div id="ibMorePanel" style="display:none;width:100%;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;">
           <div class="filter-group"><label>SAP批次号</label><input type="text" id="ibSapBatch" placeholder="模糊查询"></div>
-          <div class="filter-group"><label>状态</label><select id="ibStatus">
-            <option value="">全部</option>
-            <option value="CRTD">已创建</option>
-            <option value="SAMP">取样中</option>
-            <option value="INSP">检验中</option>
-            <option value="DONE">检验完成</option>
-            <option value="DEC">已决策</option>
-            <option value="CLSD">已关闭</option>
-            <option value="CANC">已取消</option>
-          </select></div>
         </div>
       </div>`;
     } else {
@@ -715,16 +707,12 @@ const InspectionBatch = {
     const material = (document.getElementById('ibMaterial')?.value||'').trim();
     const sapBatch = (document.getElementById('ibSapBatch')?.value||'').trim();
     const status = document.getElementById('ibStatus')?.value||'';
-    const inspectType = document.getElementById('ibInspectType')?.value||'';
-    const createMode = document.getElementById('ibCreateMode')?.value||'';
 
     this.filtered = this.batchData.filter(b => {
       if (factory && b.plant !== factory) return false;
       if (material && !b.materialCode.includes(material) && !b.materialName.includes(material)) return false;
       if (sapBatch && !(b.sapBatch||'').toLowerCase().includes(sapBatch.toLowerCase())) return false;
       if (status && b.status !== status) return false;
-      if (inspectType && b.inspectType !== inspectType) return false;
-      if (createMode && b.createMode !== createMode) return false;
       return true;
     });
     this.page = 1;
@@ -740,7 +728,7 @@ const InspectionBatch = {
 
   resetFilter() {
     ['ibMaterial','ibSapBatch'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    ['ibStatus','ibFactory','ibInspectType','ibCreateMode'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    ['ibStatus','ibFactory'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     this.filtered = [...this.batchData];
     this.page = 1;
     this.renderBatchTable();
@@ -787,12 +775,10 @@ const InspectionBatch = {
     const el = document.getElementById('ibTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1700px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1440px;">
       <thead><tr>
         <th style="width:50px;">序号</th>
         <th style="width:160px;">检验批号</th>
-        <th style="width:150px;">检验类型</th>
-        <th style="width:110px;">生成方式</th>
         <th style="width:130px;">来源单据</th>
         <th style="width:120px;">物料编码</th>
         <th style="width:140px;">物料名称</th>
@@ -809,12 +795,9 @@ const InspectionBatch = {
 
   renderBatchRow(b, idx) {
     const statusBadge = this.getStatusBadgeHtml(b.status);
-    const modeBadge = this.getCreateModeBadge(b.createMode);
     return `<tr>
       <td>${idx}</td>
       <td style="color:#2563eb;font-weight:600;font-family:monospace;font-size:12px;">${esc(b.batchNo)}</td>
-      <td><span class="badge badge-gray badge-sm" style="font-family:monospace;">${esc(this.getInspectTypeName(b.inspectType)||'')}</span></td>
-      <td>${modeBadge}</td>
       <td style="font-family:monospace;font-size:12px;color:var(--text-secondary);">${esc(b.sourceDocNo||'—')}</td>
       <td style="font-family:monospace;font-size:12px;">${esc(b.materialCode)}</td>
       <td>${esc(b.materialName)}</td>
