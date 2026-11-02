@@ -32,10 +32,7 @@ const MaintenanceTasklist = {
           <option value="">全部</option><option value="M01">M01-维修</option><option value="M02">M02-检查</option><option value="M03">M03-润滑</option>
         </select></div>
         <div class="filter-group"><label>工作中心</label><input type="text" id="tlARBPL" placeholder="模糊查询"></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="MaintenanceTasklist.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="MaintenanceTasklist.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'maintenance-tasklist', scope: "MaintenanceTasklist" })}
       </div>
       <div class="table-wrapper" style="flex:1;">
         <table class="data-table">

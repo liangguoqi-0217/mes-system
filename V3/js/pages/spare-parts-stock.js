@@ -72,13 +72,7 @@ const SparePartsStock = {
             <option value="2">2 - 库位汇总</option>
           </select></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="spMatCode" placeholder="物料号"></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="SparePartsStock.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.exportData()">导出</button>
-            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.refresh()">刷新</button>
-            <button class="btn btn-secondary btn-sm" onclick="SparePartsStock.reset()">重置</button>
-            <button class="btn btn-secondary btn-sm" id="spMoreBtn" onclick="SparePartsStock.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
-          </div>
+          ${FilterActions.render({ pageId: 'sp-stock', scope: "SparePartsStock", onExport: "exportData", onMore: "toggleMore", moreBtnId: "spMoreBtn", moreOpen: this.moreOpen })}
           <div id="spMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
             <div class="filter-group"><label>物料类型</label><select id="spMatType">
               <option value="">全部</option>

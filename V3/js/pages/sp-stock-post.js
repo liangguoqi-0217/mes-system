@@ -80,10 +80,7 @@ const SpStockPost = {
             <option value="草稿">草稿</option><option value="待同步">待同步</option>
             <option value="已过账">已过账</option><option value="已冲销">已冲销</option>
           </select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="SpStockPost.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="SpStockPost.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'sp-stock-post', scope: "SpStockPost" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1300px;">

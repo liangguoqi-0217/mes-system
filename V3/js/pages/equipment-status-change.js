@@ -31,10 +31,7 @@ const EquipmentStatusChange = {
               ${eqStatusChangeStatusOptions.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
             </select>
           </div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="EquipmentStatusChange.search()">查询</button>
-            <button class="btn btn-outline btn-sm" onclick="EquipmentStatusChange.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'equipment-status-change', scope: "EquipmentStatusChange" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">

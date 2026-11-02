@@ -280,12 +280,7 @@ const MaterialDocList = {
         <div class="filter-group"><label>移动类型</label><select id="mdlMoveType"><option value="">全部</option>${moveOpts}</select></div>
         <div class="filter-group"><label>发货库位</label><input type="text" id="mdlIssueLoc" placeholder="如 A-01-03"></div>
         <div class="filter-group"><label>收货库存</label><input type="text" id="mdlReceiveLoc" placeholder="如 采购收货"></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="MaterialDocList.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.resetFilter()">重置</button>
-          <button class="btn btn-secondary btn-sm" onclick="MaterialDocList.exportData()">导出</button>
-          <button class="btn btn-secondary btn-sm" id="mdlMoreBtn" onclick="MaterialDocList.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
-        </div>
+        ${FilterActions.render({ pageId: 'material-doc-list', scope: "MaterialDocList", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreBtnId: "mdlMoreBtn", moreOpen: this.moreOpen })}
         <div id="mdlMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>物料凭证号</label><input type="text" id="mdlDocNo" placeholder="如 4900000101"></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="mdlMatCode" placeholder="编码 / 描述"></div>

@@ -60,9 +60,7 @@ const MeasurementPoint = {
       <div class="filter-group"><label>是否计数器</label><select id="mpSearchCounter" onchange="MeasurementPoint.doFilter()">
         <option value="">全部</option><option value="yes">是</option><option value="no">否</option>
       </select></div>
-      <div class="filter-actions">
-        <button class="btn btn-secondary btn-sm" onclick="MeasurementPoint.resetFilter()">重置</button>
-      </div>
+      ${FilterActions.render({ pageId: 'measurement-point', scope: "MeasurementPoint", onSearch: "doFilter", onReset: "resetFilter" })}
     </div>
     <div class="list-toolbar">
       <div class="list-info">

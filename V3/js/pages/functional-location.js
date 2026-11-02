@@ -46,10 +46,7 @@ const FunctionalLocation = {
               <option value="">全部</option>
               ${this.levelOptions.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
             </select></div>
-            <div class="filter-actions">
-              <button class="btn btn-primary btn-sm" onclick="FunctionalLocation.search()">查询</button>
-              <button class="btn btn-secondary btn-sm" onclick="FunctionalLocation.reset()">重置</button>
-            </div>
+            ${FilterActions.render({ pageId: 'functional-location', scope: "FunctionalLocation" })}
           </div>
           <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);" id="flPlaceholder">
             <div style="text-align:center;">

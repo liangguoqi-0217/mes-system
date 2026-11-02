@@ -28,10 +28,7 @@ const EquipmentBOM = {
           <div class="filter-group"><label>状态</label>
             <select id="bomStatus"><option value="">全部</option><option value="published">已发布</option><option value="draft">草稿</option><option value="cancelled">已作废</option></select>
           </div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="EquipmentBOM.search()">🔍 查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="EquipmentBOM.reset()">↺ 重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'equipment-bom', scope: "EquipmentBOM" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">

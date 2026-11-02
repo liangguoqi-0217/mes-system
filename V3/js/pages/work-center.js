@@ -37,10 +37,7 @@ const WorkCenter = {
             </select></div>
             <div class="filter-group"><label>工作中心编码</label><input type="text" id="wcFilterCode" placeholder="模糊查询"></div>
             <div class="filter-group"><label>工作中心名称</label><input type="text" id="wcFilterName" placeholder="模糊查询"></div>
-            <div class="filter-actions">
-              <button class="btn btn-primary btn-sm" onclick="WorkCenter.search()">查询</button>
-              <button class="btn btn-secondary btn-sm" onclick="WorkCenter.reset()">重置</button>
-            </div>
+            ${FilterActions.render({ pageId: 'work-center', scope: "WorkCenter" })}
           </div>
           <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text-muted);" id="wcPlaceholder">
             <div style="text-align:center;">

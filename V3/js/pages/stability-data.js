@@ -150,12 +150,12 @@ const StabilityData = {
   },
 
   init() {
+    this.renderFilterBar();          // 先渲染筛选栏，变式回填才有控件可写
     if (window.QueryVariant) {
       QueryVariant.mount('stability-data');
       QueryVariant.restore('stability-data');
       QueryVariant.bindRecent('stability-data');
     }
-    this.renderFilterBar();
     this.renderTable();
     this.renderPagination();
   },
@@ -190,12 +190,7 @@ const StabilityData = {
     const el = document.getElementById('sdFilterBar');
     if (!el) return;
     const btn = `
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="StabilityData.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="StabilityData.exportData()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="StabilityData.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="StabilityData.resetFilter()">重置</button>
-        </div>`;
+        ${FilterActions.render({ pageId: 'stability-data', scope: "StabilityData", onReset: "resetFilter", onExport: "exportData" })}`;
     const condOpts = `<option value="">全部</option><option value="LT">长期 25℃/60%RH</option><option value="AC">加速 40℃/75%RH</option>`;
 
     if (this.activeTab === 'chamber') {
@@ -709,3 +704,15 @@ const StabilityData = {
   },
   changePageSize(n) { this.pageSize = Number(n); this.page = 1; this.renderTable(); this.renderPagination(); }
 };
+
+// 查询变式注册：「我的变式」按钮由 FilterActions 统一渲染，这里提供条件字段与回填入口
+// 三个页签各自有独立条件，fields 取并集（不存在的字段会被自动跳过）
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'stability-data',
+    fields: ['sdType', 'sdCond', 'sdKeyword', 'sdStatus', 'sdVerdict'],
+    textFields: ['sdKeyword'],
+    labels: { sdType: '报告类型', sdCond: '考察条件', sdKeyword: '关键词', sdStatus: '状态', sdVerdict: '结果判定' },
+    onApply: function () { StabilityData.search(); }
+  });
+}

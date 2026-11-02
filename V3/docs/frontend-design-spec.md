@@ -177,7 +177,7 @@
 
 ### 3.4 筛选栏 `.filter-bar`
 
-标准结构（含五按钮 + 更多条件折叠）：
+标准结构（按钮组由 `FilterActions` 组件统一渲染，固定 5 键）：
 
 ```html
 <div class="filter-bar" style="flex-wrap:wrap;">
@@ -189,15 +189,17 @@
     </div>
   </div>
 
-  <!-- ② 操作按钮组：靠右 -->
-  <div class="filter-actions">
-    <button class="btn btn-primary btn-sm"   onclick="Xxx.search()">查询</button>
-    <button class="btn btn-secondary btn-sm" onclick="Xxx.exportData()">导出</button>
-    <button class="btn btn-secondary btn-sm" onclick="Xxx.refresh()">刷新</button>
-    <button class="btn btn-secondary btn-sm" onclick="Xxx.resetFilter()">重置</button>
-    <button class="btn btn-secondary btn-sm" id="xxxMoreBtn" onclick="Xxx.toggleMore()">更多条件 ▾</button>
-    <!-- 「我的变式」由 QueryVariant.mount(pageId) 自动插入到这里 -->
-  </div>
+  <!-- ② 操作按钮组：禁止手写，统一走组件（查询 / 重置 / 导出 / 我的变式 / 更多条件） -->
+  ${FilterActions.render({
+    pageId: 'xxx',                 // 与 QueryVariant.register 的 pageId 一致
+    scope:  'Xxx',                 // 页面对象名
+    onReset: 'resetFilter',        // 默认 reset
+    onExport: 'exportData',        // 不传则点击提示「导出功能开发中」
+    onMore: 'toggleMore',          // 不传则点击提示「该页面暂无更多条件」
+    moreOpen: this.moreOpen,       // 控制 ▾ / ▴
+    moreBtnId: 'xxxMoreBtn',       // 需要在 toggleMore 里改文案时给 id
+    extra: [{ text: '批量重试', onclick: 'Xxx.retryAllFailed()' }]   // 页面专属按钮追加在末尾
+  })}
 
   <!-- ③ 更多条件：独占一整行，默认隐藏 -->
   <div id="xxxMoreBar" style="display:none;flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
@@ -209,12 +211,16 @@
 
 | 规则ID | 约束 | 等级 |
 |---|---|---|
-| UI-FLT-01 | 高频条件常驻第一行，其余进「更多条件」折叠区 | **MUST** |
-| UI-FLT-02 | 展开区用 `width:100%` 的 flex 容器**独占一整行**，禁止 `display:contents`（会与按钮混排导致布局错乱） | **MUST** |
-| UI-FLT-03 | 展开区不得单独设 `background` 或 `border-top`，保持与上方同一底色、视觉一体 | **MUST** |
-| UI-FLT-04 | 展开/收起只切换 `display:flex` / `display:none`，按钮文案同步为「更多条件 ▾」/「收起 ▴」 | SHOULD |
-| UI-FLT-05 | 日期范围用两个 `type="date"` 加 `~` 连接；需要快捷范围时配「今日 / 本周 / 本月」按钮组 | SHOULD |
-| UI-FLT-06 | 字段最小宽度 `140px`（`.filter-group` 已预设），不要改小 | SHOULD |
+| UI-FLT-01 | 筛选按钮区**必须**调用 `FilterActions.render(...)`（`js/core/filter-actions.js`），顺序固定：查询 / 重置 / 导出 / 我的变式 / 更多条件；禁止手写 `<div class="filter-actions">` | **MUST** |
+| UI-FLT-02 | 不再提供「刷新」按钮，重新取数走「查询 / 重置」 | **MUST** |
+| UI-FLT-03 | 「更多条件」始终显示；页面无折叠条件时点击提示「该页面暂无更多条件」 | **MUST** |
+| UI-FLT-04 | 页面专属按钮（批量重试等）只能通过 `extra` 追加在 5 键之后，不得插到查询之前 | **MUST** |
+| UI-FLT-05 | 高频条件常驻第一行，其余进「更多条件」折叠区 | **MUST** |
+| UI-FLT-06 | 展开区用 `width:100%` 的 flex 容器**独占一整行**，禁止 `display:contents`（会与按钮混排导致布局错乱） | **MUST** |
+| UI-FLT-07 | 展开区不得单独设 `background` 或 `border-top`，保持与上方同一底色、视觉一体 | **MUST** |
+| UI-FLT-08 | 展开/收起只切换 `display:flex` / `display:none`，按钮文案同步为「更多条件 ▾」/「收起 ▴」 | SHOULD |
+| UI-FLT-09 | 日期范围用两个 `type="date"` 加 `~` 连接；需要快捷范围时配「今日 / 本周 / 本月」按钮组 | SHOULD |
+| UI-FLT-10 | 字段最小宽度 `140px`（`.filter-group` 已预设），不要改小 | SHOULD |
 
 ### 3.5 分页控件
 
@@ -334,10 +340,12 @@ toggleMore() {
   this.moreOpen = !this.moreOpen;
   const bar = document.getElementById('xxxMoreBar');
   if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
-  const btn = document.getElementById('xxxMoreBtn');
+  const btn = document.getElementById('xxxMoreBtn');   // 与 FilterActions 的 moreBtnId 一致
   if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
 }
 ```
+
+> 没有折叠条件的页面不需要写 `toggleMore`，`FilterActions` 会自动退化为「该页面暂无更多条件」提示。
 
 ---
 
@@ -355,6 +363,8 @@ toggleMore() {
 | 8 | 展开行 `colspan` 数错 | 明细行列宽错位 |
 | 9 | 弹窗内子表格出现横向滚动条 | 详情弹窗里横向滚动极难用，改卡片或精简列 |
 | 10 | 金额/数量不右对齐 | 数字无法纵向比对 |
+| 11 | 手写 `<div class="filter-actions">` 按钮组 | 各页按钮数量/顺序/样式不一致，改一次要改 40 多个文件 |
+| 12 | 页面里再写「刷新」按钮 | 与「查询/重置」重复，规范已移除 |
 
 ---
 
@@ -362,7 +372,7 @@ toggleMore() {
 
 - [ ] 页面容器是 `width:100%`（不是 `100vw`）
 - [ ] 整个页面只有表格区一条纵向滚动条
-- [ ] 筛选区有「查询、导出、刷新、重置、更多条件」五个按钮，且常驻可见
+- [ ] 筛选按钮区由 `FilterActions.render(...)` 渲染，顺序为「查询、重置、导出、我的变式、更多条件」，且常驻可见、无「刷新」按钮
 - [ ] 「更多条件」展开后独占一行，与上方同底色、无分隔线
 - [ ] 数字列右对齐并带千分位，空值显示 `-`
 - [ ] 状态列全部使用 badge，颜色符合第 3.2 节语义映射
@@ -378,6 +388,7 @@ toggleMore() {
 | 日期 | 版本 | 变更内容 |
 |---|---|---|
 | 2026-09-24 | v1.0 | 初始版本：设计原则、设计令牌、组件规范、强制约束清单（基于订单齐套检查、物料凭证清单等原型固化） |
+| 2026-11-02 | v1.1 | 筛选按钮区改为统一组件 `FilterActions`（查询/重置/导出/我的变式/更多条件），移除「刷新」按钮，「更多条件」始终显示；新增 UI-FLT-01~04 强制约束 |
 
 ---
 

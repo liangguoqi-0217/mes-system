@@ -21,10 +21,7 @@ const EquipmentMaster = {
           <div class="filter-group"><label>设备类型</label><select id="eqType"><option value="">全部</option>${eqTypeOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>运行状态</label><select id="eqStatus"><option value="">全部</option>${eqStatusOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>设备编码</label><input type="text" id="eqCode" placeholder="模糊查询"></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="EquipmentMaster.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="EquipmentMaster.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'equipment-master', scope: "EquipmentMaster" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">

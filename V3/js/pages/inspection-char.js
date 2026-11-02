@@ -115,10 +115,7 @@ const InspectionChar = {
         <div class="filter-bar" style="flex-shrink:0;">
           <div class="filter-group"><label>工厂</label><select id="micFactory"><option value="">全部</option>${micFactoryOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>特性类型</label><select id="micType"><option value="">全部</option><option value="quantitative">定量</option><option value="qualitative">定性</option></select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="InspectionChar.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="InspectionChar.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'inspection-char', scope: "InspectionChar" })}
         </div>
         <!-- 数据表格 -->
         <div class="table-wrapper" style="flex:1;">

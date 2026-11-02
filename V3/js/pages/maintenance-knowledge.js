@@ -32,10 +32,7 @@ const MaintenanceKnowledge = {
         <div class="filter-group"><label>故障类型</label><select id="mkFaultType">
           <option value="">全部</option><option value="机械">机械</option><option value="电气">电气</option><option value="液压">液压</option><option value="气动">气动</option><option value="软件">软件</option>
         </select></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="MaintenanceKnowledge.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="MaintenanceKnowledge.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'maintenance-knowledge', scope: "MaintenanceKnowledge" })}
       </div>
       <div class="table-wrapper" style="flex:1;overflow-y:auto;padding:16px 24px;">
         ${this._activeTab === 'case' ? this.renderCaseList() : this._activeTab === 'solution' ? this.renderSolutionList() : this.renderExperienceList()}

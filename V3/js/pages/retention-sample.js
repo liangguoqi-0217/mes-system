@@ -254,12 +254,12 @@ const RetentionSample = {
   },
 
   init() {
+    this.renderFilterBar();          // 先渲染筛选栏，变式回填才有控件可写
     if (window.QueryVariant) {
       QueryVariant.mount('retention-sample');
       QueryVariant.restore('retention-sample');
       QueryVariant.bindRecent('retention-sample');
     }
-    this.renderFilterBar();
     this.renderTable();
     this.renderPagination();
   },
@@ -297,13 +297,7 @@ const RetentionSample = {
       <div class="filter-group"><label>留样状态</label><select id="rsStatus">
         <option value="">全部</option>${statOpts}<option value="TO_OBSERVE">待观察</option>
       </select></div>
-      <div class="filter-actions">
-        <button class="btn btn-primary btn-sm" onclick="RetentionSample.search()">查询</button>
-        <button class="btn btn-secondary btn-sm" onclick="RetentionSample.exportData()">导出</button>
-        <button class="btn btn-secondary btn-sm" onclick="RetentionSample.refresh()">刷新</button>
-        <button class="btn btn-secondary btn-sm" onclick="RetentionSample.resetFilter()">重置</button>
-        <button class="btn btn-secondary btn-sm" onclick="RetentionSample.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
-      </div>
+      ${FilterActions.render({ pageId: 'retention-sample', scope: "RetentionSample", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreOpen: this.moreOpen })}
       <div id="rsMoreBar" style="${moreStyle}">
         <div class="filter-group"><label>留样位置</label><input type="text" id="rsLocation" placeholder="如 A-03 或 留样室A"></div>
         <div class="filter-group"><label>来源批次</label><input type="text" id="rsBatch" placeholder="SAP 批次号"></div>
@@ -970,3 +964,14 @@ const RetentionSample = {
   },
   changePageSize(n) { this.pageSize = Number(n); this.page = 1; this.renderTable(); this.renderPagination(); }
 };
+
+// 查询变式注册：「我的变式」按钮由 FilterActions 统一渲染，这里提供条件字段与回填入口
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'retention-sample',
+    fields: ['rsPlant', 'rsKeyword', 'rsStatus', 'rsLocation', 'rsBatch'],
+    textFields: ['rsKeyword', 'rsLocation', 'rsBatch'],
+    labels: { rsPlant: '工厂', rsKeyword: '留样编号/物料', rsStatus: '留样状态', rsLocation: '留样位置', rsBatch: '来源批次' },
+    onApply: function () { RetentionSample.search(); }
+  });
+}

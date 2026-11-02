@@ -66,10 +66,7 @@ const SpReservationPost = {
             <option value="">全部</option>
             ${RESERVATION_STATUS_FILTER.map(s => `<option value="${s}">${s}</option>`).join('')}
           </select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="SpReservationPost.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="SpReservationPost.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'sp-reservation-post', scope: "SpReservationPost" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1350px;">

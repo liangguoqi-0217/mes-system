@@ -232,11 +232,7 @@ const SpPurchase = {
             <option value="N">未编辑</option>
             <option value="B">已创建采购订单</option>
           </select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="SpPurchase.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="SpPurchase.reset()">重置</button>
-            <button class="btn btn-outline btn-sm" onclick="SpPurchase.exportData()">导出</button>
-          </div>
+          ${FilterActions.render({ pageId: 'sp-purchase', scope: "SpPurchase", onExport: "exportData" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1500px;">

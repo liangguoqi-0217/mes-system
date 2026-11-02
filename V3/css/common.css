@@ -145,7 +145,8 @@ tr.locked td { background: #fafbfc; }
 .filter-group input:focus, .filter-group select:focus {
   outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,58,95,0.08);
 }
-.filter-actions { display: flex; gap: 8px; margin-left: auto; }
+/* 筛选操作区：固定靠右、不换行、不因表格/条件变多被挤出屏幕 */
+.filter-actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; align-items: flex-end; }
 
 /* 单行紧凑筛选栏：字段较多时压缩为一行展示 */
 .filter-bar-nowrap { flex-wrap: nowrap; }

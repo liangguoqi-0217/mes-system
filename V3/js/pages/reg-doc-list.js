@@ -40,12 +40,7 @@ const RegDocList = {
           </select>
           <span style="font-size:12px;color:var(--text-muted);">采集任务：每日 08:00 / 08:10 · 最近一次 2026-10-22 08:10</span>
         </div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="RegDocList.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegDocList.exportList()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegDocList.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegDocList.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'reg-doc-list', scope: "RegDocList", onExport: "exportList" })}
       </div>
 
       <div class="ri-body">

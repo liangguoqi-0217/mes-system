@@ -459,10 +459,7 @@ const MeasurementRecord = {
             <div class="filter-group"><label>开始时间</label><input type="date" id="mrHistStart" onchange="MeasurementRecord.doHistoryFilter()"></div>
             <div class="filter-group"><label>结束时间</label><input type="date" id="mrHistEnd" onchange="MeasurementRecord.doHistoryFilter()"></div>
             <div class="filter-group"><label>测量人</label><input type="text" id="mrHistOperator" placeholder="输入测量人" onkeyup="MeasurementRecord.doHistoryFilter()"></div>
-            <div class="filter-actions">
-              <button class="btn btn-secondary btn-sm" onclick="MeasurementRecord.resetHistoryFilter()">重置</button>
-              <button class="btn btn-outline btn-sm" onclick="MeasurementRecord.exportHistory()">📥 导出Excel</button>
-            </div>
+            ${FilterActions.render({ pageId: 'measurement-record', scope: "MeasurementRecord", onSearch: "doHistoryFilter", onReset: "resetHistoryFilter", onExport: "exportHistory" })}
           </div>
         </div>
 

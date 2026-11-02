@@ -28,7 +28,7 @@ const MfOrder = {
       <div class="filter-group"><label>设备</label><input id="moEqInfo" value="${esc(f.eqInfo)}" onchange="MfOrder.filter.eqInfo=this.value;MfOrder.refresh()" placeholder="编码/名称"></div>
       <div class="filter-group"><label>工作中心</label><input id="moWorkCenter" value="${esc(f.workCenter)}" onchange="MfOrder.filter.workCenter=this.value;MfOrder.refresh()" placeholder="维修班组"></div>
       <div class="filter-group"><label>状态</label><select id="moExecStatus" onchange="MfOrder.filter.execStatus=this.value;MfOrder.refresh()">${sOpts}</select></div>
-      <div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MfOrder.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MfOrder.reset()">重置</button></div>
+      ${FilterActions.render({ pageId: 'maintenance-order', scope: "MfOrder" })}
     </div>
     <div class="table-wrapper" style="margin-top:12px;"><table class="data-table">
       <thead><tr><th>工单编号</th><th>类型</th><th>设备</th><th>位置</th><th>关联通知单</th><th>计划时间</th><th>执行状态</th><th>负责人</th><th>操作</th></tr></thead>

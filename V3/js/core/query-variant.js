@@ -268,13 +268,19 @@ window.QueryVariant = (function () {
   /* ================= 入口按钮 ================= */
 
   // 在筛选栏操作区插入「我的变式」按钮，紧跟在"查询/搜索"按钮之后（即 查询 · 我的变式 · 重置）
+  // 若页面已用 FilterActions 组件渲染过该按钮，则只重绑事件，不再插入，避免重复/位置漂移
   function mount(pageId) {
     if (!_cfg(pageId)) return;
     hideRecent();
     _close('qvManageBackdrop');               // 页面重绘/切换时清理遗留弹窗
+    const existing = _el('qvOpenBtn');
+    if (existing) {
+      existing.setAttribute('data-qv-page', pageId);
+      existing.onclick = function () { openManage(pageId); };
+      return;
+    }
     const actions = document.querySelector('.filter-actions');
     if (!actions) return;
-    if (_el('qvOpenBtn')) return;
     const btn = document.createElement('button');
     btn.id = 'qvOpenBtn';
     btn.className = 'btn btn-secondary btn-sm';

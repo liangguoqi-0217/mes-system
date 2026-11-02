@@ -18,11 +18,7 @@ const MaterialMaster = {
           <div class="filter-group"><label>采购类型</label><select id="matProcType"><option value="">全部</option>${materialProcTypeOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>物料类型</label><select id="matType"><option value="">全部</option>${materialTypeOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>物料号</label><input type="text" id="matCode" placeholder="模糊查询"></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="MaterialMaster.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="MaterialMaster.reset()">重置</button>
-            <button class="btn btn-secondary btn-sm" onclick="MaterialMaster.export()">导出</button>
-          </div>
+          ${FilterActions.render({ pageId: 'material-master', scope: "MaterialMaster", onExport: "export" })}
         </div>
 
         <div class="table-wrapper" style="flex:1;overflow-x:auto;">

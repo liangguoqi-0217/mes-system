@@ -41,10 +41,7 @@ const EquipmentInstall = {
           <div class="filter-group"><label>状态</label><select id="instStatus"><option value="">全部</option>${installDocStatusOptions.map(o=>`<option value="${o.value}">${o.label}</option>`).join('')}</select></div>
           <div class="filter-group"><label>经办人</label><input type="text" id="instHandler" placeholder="模糊查询"></div>
           <div class="filter-group"><label>所属车间</label><select id="instDept"><option value="">全部</option><option value="设备管理部">设备管理部</option><option value="生产一部">生产一部</option><option value="原料药车间">原料药车间</option></select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="EquipmentInstall.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="EquipmentInstall.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'equipment-install', scope: "EquipmentInstall" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">

@@ -100,10 +100,7 @@ const CostObject = {
           <div class="filter-group"><label>{{NO_LABEL}}</label><input type="text" id="coNo" placeholder="{{NO_PH}}"></div>
           <div class="filter-group"><label>名称</label><input type="text" id="coName" placeholder="模糊查询"></div>
           <div class="filter-group"><label>状态</label><select id="coStatus"><option value="">全部</option><option value="REL">已下达</option><option value="CRTD">已创建</option><option value="TECO">技术性完成</option></select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="CostObject.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="CostObject.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'production-cost-object', scope: "CostObject" })}
         </div>
         <div class="table-wrapper" style="flex:1;overflow-x:auto;">
           <table class="data-table" style="min-width:1000px;">

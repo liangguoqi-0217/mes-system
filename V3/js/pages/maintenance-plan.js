@@ -26,7 +26,7 @@ const MaintPlan = {
       '<div class="filter-group"><label>维保类型</label><select id="planType" onchange="MaintPlan.filter.maintenanceType=this.value;MaintPlan.search()"><option value="" '+(f.maintenanceType?'':'selected')+'>全部类型</option>'+typeOpts+'</select></div>'+
       '<div class="filter-group"><label>设备分类</label><input id="planEqCategory" value="'+esc(f.eqCategory)+'" onchange="MaintPlan.filter.eqCategory=this.value;MaintPlan.search()" placeholder="设备分类"></div>'+
       '<div class="filter-group"><label>状态</label><select id="planStatus" onchange="MaintPlan.filter.status=this.value;MaintPlan.search()"><option value="" '+(f.status?'':'selected')+'>全部状态</option>'+statusOpts+'</select></div>'+
-      '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MaintPlan.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MaintPlan.reset()">重置</button></div>'+
+      FilterActions.render({ pageId: 'maintenance-plan', scope: 'MaintPlan' })+
     '</div>'+
     '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>计划编码</th><th>计划名称</th><th>维保类型</th><th>设备分类</th><th>工作中心</th><th>版本</th><th>状态</th><th>创建人</th><th>生效日期</th><th>操作</th></tr></thead>'+
     '<tbody>'+pageData.map(d=>{

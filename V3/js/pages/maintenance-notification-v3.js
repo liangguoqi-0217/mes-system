@@ -31,10 +31,7 @@ const MaintenanceNotificationV3 = {
         <div class="filter-group"><label>类型</label><select id="nfV3QMART">${notificationV2TypeOpts.map(o=>`<option value="${o.value}" ${this._searchQmart===o.value?'selected':''}>${o.label}</option>`).join('')}</select></div>
         <div class="filter-group"><label>状态</label><select id="nfV3STAT">${notificationV2StatusOpts.map(o=>`<option value="${o.value}" ${this._searchStat===o.value?'selected':''}>${o.label}</option>`).join('')}</select></div>
         <div class="filter-group"><label>优先级</label><select id="nfV3PRIOK">${notificationV2PriorityOpts.map(o=>`<option value="${o.value}" ${this._searchPriok===o.value?'selected':''}>${o.label}</option>`).join('')}</select></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="MaintenanceNotificationV3.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="MaintenanceNotificationV3.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'maintenance-notification-v3', scope: "MaintenanceNotificationV3" })}
       </div>
 
       <!-- 数据表格 -->

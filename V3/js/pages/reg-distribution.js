@@ -31,12 +31,7 @@ const RegDistribution = {
           <span class="list-count" id="regDistCount">共 0 条</span>
           <div style="display:flex;gap:4px;" id="regDistTabs">${this.tabsHtml()}</div>
         </div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="RegDistribution.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegDistribution.exportList()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegDistribution.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegDistribution.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'reg-distribution', scope: "RegDistribution", onExport: "exportList" })}
       </div>
 
       <div class="ri-body">

@@ -372,10 +372,7 @@ const InspectionPlan = {
           <div class="filter-group"><label>物料编码/名称</label><input type="text" id="ipMaterial" placeholder="搜索物料"></div>
           <div class="filter-group"><label>用途代码</label><select id="ipPurpose"><option value="">全部</option>${ipPurposeOptions.map(p=>`<option value="${p.code}">${p.code}（${p.name}）</option>`).join('')}</select></div>
           <div class="filter-group"><label>状态</label><select id="ipStatus"><option value="">全部</option><option value="active">启用</option><option value="disabled">停用</option></select></div>
-          <div class="filter-actions">
-            <button class="btn btn-gray" onclick="InspectionPlan.search()" style="margin-left:8px;">查询</button>
-            <button class="btn btn-gray" onclick="InspectionPlan.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'inspection-plan', scope: "InspectionPlan" })}
         </div>
         <!-- 表格区域 -->
         <div style="flex:1;overflow:auto;padding:0 16px 16px;">

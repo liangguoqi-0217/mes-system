@@ -33,12 +33,7 @@ const RegSource = {
           <span class="list-count" id="regSrcCount">共 0 个监测源</span>
           <span style="font-size:12px;color:var(--text-muted);">启用中 ${RI_SOURCES.filter(s => s.status === '启用').length} 个 · 停用 ${RI_SOURCES.filter(s => s.status === '停用').length} 个</span>
         </div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="RegSource.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegSource.exportList()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegSource.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegSource.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'reg-source', scope: "RegSource", onExport: "exportList" })}
       </div>
 
       <div class="ri-body">

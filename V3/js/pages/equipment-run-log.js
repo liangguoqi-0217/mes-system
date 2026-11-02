@@ -30,11 +30,7 @@ const EquipmentRunLog = {
           </div>
           <div class="filter-group"><label>开始日期</label><input type="date" id="logDateFrom"></div>
           <div class="filter-group"><label>结束日期</label><input type="date" id="logDateTo"></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="EquipmentRunLog.search()">查询</button>
-            <button class="btn btn-outline btn-sm" onclick="EquipmentRunLog.reset()">重置</button>
-            <button class="btn btn-outline btn-sm" onclick="EquipmentRunLog.exportLog()">导出</button>
-          </div>
+          ${FilterActions.render({ pageId: 'equipment-run-log', scope: "EquipmentRunLog", onExport: "exportLog" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table">

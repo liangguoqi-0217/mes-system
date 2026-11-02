@@ -176,10 +176,7 @@ const InspectionMethod = {
           <div class="filter-group"><label>方法名称</label><input type="text" id="imName" placeholder="模糊搜索"></div>
           <div class="filter-group"><label>状态</label><select id="imStatus"><option value="">全部</option><option value="active">启用</option><option value="disabled">停用</option></select></div>
           <div class="filter-group"><label>引用标准</label><input type="text" id="imStandard" placeholder="如《中国药典》"></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="InspectionMethod.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="InspectionMethod.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'inspection-method', scope: "InspectionMethod" })}
         </div>
         <!-- 数据表格 -->
         <div class="table-wrapper" style="flex:1;">

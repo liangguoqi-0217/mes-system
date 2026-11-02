@@ -29,12 +29,7 @@ const RegApplicability = {
           <span class="list-count" id="regAppCount">共 0 条</span>
           <div style="display:flex;gap:4px;" id="regAppTabs">${this.tabsHtml()}</div>
         </div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="RegApplicability.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegApplicability.exportList()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegApplicability.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="RegApplicability.reset()">重置</button>
-        </div>
+        ${FilterActions.render({ pageId: 'reg-applicability', scope: "RegApplicability", onExport: "exportList" })}
       </div>
 
       <div class="ri-body">

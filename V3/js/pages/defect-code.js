@@ -263,13 +263,7 @@ const DefectCode = {
         <div class="filter-group"><label>工厂</label><select id="dcPlant" ${this.isAdmin() ? '' : 'disabled'}>${plantOpts}</select></div>
         <div class="filter-group"><label>目录类型</label><select id="dcCatalogType"><option value="">全部</option>${typeOpts}</select></div>
         <div class="filter-group"><label>代码组</label><select id="dcCodeGroup"><option value="">全部</option>${groupOpts}</select></div>
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="DefectCode.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="DefectCode.exportData()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="DefectCode.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="DefectCode.resetFilter()">重置</button>
-          <button class="btn btn-secondary btn-sm" id="dcMoreBtn" onclick="DefectCode.toggleMore()">${this.moreOpen ? '收起 ▴' : '更多条件 ▾'}</button>
-        </div>
+        ${FilterActions.render({ pageId: 'defect-code', scope: "DefectCode", onReset: "resetFilter", onExport: "exportData", onMore: "toggleMore", moreBtnId: "dcMoreBtn", moreOpen: this.moreOpen })}
         <div id="dcMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
           <div class="filter-group"><label>代码 / 代码描述</label><input type="text" id="dcKeyword" placeholder="如 001 或 裂纹"></div>
           <div class="filter-group"><label>代码组描述</label><input type="text" id="dcGroupDesc" placeholder="如 外观"></div>

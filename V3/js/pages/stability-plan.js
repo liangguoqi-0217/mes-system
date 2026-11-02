@@ -194,12 +194,12 @@ const StabilityPlan = {
   },
 
   init() {
+    this.renderFilterBar();          // 先渲染筛选栏，变式回填才有控件可写
     if (window.QueryVariant) {
       QueryVariant.mount('stability-plan');
       QueryVariant.restore('stability-plan');
       QueryVariant.bindRecent('stability-plan');
     }
-    this.renderFilterBar();
     this.renderTable();
     this.renderPagination();
   },
@@ -236,12 +236,7 @@ const StabilityPlan = {
     const el = document.getElementById('spFilterBar');
     if (!el) return;
     const btn = `
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" onclick="StabilityPlan.search()">查询</button>
-          <button class="btn btn-secondary btn-sm" onclick="StabilityPlan.exportData()">导出</button>
-          <button class="btn btn-secondary btn-sm" onclick="StabilityPlan.refresh()">刷新</button>
-          <button class="btn btn-secondary btn-sm" onclick="StabilityPlan.resetFilter()">重置</button>
-        </div>`;
+        ${FilterActions.render({ pageId: 'stability-plan', scope: "StabilityPlan", onReset: "resetFilter", onExport: "exportData" })}`;
 
     if (this.activeTab === 'protocol') {
       const typeOpts = this.typeOptions.map(t => `<option value="${t.code}">${t.name}</option>`).join('');
@@ -803,3 +798,15 @@ const StabilityPlan = {
   },
   changePageSize(n) { this.pageSize = Number(n); this.page = 1; this.renderTable(); this.renderPagination(); }
 };
+
+// 查询变式注册：「我的变式」按钮由 FilterActions 统一渲染，这里提供条件字段与回填入口
+// 三个页签各自有独立条件，fields 取并集（不存在的字段会被自动跳过）
+if (window.QueryVariant) {
+  QueryVariant.register({
+    pageId: 'stability-plan',
+    fields: ['spType', 'spProto', 'spCond', 'spKeyword', 'spStatus'],
+    textFields: ['spKeyword'],
+    labels: { spType: '方案类型', spProto: '方案', spCond: '考察条件', spKeyword: '关键词', spStatus: '状态' },
+    onApply: function () { StabilityPlan.search(); }
+  });
+}

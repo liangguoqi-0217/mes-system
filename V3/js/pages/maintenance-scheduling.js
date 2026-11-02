@@ -22,7 +22,7 @@ const MaintSchedule = {
       '<div class="filter-group"><label>维护计划</label><input id="schPlanName" value="'+esc(f.planName)+'" onchange="MaintSchedule.filter.planName=this.value;MaintSchedule.search()" placeholder="关联维护计划"></div>'+
       '<div class="filter-group"><label>触发类型</label><select id="schTriggerType" onchange="MaintSchedule.filter.triggerType=this.value;MaintSchedule.search()"><option value="" '+(f.triggerType?'':'selected')+'>全部类型</option>'+trigOpts+'</select></div>'+
       '<div class="filter-group"><label>状态</label><select id="schStatus" onchange="MaintSchedule.filter.status=this.value;MaintSchedule.search()"><option value="" '+(f.status?'':'selected')+'>全部状态</option>'+sOpts+'</select></div>'+
-      '<div class="filter-actions"><button class="btn btn-primary btn-sm" onclick="MaintSchedule.search()">查询</button><button class="btn btn-secondary btn-sm" onclick="MaintSchedule.reset()">重置</button></div>'+
+      FilterActions.render({ pageId: 'maintenance-scheduling', scope: 'MaintSchedule' })+
     '</div>'+
     '<div class="table-wrapper" style="margin-top:12px;"><table class="data-table"><thead><tr><th>调度编码</th><th>关联维护计划</th><th>触发类型</th><th>执行频率</th><th>覆盖设备</th><th>状态</th><th>最近生成</th><th>下次预计</th><th>操作</th></tr></thead>'+
     '<tbody>'+pageData.map(d=>{

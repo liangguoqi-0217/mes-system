@@ -169,11 +169,7 @@ const MaterialDocReversal = {
         <option value="部分过账">部分过账</option>
         <option value="已冲销">已冲销</option>
       </select></div>
-      <div class="filter-actions">
-        <button class="btn btn-primary btn-sm" onclick="MaterialDocReversal.search()">查询</button>
-        <button class="btn btn-secondary btn-sm" onclick="MaterialDocReversal.resetFilter()">重置</button>
-        <button class="btn btn-secondary btn-sm" onclick="MaterialDocReversal.exportData()">导出</button>
-      </div>
+      ${FilterActions.render({ pageId: 'material-doc-reversal', scope: "MaterialDocReversal", onReset: "resetFilter", onExport: "exportData" })}
     </div>`;
   },
 

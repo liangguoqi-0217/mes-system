@@ -78,10 +78,7 @@ const SpReturn = {
             <option value="草稿">草稿</option><option value="待同步">待同步</option>
             <option value="已同步">已同步</option><option value="部分过账">部分过账</option><option value="已完成">已完成</option>
           </select></div>
-          <div class="filter-actions">
-            <button class="btn btn-primary btn-sm" onclick="SpReturn.search()">查询</button>
-            <button class="btn btn-secondary btn-sm" onclick="SpReturn.reset()">重置</button>
-          </div>
+          ${FilterActions.render({ pageId: 'sp-return', scope: "SpReturn" })}
         </div>
         <div class="table-wrapper" style="flex:1;">
           <table class="data-table data-table-compact" style="min-width:1250px;">
