@@ -317,10 +317,7 @@ const SampleLedger = {
     return `
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100%;overflow:hidden;">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <div>
-            <div style="font-size:18px;font-weight:700;">样品台账</div>
-            <div style="font-size:13px;opacity:0.85;">留样 + 检验样品统一台账 · 位置定位 · 调用归还 · 观察销毁 · 全程追溯</div>
-          </div>
+          <div style="font-size:18px;font-weight:700;">样品台账</div>
           <div style="display:flex;gap:10px;">
             <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
               onclick="SampleLedger.openRuleConfig()">留样规则</button>
@@ -458,7 +455,7 @@ const SampleLedger = {
         <th style="width:150px;">样品编号</th>
         <th style="width:80px;">类别</th>
         <th style="width:150px;">物料</th>
-        <th style="width:140px;">批次 / 检验批</th>
+        <th style="width:145px;">来源批次</th>
         <th style="width:95px;">数量 / 余量</th>
         <th style="width:205px;">存放位置</th>
         <th style="width:95px;">到期日</th>
@@ -473,18 +470,16 @@ const SampleLedger = {
   renderRow(s) {
     const m = this.getStatusMeta(s.status);
     const cat = this.categoryOptions.find(c => c.code === s.category) || { badge: 'badge-gray' };
+    // 类别只用一枚徽章：留样标"留样"，检验样品标类别全称（类别代码已在样品编号前缀里）
     const catHtml = this.isRetention(s)
-      ? `<span class="badge ${cat.badge}" style="font-size:11px;">留样</span>`
-      : `<span class="badge ${cat.badge}" style="font-size:11px;">${esc(s.type)}</span>
-         <div style="color:var(--text-muted);font-size:11px;margin-top:2px;">${esc(this.getTypeName(s.type))}</div>`;
+      ? `<span class="badge ${cat.badge}">留样</span>`
+      : `<span class="badge ${cat.badge}">${esc(this.getTypeName(s.type))}</span>`;
 
-    const batchHtml = `<div style="font-family:monospace;font-size:12px;">${esc(s.sourceBatch || '—')}</div>
-      <div style="color:var(--text-muted);font-family:monospace;font-size:11px;">检验批 ${esc(s.inspectBatchNo || '—')}</div>`;
+    const batchHtml = `<span style="font-family:monospace;font-size:12px;">${esc(s.sourceBatch || '—')}</span>`;
 
     const lc = this.locOf(s);
     const locHtml = lc
-      ? SampleLocations.breadcrumbHtml(lc) +
-        `<div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(lc)}</div>`
+      ? SampleLocations.breadcrumbHtml(lc)
       : '<span style="color:var(--text-muted);">未入库</span>';
 
     const due = this.dueOf(s);
@@ -502,8 +497,7 @@ const SampleLedger = {
     return `<tr>
       <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(s.sampleNo)}</td>
       <td>${catHtml}</td>
-      <td>${esc(s.materialName)}
-        <div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(s.materialCode)}</div></td>
+      <td>${esc(s.materialName)}</td>
       <td>${batchHtml}</td>
       <td style="font-size:12px;">${esc(s.qty)} / <b>${esc(s.remainQty)}</b> ${esc(s.unit)}</td>
       <td style="font-size:12px;">${locHtml}</td>
@@ -558,9 +552,6 @@ const SampleLedger = {
 
     showModal('📌 选择登记方式', `
       <div style="padding:8px 0;">
-        <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;text-align:center;">
-          留样与检验样品同一台账管理，登记后状态为「待入库」，再走入库上架指定位置
-        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
           ${cards.map(card).join('')}
         </div>
@@ -583,9 +574,6 @@ const SampleLedger = {
 
     showModal('留样登记', `
       <div style="padding:4px 0;">
-        <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
-          登记后按留样规则带出留样量、保存条件与到期日，并向 SAP 发起 <b>移动类型 311</b> 库存转储（生产/仓库库位 → 留样室库位），过账成功后回写物料凭证号。
-        </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
           <div class="form-group"><label>工厂 <span class="req">*</span></label><select id="rrPlant">${this._plantOpts('2001')}</select></div>
           <div class="form-group"><label>关联检验批 <span class="req">*</span></label><select id="rrBatch">${batchOpts}</select></div>
@@ -604,7 +592,7 @@ const SampleLedger = {
           </select></div>
         </div>
         <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">
-          样品标识照旧纸质样品签；登记完成后在台账「查看 → 入库上架」中从位置树指定留样位置。
+          登记后过账 SAP 311（→ 留样室库位）。
         </div>
       </div>`, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
@@ -620,9 +608,6 @@ const SampleLedger = {
 
     showModal('样品登记 — 从检验批带出', `
       <div style="padding:4px 0;">
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
-          选择检验批后物料、批次自动带入；登记后状态为「待入库」，SAP 不做过账（检验样品不是库存）。
-        </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
           <div class="form-group"><label>关联检验批 <span class="req">*</span></label>
             <select id="rbBatch" onchange="SampleLedger._onBatchChange()">${batchOpts}</select></div>
@@ -660,9 +645,6 @@ const SampleLedger = {
   openRegisterManual() {
     showModal('样品登记 — 手动登记', `
       <div style="padding:4px 0;">
-        <div style="background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
-          物料从主数据口径手工填写（环境监测 / 验证样等无请验单样品）；登记后状态为「待入库」。
-        </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
           <div class="form-group"><label>工厂 <span class="req">*</span></label>
             <select id="rmPlant">${this._plantOpts('2001')}</select></div>
@@ -850,9 +832,6 @@ const SampleLedger = {
         <div class="form-group" style="margin-top:6px;"><label>说明（单号 / 备注）</label>
           <input type="text" id="clRemark" placeholder="如 TS-20261010-03 / DEV-20261101-007"></div>
         ${consumeOption}
-        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
-          调用只登记台账，不做 SAP 库存移动；审批在纸质 / eQMS 完成。
-        </div>
       </div>`, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
       { text: '登记调用', cls: 'btn-primary', action: () => {
@@ -1033,7 +1012,7 @@ const SampleLedger = {
     showModal('📌 处置方式选择 — ' + s.sampleNo, `
       <div style="padding:8px 0;">
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;text-align:center;">
-          ${esc(s.materialName)} · 余量 ${esc(s.remainQty)} ${esc(s.unit)} · MES 只登记事实，不做审批
+          ${esc(s.materialName)} · 余量 ${esc(s.remainQty)} ${esc(s.unit)}
         </div>
         <div style="display:grid;grid-template-columns:repeat(${modes.length},1fr);gap:14px;">
           ${modes.map(card).join('')}
@@ -1083,11 +1062,9 @@ const SampleLedger = {
             <option>检验完成多余样品</option><option>考察 / 调查结束</option>
           </select></div>
           <div class="form-group" style="grid-column:span 2;"><label>说明</label>
-            <input type="text" id="dpRemark" placeholder="销毁审批在纸质 / eQMS 完成，此处只登记最终结果"></div>
+            <input type="text" id="dpRemark"></div>
         </div>
-        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
-          ${isRet ? '留样销毁登记完成后向 SAP 发起 <b>移动类型 551</b> 报废过账。' : '检验样品销毁不过账（非库存）。'}
-        </div>`;
+        ${isRet ? `<div style="margin-top:10px;font-size:12px;color:var(--text-muted);">登记后过账 SAP 551。</div>` : ''}`;
     }
 
     const title = (isRet ? '留样' : '样品') + (isDestroy ? '销毁登记' : (mode === 'RETURN' ? '返还登记' : '消耗登记'));
@@ -1156,13 +1133,10 @@ const SampleLedger = {
 
     const lc = this.locOf(s);
     const locBanner = lc
-      ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
-           <div><span style="font-size:12px;color:var(--text-muted);">存放位置</span>
-             <div style="margin-top:2px;">${SampleLocations.breadcrumbHtml(lc, 'font-size:14px;font-weight:600;color:#1E3A5F;')}</div></div>
-           <div style="font-family:monospace;font-size:12px;color:var(--text-muted);">${esc(lc)}</div>
+      ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 16px;margin-bottom:14px;">
+           ${SampleLocations.breadcrumbHtml(lc, 'font-size:14px;font-weight:600;color:#1E3A5F;')}
          </div>`
-      : `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:#b45309;">
-           该样品尚未入库定位，请通过「入库上架」从位置树选择存放位置。</div>`;
+      : `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:8px 16px;margin-bottom:14px;font-size:13px;color:#b45309;">尚未入库定位</div>`;
 
     showModal('样品详情 — ' + s.sampleNo, `
       <div style="padding:4px 0;font-size:13px;">
@@ -1215,18 +1189,13 @@ const SampleLedger = {
         <div><span style="color:var(--text-muted);">保存条件：</span>${esc(s.storageCondition || '—')}</div>
         <div><span style="color:var(--text-muted);">有效期：</span>${esc(s.validDate || '—')}</div>
         <div><span style="color:var(--text-muted);">到期日：</span>${esc(this.dueOf(s) || '—')}<span style="color:var(--text-muted);font-size:12px;">（剩余 ${daysTxt}）</span></div>
-        <div><span style="color:var(--text-muted);">${isRet ? '期限规则' : '登记人'}：</span>${isRet ? esc(s.keepRule || '—') : esc(s.registerBy)}</div>
+        ${isRet ? `<div><span style="color:var(--text-muted);">期限规则：</span>${esc(s.keepRule || '—')}</div>` : ''}
         <div><span style="color:var(--text-muted);">登记：</span>${esc(s.registerBy)} ${esc(s.registerTime)}</div>
         <div><span style="color:var(--text-muted);">入库上架：</span>${esc(s.putawayTime || '—')}</div>
         ${isRet ? `<div><span style="color:var(--text-muted);">观察：</span>${esc(s.observeFreq || '—')} · 下次 ${esc(s.nextObserveDate || '—')}</div>
         <div><span style="color:var(--text-muted);">标签号：</span>${esc(s.labelNo || '—')}</div>
         <div style="grid-column:span 3;"><span style="color:var(--text-muted);">SAP 登记凭证：</span>
           ${esc(s.sapDocNo || '—')}（移动类型 ${esc(s.sapMoveType || '311')}，${esc(s.sapSyncTime || '—')}）</div>` : ''}
-      </div>
-      <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">
-        ${isRet
-          ? '留样观察见「观察记录」页签；销毁登记后过账 SAP 551。'
-          : '检验进度与结果请在「检验批管理」（检验批号 ' + esc(s.inspectBatchNo || '—') + '）查看，本台账只管实物。'}
       </div>`;
   },
 
@@ -1320,9 +1289,6 @@ const SampleLedger = {
 
     return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 24px;padding:14px 16px;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;">
       ${cells.join('')}${sapRow}
-    </div>
-    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);">
-      处置审批在纸质 / eQMS 完成，MES 只登记最终结果；处置后余量清零，台账为只读终态。
     </div>`;
   },
 
@@ -1345,10 +1311,6 @@ const SampleLedger = {
 
     showModal('留样规则配置', `
       <div style="padding:4px 0;">
-        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;">
-          按物料 / 产品设置是否留样、留样量、保存条件、保存期限规则（有效期后若干年或放行后若干年）与观察频次。
-          留样登记时自动带出并计算到期日；检验样品不走本规则。
-        </div>
         <table class="data-table">
           <thead><tr><th>工厂</th><th>物料编码</th><th>物料名称</th><th>是否留样</th><th>留样量</th><th>保存条件</th><th>保存期限规则</th><th>观察频次</th></tr></thead>
           <tbody>${rows}</tbody>
