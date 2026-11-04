@@ -530,17 +530,17 @@ const SampleLedger = {
     const el = document.getElementById('sdTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1080px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1280px;">
       <thead><tr>
         <th style="width:150px;">样品编号</th>
         <th style="width:80px;">类别</th>
         <th style="width:150px;">物料</th>
         <th style="width:145px;">来源批次</th>
         <th style="width:95px;">数量 / 余量</th>
-        <th style="width:205px;">存放位置</th>
+        <th style="width:190px;">存放位置</th>
         <th style="width:95px;">到期日</th>
         <th style="width:80px;">状态</th>
-        <th style="width:60px;">操作</th>
+        <th style="width:245px;">操作</th>
       </tr></thead>
       <tbody>${page.length ? page.map(s => this.renderRow(s)).join('')
         : `<tr><td colspan="9" class="empty-cell">暂无符合条件的样品记录</td></tr>`}</tbody>
@@ -584,10 +584,26 @@ const SampleLedger = {
       <td>${dueHtml}</td>
       <td><span class="badge ${m.badge}">${esc(m.name)}</span>
         ${marks.length ? '<div style="margin-top:2px;">' + marks.join(' ') + '</div>' : ''}</td>
-      <td><div class="table-actions">
-        <button class="btn btn-blue btn-sm" onclick="SampleLedger.openDetail('${s.id}')">查看</button>
-      </div></td>
+      <td><div class="table-actions">${this.getSampleActions(s)}</div></td>
     </tr>`;
+  },
+
+  // 行内操作按钮（同检验批管理模式）：按状态与类别出按钮，查看常驻
+  getSampleActions(s) {
+    const view = `<button class="btn btn-blue btn-sm" onclick="SampleLedger.openDetail('${s.id}')" title="样品详情">查看</button>`;
+    const putaway = `<button class="btn btn-primary btn-sm" onclick="SampleLedger.openPutaway('${s.id}')" title="从位置树指定存放位置">上架</button>`;
+    const move = `<button class="btn btn-sm" onclick="SampleLedger.openPutaway('${s.id}')" title="位置变更">变更</button>`;
+    const call = `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="SampleLedger.openCall('${s.id}')" title="调用登记">调用</button>`;
+    const ret = `<button class="btn btn-primary btn-sm" onclick="SampleLedger.openReturn('${s.id}')" title="归还登记">归还</button>`;
+    const observe = `<button class="btn btn-sm" style="background:#8b5cf6;color:#fff;" onclick="SampleLedger.openObserve('${s.id}')" title="留样观察">观察</button>`;
+    const dispose = `<button class="btn btn-danger btn-sm" onclick="SampleLedger.openDisposal('${s.id}')" title="处置登记">处置</button>`;
+
+    if (s.status === 'REG') return putaway + view;
+    if (s.status === 'CALLED') return move + ret + view;
+    if (s.status === 'STORED') {
+      return move + call + (this.isRetention(s) ? observe : '') + dispose + view;
+    }
+    return view; // DISPOSED 终态只读
   },
 
   _paged(list) {
@@ -1206,22 +1222,6 @@ const SampleLedger = {
     const isRet = this.isRetention(s);
     const terminal = s.status === 'DISPOSED';
 
-    const actions = [];
-    if (s.status === 'REG') {
-      actions.push(`<button class="btn btn-primary btn-sm" onclick="closeModal();SampleLedger.openPutaway('${sid}')">📥 入库上架</button>`);
-    }
-    if (s.status === 'STORED' || s.status === 'CALLED') {
-      actions.push(`<button class="btn btn-sm" onclick="closeModal();SampleLedger.openPutaway('${sid}')">📍 位置变更</button>`);
-    }
-    if (s.status === 'STORED') {
-      actions.push(`<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="closeModal();SampleLedger.openCall('${sid}')">📤 调用登记</button>`);
-      if (isRet) actions.push(`<button class="btn btn-sm" style="background:#8b5cf6;color:#fff;" onclick="closeModal();SampleLedger.openObserve('${sid}')">🔬 留样观察</button>`);
-      actions.push(`<button class="btn btn-danger btn-sm" onclick="closeModal();SampleLedger.openDisposal('${sid}')">处置登记</button>`);
-    }
-    if (s.status === 'CALLED') {
-      actions.push(`<button class="btn btn-primary btn-sm" onclick="closeModal();SampleLedger.openReturn('${sid}')">🔄 归还登记</button>`);
-    }
-
     const lc = this.locOf(s);
     const locBanner = lc
       ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 16px;margin-bottom:14px;">
@@ -1234,8 +1234,7 @@ const SampleLedger = {
         ${locBanner}
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
           <span class="badge ${m.badge}">${esc(m.name)}</span>
-          ${actions.join('')}
-          ${terminal ? '<span class="badge badge-gray">终态只读，不可再操作</span>' : ''}
+          ${terminal ? '<span class="badge badge-gray">终态只读</span>' : ''}
         </div>
         <div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px;">
           <div class="form-tab active" data-sltab="base" onclick="SampleLedger._switchTab(this)">基本信息</div>
