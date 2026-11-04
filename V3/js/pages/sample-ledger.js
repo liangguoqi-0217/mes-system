@@ -214,7 +214,7 @@ const SampleLedger = {
       storageCondition: '密闭、干燥处', keepRule: '有效期后 6 个月',
       room: '留样室C', cabinet: 'B-01', shelf: '3 层', location: 'C-B-01-03',
       registerBy: '孙工', registerTime: '2026-08-08 09:00', putawayTime: '2026-08-08 09:20',
-      validDate: '2026-11-30', dueDate: '2027-05-31', observeFreq: '每 12 个月', nextObserveDate: '2027-08-08', status: 'STORED',
+      validDate: '2026-05-31', dueDate: '2026-11-30', observeFreq: '每 12 个月', nextObserveDate: '2026-11-10', status: 'STORED',
       labelNo: 'LBL-20260808-0011', sapDocNo: '4900000333', sapMoveType: '311', sapSyncTime: '2026-08-08 09:00:10', moves: [], calls: [] },
 
     { id: 'S012', category: 'RETENTION', sampleNo: 'LS-2001-2512013', plant: '2001', materialCode: 'MAT-10012', materialName: '乳糖',
@@ -224,6 +224,45 @@ const SampleLedger = {
       registerBy: '李工', registerTime: '2025-12-03 13:40', putawayTime: '2025-12-03 14:00',
       validDate: '2026-10-31', dueDate: '2027-04-30', observeFreq: '每 12 个月', nextObserveDate: '2026-12-03', status: 'STORED',
       labelNo: 'LBL-20251203-0012', sapDocNo: '4900000166', sapMoveType: '311', sapSyncTime: '2025-12-03 13:40:02', moves: [], calls: [] },
+
+    // ---------- 留样：场景补全 ----------
+    // S013 归还时发现破损 → 在库但标记「待处置」，等待销毁登记
+    { id: 'S013', category: 'RETENTION', sampleNo: 'LS-2001-2604014', plant: '2001', materialCode: 'MAT-10013', materialName: '盐酸二甲双胍',
+      sourceBatch: 'SAP-BT-20260402', inspectBatchNo: '100000011880', qty: '0.400', remainQty: '0.300', unit: 'KG',
+      storageCondition: '阴凉干燥处（≤25℃）', keepRule: '有效期后 6 个月',
+      room: '留样室A', cabinet: 'C-02', shelf: '3 层', locCode: 'LYA-C02-L3', location: 'LYA-C02-L3',
+      registerBy: '王工', registerTime: '2026-04-05 10:00', putawayTime: '2026-04-05 10:20',
+      validDate: '2026-09-30', dueDate: '2027-03-31', observeFreq: '每 12 个月', nextObserveDate: '2026-11-20', status: 'STORED',
+      pendingDisposal: true,
+      labelNo: 'LBL-20260405-0013', sapDocNo: '4900000201', sapMoveType: '311', sapSyncTime: '2026-04-05 10:00:06',
+      moves: [{ time: '2026-04-20 15:10', from: 'LYA-C02-L3', to: 'LYA-C01-L1', by: '王工', reason: '位置变更' },
+        { time: '2026-10-30 09:30', from: 'LYA-C01-L1', to: 'LYA-C02-L3', by: '王工', reason: '位置变更' }],
+      calls: [{ callNo: 'CALL-20261028-03', by: '孙工', dept: '质量部', purpose: '复测（复核含量）',
+        qty: '0.100', unit: 'KG', time: '2026-10-28 14:00', returnTime: '2026-10-30 09:00', returnBy: '孙工', returnCond: 'NG' }] },
+
+    // S014 观察已全部完成 → 不再有「待观察」标记（对照样本）
+    { id: 'S014', category: 'RETENTION', sampleNo: 'LS-2001-2510015', plant: '2001', materialCode: 'MAT-10014', materialName: '格列美脲',
+      sourceBatch: 'SAP-BT-20251008', inspectBatchNo: '100000010560', qty: '0.500', remainQty: '0.500', unit: 'KG',
+      storageCondition: '密闭、阴凉干燥处', keepRule: '有效期后 1 年',
+      room: '留样室A', cabinet: 'A-01', shelf: '1 层', locCode: 'LYA-A01-L1', location: 'LYA-A01-L1',
+      registerBy: '李工', registerTime: '2025-10-10 09:00', putawayTime: '2025-10-10 09:20',
+      validDate: '2026-12-31', dueDate: '2027-12-31', observeFreq: '每 12 个月', nextObserveDate: '—', status: 'STORED',
+      labelNo: 'LBL-20251010-0014', sapDocNo: '4900000142', sapMoveType: '311', sapSyncTime: '2025-10-10 09:00:04', moves: [], calls: [] },
+
+    // S015 发生过多次移库 → 「位置与移动」页签有多条历史
+    { id: 'S015', category: 'RETENTION', sampleNo: 'LS-2002-2604016', plant: '2002', materialCode: 'MAT-30006', materialName: '舒血宁注射液',
+      sourceBatch: 'SAP-BT-20260410', inspectBatchNo: '100000011902', qty: '5.000', remainQty: '4.000', unit: '支',
+      storageCondition: '避光、阴凉处（2~8℃）', keepRule: '有效期后 1 年',
+      room: '留样室B', cabinet: 'B-02', shelf: '1 层', locCode: 'LYB-B02-L1', location: 'LYB-B02-L1',
+      registerBy: '赵工', registerTime: '2026-04-12 08:30', putawayTime: '2026-04-12 08:50',
+      validDate: '2028-06-30', dueDate: '2029-06-30', observeFreq: '每 6 个月', nextObserveDate: '2026-10-12', status: 'STORED',
+      labelNo: 'LBL-20260412-0015', sapDocNo: '4900000208', sapMoveType: '311', sapSyncTime: '2026-04-12 08:30:05',
+      moves: [{ time: '2026-04-12 08:50', from: '', to: 'LYB-A02-L2', by: '赵工', reason: '入库上架' },
+        { time: '2026-06-01 10:00', from: 'LYB-A02-L2', to: 'LYB-B02-L1', by: '赵工', reason: '容量调整' },
+        { time: '2026-09-15 16:20', from: 'LYB-B02-L1', to: 'LYB-A02-L2', by: '钱工', reason: '温度异常转移' },
+        { time: '2026-09-22 09:10', from: 'LYB-A02-L2', to: 'LYB-B02-L1', by: '赵工', reason: '复归原位' }],
+      calls: [{ callNo: 'CALL-20260928-04', by: '吴工', dept: '注册部', purpose: '注册检验留样调用',
+        qty: '1.000', unit: '支', time: '2026-09-28 11:00', returnTime: '2026-10-08 09:30', returnBy: '吴工', returnCond: 'OK' }] },
 
     // ---------- 检验样品 ----------
     { id: 'P001', category: 'INSPECT', sampleNo: 'YF-2026-05-018', type: 'YF', plant: '2001', materialCode: 'MAT-10005', materialName: '布洛芬原料药',
@@ -284,7 +323,57 @@ const SampleLedger = {
     { id: 'P010', category: 'INSPECT', sampleNo: 'HJ-2026-11-004', type: 'HJ', plant: '2001', materialCode: '—', materialName: '洁净区沉降菌（D级 车间二）',
       sourceBatch: '—', inspectBatchNo: '100000013712', qty: '3.000', remainQty: '3.000', unit: '皿',
       storageCondition: '冷藏（培养后观察）', validDate: '2026-11-08', locCode: 'CAB-02-L1',
-      registerBy: '陈工', registerTime: '2026-11-04 08:30', putawayTime: '2026-11-04 08:45', status: 'STORED', moves: [], calls: [] }
+      registerBy: '陈工', registerTime: '2026-11-04 08:30', putawayTime: '2026-11-04 08:45', status: 'STORED', moves: [], calls: [] },
+
+    // ---------- 检验样品：场景补全 ----------
+    // P011 已处置·返还送检方（三处置方式中的"返还"，不过账）
+    { id: 'P011', category: 'INSPECT', sampleNo: 'YF-2026-06-029', type: 'YF', plant: '2001', materialCode: 'MAT-10015', materialName: '琥珀酸美托洛尔',
+      sourceBatch: 'SAP-BT-20260620', inspectBatchNo: '100000012455', qty: '0.300', remainQty: '0.000', unit: 'KG',
+      storageCondition: '阴凉干燥处', validDate: '2027-06-20', locCode: 'CAB-01-L2',
+      registerBy: '李工', registerTime: '2026-06-22 09:00', putawayTime: '2026-06-22 09:20', status: 'DISPOSED',
+      moves: [{ time: '2026-06-22 09:20', from: '', to: 'CAB-01-L2', by: '李工', reason: '入库上架' }], calls: [],
+      disposal: { mode: 'RETURN', date: '2026-08-15', by1: '李工', target: '物流部库房', qty: '0.300', remark: '供应商要求退回剩余样品' } },
+
+    // P012 归还时破损 → 在库 + 待处置标记
+    { id: 'P012', category: 'INSPECT', sampleNo: 'NBC-2026-09-052', type: 'NBC', plant: '2001', materialCode: 'MAT-20011', materialName: '药用铝箔',
+      sourceBatch: 'SAP-BT-20260905', inspectBatchNo: '100000012930', qty: '2.000', remainQty: '1.200', unit: '㎡',
+      storageCondition: '常温干燥处', validDate: '2028-09-05', locCode: 'CAB-01-L1',
+      registerBy: '王工', registerTime: '2026-09-08 10:00', putawayTime: '2026-09-08 10:20', status: 'STORED',
+      pendingDisposal: true,
+      moves: [{ time: '2026-09-08 10:20', from: '', to: 'CAB-01-L1', by: '王工', reason: '入库上架' }],
+      calls: [{ callNo: 'CALL-20261026-05', by: '孙工', dept: '质量控制部', purpose: '针孔度复测',
+        qty: '0.800', unit: '㎡', time: '2026-10-26 10:00', returnTime: '2026-10-29 15:00', returnBy: '孙工', returnCond: 'NG' }] },
+
+    // P013 多次调用（都已归还）+ 部分余量
+    { id: 'P013', category: 'INSPECT', sampleNo: 'CP-2026-08-017', type: 'CP', plant: '2002', materialCode: 'MAT-30007', materialName: '银杏叶提取物注射液',
+      sourceBatch: 'SAP-BT-20260808', inspectBatchNo: '100000012640', qty: '12.000', remainQty: '8.000', unit: '支',
+      storageCondition: '避光、阴凉处（2~8℃）', validDate: '2027-08-08', locCode: 'FRZ-01-L2-A',
+      registerBy: '赵工', registerTime: '2026-08-10 09:30', putawayTime: '2026-08-10 09:50', status: 'STORED',
+      moves: [{ time: '2026-08-10 09:50', from: '', to: 'FRZ-01-L2-A', by: '赵工', reason: '入库上架' }],
+      calls: [{ callNo: 'CALL-20260818-01', by: '孙工', dept: '质量控制部', purpose: '含量测定',
+        qty: '2.000', unit: '支', time: '2026-08-18 09:00', returnTime: '2026-08-20 10:00', returnBy: '孙工', returnCond: 'OK' },
+        { callNo: 'CALL-20260915-02', by: '周工', dept: '质量控制部', purpose: '有关物质复测（OOS 调查）',
+          qty: '2.000', unit: '支', time: '2026-09-15 14:00', returnTime: '2026-09-18 09:30', returnBy: '周工', returnCond: 'OK' }] },
+
+    // P014 检验样品已过有效期仍滞留 → 展示"已超期"，提示尽快处置
+    { id: 'P014', category: 'INSPECT', sampleNo: 'YC-2026-07-091', type: 'YC', plant: '2001', materialCode: 'MAT-20012', materialName: '白术饮片',
+      sourceBatch: 'SAP-BT-20260705', inspectBatchNo: '100000012588', qty: '0.600', remainQty: '0.600', unit: 'KG',
+      storageCondition: '密闭、阴凉干燥处', validDate: '2026-10-20', locCode: 'DR-01-T1',
+      registerBy: '孙工', registerTime: '2026-07-08 11:20', putawayTime: '2026-07-08 11:40', status: 'STORED',
+      moves: [{ time: '2026-07-08 11:40', from: '', to: 'DR-01-T1', by: '孙工', reason: '入库上架' }], calls: [] },
+
+    // P015 外部委托样：无物料主数据、无有效期、待入库
+    { id: 'P015', category: 'INSPECT', sampleNo: 'WT-2026-11-002', type: 'WT', plant: '2001', materialCode: '—', materialName: '客户送检样品（XX 药业 委托）',
+      sourceBatch: '—', inspectBatchNo: '', qty: '0.200', remainQty: '0.200', unit: 'KG',
+      storageCondition: '冷藏（2~8℃）', validDate: '—', locCode: '',
+      registerBy: '陈工', registerTime: '2026-11-04 09:10', putawayTime: '', status: 'REG', moves: [], calls: [] },
+
+    // P016 外包材无有效期 → 到期日为空、剩余天数为 —（验证空值不参与到期筛选）
+    { id: 'P016', category: 'INSPECT', sampleNo: 'WBC-2026-10-026', type: 'WBC', plant: '2001', materialCode: 'MAT-60003', materialName: '说明书（24 粒装）',
+      sourceBatch: 'SAP-BT-20261010', inspectBatchNo: '100000013405', qty: '20.000', remainQty: '20.000', unit: '份',
+      storageCondition: '常温、防潮', validDate: '—', locCode: 'CAB-01-L3',
+      registerBy: '刘工', registerTime: '2026-10-12 14:00', putawayTime: '2026-10-12 14:20', status: 'STORED',
+      moves: [{ time: '2026-10-12 14:20', from: '', to: 'CAB-01-L3', by: '刘工', reason: '入库上架' }], calls: [] }
   ],
 
   // ==================== 留样观察任务（仅留样） ====================
@@ -294,13 +383,18 @@ const SampleLedger = {
     { id: 'O003', sampleId: 'S001', seq: 1, total: 3, planDate: '2027-06-14', actualDate: '', observer: '', item: '外观、包装完整性、色泽', result: '', remark: '', abnormalNo: '' },
     { id: 'O004', sampleId: 'S007', seq: 1, total: 3, planDate: '2027-09-05', actualDate: '', observer: '', item: '外观、包装密封性', result: '', remark: '', abnormalNo: '' },
     { id: 'O005', sampleId: 'S008', seq: 4, total: 6, planDate: '2026-12-15', actualDate: '', observer: '', item: '外观、澄明度、西林瓶完整性', result: '', remark: '', abnormalNo: '' },
-    { id: 'O006', sampleId: 'S011', seq: 1, total: 2, planDate: '2027-08-08', actualDate: '', observer: '', item: '外观、包装完整性', result: '', remark: '', abnormalNo: '' },
+    { id: 'O006', sampleId: 'S011', seq: 1, total: 2, planDate: '2026-11-10', actualDate: '', observer: '', item: '外观、包装完整性', result: '', remark: '', abnormalNo: '' },
     { id: 'O007', sampleId: 'S012', seq: 2, total: 2, planDate: '2026-12-03', actualDate: '', observer: '', item: '外观、结块情况', result: '', remark: '', abnormalNo: '' },
     { id: 'O008', sampleId: 'S003', seq: 2, total: 2, planDate: '2026-09-20', actualDate: '2026-09-21', observer: '王工', item: '外观、结块情况', result: 'OK', remark: '无结块、无变色', abnormalNo: '' },
     { id: 'O009', sampleId: 'S010', seq: 1, total: 6, planDate: '2027-01-18', actualDate: '', observer: '', item: '外观、澄明度', result: '', remark: '', abnormalNo: '' },
     { id: 'O010', sampleId: 'S002', seq: 2, total: 3, planDate: '2026-12-20', actualDate: '', observer: '', item: '外观、包装密封性', result: '', remark: '', abnormalNo: '' },
     { id: 'O011', sampleId: 'S004', seq: 2, total: 6, planDate: '2027-03-08', actualDate: '', observer: '', item: '外观、澄明度、安瓿完整性', result: '', remark: '', abnormalNo: '' },
-    { id: 'O012', sampleId: 'S005', seq: 1, total: 3, planDate: '2025-08-05', actualDate: '2025-08-06', observer: '刘工', item: '外观、包装完整性、色泽', result: 'OK', remark: '外观正常，无结块', abnormalNo: '' }
+    { id: 'O012', sampleId: 'S005', seq: 1, total: 3, planDate: '2025-08-05', actualDate: '2025-08-06', observer: '刘工', item: '外观、包装完整性、色泽', result: 'OK', remark: '外观正常，无结块', abnormalNo: '' },
+    { id: 'O013', sampleId: 'S013', seq: 1, total: 3, planDate: '2026-11-20', actualDate: '', observer: '', item: '外观、包装完整性', result: '', remark: '', abnormalNo: '' },
+    { id: 'O014', sampleId: 'S014', seq: 1, total: 2, planDate: '2025-10-10', actualDate: '2025-10-12', observer: '李工', item: '外观、色泽、包装密封性', result: 'OK', remark: '外观完好，无吸潮', abnormalNo: '' },
+    { id: 'O015', sampleId: 'S014', seq: 2, total: 2, planDate: '2026-10-10', actualDate: '2026-10-11', observer: '李工', item: '外观、色泽、包装密封性', result: 'OK', remark: '观察完成，可进入到期处置', abnormalNo: '' },
+    { id: 'O016', sampleId: 'S015', seq: 1, total: 3, planDate: '2026-04-12', actualDate: '2026-04-15', observer: '赵工', item: '外观、澄明度、安瓿完整性', result: 'OK', remark: '外观正常', abnormalNo: '' },
+    { id: 'O017', sampleId: 'S015', seq: 2, total: 3, planDate: '2026-10-12', actualDate: '', observer: '', item: '外观、澄明度、安瓿完整性', result: '', remark: '', abnormalNo: '' }
   ],
 
   // ==================== 页面骨架 ====================
