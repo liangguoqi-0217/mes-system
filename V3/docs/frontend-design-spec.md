@@ -389,7 +389,7 @@ toggleMore() {
 
 ## 8. 模块规范：样品管理（统一样品台账 / 位置管理）
 
-> 涉及文件：`js/core/sample-locations.js`、`js/pages/sample-ledger.js`、`js/pages/sample-location.js`；PRD 见根目录 `样品管理PRD.md`。
+> 涉及文件：`js/core/sample-locations.js`、`js/pages/sample-ledger.js`、`js/pages/sample-location.js`、`js/pages/retention-rule.js`；PRD 见根目录 `样品管理PRD.md`。
 > 2026-11-04 起：留样管理与样品台账**合并为一个页面一个台账**，原 `retention-sample.js`、`sample-expiry-report.js` 已删除。
 
 | 规则ID | 约束 | 等级 |
@@ -416,6 +416,7 @@ toggleMore() {
 | 2026-11-02 | v1.2 | 把「重置」替换为「打印」，新增 `js/core/print.js`（PrintHelper：A4 打印视图，自动剔除操作列）；约束更新为 UI-FLT-01~10 + UI-FLT-02b |
 | 2026-11-04 | v1.3 | 新增第 8 节「模块规范：样品管理」UI-SPL-01~08（位置树面包屑、位置选择弹窗、查看弹窗内操作、登记方式选择弹窗、到期分档高亮、位置树供应商模式） |
 | 2026-11-04 | v1.4 | 留样管理与样品台账合并为单一台账（category 维度）、状态粗化为 4 态并禁止把到期/待观察做成状态、删除到期报表页；第 8 节改为 UI-SPL-01~10 |
+| 2026-11-04 | v1.5 | 留样规则独立成页、与位置管理一并归入「质量主数据」三级目录；台账页头只留主操作「+ 样品登记」，配置类入口一律走菜单 |
 
 ---
 

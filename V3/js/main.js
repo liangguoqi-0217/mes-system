@@ -34,6 +34,8 @@ const App = {
             { id:'inspection-method', label:'检验方法', route:'inspection-method' },
             { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
             { id:'inspection-plan', label:'检验计划', route:'inspection-plan' },
+            { id:'retention-rule', label:'留样规则', route:'retention-rule', pageObj:'RetentionRule' },
+            { id:'sample-location', label:'位置管理', route:'sample-location', pageObj:'SampleLocationPage' },
             { id:'defect-code', label:'目录类型管理', route:'defect-code' }
           ]
         },
@@ -46,8 +48,7 @@ const App = {
         },
         {
           title:'样品管理', items: [
-            { id:'sample-ledger', label:'样品台账', route:'sample-ledger', pageObj:'SampleLedger' },
-            { id:'sample-location', label:'位置管理', route:'sample-location', pageObj:'SampleLocationPage' }
+            { id:'sample-ledger', label:'样品台账', route:'sample-ledger', pageObj:'SampleLedger' }
           ]
         }
 
@@ -201,6 +202,7 @@ const App = {
     'stability-data': StabilityData,
     'sample-ledger': SampleLedger,
     'sample-location': SampleLocationPage,
+    'retention-rule': RetentionRule,
     'defect-code': DefectCode,
     'cost-object': CostObject,
     'job-list': ScheduledJob,

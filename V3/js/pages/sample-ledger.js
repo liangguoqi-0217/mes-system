@@ -118,15 +118,7 @@ const SampleLedger = {
     return s._locCode;
   },
 
-  // ==================== 留样规则（物料维度，登记时带出） ====================
-  ruleData: [
-    { id: 'R01', plant: '2001', materialCode: 'MAT-10005', materialName: '布洛芬原料药', needSample: true, sampleQty: '0.500', unit: 'KG', storageCondition: '阴凉干燥处（≤25℃，RH≤60%）', keepRule: '有效期后 1 年', observeFreq: '每 12 个月', observeTimes: 3 },
-    { id: 'R02', plant: '2001', materialCode: 'MAT-20002', materialName: '布洛芬缓释胶囊', needSample: true, sampleQty: '2.000', unit: '盒', storageCondition: '密封、室温（10~30℃）', keepRule: '有效期后 1 年', observeFreq: '每 12 个月', observeTimes: 3 },
-    { id: 'R03', plant: '2001', materialCode: 'MAT-10009', materialName: '甘露醇辅料', needSample: true, sampleQty: '0.300', unit: 'KG', storageCondition: '密闭、干燥处', keepRule: '有效期后 6 个月', observeFreq: '每 12 个月', observeTimes: 2 },
-    { id: 'R04', plant: '2002', materialCode: 'MAT-30002', materialName: '丹红注射液', needSample: true, sampleQty: '4.000', unit: '支', storageCondition: '避光、阴凉处（2~8℃）', keepRule: '有效期后 1 年', observeFreq: '每 6 个月', observeTimes: 6 },
-    { id: 'R05', plant: '2002', materialCode: 'MAT-30003', materialName: '注射用水', needSample: false, sampleQty: '0.000', unit: 'L', storageCondition: '—', keepRule: '不留样', observeFreq: '—', observeTimes: 0 },
-    { id: 'R06', plant: '1000', materialCode: 'MAT-10006', materialName: '维生素C原料', needSample: true, sampleQty: '0.500', unit: 'KG', storageCondition: '避光、密封、干燥处', keepRule: '放行后 3 年', observeFreq: '每 12 个月', observeTimes: 3 }
-  ],
+  // 留样规则见独立页 js/pages/retention-rule.js（质量主数据 → 留样规则），本页只按规则带出默认值
 
   // ==================== 台账数据（内存 mock，两类同表） ====================
   data: [
@@ -318,14 +310,8 @@ const SampleLedger = {
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);width:100%;overflow:hidden;">
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
           <div style="font-size:18px;font-weight:700;">样品台账</div>
-          <div style="display:flex;gap:10px;">
-            <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
-              onclick="SampleLedger.openRuleConfig()">留样规则</button>
-            <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
-              onclick="App.navigateTo('quality-management','sample-location','sample-location','位置管理')">位置管理</button>
-            <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
-              onclick="SampleLedger.openRegisterChoice()">+ 样品登记</button>
-          </div>
+          <button class="btn btn-sm" style="background:#fff;color:var(--primary);border:1px solid #fff;font-weight:600;"
+            onclick="SampleLedger.openRegisterChoice()">+ 样品登记</button>
         </div>
 
         <div id="sdFilterBar" style="flex-shrink:0;"></div>
@@ -569,26 +555,37 @@ const SampleLedger = {
 
   // ---- 留样登记（SAP 311） ----
   openRegisterRetention() {
-    const batchOpts = this.data.filter(s => s.inspectBatchNo).slice(0, 10).map(s =>
+    const batches = this.data.filter(s => s.inspectBatchNo).slice(0, 10);
+    const batchOpts = batches.map(s =>
       `<option value="${s.id}">${s.inspectBatchNo} · ${s.materialName}</option>`).join('');
+
+    // 按「质量主数据 → 留样规则」带出默认值（可覆盖）
+    const rule = (window.RetentionRule && batches[0])
+      ? RetentionRule.data.find(r => r.needSample && r.materialCode === batches[0].materialCode)
+      : null;
+    const rQty = rule ? rule.sampleQty : '0.500';
+    const rCond = rule ? rule.storageCondition : '阴凉干燥处（≤25℃，RH≤60%）';
+    const rKeep = rule ? rule.keepRule : '有效期后 1 年';
+    const rFreq = rule ? rule.observeFreq : '每 12 个月';
+    const sel = (val, cur) => (val === cur ? ' selected' : '');
 
     showModal('留样登记', `
       <div style="padding:4px 0;">
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
           <div class="form-group"><label>工厂 <span class="req">*</span></label><select id="rrPlant">${this._plantOpts('2001')}</select></div>
           <div class="form-group"><label>关联检验批 <span class="req">*</span></label><select id="rrBatch">${batchOpts}</select></div>
-          <div class="form-group"><label>留样量 <span class="req">*</span></label><input type="text" id="rrQty" value="0.500" placeholder="按规则带出，可覆盖"></div>
-          <div class="form-group"><label>保存条件</label><input type="text" id="rrCondition" value="阴凉干燥处（≤25℃，RH≤60%）"></div>
+          <div class="form-group"><label>留样量 <span class="req">*</span></label><input type="text" id="rrQty" value="${esc(rQty)}"></div>
+          <div class="form-group"><label>保存条件</label><input type="text" id="rrCondition" value="${esc(rCond)}"></div>
           <div class="form-group"><label>保存期限规则</label><select id="rrKeepRule">
-            <option value="有效期后 1 年">有效期后 1 年</option>
-            <option value="有效期后 6 个月">有效期后 6 个月</option>
-            <option value="放行后 3 年">放行后 3 年</option>
+            <option${sel('有效期后 1 年', rKeep)}>有效期后 1 年</option>
+            <option${sel('有效期后 6 个月', rKeep)}>有效期后 6 个月</option>
+            <option${sel('放行后 3 年', rKeep)}>放行后 3 年</option>
           </select></div>
           <div class="form-group"><label>有效期</label><input type="date" id="rrValid" value="2028-05-31"></div>
           <div class="form-group"><label>观察频次</label><select id="rrFreq">
-            <option value="每 12 个月">每 12 个月</option>
-            <option value="每 6 个月">每 6 个月</option>
-            <option value="每 3 个月">每 3 个月</option>
+            <option${sel('每 12 个月', rFreq)}>每 12 个月</option>
+            <option${sel('每 6 个月', rFreq)}>每 6 个月</option>
+            <option${sel('每 3 个月', rFreq)}>每 3 个月</option>
           </select></div>
         </div>
         <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">
@@ -1294,31 +1291,6 @@ const SampleLedger = {
 
   _tabDisposal(s) {
     return `<div style="font-size:13px;">${this._disposalBlock(s)}</div>`;
-  },
-
-  // ==================== 留样规则配置 ====================
-  openRuleConfig() {
-    const rows = this.ruleData.map(r => `<tr>
-      <td>${esc(r.plant)} ${esc(this.getPlantName(r.plant))}</td>
-      <td style="font-family:monospace;font-size:12px;">${esc(r.materialCode)}</td>
-      <td>${esc(r.materialName)}</td>
-      <td>${r.needSample ? '<span class="badge badge-green">留样</span>' : '<span class="badge badge-gray">不留样</span>'}</td>
-      <td>${esc(r.sampleQty)} ${esc(r.unit)}</td>
-      <td style="font-size:12px;">${esc(r.storageCondition)}</td>
-      <td style="font-size:12px;">${esc(r.keepRule)}</td>
-      <td style="font-size:12px;">${esc(r.observeFreq)}${r.observeTimes ? ' · 共 ' + r.observeTimes + ' 次' : ''}</td>
-    </tr>`).join('');
-
-    showModal('留样规则配置', `
-      <div style="padding:4px 0;">
-        <table class="data-table">
-          <thead><tr><th>工厂</th><th>物料编码</th><th>物料名称</th><th>是否留样</th><th>留样量</th><th>保存条件</th><th>保存期限规则</th><th>观察频次</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`, [
-      { text: '关闭', cls: 'btn-secondary', action: closeModal },
-      { text: '新增规则', cls: 'btn-primary', action: () => toast('演示环境：规则新增待接后端接口') }
-    ], 'modal-xl');
   },
 
   // ==================== 导出 ====================
