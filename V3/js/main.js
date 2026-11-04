@@ -44,6 +44,13 @@ const App = {
             { id:'stability-plan', label:'稳定性方案与计划', route:'stability-plan' },
             { id:'stability-data', label:'稳定性数据与报告', route:'stability-data' }
           ]
+        },
+        {
+          title:'样品管理', items: [
+            { id:'sample-ledger', label:'样品台账', route:'sample-ledger', pageObj:'SampleLedger' },
+            { id:'sample-location', label:'位置管理', route:'sample-location', pageObj:'SampleLocationPage' },
+            { id:'sample-expiry-report', label:'样品到期报表', route:'sample-expiry-report', pageObj:'SampleExpiryReport' }
+          ]
         }
 
       ]
@@ -194,6 +201,9 @@ const App = {
     'retention-sample': RetentionSample,
     'stability-plan': StabilityPlan,
     'stability-data': StabilityData,
+    'sample-ledger': SampleLedger,
+    'sample-location': SampleLocationPage,
+    'sample-expiry-report': SampleExpiryReport,
     'defect-code': DefectCode,
     'cost-object': CostObject,
     'job-list': ScheduledJob,

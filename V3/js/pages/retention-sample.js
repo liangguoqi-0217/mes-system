@@ -57,6 +57,32 @@ const RetentionSample = {
     return m ? m.name : '—';
   },
 
+  // ==================== 位置树引用（公共主数据 js/core/sample-locations.js） ====================
+  // 历史数据无 locCode，按 留样室/柜/层 名称匹配位置树节点；新数据上架时直接落 locCode。
+
+  locOf(s) {
+    if (s.locCode) return s.locCode;
+    if (!window.SampleLocations) return '';
+    return this._resolveLoc(s);
+  },
+
+  _resolveLoc(s) {
+    if (s._locCode !== undefined) return s._locCode;
+    s._locCode = '';
+    const norm = t => String(t || '').replace(/\s+/g, '');
+    const room = SampleLocations.getRoots().find(n => norm(n.name) === norm(s.room));
+    if (room) {
+      const cab = SampleLocations.getChildren(room.code).find(c => norm(c.name).indexOf(norm(s.cabinet)) !== -1);
+      if (cab) {
+        const shf = SampleLocations.getChildren(cab.code).find(c => norm(c.name) === norm(s.shelf));
+        s._locCode = shf ? shf.code : cab.code;
+      } else {
+        s._locCode = room.code;
+      }
+    }
+    return s._locCode;
+  },
+
   // ==================== 留样规则（物料维度，登记时自动带出） ====================
 
   ruleData: [
@@ -317,7 +343,12 @@ const RetentionSample = {
     this.filtered = this.sampleData.filter(s => {
       if (plant && s.plant !== plant) return false;
       if (batch && (s.sourceBatch || '').toLowerCase().indexOf(batch) === -1) return false;
-      if (loc && (s.location + ' ' + s.room + ' ' + s.cabinet).toLowerCase().indexOf(loc) === -1) return false;
+      if (loc) {
+      const lc = this.locOf(s);
+      const locText = ((lc ? SampleLocations.breadcrumbText(lc) + ' ' + lc : '') + ' ' +
+        s.location + ' ' + s.room + ' ' + s.cabinet).toLowerCase();
+      if (locText.indexOf(loc) === -1) return false;
+    }
       if (kw && (s.sampleNo + ' ' + s.materialCode + ' ' + s.materialName).toLowerCase().indexOf(kw) === -1) return false;
       if (status === 'TO_OBSERVE') return this.observeData.some(o => o.sampleId === s.id && !o.actualDate);
       if (status && s.status !== status) return false;
@@ -353,10 +384,14 @@ const RetentionSample = {
     if (days !== null && days < 0) dueHtml += `<div style="color:#dc2626;font-size:11px;">已超期 ${-days} 天</div>`;
     else if (days !== null && days <= 90) dueHtml += `<div style="color:#f59e0b;font-size:11px;">${days} 天后到期</div>`;
 
-    const locationHtml = s.location
-      ? `${esc(s.room)} / ${esc(s.cabinet)} / ${esc(s.shelf)}
-         <div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(s.location)}</div>`
-      : '<span style="color:var(--text-muted);">未入库</span>';
+    const locCode = this.locOf(s);
+    const locationHtml = locCode
+      ? SampleLocations.breadcrumbHtml(locCode) +
+        `<div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(locCode)}</div>`
+      : s.location
+        ? `${esc(s.room)} / ${esc(s.cabinet)} / ${esc(s.shelf)}
+           <div style="color:var(--text-muted);font-family:monospace;font-size:11px;">${esc(s.location)}</div>`
+        : '<span style="color:var(--text-muted);">未入库</span>';
 
     return `<tr>
       <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(s.sampleNo)}</td>
@@ -469,9 +504,9 @@ const RetentionSample = {
             <option value="每 3 个月">每 3 个月</option>
           </select></div>
         </div>
-        <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:13px;">
-          <input type="checkbox" id="rgPrint" checked> 登记后打印条码标签（留样编号 / 物料 / 批次 / 到期日）
-        </label>
+        <div style="margin-top:14px;font-size:12px;color:var(--text-muted);">
+          样品标识照旧纸质样品签；登记完成后在台账「流转 → 入库上架」中从位置树指定留样位置。
+        </div>
       </div>`, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
       { text: '确认登记', cls: 'btn-primary', action: () => RetentionSample.submitRegister() }
@@ -525,30 +560,27 @@ const RetentionSample = {
   openPutaway(sid) {
     const s = this.sampleData.find(x => x.id === sid);
     if (!s) return;
-    showModal('留样入库 — 指定位置', `
-      <div style="padding:4px 0;">
-        <div style="background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
-          ${esc(s.sampleNo)} · ${esc(s.materialName)} · ${esc(s.sampleQty)} ${esc(s.unit)} · 保存条件：${esc(s.storageCondition)}
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
-          <div class="form-group"><label>留样室</label><input type="text" id="pwRoom" value="${esc(s.room || '留样室A')}"></div>
-          <div class="form-group"><label>柜</label><input type="text" id="pwCabinet" value="${esc(s.cabinet || 'A-01')}"></div>
-          <div class="form-group"><label>层</label><input type="text" id="pwShelf" value="${esc(s.shelf || '1 层')}"></div>
-        </div>
-        <div class="form-group" style="margin-top:14px;"><label>位置编码</label><input type="text" id="pwLoc" value="${esc(s.location || 'A-01-01-01')}"></div>
-      </div>`, [
-      { text: '取消', cls: 'btn-secondary', action: closeModal },
-      { text: '确认入库', cls: 'btn-primary', action: () => {
-        s.room = (document.getElementById('pwRoom') || {}).value || '';
-        s.cabinet = (document.getElementById('pwCabinet') || {}).value || '';
-        s.shelf = (document.getElementById('pwShelf') || {}).value || '';
-        s.location = (document.getElementById('pwLoc') || {}).value || '';
+    // 位置从公共位置树选择（SampleLocations.pick），兼容字段 room/cabinet/shelf/location 同步维护
+    SampleLocations.pick({
+      title: '留样入库 — 指定位置',
+      currentNode: this.locOf(s),
+      onPick: (code) => {
+        const segs = SampleLocations.pathSegments(code);
+        const room = segs.find(x => x.type === 'room');
+        const cab = segs.find(x => x.type === 'fridge' || x.type === 'cabinet');
+        const shf = segs.find(x => x.type === 'shelf' || x.type === 'box');
+        s.room = room ? room.name : (segs[0] ? segs[0].name : '');
+        s.cabinet = cab ? cab.name : '';
+        s.shelf = shf ? shf.name : '';
+        s.location = code;
+        s.locCode = code;
+        s._locCode = code;
         s.putawayTime = RetentionSample._now();
         s.status = 'STORED';
-        closeModal(); RetentionSample.init();
-        toast('入库完成，留样状态更新为「在库」');
-      } }
-    ], 'modal-md');
+        RetentionSample.init();
+        toast('入库完成，位置：' + SampleLocations.breadcrumbText(code) + '，状态更新为「在库」');
+      }
+    });
   },
 
   // ==================== 调用 / 归还（只登记结果，无审批） ====================
@@ -811,7 +843,9 @@ const RetentionSample = {
         <div><span style="color:var(--text-muted);">留样量：</span>${esc(s.sampleQty)} ${esc(s.unit)}（余 ${esc(s.remainQty)}）</div>
         <div><span style="color:var(--text-muted);">保存条件：</span>${esc(s.storageCondition)}</div>
         <div><span style="color:var(--text-muted);">期限规则：</span>${esc(s.keepRule)}</div>
-        <div><span style="color:var(--text-muted);">位置：</span>${s.location ? esc(s.room) + ' / ' + esc(s.cabinet) + ' / ' + esc(s.shelf) + '（' + esc(s.location) + '）' : '未入库'}</div>
+        <div><span style="color:var(--text-muted);">位置：</span>${this.locOf(s)
+          ? SampleLocations.breadcrumbText(this.locOf(s)) + '（' + esc(this.locOf(s)) + '）'
+          : (s.location ? esc(s.room) + ' / ' + esc(s.cabinet) + ' / ' + esc(s.shelf) + '（' + esc(s.location) + '）' : '未入库')}</div>
         <div><span style="color:var(--text-muted);">登记：</span>${esc(s.registerBy)} ${esc(s.registerTime)}</div>
         <div><span style="color:var(--text-muted);">入库上架：</span>${esc(s.putawayTime || '—')}</div>
         <div><span style="color:var(--text-muted);">条码标签：</span>${esc(s.labelNo)}</div>
@@ -973,5 +1007,17 @@ if (window.QueryVariant) {
     textFields: ['rsKeyword', 'rsLocation', 'rsBatch'],
     labels: { rsPlant: '工厂', rsKeyword: '留样编号/物料', rsStatus: '留样状态', rsLocation: '留样位置', rsBatch: '来源批次' },
     onApply: function () { RetentionSample.search(); }
+  });
+}
+
+// 注册到位置树占用统计（位置管理页的占用数与反查共用；已销毁不计占用）
+if (window.SampleLocations) {
+  SampleLocations.addProvider(function () {
+    return RetentionSample.sampleData
+      .filter(function (r) { return r.status !== 'DESTROYED' && RetentionSample.locOf(r); })
+      .map(function (r) {
+        return { source: 'retention', locCode: RetentionSample.locOf(r),
+          record: Object.assign({}, r, { statusName: RetentionSample.getStatusMeta(r.status).name }) };
+      });
   });
 }
