@@ -453,17 +453,17 @@ const SampleLedger = {
     const el = document.getElementById('sdTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1280px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1080px;">
       <thead><tr>
-        <th style="width:165px;">样品编号</th>
-        <th style="width:95px;">类别</th>
-        <th style="width:180px;">物料</th>
-        <th style="width:145px;">批次 / 检验批</th>
-        <th style="width:110px;">数量 / 余量</th>
-        <th style="width:185px;">存放位置</th>
-        <th style="width:115px;">到期日</th>
-        <th style="width:105px;">状态</th>
-        <th style="width:70px;">操作</th>
+        <th style="width:150px;">样品编号</th>
+        <th style="width:80px;">类别</th>
+        <th style="width:150px;">物料</th>
+        <th style="width:140px;">批次 / 检验批</th>
+        <th style="width:95px;">数量 / 余量</th>
+        <th style="width:205px;">存放位置</th>
+        <th style="width:95px;">到期日</th>
+        <th style="width:80px;">状态</th>
+        <th style="width:60px;">操作</th>
       </tr></thead>
       <tbody>${page.length ? page.map(s => this.renderRow(s)).join('')
         : `<tr><td colspan="9" class="empty-cell">暂无符合条件的样品记录</td></tr>`}</tbody>

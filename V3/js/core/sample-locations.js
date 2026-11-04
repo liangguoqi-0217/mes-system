@@ -126,7 +126,10 @@ window.SampleLocations = (function () {
     const node = getNode(code);
     if (!node) return '<span style="color:var(--text-muted);">—</span>';
     const st = style || 'font-size:12px;color:#1E3A5F;';
-    return '<span style="' + st + '">' + esc(pathSegments(code).map(s => esc(s.name)).join(' <span style="color:#c4cbd4;">/</span> ')) + '</span>';
+    // 各段名称单独 esc；分隔符 span 不能再整体 esc（会把标签转义成文本）
+    return '<span style="' + st + '">' +
+      pathSegments(code).map(s => esc(s.name)).join(' <span style="color:#c4cbd4;">/</span> ') +
+      '</span>';
   }
 
   // 该节点的全部子孙 code（含自身）
