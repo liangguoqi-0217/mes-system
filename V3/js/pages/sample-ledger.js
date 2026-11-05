@@ -530,7 +530,7 @@ const SampleLedger = {
     const el = document.getElementById('sdTableWrapper');
     if (!el) return;
 
-    el.innerHTML = `<table class="data-table" style="min-width:1280px;">
+    el.innerHTML = `<table class="data-table" style="min-width:1360px;">
       <thead><tr>
         <th style="width:150px;">样品编号</th>
         <th style="width:80px;">类别</th>
@@ -540,7 +540,7 @@ const SampleLedger = {
         <th style="width:190px;">存放位置</th>
         <th style="width:95px;">到期日</th>
         <th style="width:80px;">状态</th>
-        <th style="width:245px;">操作</th>
+        <th style="width:320px;">操作</th>
       </tr></thead>
       <tbody>${page.length ? page.map(s => this.renderRow(s)).join('')
         : `<tr><td colspan="9" class="empty-cell">暂无符合条件的样品记录</td></tr>`}</tbody>
@@ -588,22 +588,48 @@ const SampleLedger = {
     </tr>`;
   },
 
-  // 行内操作按钮（同检验批管理模式）：按状态与类别出按钮，查看常驻
+  // 行内操作按钮（同检验批管理模式）：全集常显，每行一样；
+  // 当前状态不支持的操作，点击时 toast 告知原因（notifyBlocked），不做显隐/置灰
   getSampleActions(s) {
-    const view = `<button class="btn btn-blue btn-sm" onclick="SampleLedger.openDetail('${s.id}')" title="样品详情">查看</button>`;
-    const putaway = `<button class="btn btn-primary btn-sm" onclick="SampleLedger.openPutaway('${s.id}')" title="从位置树指定存放位置">上架</button>`;
-    const move = `<button class="btn btn-sm" onclick="SampleLedger.openPutaway('${s.id}')" title="位置变更">变更</button>`;
-    const call = `<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;" onclick="SampleLedger.openCall('${s.id}')" title="调用登记">调用</button>`;
-    const ret = `<button class="btn btn-primary btn-sm" onclick="SampleLedger.openReturn('${s.id}')" title="归还登记">归还</button>`;
-    const observe = `<button class="btn btn-sm" style="background:#8b5cf6;color:#fff;" onclick="SampleLedger.openObserve('${s.id}')" title="留样观察">观察</button>`;
-    const dispose = `<button class="btn btn-danger btn-sm" onclick="SampleLedger.openDisposal('${s.id}')" title="处置登记">处置</button>`;
+    const b = (action, label, cls, title) =>
+      `<button class="btn ${cls} btn-sm" onclick="SampleLedger._act('${s.id}','${action}')" title="${title}">${label}</button>`;
+    return b('putaway', '上架', 'btn-primary', '入库上架：从位置树指定存放位置')
+      + b('move', '变更', '', '位置变更')
+      + b('call', '调用', 'style="background:#0ea5e9;color:#fff;"', '调用登记')
+      + b('ret', '归还', 'btn-primary', '归还登记')
+      + b('observe', '观察', 'style="background:#8b5cf6;color:#fff;"', '留样观察')
+      + b('dispose', '处置', 'btn-danger', '处置登记')
+      + b('view', '查看', 'btn-blue', '样品详情');
+  },
 
-    if (s.status === 'REG') return putaway + view;
-    if (s.status === 'CALLED') return move + ret + view;
-    if (s.status === 'STORED') {
-      return move + call + (this.isRetention(s) ? observe : '') + dispose + view;
-    }
-    return view; // DISPOSED 终态只读
+  // 行内按钮统一入口：支持则进对应表单，不支持则提示原因
+  _act(id, action) {
+    const s = this.data.find(x => x.id === id);
+    if (!s) return;
+    const allowed = {
+      putaway: s.status === 'REG',
+      move: s.status === 'STORED' || s.status === 'CALLED',
+      call: s.status === 'STORED',
+      ret: s.status === 'CALLED',
+      observe: s.status === 'STORED' && this.isRetention(s),
+      dispose: s.status === 'STORED',
+      view: true
+    }[action];
+    if (!allowed) return this.notifyBlocked(s, action);
+    if (action === 'putaway' || action === 'move') return this.openPutaway(id);
+    if (action === 'call') return this.openCall(id);
+    if (action === 'ret') return this.openReturn(id);
+    if (action === 'observe') return this.openObserve(id);
+    if (action === 'dispose') return this.openDisposal(id);
+    if (action === 'view') return this.openDetail(id);
+  },
+
+  _actName(action) {
+    return { putaway: '上架', move: '位置变更', call: '调用', ret: '归还', observe: '留样观察', dispose: '处置', view: '查看' }[action] || action;
+  },
+
+  notifyBlocked(s, action) {
+    toast('样品 ' + s.sampleNo + ' 状态为「' + this.getStatusMeta(s.status).name + '」，不支持「' + this._actName(action) + '」操作');
   },
 
   _paged(list) {
