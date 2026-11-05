@@ -137,15 +137,8 @@ const App = {
       id:'regulatory-intelligence', label:'法规情报', icon:'📜',
       groups: [
         {
-          title:'法规监测', items: [
-            { id:'reg-doc-list', label:'法规清单', route:'reg-doc-list', pageObj:'RegDocList' },
-            { id:'reg-applicability', label:'适用性判定', route:'reg-applicability', pageObj:'RegApplicability' },
-            { id:'reg-distribution', label:'分发台账', route:'reg-distribution', pageObj:'RegDistribution' }
-          ]
-        },
-        {
-          title:'基础配置', items: [
-            { id:'reg-source', label:'法规源管理', route:'reg-source', pageObj:'RegSource' }
+          title:'法规动态', items: [
+            { id:'reg-doc-list', label:'法规动态', route:'reg-doc-list', pageObj:'RegDocList' }
           ]
         }
       ]
@@ -210,10 +203,7 @@ const App = {
     'defect-code': DefectCode,
     'cost-object': CostObject,
     'job-list': ScheduledJob,
-    'reg-doc-list': RegDocList,
-    'reg-applicability': RegApplicability,
-    'reg-distribution': RegDistribution,
-    'reg-source': RegSource
+    'reg-doc-list': RegDocList
   },
 
   /* ===== 权限：定时JOB 仅系统管理员可见 ===== */
