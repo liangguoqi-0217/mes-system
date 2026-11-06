@@ -427,10 +427,6 @@ const StabilityData = {
         <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
           <div class="filter-group" style="margin:0;"><label>考察编号</label>
             <select id="sdTrStudy" onchange="StabilityData.drawTrend()">${studyOpts}</select></div>
-          <div class="filter-group" style="margin:0;"><label>条件</label>
-            <select id="sdTrCond" onchange="StabilityData.drawTrend()">
-              <option value="LT">长期 25℃/60%RH</option><option value="AC">加速 40℃/75%RH</option>
-            </select></div>
           <div class="filter-group" style="margin:0;"><label>检验项目</label>
             <select id="sdTrItem" onchange="StabilityData.drawTrend()">${itemOpts}</select></div>
         </div>
@@ -443,9 +439,13 @@ const StabilityData = {
     const box = document.getElementById('sdTrendBox');
     if (!box) return;
     const studyNo = this._val('sdTrStudy') || this.resultData[0].studyNo;
-    const cond = this._val('sdTrCond') || 'LT';
     const itemKey = this._val('sdTrItem') || 'related';
-    box.innerHTML = this._trendSvg(studyNo, cond, itemKey);
+    // 与研究详情的「趋势」页签共用同一套图表（多条件同图、规格限、异常打点）
+    if (typeof StabilityPlan !== 'undefined' && StabilityPlan.getStudy) {
+      const s = StabilityPlan.getStudy(studyNo);
+      if (s) { box.innerHTML = StabilityPlan._trendBlock(s, itemKey); return; }
+    }
+    box.innerHTML = this._trendSvg(studyNo, 'LT', itemKey);
   },
 
   _trendSvg(studyNo, cond, itemKey) {

@@ -639,15 +639,18 @@ const StabilityPlan = {
         <div class="form-tab active" onclick="StabilityPlan._switchTab(this,'proto')">研究方案</div>
         <div class="form-tab" onclick="StabilityPlan._switchTab(this,'samples')">样品与位置</div>
         <div class="form-tab" onclick="StabilityPlan._switchTab(this,'points')">时间点执行</div>
+        <div class="form-tab" onclick="StabilityPlan._switchTab(this,'trend')">趋势</div>
         <div class="form-tab" onclick="StabilityPlan._switchTab(this,'life')">生命周期</div>
       </div>
       <div class="ib-tab-panel active" data-panel="proto">${this._tabProtocol(s)}</div>
       <div class="ib-tab-panel" data-panel="samples">${this._tabSamples(s)}</div>
       <div class="ib-tab-panel" data-panel="points">${this._tabPoints(s)}</div>
+      <div class="ib-tab-panel" data-panel="trend">${this._tabTrend(s)}</div>
       <div class="ib-tab-panel" data-panel="life">${this._tabLife(s)}</div>
     </div>`;
 
     showModal(`稳定性研究 — ${s.no}`, body, this._detailFooter(s), 'modal-xl');
+    setTimeout(() => StabilityPlan.drawTrendChart(), 0);
   },
 
   _detailFooter(s) {
@@ -918,7 +921,7 @@ const StabilityPlan = {
     return btns.join('');
   },
 
-  // ---------- 页签四：生命周期 ----------
+  // ---------- 页签五：生命周期 ----------
 
   _tabLife(s) {
     const logs = (s.logs || []).map(l => `<tr>
@@ -932,6 +935,137 @@ const StabilityPlan = {
       <thead><tr><th>时间</th><th>动作</th><th>操作人</th><th>说明</th></tr></thead>
       <tbody>${logs}</tbody>
     </table>`;
+  },
+
+  // ---------- 页签四：趋势 ----------
+
+  _resultRows(s) {
+    const SD = typeof StabilityData !== 'undefined' ? StabilityData : null;
+    if (!SD || !SD.resultData) return [];
+    return SD.resultData.filter(r => r.studyNo === s.no);
+  },
+
+  _trendItemMeta() {
+    const SD = typeof StabilityData !== 'undefined' ? StabilityData : null;
+    return SD && SD.itemMeta ? SD.itemMeta : {};
+  },
+
+  _tabTrend(s) {
+    const rows = this._resultRows(s);
+    const meta = this._trendItemMeta();
+    const keys = Object.keys(meta).filter(k => rows.some(r => r[k] !== '' && r[k] != null));
+    if (!rows.length || !keys.length) {
+      return `<div style="padding:44px 0;text-align:center;color:var(--text-muted);font-size:13px;">暂无检验结果，取样并录入结论后在此形成趋势</div>`;
+    }
+    const cur = keys.indexOf('related') >= 0 ? 'related' : keys[0];
+    this._ctx.trendItem = cur;
+    const opts = keys.map(k => `<option value="${k}">${esc(meta[k].name)}</option>`).join('');
+    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="filter-group" style="margin:0;"><label>检验项目</label>
+          <select id="spTrendItem" onchange="StabilityPlan.drawTrendChart()">${opts}</select></div>
+      </div>
+      <div id="spTrendBox"></div>`;
+  },
+
+  drawTrendChart() {
+    const box = document.getElementById('spTrendBox');
+    const s = this.find(this._ctx.id);
+    if (!box || !s) return;
+    const key = this._val('spTrendItem') || this._ctx.trendItem || 'related';
+    this._ctx.trendItem = key;
+    box.innerHTML = this._trendBlock(s, key);
+  },
+
+  _trendBlock(s, key) {
+    const meta = this._trendItemMeta()[key];
+    if (!meta) return '';
+    const rows = this._resultRows(s).filter(r => r[key] !== '' && r[key] != null);
+    const series = this.condOptions.map(c => {
+      const pts = rows.filter(r => r.cond === c.code).sort((a, b) => a.point - b.point)
+        .map(r => ({ m: Number(r.point), v: Number(r[key]), verdict: r.verdict }));
+      return { code: c.code, name: c.name, pts: pts };
+    }).filter(x => x.pts.length);
+    if (!series.length) {
+      return `<div style="padding:36px 0;text-align:center;color:var(--text-muted);font-size:13px;">该项目暂无结果</div>`;
+    }
+
+    const months = [];
+    series.forEach(x => x.pts.forEach(p => { if (months.indexOf(p.m) < 0) months.push(p.m); }));
+    months.sort((a, b) => a - b);
+
+    const vals = [];
+    series.forEach(x => x.pts.forEach(p => vals.push(p.v)));
+    const lo = Math.min.apply(null, vals.concat(meta.lower != null ? [meta.lower] : []));
+    const hi = Math.max.apply(null, vals.concat(meta.upper != null ? [meta.upper] : []));
+    const pad = (hi - lo) * 0.2 || Math.abs(hi) * 0.1 || 1;
+    const yMin = lo - pad, yMax = hi + pad;
+
+    const W = 880, H = 330, L = 66, R = 96, T = 30, B = 44;
+    const n = months.length;
+    const xi = m => L + (n === 1 ? (W - L - R) / 2 : months.indexOf(m) * (W - L - R) / (n - 1));
+    const yi = v => T + (yMax - v) / (yMax - yMin) * (H - T - B);
+    const out = v => (meta.upper != null && v > meta.upper) || (meta.lower != null && v < meta.lower);
+
+    let g = '';
+    for (let k = 0; k <= 4; k++) {
+      const v = yMin + (yMax - yMin) * k / 4;
+      g += `<line x1="${L}" y1="${yi(v)}" x2="${W - R}" y2="${yi(v)}" stroke="#eef1f4" stroke-width="1"/>`
+        + `<text x="${L - 10}" y="${yi(v) + 4}" text-anchor="end" font-size="11" fill="#94a3b8">${v.toFixed(2)}</text>`;
+    }
+    if (meta.upper != null) {
+      g += `<line x1="${L}" y1="${yi(meta.upper)}" x2="${W - R}" y2="${yi(meta.upper)}" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="6,4"/>`
+        + `<text x="${W - R + 8}" y="${yi(meta.upper) + 4}" font-size="11" fill="#dc2626">上限 ${meta.upper}</text>`;
+    }
+    if (meta.lower != null) {
+      g += `<line x1="${L}" y1="${yi(meta.lower)}" x2="${W - R}" y2="${yi(meta.lower)}" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="6,4"/>`
+        + `<text x="${W - R + 8}" y="${yi(meta.lower) + 4}" font-size="11" fill="#dc2626">下限 ${meta.lower}</text>`;
+    }
+    months.forEach(m => {
+      g += `<text x="${xi(m)}" y="${H - B + 22}" text-anchor="middle" font-size="11" fill="#94a3b8">${m} 月</text>`;
+    });
+
+    series.forEach(x => {
+      const color = x.code === 'LT' ? '#1E3A5F' : '#94a3b8';
+      const dash = x.code === 'LT' ? '' : ' stroke-dasharray="6,4"';
+      if (x.pts.length > 1) {
+        g += `<polyline points="${x.pts.map(p => xi(p.m) + ',' + yi(p.v)).join(' ')}" fill="none" stroke="${color}" stroke-width="2"${dash}/>`;
+      }
+      x.pts.forEach(p => {
+        const bad = out(p.v) || p.verdict === 'OOT' || p.verdict === 'OOS';
+        g += `<circle cx="${xi(p.m)}" cy="${yi(p.v)}" r="4.5" fill="${bad ? '#fff' : color}" stroke="${bad ? '#dc2626' : '#fff'}" stroke-width="${bad ? 2 : 1.5}"/>`;
+        if (series.length === 1) {
+          g += `<text x="${xi(p.m)}" y="${yi(p.v) - 10}" text-anchor="middle" font-size="11" font-weight="600" fill="${bad ? '#dc2626' : '#1e293b'}">${p.v}</text>`;
+        }
+      });
+    });
+
+    g += `<line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" stroke="#cbd5e1" stroke-width="1.2"/>`
+      + `<line x1="${L}" y1="${T}" x2="${L}" y2="${H - B}" stroke="#cbd5e1" stroke-width="1.2"/>`;
+
+    const legend = series.map(x => {
+      const color = x.code === 'LT' ? '#1E3A5F' : '#94a3b8';
+      return `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:18px;font-size:12px;color:var(--text-secondary);">
+        <span style="width:14px;height:2px;background:${color};display:inline-block;"></span>${esc(x.name)}</span>`;
+    }).join('');
+
+    const fmt = v => (Math.round(v * 100) / 100).toFixed(2);
+    const lines = series.map(x => {
+      const first = x.pts[0], last = x.pts[x.pts.length - 1];
+      const d = last.v - first.v;
+      const bads = x.pts.filter(p => out(p.v) || p.verdict === 'OOT' || p.verdict === 'OOS');
+      return `<div>${esc(x.name)}：${first.m} 月 ${fmt(first.v)}${esc(meta.unit)} → ${last.m} 月 ${fmt(last.v)}${esc(meta.unit)}
+        <span style="color:${Math.abs(d) < 1e-9 ? 'var(--text-muted)' : '#b45309'};">（${d > 0 ? '+' : ''}${fmt(d)}）</span>
+        ${bads.length ? `<span style="color:#dc2626;font-weight:600;margin-left:8px;">${bads.map(b => b.m + ' 月点异常').join('、')}</span>` : ''}</div>`;
+    }).join('');
+
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 6px 4px;background:#fff;">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;">${g}</svg>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px;">
+        <div>${legend}</div>
+        <div style="font-size:12px;color:var(--text-muted);">${esc(meta.name)}${meta.unit ? '（' + esc(meta.unit) + '）' : ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;margin-top:10px;font-size:12.5px;color:var(--text-secondary);">${lines}</div>`;
   },
 
   // ==================== 动作：立项 / 入箱 ====================
