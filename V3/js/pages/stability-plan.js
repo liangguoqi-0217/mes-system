@@ -281,8 +281,48 @@ const StabilityPlan = {
 
   // ==================== 种子：时间点 + 样品 ====================
 
+  // 方案组示例：同一方案 ST-P-2025-001 下第 2 批（第 1 批为 S01 / STB-26001）
+  // 目的：多批并列趋势与「同方案批次」聚合有真实数据可看
+  _seedBatches() {
+    if (this.studies.some(s => s.no === 'STB-26009')) return;
+    const base = this.studies.find(s => s.no === 'STB-26001');
+    if (!base) return;
+    this.studies.push({
+      id: 'S08', no: 'STB-26009', name: '布洛芬缓释胶囊 2026 年度第 2 批持续稳定性考察',
+      type: 'CONTINUOUS', plant: '2001', materialCode: 'MAT-20002', materialName: '布洛芬缓释胶囊',
+      spec: '0.3g', packSpec: '铝塑泡罩 12 粒/盒', batchNo: 'SAP-BT-20260318', batchQty: '8,800 盒',
+      purpose: '2026 年度持续稳定性考察计划（同方案第 2 批）', changeNo: '',
+      protocolNo: 'ST-P-2025-001', approvalNo: 'QA-AP-2025-0312', approvalDate: '2025-06-01',
+      startDate: '2026-03-18', windowDays: 5, owner: '李工', qaOwner: '张 QA',
+      qtyPerPoint: 6, unit: '盒', backupRate: 0.2, status: 'RUNNING',
+      createdAt: '2026-03-10', createdBy: '李工', remark: '沿用方案 ST-P-2025-001，第 2 批',
+      conds: [
+        { code: 'LT', status: 'RUNNING', locCode: 'STB-X01-L2-A',
+          months: [0, 3, 6, 9, 12, 18, 24, 36],
+          items: base.conds[0].items.slice(),
+          done: {
+            0: { date: '2026-03-19', batch: '100000014201', verdict: 'PASS' },
+            3: { date: '2026-06-19', batch: '100000014202', verdict: 'PASS' }
+          } },
+        { code: 'AC', status: 'RUNNING', locCode: 'STB-X02-L1-B',
+          months: [0, 3, 6, 9],
+          items: base.conds[1].items.slice(),
+          done: {
+            0: { date: '2026-03-19', batch: '100000014211', verdict: 'PASS' },
+            3: { date: '2026-06-19', batch: '100000014212', verdict: 'PASS' }
+          } }
+      ],
+      logs: [
+        { time: '2026-03-10 09:00', action: '创建研究', by: '李工', note: '从年度考察计划立项（第 2 批）' },
+        { time: '2026-03-12 10:00', action: '研究立项', by: '张 QA', note: '沿用方案 ST-P-2025-001，批准文号 QA-AP-2025-0312' },
+        { time: '2026-03-18 10:30', action: '备样入箱', by: '李工', note: '长期 / 加速两个条件入箱' }
+      ]
+    });
+  },
+
   _seed() {
     if (this._seeded) return;
+    this._seedBatches();
     this.studies.forEach(s => {
       s.conds.forEach(c => {
         c.points = (c.months || []).map(m => {
@@ -328,6 +368,24 @@ const StabilityPlan = {
   find(id) { return this.studies.find(s => s.id === id) || null; },
 
   getStudy(no) { return this.studies.find(s => s.no === no) || null; },
+
+  // 同方案批次（A+ 聚合键 = 方案编号，批次是研究属性而非研究本身）
+  groupStudies(protocolNo) {
+    if (!protocolNo) return [];
+    return this.studies.filter(s => s.protocolNo === protocolNo)
+      .sort((a, b) => String(a.startDate).localeCompare(String(b.startDate)));
+  },
+
+  batchIndex(s) {
+    const i = this.groupStudies(s.protocolNo).findIndex(x => x.id === s.id);
+    return i < 0 ? 1 : i + 1;
+  },
+
+  batchLabel(s) {
+    const list = this.groupStudies(s.protocolNo);
+    if (list.length <= 1) return '';
+    return '第 ' + this.batchIndex(s) + ' / ' + list.length + ' 批';
+  },
 
   typeMeta(code) {
     const t = this.typeOptions.find(x => x.code === code);
@@ -590,7 +648,8 @@ const StabilityPlan = {
 
     return `<tr>
       <td style="color:var(--text-muted);font-size:12px;">${seq}</td>
-      <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(s.no)}</td>
+      <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(s.no)}
+        ${s.protocolNo ? `<div style="font-family:inherit;font-weight:400;font-size:11px;color:var(--text-muted);">${esc(s.protocolNo)}${this.batchLabel(s) ? ' · ' + this.batchLabel(s) : ''}</div>` : ''}</td>
       <td style="font-size:13px;">${esc(s.name)}</td>
       <td><span class="badge ${tm.badge} badge-sm">${esc(tm.name)}</span></td>
       <td style="font-size:12px;">${esc(s.materialName)}
@@ -764,7 +823,15 @@ const StabilityPlan = {
 
     const cards = s.conds.map(c => this._condCard(s, c)).join('');
 
+    const group = this.groupStudies(s.protocolNo);
+    const groupHtml = group.length > 1 ? `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:8px 12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;">
+        <span style="color:var(--text-muted);">同方案 ${esc(s.protocolNo)} · 共 ${group.length} 批</span>
+        ${group.map(x => `<span class="badge ${x.id === s.id ? 'badge-blue' : 'badge-gray'} badge-sm" style="${x.id === s.id ? '' : 'cursor:pointer;'}"
+          ${x.id === s.id ? '' : `onclick="StabilityPlan.openDetail('${x.id}')"`}>第 ${this.batchIndex(x)} 批 · ${esc(x.batchNo || x.no)}</span>`).join('')}
+      </div>` : '';
+
     return `<div style="font-size:13px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px 24px;padding:14px 16px;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;">${info}</div>
+      ${groupHtml}
       ${calc}
       <div style="font-size:14px;font-weight:600;margin-bottom:10px;">考察条件</div>
       <div style="display:grid;grid-template-columns:repeat(${s.conds.length > 1 ? 2 : 1},1fr);gap:12px;">${cards}</div>`;
@@ -983,12 +1050,38 @@ const StabilityPlan = {
     const meta = this._trendItemMeta()[key];
     if (!meta) return '';
     const rows = this._resultRows(s).filter(r => r[key] !== '' && r[key] != null);
-    const series = this.condOptions.map(c => {
-      const pts = rows.filter(r => r.cond === c.code).sort((a, b) => a.point - b.point)
-        .map(r => ({ m: Number(r.point), v: Number(r[key]), verdict: r.verdict }));
-      return { code: c.code, name: c.name, pts: pts };
-    }).filter(x => x.pts.length);
+    const series = this.condOptions.map(c => ({
+      name: c.name,
+      color: c.code === 'LT' ? '#1E3A5F' : '#94a3b8',
+      dash: c.code === 'LT' ? '' : '6,4',
+      pts: rows.filter(r => r.cond === c.code).sort((a, b) => a.point - b.point)
+        .map(r => ({ m: Number(r.point), v: Number(r[key]), verdict: r.verdict }))
+    })).filter(x => x.pts.length);
+    return this._chart(series, meta);
+  },
+
+  // 同方案多批并列：一条线一批（A+ 聚合键 = 方案编号）
+  _groupTrendBlock(protocolNo, key, condCode) {
+    const meta = this._trendItemMeta()[key];
+    if (!meta) return '';
+    const palette = ['#1E3A5F', '#0f766e', '#b45309', '#6d28d9', '#94a3b8'];
+    const series = this.groupStudies(protocolNo).map((s, i) => ({
+      name: '第 ' + this.batchIndex(s) + ' 批 · ' + (s.batchNo || s.no),
+      color: palette[i % palette.length],
+      dash: '',
+      pts: this._resultRows(s).filter(r => r.cond === condCode && r[key] !== '' && r[key] != null)
+        .sort((a, b) => a.point - b.point)
+        .map(r => ({ m: Number(r.point), v: Number(r[key]), verdict: r.verdict }))
+    })).filter(x => x.pts.length);
     if (!series.length) {
+      return `<div style="padding:36px 0;text-align:center;color:var(--text-muted);font-size:13px;">该条件下同方案批次暂无结果</div>`;
+    }
+    return this._chart(series, meta);
+  },
+
+  // 折线图渲染：series = [{ name, color, dash, pts:[{m,v,verdict}] }]
+  _chart(series, meta) {
+    if (!series || !series.length) {
       return `<div style="padding:36px 0;text-align:center;color:var(--text-muted);font-size:13px;">该项目暂无结果</div>`;
     }
 
@@ -1028,14 +1121,13 @@ const StabilityPlan = {
     });
 
     series.forEach(x => {
-      const color = x.code === 'LT' ? '#1E3A5F' : '#94a3b8';
-      const dash = x.code === 'LT' ? '' : ' stroke-dasharray="6,4"';
+      const dash = x.dash ? ` stroke-dasharray="${x.dash}"` : '';
       if (x.pts.length > 1) {
-        g += `<polyline points="${x.pts.map(p => xi(p.m) + ',' + yi(p.v)).join(' ')}" fill="none" stroke="${color}" stroke-width="2"${dash}/>`;
+        g += `<polyline points="${x.pts.map(p => xi(p.m) + ',' + yi(p.v)).join(' ')}" fill="none" stroke="${x.color}" stroke-width="2"${dash}/>`;
       }
       x.pts.forEach(p => {
         const bad = out(p.v) || p.verdict === 'OOT' || p.verdict === 'OOS';
-        g += `<circle cx="${xi(p.m)}" cy="${yi(p.v)}" r="4.5" fill="${bad ? '#fff' : color}" stroke="${bad ? '#dc2626' : '#fff'}" stroke-width="${bad ? 2 : 1.5}"/>`;
+        g += `<circle cx="${xi(p.m)}" cy="${yi(p.v)}" r="4.5" fill="${bad ? '#fff' : x.color}" stroke="${bad ? '#dc2626' : '#fff'}" stroke-width="${bad ? 2 : 1.5}"/>`;
         if (series.length === 1) {
           g += `<text x="${xi(p.m)}" y="${yi(p.v) - 10}" text-anchor="middle" font-size="11" font-weight="600" fill="${bad ? '#dc2626' : '#1e293b'}">${p.v}</text>`;
         }
@@ -1045,18 +1137,15 @@ const StabilityPlan = {
     g += `<line x1="${L}" y1="${H - B}" x2="${W - R}" y2="${H - B}" stroke="#cbd5e1" stroke-width="1.2"/>`
       + `<line x1="${L}" y1="${T}" x2="${L}" y2="${H - B}" stroke="#cbd5e1" stroke-width="1.2"/>`;
 
-    const legend = series.map(x => {
-      const color = x.code === 'LT' ? '#1E3A5F' : '#94a3b8';
-      return `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:18px;font-size:12px;color:var(--text-secondary);">
-        <span style="width:14px;height:2px;background:${color};display:inline-block;"></span>${esc(x.name)}</span>`;
-    }).join('');
+    const legend = series.map(x => `<span style="display:inline-flex;align-items:center;gap:6px;margin-right:18px;font-size:12px;color:var(--text-secondary);">
+        <span style="width:14px;height:2px;background:${x.color};display:inline-block;"></span>${esc(x.name)}</span>`).join('');
 
     const fmt = v => (Math.round(v * 100) / 100).toFixed(2);
     const lines = series.map(x => {
       const first = x.pts[0], last = x.pts[x.pts.length - 1];
       const d = last.v - first.v;
       const bads = x.pts.filter(p => out(p.v) || p.verdict === 'OOT' || p.verdict === 'OOS');
-      return `<div>${esc(x.name)}：${first.m} 月 ${fmt(first.v)}${esc(meta.unit)} → ${last.m} 月 ${fmt(last.v)}${esc(meta.unit)}
+      return `<div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${x.color};margin-right:6px;"></span>${esc(x.name)}：${first.m} 月 ${fmt(first.v)}${esc(meta.unit)} → ${last.m} 月 ${fmt(last.v)}${esc(meta.unit)}
         <span style="color:${Math.abs(d) < 1e-9 ? 'var(--text-muted)' : '#b45309'};">（${d > 0 ? '+' : ''}${fmt(d)}）</span>
         ${bads.length ? `<span style="color:#dc2626;font-weight:600;margin-left:8px;">${bads.map(b => b.m + ' 月点异常').join('、')}</span>` : ''}</div>`;
     }).join('');
@@ -1727,11 +1816,11 @@ const StabilityPlan = {
 
   exportData() {
     this._apply();
-    const head = ['研究编号', '研究名称', '类型', '物料编码', '物料名称', '生产批次', '工厂', '考察条件', '时间点完成', '超期点', '开始日期', '状态'];
+    const head = ['研究编号', '方案编号', '同方案批次', '研究名称', '类型', '物料编码', '物料名称', '生产批次', '工厂', '考察条件', '时间点完成', '超期点', '开始日期', '状态'];
     const lines = [head.join(',')];
     this.filtered.forEach(s => {
       const pg = this.progress(s);
-      lines.push([s.no, s.name, this.typeMeta(s.type).name, s.materialCode, s.materialName, s.batchNo || '', s.plant,
+      lines.push([s.no, s.protocolNo || '', this.batchLabel(s), s.name, this.typeMeta(s.type).name, s.materialCode, s.materialName, s.batchNo || '', s.plant,
         s.conds.map(c => c.code).join('/'), pg.done + '/' + pg.total, pg.over, s.startDate, this.statusMeta(s.status).name]
         .map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
     });

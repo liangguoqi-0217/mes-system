@@ -74,7 +74,12 @@ const StabilityData = {
     { id: 'R07', studyNo: 'STB-26001', cond: 'AC', point: 3, planDate: '2025-09-20', actualDate: '2025-09-22', inspBatch: '100000013112', assay: '98.7', related: '0.52', moisture: '2.0', dissolve: '91.0', verdict: 'PASS', note: '' },
     { id: 'R08', studyNo: 'STB-26001', cond: 'AC', point: 6, planDate: '2025-12-20', actualDate: '2025-12-21', inspBatch: '100000013113', assay: '98.3', related: '0.78', moisture: '2.2', dissolve: '89.6', verdict: 'PASS', note: '' },
     { id: 'R09', studyNo: 'STB-26001', cond: 'AC', point: 9, planDate: '2026-03-20', actualDate: '2026-03-20', inspBatch: '100000013114', assay: '97.9', related: '0.94', moisture: '2.4', dissolve: '88.5', verdict: 'PASS', note: '加速 9 月有关物质 0.94%，接近限值 1.0%，纳入趋势关注' },
-    // STB-26004 丹红 长期：6 月点 OOS（偏差场景）
+    // STB-26009 布洛芬 2026 年度第 2 批（与 STB-26001 同方案 ST-P-2025-001）
+    { id: 'R18', studyNo: 'STB-26009', cond: 'LT', point: 0, planDate: '2026-03-18', actualDate: '2026-03-19', inspBatch: '100000014201', assay: '99.1', related: '0.30', moisture: '1.9', dissolve: '92.8', verdict: 'PASS', note: '' },
+    { id: 'R19', studyNo: 'STB-26009', cond: 'LT', point: 3, planDate: '2026-06-18', actualDate: '2026-06-19', inspBatch: '100000014202', assay: '98.9', related: '0.35', moisture: '2.0', dissolve: '92.2', verdict: 'PASS', note: '' },
+    { id: 'R20', studyNo: 'STB-26009', cond: 'AC', point: 0, planDate: '2026-03-18', actualDate: '2026-03-19', inspBatch: '100000014211', assay: '99.0', related: '0.33', moisture: '1.9', dissolve: '92.6', verdict: 'PASS', note: '' },
+    { id: 'R21', studyNo: 'STB-26009', cond: 'AC', point: 3, planDate: '2026-06-18', actualDate: '2026-06-19', inspBatch: '100000014212', assay: '98.6', related: '0.49', moisture: '2.1', dissolve: '91.3', verdict: 'PASS', note: '' },
+    // STB-26004 丹红 长期：6 月点 OOM（偏差场景）
     { id: 'R10', studyNo: 'STB-26004', cond: 'LT', point: 0, planDate: '2026-03-10', actualDate: '2026-03-11', inspBatch: '100000014101', assay: '99.5', related: '0.28', moisture: '', dissolve: '', verdict: 'PASS', note: '' },
     { id: 'R11', studyNo: 'STB-26004', cond: 'LT', point: 6, planDate: '2026-09-10', actualDate: '2026-09-12', inspBatch: '100000014208', assay: '98.1', related: '1.12', moisture: '', dissolve: '', verdict: 'OOS',  note: '有关物质超出限度（≤1.0%），发起偏差 DEV-20260915-002，评估市售产品影响' },
     // STB-26003 冠心宁 变更后
@@ -424,14 +429,23 @@ const StabilityData = {
       .map(k => `<option value="${k}">${this.itemMeta[k].name}</option>`).join('');
     showModal('稳定性趋势分析', `
       <div style="padding:4px 0;">
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;align-items:flex-end;">
           <div class="filter-group" style="margin:0;"><label>考察编号</label>
             <select id="sdTrStudy" onchange="StabilityData.drawTrend()">${studyOpts}</select></div>
+          <div class="filter-group" style="margin:0;"><label>视图</label>
+            <select id="sdTrView" onchange="StabilityData.drawTrend()">
+              <option value="batch">本批 · 多条件</option>
+              <option value="group">同方案 · 多批并列</option>
+            </select></div>
+          <div class="filter-group" style="margin:0;" id="sdTrCondWrap"><label>条件</label>
+            <select id="sdTrCond" onchange="StabilityData.drawTrend()">
+              <option value="LT">长期 25℃/60%RH</option><option value="AC">加速 40℃/75%RH</option>
+            </select></div>
           <div class="filter-group" style="margin:0;"><label>检验项目</label>
             <select id="sdTrItem" onchange="StabilityData.drawTrend()">${itemOpts}</select></div>
         </div>
         <div id="sdTrendBox"></div>
-      </div>`, [{ text: '关闭', cls: 'btn-secondary', action: closeModal }], 'modal-lg');
+      </div>`, [{ text: '关闭', cls: 'btn-secondary', action: closeModal }], 'modal-xl');
     this.drawTrend();
   },
 
@@ -440,10 +454,33 @@ const StabilityData = {
     if (!box) return;
     const studyNo = this._val('sdTrStudy') || this.resultData[0].studyNo;
     const itemKey = this._val('sdTrItem') || 'related';
-    // 与研究详情的「趋势」页签共用同一套图表（多条件同图、规格限、异常打点）
-    if (typeof StabilityPlan !== 'undefined' && StabilityPlan.getStudy) {
-      const s = StabilityPlan.getStudy(studyNo);
-      if (s) { box.innerHTML = StabilityPlan._trendBlock(s, itemKey); return; }
+    const view = this._val('sdTrView') || 'batch';
+    const cond = this._val('sdTrCond') || 'LT';
+    const condWrap = document.getElementById('sdTrCondWrap');
+    if (condWrap) condWrap.style.display = view === 'group' ? '' : 'none';
+
+    // 与研究详情的「趋势」页签共用同一套图表（多条件同图 / 同方案多批并列、规格限、异常打点）
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
+    if (P && P.getStudy) {
+      const s = P.getStudy(studyNo);
+      if (s) {
+        if (view === 'group') {
+          if (!s.protocolNo) {
+            box.innerHTML = `<div style="padding:36px 0;text-align:center;color:var(--text-muted);font-size:13px;">该研究尚未登记方案编号，无法按同方案聚合</div>`;
+            return;
+          }
+          const list = P.groupStudies(s.protocolNo);
+          if (list.length <= 1) {
+            box.innerHTML = `<div style="padding:36px 0;text-align:center;color:var(--text-muted);font-size:13px;">方案 ${esc(s.protocolNo)} 下仅 1 批，暂无可并列的批次</div>`;
+            return;
+          }
+          box.innerHTML = `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">方案 ${esc(s.protocolNo)} · 共 ${list.length} 批 · ${esc(P.condName(cond))}</div>`
+            + P._groupTrendBlock(s.protocolNo, itemKey, cond);
+          return;
+        }
+        box.innerHTML = P._trendBlock(s, itemKey);
+        return;
+      }
     }
     box.innerHTML = this._trendSvg(studyNo, 'LT', itemKey);
   },
