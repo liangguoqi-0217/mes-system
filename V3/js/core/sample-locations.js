@@ -21,6 +21,7 @@ window.SampleLocations = (function () {
     { code: 'room',    name: '房间/样品间' },
     { code: 'fridge',  name: '冰箱/冰柜' },
     { code: 'cabinet', name: '柜/干燥器' },
+    { code: 'chamber', name: '稳定性箱' },
     { code: 'shelf',   name: '层/搁架/抽屉' },
     { code: 'box',     name: '盒' },
     { code: 'slot',    name: '行列位' }
@@ -60,6 +61,26 @@ window.SampleLocations = (function () {
     { code: 'FRZ-02-D2', name: '抽屉2', type: 'shelf', tempZone: 'FREEZE', parentCode: 'FRZ-02', status: 'active' },
     { code: 'CAB-02', name: '微生物样品柜', type: 'cabinet', tempZone: 'COLD', parentCode: 'S-02', status: 'active' },
     { code: 'CAB-02-L1', name: '1层', type: 'shelf', tempZone: 'COLD', parentCode: 'CAB-02', status: 'active' },
+
+    // ---- 稳定性考察室（对接稳定性研究：条件 = 箱，位置到层/盒） ----
+    { code: 'S-03', name: '稳定性考察室', type: 'room', tempZone: 'RT', parentCode: '', status: 'active' },
+    { code: 'STB-X01', name: '稳定性箱 X01（25℃/60%RH）', type: 'chamber', tempZone: 'RT', parentCode: 'S-03', status: 'active' },
+    { code: 'STB-X01-L1', name: '1层', type: 'shelf', tempZone: 'RT', parentCode: 'STB-X01', status: 'active' },
+    { code: 'STB-X01-L1-A', name: 'A盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X01-L1', status: 'active', capacity: 60 },
+    { code: 'STB-X01-L1-B', name: 'B盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X01-L1', status: 'active', capacity: 60 },
+    { code: 'STB-X01-L2', name: '2层', type: 'shelf', tempZone: 'RT', parentCode: 'STB-X01', status: 'active' },
+    { code: 'STB-X01-L2-A', name: 'A盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X01-L2', status: 'active', capacity: 40 },
+    { code: 'STB-X01-L2-B', name: 'B盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X01-L2', status: 'active', capacity: 40 },
+    { code: 'STB-X02', name: '稳定性箱 X02（40℃/75%RH）', type: 'chamber', tempZone: 'RT', parentCode: 'S-03', status: 'active' },
+    { code: 'STB-X02-L1', name: '1层', type: 'shelf', tempZone: 'RT', parentCode: 'STB-X02', status: 'active' },
+    { code: 'STB-X02-L1-A', name: 'A盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X02-L1', status: 'active', capacity: 40 },
+    { code: 'STB-X02-L1-B', name: 'B盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X02-L1', status: 'active', capacity: 40 },
+    { code: 'STB-X03', name: '稳定性箱 X03（25℃/60%RH，备用）', type: 'chamber', tempZone: 'RT', parentCode: 'S-03', status: 'active' },
+    { code: 'STB-X03-L1', name: '1层', type: 'shelf', tempZone: 'RT', parentCode: 'STB-X03', status: 'active' },
+    { code: 'STB-X03-L1-A', name: 'A盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X03-L1', status: 'active', capacity: 60 },
+    { code: 'STB-X04', name: '稳定性箱 X04（40℃/75%RH，维修中）', type: 'chamber', tempZone: 'RT', parentCode: 'S-03', status: 'active' },
+    { code: 'STB-X04-L1', name: '1层', type: 'shelf', tempZone: 'RT', parentCode: 'STB-X04', status: 'active' },
+    { code: 'STB-X04-L1-A', name: 'A盒', type: 'box', tempZone: 'RT', parentCode: 'STB-X04-L1', status: 'active', capacity: 40 },
 
     // ---- 留样区（对接留样台账历史数据：留样室A/B/C） ----
     { code: 'LYA', name: '留样室A', type: 'room', tempZone: 'COOL', parentCode: '', status: 'active' },

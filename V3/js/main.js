@@ -46,7 +46,7 @@ const App = {
         },
         {
           title:'稳定性管理', items: [
-            { id:'stability-plan', label:'稳定性方案与计划', route:'stability-plan' },
+            { id:'stability-plan', label:'稳定性研究', route:'stability-plan' },
             { id:'stability-data', label:'稳定性数据与报告', route:'stability-data' }
           ]
         },

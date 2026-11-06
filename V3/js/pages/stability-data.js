@@ -60,20 +60,6 @@ const StabilityData = {
     { id: 'X04', no: 'STB-X04', cond: 'AC', setTemp: '40℃', setHum: '75%RH', capacity: 120, used: 18, status: 'FAULT', lastCheck: '2026-10-09', remark: '压缩机故障维修中，样品已转移至 STB-X02' }
   ],
 
-  // 出入箱流水
-  inOutLog: [
-    { id: 'L01', time: '2026-10-09 11:00', type: 'MOVE', chamber: 'STB-X02', studyNo: 'STB-26004', cond: 'AC', qty: '12 支', by: '赵工', remark: 'STB-X04 故障，样品转移' },
-    { id: 'L02', time: '2026-09-12 09:40', type: 'OUT', chamber: 'STB-X01', studyNo: 'STB-26004', cond: 'LT', qty: '8 支', by: '赵工', remark: '6月点取样，送检 100000014208' },
-    { id: 'L03', time: '2026-09-12 09:45', type: 'OUT', chamber: 'STB-X02', studyNo: 'STB-26004', cond: 'AC', qty: '8 支', by: '赵工', remark: '6月点取样，送检 100000014209' },
-    { id: 'L04', time: '2026-08-10 10:00', type: 'OUT', chamber: 'STB-X01', studyNo: 'STB-26005', cond: 'LT', qty: '4 袋', by: '周工', remark: '3月点取样' },
-    { id: 'L05', time: '2026-07-18 14:30', type: 'IN', chamber: 'STB-X01', studyNo: 'STB-26003', cond: 'LT', qty: '10 支', by: '钱工', remark: '考察入箱（变更后考察）' },
-    { id: 'L06', time: '2026-06-22 15:10', type: 'OUT', chamber: 'STB-X01', studyNo: 'STB-26001', cond: 'LT', qty: '6 盒', by: '李工', remark: '12月点取样（含 OOT 复测样）' },
-    { id: 'L07', time: '2026-05-10 09:20', type: 'IN', chamber: 'STB-X01', studyNo: 'STB-26005', cond: 'LT', qty: '20 袋', by: '周工', remark: '考察入箱' },
-    { id: 'L08', time: '2026-03-20 16:00', type: 'OUT', chamber: 'STB-X02', studyNo: 'STB-26001', cond: 'AC', qty: '6 盒', by: '李工', remark: '加速 9 月点取样，加速考察结束' },
-    { id: 'L09', time: '2025-06-20 10:00', type: 'IN', chamber: 'STB-X01', studyNo: 'STB-26001', cond: 'LT', qty: '12 盒', by: '李工', remark: '考察入箱（长期）' },
-    { id: 'L10', time: '2025-06-20 10:20', type: 'IN', chamber: 'STB-X02', studyNo: 'STB-26001', cond: 'AC', qty: '12 盒', by: '李工', remark: '考察入箱（加速）' }
-  ],
-
   // ==================== 结果汇总（批次 × 条件 × 时间点） ====================
 
   resultData: [
@@ -246,21 +232,66 @@ const StabilityData = {
 
   // ---------- 页签一：样品位置 ----------
 
+  // 样品位置 = 跨研究总览：样品明细与入箱/取样/移库事实全部取自稳定性研究主单
+  _chamberOf(locCode) {
+    if (!window.SampleLocations) return '';
+    const segs = SampleLocations.pathSegments(locCode || '');
+    const ch = segs.find(x => x.type === 'chamber');
+    return ch ? ch.code : '';
+  },
+
+  _sampleRows() {
+    const out = [];
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
+    if (!P) return out;
+    P.studies.forEach(s => {
+      (s.samples || []).forEach(sm => {
+        out.push({
+          studyNo: s.no, cond: sm.cond, sampleNo: sm.no, chamber: this._chamberOf(sm.locCode),
+          qty: sm.qty, unit: sm.unit, remain: P.remain(sm), locCode: sm.locCode,
+          inDate: sm.inDate, by: sm.by, moves: sm.moves || []
+        });
+      });
+    });
+    return out;
+  },
+
   renderChamberTable() {
     const cond = this._val('sdCond');
     const status = this._val('sdStatus');
     const kw = this._val('sdKeyword').toLowerCase();
+    const samples = this._sampleRows();
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
 
     const chambers = this.chamberData.filter(c => {
       if (cond && c.cond !== cond) return false;
       if (status && c.status !== status) return false;
       if (kw && (c.no + ' ' + c.remark).toLowerCase().indexOf(kw) === -1) {
-        const hitLog = this.inOutLog.some(l => (l.studyNo + ' ' + l.chamber).toLowerCase().indexOf(kw) !== -1);
-        if (!hitLog) return false;
+        const hit = samples.some(x => x.chamber === c.no && (x.studyNo + ' ' + x.sampleNo).toLowerCase().indexOf(kw) !== -1);
+        if (!hit) return false;
       }
       return true;
     });
-    this.filtered = this.inOutLog.filter(l => {
+
+    const flow = [];
+    samples.forEach(x => {
+      flow.push({ time: x.inDate, type: 'IN', chamber: x.chamber, studyNo: x.studyNo, cond: x.cond,
+        qty: x.qty + ' ' + x.unit, by: x.by, remark: '备样入箱 ' + x.sampleNo });
+      (x.moves || []).forEach(m => flow.push({ time: String(m.time || '').substring(0, 10), type: 'MOVE',
+        chamber: this._chamberOf(m.to), studyNo: x.studyNo, cond: x.cond, qty: '—', by: m.by, remark: m.reason }));
+    });
+    if (P) {
+      P.studies.forEach(s => {
+        s.conds.forEach(c => c.points.filter(p => p.batch).forEach(p => {
+          const sm = (s.samples || []).find(x => x.cond === c.code);
+          flow.push({ time: p.date || p.sampledDate || p.planDate, type: 'OUT',
+            chamber: sm ? this._chamberOf(sm.locCode) : '', studyNo: s.no, cond: c.code,
+            qty: s.qtyPerPoint + ' ' + s.unit, by: '', remark: p.month + ' 月点取样，送检 ' + p.batch });
+        }));
+      });
+    }
+
+    this.filtered = flow.filter(l => {
       if (cond && l.cond !== cond) return false;
       if (kw && (l.studyNo + ' ' + l.chamber + ' ' + l.remark).toLowerCase().indexOf(kw) === -1) return false;
       if (status) {
@@ -268,7 +299,7 @@ const StabilityData = {
         if (!c || c.status !== status) return false;
       }
       return true;
-    });
+    }).sort((a, b) => String(b.time).localeCompare(String(a.time)));
 
     const { page } = this._paged(this.filtered);
     const el = document.getElementById('sdTableWrapper');
@@ -287,12 +318,13 @@ const StabilityData = {
           <th style="min-width:220px;">备注</th>
         </tr></thead>
         <tbody>${chambers.length ? chambers.map(c => {
-          const pct = Math.round(c.used / c.capacity * 100);
+          const used = samples.filter(x => x.chamber === c.no).length;
+          const pct = Math.min(100, Math.round(used / c.capacity * 100));
           const m = this.chamberStatusMeta[c.status];
           return `<tr${c.status === 'FAULT' ? ' style="background:#fef2f2;"' : ''}>
             <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(c.no)}</td>
             <td style="font-size:12px;">${esc(c.setTemp)} / ${esc(c.setHum)}（${c.cond === 'LT' ? '长期' : '加速'}）</td>
-            <td style="font-size:12px;">${c.capacity} / ${c.used}</td>
+            <td style="font-size:12px;">${c.capacity} / ${used}</td>
             <td><div style="background:#e2e8f0;border-radius:4px;height:8px;width:100px;">
               <div style="background:${pct > 85 ? '#dc2626' : '#2563eb'};height:8px;border-radius:4px;width:${pct}%;"></div>
             </div><span style="font-size:11px;color:var(--text-muted);">${pct}%</span></td>
@@ -304,7 +336,6 @@ const StabilityData = {
       </table>
       <div style="display:flex;align-items:center;gap:12px;padding:18px 24px 4px;">
         <span style="font-weight:700;font-size:13px;">样品出入箱流水</span>
-        <button class="btn btn-secondary btn-sm" onclick="StabilityData.openLogCreate()">+ 出入箱登记</button>
       </div>
       <table class="data-table" style="min-width:1200px;">
         <thead><tr>
@@ -328,45 +359,6 @@ const StabilityData = {
           <td style="font-size:12px;">${esc(l.remark || '—')}</td>
         </tr>`).join('') : `<tr><td colspan="8" class="empty-cell">暂无出入箱记录</td></tr>`}</tbody>
       </table>`;
-  },
-
-  openLogCreate() {
-    const chamberOpts = this.chamberData.filter(c => c.status !== 'FAULT')
-      .map(c => `<option value="${c.no}">${c.no}（${c.cond === 'LT' ? '长期' : '加速'} ${c.setTemp}/${c.setHum}）</option>`).join('');
-    const studyNos = [...new Set(this.inOutLog.map(l => l.studyNo))]
-      .map(s => `<option value="${s}">${s}</option>`).join('');
-    showModal('出入箱登记', `
-      <div style="padding:4px 0;">
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
-          <div class="form-group"><label>类型 <span class="req">*</span></label><select id="lgType">
-            <option value="IN">入箱</option><option value="OUT">出箱取样</option>
-            <option value="MOVE">转移</option><option value="DESTROY">出箱销毁</option>
-          </select></div>
-          <div class="form-group"><label>稳定性箱</label><select id="lgChamber">${chamberOpts}</select></div>
-          <div class="form-group"><label>考察编号</label><select id="lgStudy">${studyNos}</select></div>
-          <div class="form-group"><label>数量</label><input type="text" id="lgQty" placeholder="如 6 盒"></div>
-          <div class="form-group"><label>经办人</label><input type="text" id="lgBy" value="${(window.currentUser && window.currentUser.name) || '当前用户'}"></div>
-          <div class="form-group"><label>日期</label><input type="date" id="lgDate" value="${new Date().toISOString().substring(0, 10)}"></div>
-        </div>
-        <div class="form-group" style="margin-top:14px;"><label>说明</label><input type="text" id="lgRemark" placeholder="如 6月点取样，送检批号"></div>
-      </div>`, [
-      { text: '取消', cls: 'btn-secondary', action: closeModal },
-      { text: '保存', cls: 'btn-primary', action: () => {
-        const d = (document.getElementById('lgDate') || {}).value || new Date().toISOString().substring(0, 10);
-        this.inOutLog.unshift({
-          id: 'L' + (900 + this.inOutLog.length),
-          time: d + ' 10:00',
-          type: (document.getElementById('lgType') || {}).value || 'IN',
-          chamber: (document.getElementById('lgChamber') || {}).value || '',
-          studyNo: (document.getElementById('lgStudy') || {}).value || '',
-          cond: '', qty: (document.getElementById('lgQty') || {}).value || '—',
-          by: (document.getElementById('lgBy') || {}).value || '',
-          remark: (document.getElementById('lgRemark') || {}).value || ''
-        });
-        closeModal(); StabilityData.init();
-        toast('出入箱记录已登记');
-      } }
-    ], 'modal-md');
   },
 
   // ---------- 页签二：结果与趋势 ----------
