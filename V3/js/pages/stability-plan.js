@@ -1164,12 +1164,18 @@ const StabilityPlan = {
 
   openApprove() {
     const s = this.find(this._ctx.id);
+    // 同物料已有方案 → 默认沿用，直接归入同方案下一批
+    const sameMat = this.studies.filter(x => x.id !== s.id && x.materialCode === s.materialCode && x.protocolNo);
+    const suggest = sameMat.length ? sameMat[0].protocolNo : '';
+    const hint = sameMat.length ? `<div style="margin-top:12px;padding:8px 12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;color:var(--text-secondary);">
+        该物料已有方案 ${esc(suggest)}（${this.groupStudies(suggest).length} 批），方案编号沿用即归入同方案第 ${this.groupStudies(suggest).length + 1} 批
+      </div>` : '';
     showModal('研究立项 — ' + s.no, `
       <div style="padding:4px 0;display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
-        <div class="form-group"><label>方案编号 <span class="req">*</span></label><input type="text" id="apProto" value="${esc(s.protocolNo)}" placeholder="如 ST-P-2026-001"></div>
+        <div class="form-group"><label>方案编号 <span class="req">*</span></label><input type="text" id="apProto" value="${esc(s.protocolNo || suggest)}" placeholder="如 ST-P-2026-001"></div>
         <div class="form-group"><label>批准文号 <span class="req">*</span></label><input type="text" id="apNo" value="${esc(s.approvalNo)}" placeholder="纸质 / eQMS 批准文号"></div>
         <div class="form-group"><label>批准日期 <span class="req">*</span></label><input type="date" id="apDate" value="${esc(s.approvalDate || s.startDate)}"></div>
-      </div>`, [
+      </div>${hint}`, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
       { text: '确认立项', cls: 'btn-primary', action: () => { StabilityPlan.saveApprove(); } }
     ], 'modal-lg');
