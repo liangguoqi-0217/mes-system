@@ -87,12 +87,7 @@ const StabilityPlan = {
       qtyPerPoint: 200, unit: 'g', backupRate: 0.15 }
   ],
 
-  annualPlan: [
-    { id: 'AP01', year: '2026', materialCode: 'MAT-20002', materialName: '布洛芬缓释胶囊', plant: '2001', lastStudy: 'STB-25001', batches: 3 },
-    { id: 'AP02', year: '2026', materialCode: 'MAT-30002', materialName: '丹红注射液', plant: '2002', lastStudy: 'STB-25006', batches: 2 },
-    { id: 'AP03', year: '2026', materialCode: 'MAT-20003', materialName: '稳心颗粒', plant: '2001', lastStudy: 'STB-25004', batches: 3 },
-    { id: 'AP04', year: '2026', materialCode: 'MAT-30005', materialName: '冠心宁注射液', plant: '2002', lastStudy: 'STB-25008', batches: 2 }
-  ],
+  // 年度考察计划（AP-xxxx）由 js/pages/stability-annual.js 维护，本页只读取与回写
 
   // ==================== 研究主单数据 ====================
   // conds[].done: 已执行时间点（month → 执行事实）；未列出的时间点由 _seed 按日期推导状态
@@ -455,7 +450,15 @@ const StabilityPlan = {
     return e ? String(e.value || '').trim() : '';
   },
 
-  search() { this.page = 1; this.renderTable(); this.renderPagination(); },
+  search() {
+    this.page = 1;
+    this.renderTable();
+    this.renderPagination();
+    if (window.QueryVariant) {
+      QueryVariant.saveAuto('stability-plan');
+      QueryVariant.recordUsed('stability-plan');
+    }
+  },
 
   toggleMore() { this.moreOpen = !this.moreOpen; this.renderFilterBar(); },
 
@@ -1561,17 +1564,33 @@ const StabilityPlan = {
   },
 
   openAnnualPick() {
-    const items = this.annualPlan.map(a => `<tr>
-      <td style="font-size:12px;">${esc(a.year)}</td>
-      <td style="font-family:monospace;font-size:12px;">${esc(a.materialCode)}</td>
-      <td>${esc(a.materialName)}</td>
-      <td style="font-size:12px;">${esc(a.plant)} ${esc(this.plantName(a.plant))}</td>
-      <td style="font-size:12px;">${a.batches} 批</td>
-      <td><button class="btn btn-primary btn-sm" onclick="closeModal();StabilityPlan.openCreateForm('annual','${a.id}')">生成研究</button></td>
-    </tr>`).join('');
-    showModal('从年度考察计划生成', `<table class="data-table" style="min-width:900px;">
-      <thead><tr><th style="width:80px;">年度</th><th style="width:130px;">物料编码</th><th>物料名称</th><th style="width:200px;">工厂</th><th style="width:80px;">批数</th><th style="width:110px;">操作</th></tr></thead>
+    const plans = this._annualPlans();
+    if (!plans.length) {
+      showModal('从年度考察计划生成', `<div style="padding:36px 0;text-align:center;color:var(--text-muted);font-size:13px;">
+        当年年度考察计划已全部立项</div>`, [{ text: '返回', cls: 'btn-secondary', action: () => { closeModal(); StabilityPlan.openCreate(); } }], 'modal-lg');
+      return;
+    }
+    const items = plans.map(a => {
+      const done = (a.studyNos || []).length;
+      return `<tr>
+        <td style="font-family:monospace;font-size:12px;">${esc(a.id)}</td>
+        <td style="font-size:12px;">${esc(a.year)}</td>
+        <td style="font-size:12px;">${esc(a.materialName)}
+          <div style="font-family:monospace;font-size:11px;color:var(--text-muted);">${esc(a.materialCode)}</div></td>
+        <td style="font-size:12px;">${esc(a.plant)} ${esc(this.plantName(a.plant))}</td>
+        <td style="font-size:12px;">${a.batchCount} 批${done ? `<span style="color:var(--text-muted);">（已立 ${done}）</span>` : ''}</td>
+        <td><button class="btn btn-primary btn-sm" onclick="closeModal();StabilityPlan.openCreateForm('annual','${a.id}')">立项第 ${done + 1} 批</button></td>
+      </tr>`;
+    }).join('');
+    showModal('从年度考察计划生成', `<table class="data-table" style="min-width:1000px;">
+      <thead><tr><th style="width:130px;">计划编号</th><th style="width:70px;">年度</th><th>物料</th><th style="width:200px;">工厂</th><th style="width:120px;">计划批次</th><th style="width:130px;">操作</th></tr></thead>
       <tbody>${items}</tbody></table>`, [{ text: '返回', cls: 'btn-secondary', action: () => { closeModal(); StabilityPlan.openCreate(); } }], 'modal-xl');
+  },
+
+  // 年度考察计划由 StabilityAnnual 维护，这里只读未立满的计划
+  _annualPlans() {
+    if (typeof StabilityAnnual === 'undefined' || !StabilityAnnual.openPlans) return [];
+    return StabilityAnnual.openPlans();
   },
 
   openCreateForm(mode, srcId) {
@@ -1589,9 +1608,20 @@ const StabilityPlan = {
         conds: s.conds.map(c => c.code), months: s.conds[0].months.slice(),
         items: s.conds[0].items.slice(), qtyPerPoint: s.qtyPerPoint, unit: s.unit, backupRate: s.backupRate });
     } else if (mode === 'annual') {
-      const a = this.annualPlan.find(x => x.id === srcId);
-      pre = Object.assign(pre, { plant: a.plant, materialCode: a.materialCode, materialName: a.materialName,
-        name: a.materialName + ' ' + a.year + ' 年度持续稳定性考察' });
+      const a = (typeof StabilityAnnual !== 'undefined' && StabilityAnnual.get) ? StabilityAnnual.get(srcId) : null;
+      if (a) {
+        const t = this.templates.find(x => x.id === a.template) || this.templates[0];
+        const n = (a.studyNos || []).length + 1;
+        pre = Object.assign(pre, {
+          type: a.type || 'CONTINUOUS', plant: a.plant, materialCode: a.materialCode, materialName: a.materialName,
+          spec: a.spec || '', packSpec: a.packSpec || '',
+          startDate: a.startMonth ? a.startMonth + '-01' : '',
+          name: a.materialName + ' ' + a.year + ' 年度第 ' + n + ' 批持续稳定性考察',
+          conds: (a.conds && a.conds.length ? a.conds : t.conds).slice(),
+          months: (a.months && a.months.length ? a.months : t.months).slice(),
+          items: t.items.slice(), qtyPerPoint: t.qtyPerPoint, unit: t.unit, backupRate: t.backupRate
+        });
+      }
     }
 
     this._ctx = { mode: mode, srcId: srcId, pre: pre };
@@ -1619,8 +1649,8 @@ const StabilityPlan = {
         <div class="form-group"><label>物料编码 <span class="req">*</span></label><input type="text" id="ncMatCode" value="${esc(pre.materialCode)}" placeholder="如 MAT-20002"></div>
         <div class="form-group"><label>物料名称 <span class="req">*</span></label><input type="text" id="ncMatName" value="${esc(pre.materialName)}"></div>
         <div class="form-group"><label>生产批次</label><input type="text" id="ncBatch" placeholder="SAP 批次号"></div>
-        <div class="form-group"><label>规格</label><input type="text" id="ncSpec" placeholder="如 0.3g"></div>
-        <div class="form-group"><label>上市包装</label><input type="text" id="ncPack" placeholder="如 铝塑泡罩 12 粒/盒"></div>
+        <div class="form-group"><label>规格</label><input type="text" id="ncSpec" value="${esc(pre.spec || '')}" placeholder="如 0.3g"></div>
+        <div class="form-group"><label>上市包装</label><input type="text" id="ncPack" value="${esc(pre.packSpec || '')}" placeholder="如 铝塑泡罩 12 粒/盒"></div>
         <div class="form-group"><label>开始日期（0 月） <span class="req">*</span></label><input type="date" id="ncStart" value="${esc(pre.startDate || _today())}"></div>
         <div class="form-group"><label>取样窗口 ±天</label><input type="number" id="ncWindow" value="5"></div>
         <div class="form-group"><label>负责人</label><input type="text" id="ncOwner" value="李工"></div>
@@ -1684,9 +1714,13 @@ const StabilityPlan = {
     };
 
     this.studies.unshift(study);
+    if (this._ctx.mode === 'annual' && this._ctx.srcId && typeof StabilityAnnual !== 'undefined' && StabilityAnnual.addStudy) {
+      StabilityAnnual.addStudy(this._ctx.srcId, no);
+    }
+    const fromPlan = this._ctx.mode === 'annual';
     closeModal();
     this.search();
-    toast('研究已创建，下一步登记立项');
+    toast(fromPlan ? '研究 ' + no + ' 已创建（草稿），已回写年度考察计划' : '研究已创建，下一步登记立项');
   },
 
   // ==================== 导出 ====================

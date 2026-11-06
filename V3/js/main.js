@@ -47,6 +47,7 @@ const App = {
         {
           title:'稳定性管理', items: [
             { id:'stability-plan', label:'稳定性研究', route:'stability-plan' },
+            { id:'stability-annual', label:'年度考察计划', route:'stability-annual' },
             { id:'stability-data', label:'稳定性数据与报告', route:'stability-data' }
           ]
         },
@@ -196,6 +197,7 @@ const App = {
     'inspection-batch': InspectionBatch,
     'retention-sample': SampleLedger,      // 旧路由别名：留样管理已并入样品台账
     'stability-plan': StabilityPlan,
+    'stability-annual': StabilityAnnual,
     'stability-data': StabilityData,
     'sample-ledger': SampleLedger,
     'sample-location': SampleLocationPage,
