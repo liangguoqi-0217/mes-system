@@ -31,6 +31,7 @@ const StabilityData = {
 
   reportTypeMeta: {
     STAGE: { name: '阶段报告', badge: 'badge-blue' },
+    GROUP: { name: '方案组报告', badge: 'badge-yellow' },
     ANNUAL: { name: '年度汇总报告', badge: 'badge-purple' },
     REG: { name: '注册申报报告', badge: 'badge-green' },
     ABN: { name: '异常评估报告', badge: 'badge-red' }
@@ -106,7 +107,12 @@ const StabilityData = {
       conclusion: '12 月点有关物质 OOT（0.61%），在规格内呈上升趋势；维持考察并加强趋势监测' },
     { id: 'RP04', no: 'SR-2025-006', type: 'REG', studyNo: 'STB-25902', title: '维生素C原料上市稳定性考察报告（0-24 月）',
       period: '2023-06 ~ 2025-06', status: 'PUBLISHED', by: '注册部 吴工', time: '2025-07-10',
-      conclusion: '各时间点均符合规格，支持有效期 24 个月，注册申报已提交' }
+      conclusion: '各时间点均符合规格，支持有效期 24 个月，注册申报已提交' },
+    { id: 'RP05', no: 'SR-2026-021', type: 'GROUP', studyNo: '—', protocolNo: 'ST-P-2025-001',
+      studyNos: ['STB-26001', 'STB-26009'], item: 'related', maxMonth: 12,
+      title: '布洛芬缓释胶囊方案 ST-P-2025-001 多批并列稳定性报告（2 批，≤12 月）',
+      period: '2025-06 ~ 2026-06', status: 'DRAFT', by: '质量部 李工', time: '2026-11-06',
+      conclusion: '2 批长期数据并列评估：有关物质同呈上升趋势，第 1 批 12 月点 OOT（0.61%），第 2 批 3 月点 0.35%，趋势一致但批间无显著差异' }
   ],
 
   // ==================== 页面骨架 ====================
@@ -561,7 +567,7 @@ const StabilityData = {
     this.filtered = this.reportData.filter(r => {
       if (type && r.type !== type) return false;
       if (status && r.status !== status) return false;
-      if (kw && (r.no + ' ' + r.title + ' ' + r.studyNo).toLowerCase().indexOf(kw) === -1) return false;
+      if (kw && (r.no + ' ' + r.title + ' ' + r.studyNo + ' ' + (r.protocolNo || '')).toLowerCase().indexOf(kw) === -1) return false;
       return true;
     });
 
@@ -574,7 +580,7 @@ const StabilityData = {
         <th style="width:140px;">报告编号</th>
         <th style="width:130px;">报告类型</th>
         <th style="width:320px;">报告标题</th>
-        <th style="width:130px;">关联考察</th>
+        <th style="width:150px;">关联考察 / 方案</th>
         <th style="width:180px;">覆盖期间</th>
         <th style="width:150px;">编制人 / 时间</th>
         <th style="width:110px;">状态</th>
@@ -585,7 +591,9 @@ const StabilityData = {
         <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(r.no)}</td>
         <td><span class="badge ${this.reportTypeMeta[r.type].badge}">${esc(this.reportTypeMeta[r.type].name)}</span></td>
         <td style="font-size:12.5px;">${esc(r.title)}</td>
-        <td style="font-family:monospace;font-size:12px;">${esc(r.studyNo)}</td>
+        <td style="font-family:monospace;font-size:12px;">${r.type === 'GROUP'
+          ? `${esc(r.protocolNo || '—')}<div style="font-family:inherit;font-size:11px;color:var(--text-muted);">${(r.studyNos || []).length} 批并列</div>`
+          : esc(r.studyNo)}</td>
         <td style="font-size:12px;">${esc(r.period)}</td>
         <td style="font-size:12px;">${esc(r.by)}<div style="color:var(--text-muted);font-size:11px;">${esc(r.time)}</div></td>
         <td><span class="badge ${this.reportStatusMeta[r.status].badge}">${esc(this.reportStatusMeta[r.status].name)}</span></td>
@@ -600,24 +608,18 @@ const StabilityData = {
   openReportDetail(rid) {
     const r = this.reportData.find(x => x.id === rid);
     if (!r) return;
-    const rows = r.studyNo !== '—' ? this.resultData.filter(x => x.studyNo === r.studyNo) : [];
-    const dataHtml = rows.length ? `<div style="margin-top:18px;font-weight:700;">关联数据（${r.studyNo}）</div>
-      <table class="data-table" style="margin-top:8px;">
-        <thead><tr><th>条件</th><th>时间点</th><th>取样日期</th><th>含量 %</th><th>有关物质 %</th><th>判定</th></tr></thead>
-        <tbody>${rows.map(x => `<tr>
-          <td style="font-size:12px;">${esc(this.condName[x.cond])}</td><td style="font-size:12px;">${x.point} 月</td>
-          <td style="font-size:12px;">${esc(x.actualDate)}</td><td style="font-size:12px;">${esc(x.assay || '—')}</td>
-          <td style="font-size:12px;">${esc(x.related || '—')}</td>
-          <td>${x.verdict === 'PASS' ? '<span class="badge badge-green">PASS</span>' : x.verdict === 'OOT' ? '<span class="badge badge-yellow">OOT</span>' : '<span class="badge badge-red">OOS</span>'}</td>
-        </tr>`).join('')}</tbody></table>` : '';
+    const isGroup = r.type === 'GROUP';
+    const dataHtml = isGroup ? this._groupReportBody(r) : this._singleReportBody(r);
     showModal('稳定性报告 — ' + r.no, `
       <div style="padding:4px 0;font-size:13px;">
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px 24px;padding:14px 16px;background:#f8fafc;border:1px solid #eef1f4;border-radius:8px;">
           <div style="grid-column:span 2;"><span style="color:var(--text-muted);">标题：</span>${esc(r.title)}</div>
           <div><span style="color:var(--text-muted);">报告类型：</span><span class="badge ${this.reportTypeMeta[r.type].badge}">${esc(this.reportTypeMeta[r.type].name)}</span></div>
           <div><span style="color:var(--text-muted);">状态：</span><span class="badge ${this.reportStatusMeta[r.status].badge}">${esc(this.reportStatusMeta[r.status].name)}</span></div>
-          <div><span style="color:var(--text-muted);">关联考察：</span>${esc(r.studyNo)}</div>
-          <div><span style="color:var(--text-muted);">覆盖期间：</span>${esc(r.period)}</div>
+          ${isGroup ? `<div><span style="color:var(--text-muted);">方案编号：</span>${esc(r.protocolNo || '—')}</div>
+          <div><span style="color:var(--text-muted);">纳入批次：</span>${esc((r.studyNos || []).join('、'))}</div>`
+          : `<div><span style="color:var(--text-muted);">关联考察：</span>${esc(r.studyNo)}</div>
+          <div><span style="color:var(--text-muted);">覆盖期间：</span>${esc(r.period)}</div>`}
           <div><span style="color:var(--text-muted);">编制：</span>${esc(r.by)} ${esc(r.time)}</div>
           <div style="grid-column:span 2;"><span style="color:var(--text-muted);">结论：</span>${esc(r.conclusion || '—')}</div>
         </div>
@@ -625,7 +627,74 @@ const StabilityData = {
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 16px;margin-top:14px;font-size:12px;color:#1e293b;">
           正式报告文件由文档服务生成并走审批流发布；本页维护报告台账与关联数据。
         </div>
-      </div>`, [{ text: '关闭', cls: 'btn-secondary', action: closeModal }], 'modal-lg');
+      </div>`, [{ text: '关闭', cls: 'btn-secondary', action: closeModal }], 'modal-xl');
+  },
+
+  _singleReportBody(r) {
+    const rows = r.studyNo !== '—' ? this.resultData.filter(x => x.studyNo === r.studyNo) : [];
+    if (!rows.length) return '';
+    return `<div style="margin-top:18px;font-weight:700;">关联数据（${esc(r.studyNo)}）</div>
+      <table class="data-table" style="margin-top:8px;">
+        <thead><tr><th>条件</th><th>时间点</th><th>取样日期</th><th>含量 %</th><th>有关物质 %</th><th>判定</th></tr></thead>
+        <tbody>${rows.map(x => `<tr>
+          <td style="font-size:12px;">${esc(this.condName[x.cond])}</td><td style="font-size:12px;">${x.point} 月</td>
+          <td style="font-size:12px;">${esc(x.actualDate)}</td><td style="font-size:12px;">${esc(x.assay || '—')}</td>
+          <td style="font-size:12px;">${esc(x.related || '—')}</td>
+          <td>${x.verdict === 'PASS' ? '<span class="badge badge-green">PASS</span>' : x.verdict === 'OOT' ? '<span class="badge badge-yellow">OOT</span>' : '<span class="badge badge-red">OOS</span>'}</td>
+        </tr>`).join('')}</tbody></table>`;
+  },
+
+  // 方案组报告正文：一批一行 × 条件，列为时间点；图按条件各出一张多批并列
+  _groupReportBody(r) {
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
+    if (!P) return '';
+    const list = (r.studyNos || []).map(no => P.getStudy(no)).filter(Boolean);
+    if (!list.length) return '';
+    const item = r.item || 'related';
+    const meta = this.itemMeta[item] || { name: '检验结果' };
+    const maxMonth = r.maxMonth != null ? Number(r.maxMonth) : 999;
+
+    const months = [];
+    list.forEach(s => P._resultRows(s).forEach(x => {
+      if (x.point <= maxMonth && months.indexOf(x.point) < 0) months.push(x.point);
+    }));
+    months.sort((a, b) => a - b);
+
+    const rows = [];
+    list.forEach(s => s.conds.forEach(c => {
+      const pts = P._resultRows(s).filter(x => x.cond === c.code && x.point <= maxMonth);
+      if (pts.length) rows.push({ s: s, c: c, pts: pts });
+    }));
+    if (!rows.length) {
+      return `<div style="padding:32px 0;text-align:center;color:var(--text-muted);font-size:13px;">所选批次在该项目下暂无结果</div>`;
+    }
+
+    const headCells = months.map(m => `<th style="width:92px;">${m} 月</th>`).join('');
+    const bodyRows = rows.map(row => `<tr>
+        <td style="font-size:12px;">第 ${P.batchIndex(row.s)} 批
+          <div style="font-family:monospace;font-size:11px;color:var(--text-muted);">${esc(row.s.batchNo || row.s.no)}</div></td>
+        <td style="font-size:12px;">${esc(P.condName(row.c.code))}</td>
+        ${months.map(m => {
+          const x = row.pts.find(p => p.point === m);
+          if (!x) return '<td style="font-size:12px;color:var(--text-muted);">—</td>';
+          const v = x[item];
+          const bad = x.verdict === 'OOT' || x.verdict === 'OOS';
+          return `<td style="font-size:12px;${bad ? 'color:#dc2626;font-weight:600;' : ''}">${esc(v == null || v === '' ? '—' : v)}
+            ${bad ? `<div style="font-size:11px;">${esc(x.verdict)}</div>` : ''}</td>`;
+        }).join('')}
+      </tr>`).join('');
+
+    const conds = [];
+    rows.forEach(x => { if (conds.indexOf(x.c.code) < 0) conds.push(x.c.code); });
+    const charts = conds.map(code => `<div style="margin-top:14px;font-size:12.5px;font-weight:600;color:var(--text-secondary);">
+        ${esc(P.condName(code))} · 多批并列趋势</div>
+        ${P._groupTrendBlock(r.protocolNo, item, code, r.studyNos)}`).join('');
+
+    return `<div style="margin-top:18px;font-weight:700;">多批并列结果（${esc(meta.name)}${meta.unit ? '，' + esc(meta.unit) : ''}，${list.length} 批，≤ ${months[months.length - 1]} 月）</div>
+      <table class="data-table" style="margin-top:8px;">
+        <thead><tr><th style="width:160px;">批次</th><th style="width:130px;">考察条件</th>${headCells}</tr></thead>
+        <tbody>${bodyRows}</tbody></table>
+      <div style="margin-top:18px;font-weight:700;">多批趋势</div>${charts}`;
   },
 
   openReportCreate() {
@@ -633,42 +702,144 @@ const StabilityData = {
       .map(k => `<option value="${k}">${this.reportTypeMeta[k].name}</option>`).join('');
     const studyOpts = [...new Set(this.resultData.map(r => r.studyNo))]
       .map(s => `<option value="${s}">${s}</option>`).join('');
+    const itemOpts = Object.keys(this.itemMeta)
+      .map(k => `<option value="${k}" ${k === 'related' ? 'selected' : ''}>${this.itemMeta[k].name}</option>`).join('');
+    const monthOpts = [3, 6, 9, 12, 18, 24, 36].map(m => `<option value="${m}" ${m === 12 ? 'selected' : ''}>≤ ${m} 月</option>`).join('');
+
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
+    const protos = [];
+    if (P) P.studies.forEach(s => { if (s.protocolNo && protos.indexOf(s.protocolNo) < 0) protos.push(s.protocolNo); });
+    const protoOpts = protos.map(p => {
+      const g = P.groupStudies(p);
+      return `<option value="${p}">${p} · ${esc(g[0] ? g[0].materialName : '')}（${g.length} 批）</option>`;
+    }).join('');
+
     showModal('生成稳定性报告', `
       <div style="padding:4px 0;">
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e293b;">
-          系统按考察编号汇总各时间点结果生成报告草稿，含趋势描述与 OOT/OOS 说明；正式发布走审批流。
+          单研究口径按一个考察编号汇总；<b>方案组口径</b>按方案编号自动带出全部批次，正文按批并列、趋势一条线一批。正式发布走审批流。
         </div>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px 20px;">
+          <div class="form-group"><label>报告口径</label>
+            <select id="rpScope" onchange="StabilityData._scopeChange()">
+              <option value="group">同方案多批</option>
+              <option value="single">单研究</option>
+            </select></div>
           <div class="form-group"><label>报告类型</label><select id="rpType">${typeOpts}</select></div>
-          <div class="form-group"><label>关联考察</label><select id="rpStudy">${studyOpts}</select></div>
+          <div class="form-group" id="rpStudyWrap" style="display:none;"><label>关联考察</label><select id="rpStudy">${studyOpts}</select></div>
+          <div class="form-group" id="rpProtoWrap"><label>方案编号 <span class="req">*</span></label>
+            <select id="rpProto" onchange="StabilityData._scopeChange()">
+              <option value="">请选择方案</option>${protoOpts}
+            </select></div>
+          <div class="form-group" id="rpItemWrap"><label>并列指标</label><select id="rpItem">${itemOpts}</select></div>
+          <div class="form-group" id="rpMonthWrap"><label>时间点范围</label><select id="rpMonth">${monthOpts}</select></div>
           <div class="form-group"><label>覆盖期间</label><input type="text" id="rpPeriod" placeholder="如 2025-06 ~ 2026-06"></div>
           <div class="form-group"><label>编制人</label><input type="text" id="rpBy" value="${(window.currentUser && window.currentUser.name) || '当前用户'}"></div>
         </div>
-        <div class="form-group" style="margin-top:14px;"><label>报告标题 <span class="req">*</span></label>
-          <input type="text" id="rpTitle" placeholder="如 ××注射液长期 12 月阶段报告"></div>
+        <div id="rpBatchBox" style="margin-top:12px;"></div>
+        <div class="form-group" style="margin-top:14px;"><label>报告标题</label>
+          <input type="text" id="rpTitle" placeholder="留空自动生成，如 布洛芬缓释胶囊 方案 ST-P-2025-001 多批并列稳定性报告"></div>
         <div class="form-group" style="margin-top:14px;"><label>结论摘要</label>
-          <textarea id="rpConclusion" rows="3" placeholder="趋势描述、OOT/OOS 说明、有效期评价建议"></textarea></div>
+          <textarea id="rpConclusion" rows="3" placeholder="批间一致性、趋势斜率对比、OOT/OOS 说明、有效期评价建议"></textarea></div>
       </div>`, [
       { text: '取消', cls: 'btn-secondary', action: closeModal },
-      { text: '生成草稿', cls: 'btn-primary', action: () => {
-        const title = (document.getElementById('rpTitle') || {}).value || '';
-        if (!title) return toast('请填写报告标题');
-        this.reportData.unshift({
-          id: 'RP' + (900 + this.reportData.length),
-          no: 'SR-2026-0' + (this.reportData.length + 21),
-          type: (document.getElementById('rpType') || {}).value || 'STAGE',
-          studyNo: (document.getElementById('rpStudy') || {}).value || '—',
-          title: title,
-          period: (document.getElementById('rpPeriod') || {}).value || '—',
-          status: 'DRAFT',
-          by: (document.getElementById('rpBy') || {}).value || '当前用户',
-          time: this._now().substring(0, 10),
-          conclusion: (document.getElementById('rpConclusion') || {}).value || ''
-        });
-        closeModal(); StabilityData.switchTab('report');
-        toast('报告草稿已生成，发布需走审批流');
-      } }
-    ], 'modal-md');
+      { text: '生成草稿', cls: 'btn-primary', action: () => { StabilityData.saveReport(); } }
+    ], 'modal-lg');
+    this._scopeChange();
+  },
+
+  // 口径切换：单研究 ↔ 同方案多批（批次自动带出，可取消勾选）
+  _scopeChange() {
+    const scope = (document.getElementById('rpScope') || {}).value || 'group';
+    const group = scope === 'group';
+    const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+    show('rpStudyWrap', !group);
+    show('rpProtoWrap', group);
+    show('rpItemWrap', group);
+    show('rpMonthWrap', group);
+
+    // 方案组口径下报告类型固定为方案组报告，避免选成阶段报告
+    const typeEl = document.getElementById('rpType');
+    if (typeEl) {
+      if (group) typeEl.value = 'GROUP';
+      typeEl.disabled = group;
+    }
+
+    const box = document.getElementById('rpBatchBox');
+    if (!box) return;
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
+    if (!group || !P) { box.innerHTML = ''; box.style.display = 'none'; return; }
+    const proto = (document.getElementById('rpProto') || {}).value || '';
+    box.style.display = '';
+    if (!proto) {
+      box.innerHTML = `<div style="padding:10px 12px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;font-size:12.5px;color:var(--text-muted);">
+        选择方案编号后，系统自动带出该方案下全部批次</div>`;
+      return;
+    }
+    const list = P.groupStudies(proto);
+    box.innerHTML = `<div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:8px;">
+        方案 ${esc(proto)} 下共 ${list.length} 批，默认全部纳入（可取消勾选）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;">
+        ${list.map(s => `<label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;background:#f8fafc;cursor:pointer;">
+          <input type="checkbox" id="rpB_${s.id}" checked>
+          第 ${P.batchIndex(s)} 批 · ${esc(s.batchNo || s.no)}
+          <span style="color:var(--text-muted);font-size:11px;">${esc(s.startDate)}</span>
+        </label>`).join('')}
+      </div>`;
+  },
+
+  saveReport() {
+    const scope = (document.getElementById('rpScope') || {}).value || 'group';
+    const period = (document.getElementById('rpPeriod') || {}).value || '—';
+    const by = (document.getElementById('rpBy') || {}).value || '当前用户';
+    const conclusion = (document.getElementById('rpConclusion') || {}).value || '';
+    const titleInput = (document.getElementById('rpTitle') || {}).value || '';
+    const typeSel = (document.getElementById('rpType') || {}).value || 'STAGE';
+    const P = typeof StabilityPlan !== 'undefined' ? StabilityPlan : null;
+
+    const rec = {
+      id: 'RP' + (900 + this.reportData.length),
+      no: 'SR-2026-' + String(this.reportData.length + 21).padStart(3, '0'),
+      period: period, status: 'DRAFT', by: by, time: this._now().substring(0, 10),
+      conclusion: conclusion
+    };
+
+    if (scope === 'group') {
+      if (!P) return toast('稳定性研究数据未加载');
+      const proto = (document.getElementById('rpProto') || {}).value || '';
+      if (!proto) return toast('请选择方案编号');
+      const picked = P.groupStudies(proto).filter(s => {
+        const cb = document.getElementById('rpB_' + s.id);
+        return !cb || cb.checked;
+      });
+      if (!picked.length) return toast('请至少纳入一批');
+      const item = (document.getElementById('rpItem') || {}).value || 'related';
+      const maxMonth = Number((document.getElementById('rpMonth') || {}).value || 12);
+
+      const pts = [];
+      picked.forEach(s => P._resultRows(s).forEach(x => { if (x.point <= maxMonth) pts.push(x.point); }));
+      const reached = pts.length ? Math.max.apply(null, pts) : 0;
+      const first = picked[0];
+      Object.assign(rec, {
+        type: 'GROUP', studyNo: '—', protocolNo: proto, studyNos: picked.map(s => s.no),
+        item: item, maxMonth: reached,
+        title: titleInput || (first.materialName + ' 方案 ' + proto + ' 多批并列稳定性报告（' + picked.length + ' 批，≤' + maxMonth + ' 月）'),
+        conclusion: conclusion || ('纳入 ' + picked.length + ' 批，' + (this.itemMeta[item] ? this.itemMeta[item].name : '') + ' 并列评估；' + (reached ? '已覆盖至 ' + reached + ' 月' : '暂无已出结果时间点'))
+      });
+    } else {
+      if (!titleInput) return toast('请填写报告标题');
+      Object.assign(rec, {
+        type: typeSel === 'GROUP' ? 'STAGE' : typeSel,
+        studyNo: (document.getElementById('rpStudy') || {}).value || '—',
+        title: titleInput
+      });
+    }
+
+    this.reportData.unshift(rec);
+    closeModal();
+    this.switchTab('report');
+    toast(scope === 'group' ? '方案组报告草稿已生成（' + rec.studyNos.length + ' 批并列）' : '报告草稿已生成，发布需走审批流');
+    this.openReportDetail(rec.id);
   },
 
   // ==================== 工具与导出 ====================
@@ -691,8 +862,9 @@ const StabilityData = {
       this.filtered.forEach(r => lines.push([r.studyNo, this.condName[r.cond], r.point + '月', r.planDate, r.actualDate,
         r.inspBatch, r.assay || '—', r.related || '—', r.moisture || '—', r.dissolve || '—', r.verdict || '—', r.note || '—']));
     } else {
-      head = ['报告编号', '报告类型', '标题', '关联考察', '覆盖期间', '编制人', '时间', '状态', '结论'];
-      this.filtered.forEach(r => lines.push([r.no, this.reportTypeMeta[r.type].name, r.title, r.studyNo,
+      head = ['报告编号', '报告类型', '标题', '关联考察', '方案编号', '纳入批次', '覆盖期间', '编制人', '时间', '状态', '结论'];
+      this.filtered.forEach(r => lines.push([r.no, this.reportTypeMeta[r.type].name, r.title,
+        r.type === 'GROUP' ? '—' : r.studyNo, r.protocolNo || '', (r.studyNos || []).join(' / ') || '',
         r.period, r.by, r.time, this.reportStatusMeta[r.status].name, r.conclusion || '—']));
     }
     const csv = '\uFEFF' + [head.join(',')].concat(lines.map(r => r.map(c => {

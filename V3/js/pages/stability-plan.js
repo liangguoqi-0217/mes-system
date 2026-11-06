@@ -1060,12 +1060,14 @@ const StabilityPlan = {
     return this._chart(series, meta);
   },
 
-  // 同方案多批并列：一条线一批（A+ 聚合键 = 方案编号）
-  _groupTrendBlock(protocolNo, key, condCode) {
+  // 同方案多批并列：一条线一批（A+ 聚合键 = 方案编号）；studyNos 可限定纳入的批次
+  _groupTrendBlock(protocolNo, key, condCode, studyNos) {
     const meta = this._trendItemMeta()[key];
     if (!meta) return '';
     const palette = ['#1E3A5F', '#0f766e', '#b45309', '#6d28d9', '#94a3b8'];
-    const series = this.groupStudies(protocolNo).map((s, i) => ({
+    const series = this.groupStudies(protocolNo)
+      .filter(s => !studyNos || !studyNos.length || studyNos.indexOf(s.no) >= 0)
+      .map((s, i) => ({
       name: '第 ' + this.batchIndex(s) + ' 批 · ' + (s.batchNo || s.no),
       color: palette[i % palette.length],
       dash: '',
