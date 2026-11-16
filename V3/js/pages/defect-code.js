@@ -7,11 +7,10 @@
  * 导入范围：仅质量相关目录类型 1/2/3/5/6/8/9/E（SAP 标准 12 类中的 8 类，
  *   排除 PM 侧的 A 活动(PM) / B 对象零件 / C 损坏概览 / D 编码）。
  *
- * 权限：目录类型/代码组/代码为集团级，全员可见；选择集为工厂级，按用户工厂授权隔离。
- *   管理员可见全部工厂选择集，普通用户仅可见本厂选择集。
- *   隔离粒度采用「① 列级过滤」：一代码一行，目录所有代码均展示，
- *   选择集列只渲染当前用户有权限工厂的选择集，无则显示「—」。
- *   注：真实环境过滤必须在后端 SQL 完成，此处前端过滤仅用于原型演示。
+ * 展示范围（2026-11-16 简化）：
+ *   查询条件只保留「目录类型 / 代码组」；
+ *   列表固定 6 列：目录类型、目录类型描述、代码组、代码组描述、代码、代码描述；
+ *   删除「选择集」列（工厂级），选择集原始数据仍在 DC_SETS 中保留，需要时另做报表。
  * ==================================================================== */
 
 /* ---------- 常量：工厂 ---------- */
@@ -87,7 +86,7 @@ const DC_GROUPS = [
     ['004', '修订SOP'], ['005', '追加培训'] ] }
 ];
 
-/* ---------- Mock：选择集（工厂级，收录代码） ---------- */
+/* ---------- Mock：选择集（工厂级，收录代码）——页面已不展示，仅保留原始数据 ---------- */
 const DC_SETS = [
   { plant: '2001', type: '9', set: 'SET-DF-TAB', text: '片剂车间缺陷集', members: [
     'QM-DF-01|001', 'QM-DF-01|002', 'QM-DF-01|003', 'QM-DF-01|004', 'QM-DF-01|005',
@@ -124,29 +123,17 @@ const DC_CODES = (function () {
   const typeText = {};
   DC_CATALOG_TYPES.forEach(t => { typeText[t.code] = t.text; });
 
-  // 选择集成员反查：目录类型|代码组|代码 -> [{plant,set,setText}]
-  const belong = {};
-  DC_SETS.forEach(s => {
-    s.members.forEach(m => {
-      const parts = m.split('|');
-      const key = s.type + '|' + parts[0] + '|' + parts[1];
-      (belong[key] = belong[key] || []).push({ plant: s.plant, set: s.set, setText: s.text });
-    });
-  });
-
   const rows = [];
   DC_GROUPS.forEach(g => {
     g.codes.forEach(c => {
-      const key = g.type + '|' + g.group + '|' + c[0];
       rows.push({
-        id: key,
+        id: g.type + '|' + g.group + '|' + c[0],
         catalogType: g.type,
         catalogTypeText: typeText[g.type] || '',
         codeGroup: g.group,
         codeGroupText: g.text,
         code: c[0],
-        codeText: c[1],
-        selectedSets: belong[key] || []
+        codeText: c[1]
       });
     });
   });
@@ -158,31 +145,6 @@ const DefectCode = {
   page: 1,
   pageSize: 20,
   filtered: [],
-  moreOpen: false,
-
-  /* ==================== 权限 ==================== */
-
-  isAdmin() {
-    return (window.currentUserId === 'admin') || (window.currentUserRole === 'admin');
-  },
-
-  // 当前用户所属工厂
-  userFactory() { return (window.currentUser && window.currentUser.factory) || '2001'; },
-
-  // 当前可见工厂（管理员：全部或筛选指定；普通用户：仅本厂）
-  visiblePlants() {
-    if (this.isAdmin()) {
-      const p = this._val('dcPlant');
-      return p ? [p] : Object.keys(DC_PLANTS);
-    }
-    return [this.userFactory()];
-  },
-
-  // 当前视角可见的选择集（供下拉与统计用）
-  visibleSets() {
-    const plants = this.visiblePlants();
-    return DC_SETS.filter(s => plants.indexOf(s.plant) !== -1);
-  },
 
   /* ==================== 渲染 ==================== */
 
@@ -206,7 +168,6 @@ const DefectCode = {
           #dcTableWrapper::-webkit-scrollbar { width: 6px; height: 0; }
           #dcTableWrapper::-webkit-scrollbar-thumb { background: rgba(203,213,225,0.6); border-radius: 3px; }
           #dcTableWrapper::-webkit-scrollbar-track { background: transparent; }
-          .dc-chip { display:inline-block;background:#f1f5f9;color:#1E3A5F;border:1px solid #e2e8f0;border-radius:4px;padding:2px 8px;font-size:11px;margin:2px 6px 2px 0;white-space:nowrap;line-height:1.6; }
           /* 目录网格：全边框 + 层级分隔线，便于看清 目录类型 → 代码组 → 代码 的归属关系 */
           #dcTableWrapper .data-table { border-collapse: collapse; }
           #dcTableWrapper .data-table th,
@@ -248,36 +209,12 @@ const DefectCode = {
     const groupOpts = DC_GROUPS
       .map(g => `<option value="${g.group}">${g.group} ${g.text}</option>`).join('');
 
-    // 选择集下拉仅列本视角可见的选择集（权限过滤）
-    const setOpts = this.visibleSets()
-      .map(s => `<option value="${s.plant}|${s.set}">${s.plant} ${s.set} ${s.text}</option>`).join('');
-
-    // 工厂：管理员可选全部/指定；普通用户锁定本厂（只读）
-    const plants = this.isAdmin() ? Object.keys(DC_PLANTS) : [this.userFactory()];
-    const plantOpts = this.isAdmin()
-      ? `<option value="">全部工厂</option>` + plants.map(p => `<option value="${p}">${p} ${DC_PLANTS[p]}</option>`).join('')
-      : plants.map(p => `<option value="${p}" selected>${p} ${DC_PLANTS[p]}</option>`).join('');
-
     el.innerHTML = `
       <div class="filter-bar" style="flex-wrap:wrap;">
-        <div class="filter-group"><label>工厂</label><select id="dcPlant" ${this.isAdmin() ? '' : 'disabled'}>${plantOpts}</select></div>
         <div class="filter-group"><label>目录类型</label><select id="dcCatalogType"><option value="">全部</option>${typeOpts}</select></div>
         <div class="filter-group"><label>代码组</label><select id="dcCodeGroup"><option value="">全部</option>${groupOpts}</select></div>
-        ${FilterActions.render({ pageId: 'defect-code', scope: "DefectCode", onExport: "exportData", onMore: "toggleMore", moreBtnId: "dcMoreBtn", moreOpen: this.moreOpen })}
-        <div id="dcMoreBar" style="display:${this.moreOpen ? 'flex' : 'none'};flex-wrap:wrap;gap:12px;width:100%;padding:0;border:none;background:transparent;">
-          <div class="filter-group"><label>代码 / 代码描述</label><input type="text" id="dcKeyword" placeholder="如 001 或 裂纹"></div>
-          <div class="filter-group"><label>代码组描述</label><input type="text" id="dcGroupDesc" placeholder="如 外观"></div>
-          <div class="filter-group"><label>选择集</label><select id="dcSelectedSet"><option value="">全部</option>${setOpts}</select></div>
-        </div>
+        ${FilterActions.render({ pageId: 'defect-code', scope: "DefectCode", onExport: "exportData" })}
       </div>`;
-  },
-
-  toggleMore() {
-    this.moreOpen = !this.moreOpen;
-    const bar = document.getElementById('dcMoreBar');
-    if (bar) bar.style.display = this.moreOpen ? 'flex' : 'none';
-    const btn = document.getElementById('dcMoreBtn');
-    if (btn) btn.textContent = this.moreOpen ? '收起 ▴' : '更多条件 ▾';
   },
 
   _val(id) {
@@ -296,30 +233,22 @@ const DefectCode = {
   },
 
   resetFilter() {
-    ['dcCatalogType', 'dcCodeGroup', 'dcKeyword', 'dcGroupDesc', 'dcSelectedSet'].forEach(id => {
+    ['dcCatalogType', 'dcCodeGroup'].forEach(id => {
       const e = document.getElementById(id); if (e) e.value = '';
     });
-    const pl = document.getElementById('dcPlant');
-    if (pl && this.isAdmin()) pl.value = '';
     this.search();
     if (window.QueryVariant) QueryVariant.resetSelection('defect-code');
   },
 
   /* ==================== 表格 ==================== */
 
-  // 某代码在当前视角下可见的选择集
-  _visibleSetsOf(r) {
-    const plants = this.visiblePlants();
-    return (r.selectedSets || []).filter(s => plants.indexOf(s.plant) !== -1);
-  },
-
-  // 基础行：一代码一行，选择集列只带当前用户有权查看的部分
+  // 基础行：一代码一行
   // 排序：目录类型（SAP 定义顺序）→ 代码组 → 代码，保证相同值相邻，供合并单元格使用
   _baseRows() {
     const order = {};
     DC_CATALOG_TYPES.forEach((t, i) => { order[t.code] = i; });
     return DC_CODES
-      .map(r => Object.assign({}, r, { _sets: this._visibleSetsOf(r) }))
+      .slice()
       .sort(function (a, b) {
         const oa = order[a.catalogType] == null ? 99 : order[a.catalogType];
         const ob = order[b.catalogType] == null ? 99 : order[b.catalogType];
@@ -332,17 +261,10 @@ const DefectCode = {
   renderTable() {
     const type = this._val('dcCatalogType');
     const group = this._val('dcCodeGroup');
-    const kw = this._val('dcKeyword').toLowerCase();
-    const setKey = this._val('dcSelectedSet');
-    const groupDesc = this._val('dcGroupDesc').toLowerCase();
 
     this.filtered = this._baseRows().filter(r => {
       if (type && r.catalogType !== type) return false;
       if (group && r.codeGroup !== group) return false;
-      if (groupDesc && r.codeGroupText.toLowerCase().indexOf(groupDesc) === -1) return false;
-      if (kw && r.code.toLowerCase().indexOf(kw) === -1 &&
-          r.codeText.toLowerCase().indexOf(kw) === -1) return false;
-      if (setKey && !r._sets.some(s => (s.plant + '|' + s.set) === setKey)) return false;
       return true;
     });
 
@@ -357,18 +279,17 @@ const DefectCode = {
     const head = `
       <tr>
         <th style="width:90px;">目录类型</th>
-        <th style="width:130px;">目录类型描述</th>
+        <th style="width:140px;">目录类型描述</th>
         <th style="width:120px;">代码组</th>
-        <th style="width:180px;">代码组描述</th>
+        <th style="width:200px;">代码组描述</th>
         <th style="width:90px;">代码</th>
-        <th style="width:200px;">代码描述</th>
-        <th style="min-width:280px;">选择集</th>
+        <th>代码描述</th>
       </tr>`;
 
     const spans = this._mergeSpans(page);
     const body = page.length
       ? page.map((r, i) => this.renderRow(r, spans[i])).join('')
-      : `<tr><td colspan="7" class="empty-cell">暂无符合条件的目录记录</td></tr>`;
+      : `<tr><td colspan="6" class="empty-cell">暂无符合条件的目录记录</td></tr>`;
 
     el.innerHTML = `<table class="data-table"><thead>${head}</thead><tbody>${body}</tbody></table>`;
   },
@@ -406,16 +327,6 @@ const DefectCode = {
       return `<td${rs} style="${style || ''}vertical-align:middle;">${html}</td>`;
     };
 
-    // 选择集单元格：只渲染本视角可见的选择集，超过 3 个折叠为 +N
-    let setCell;
-    if (r._sets.length === 0) {
-      setCell = `<span style="color:var(--text-muted);">—</span>`;
-    } else {
-      const shown = r._sets.slice(0, 3).map(s => this._chip(s)).join('');
-      const rest = r._sets.length - 3;
-      setCell = shown + (rest > 0 ? `<span class="dc-chip" title="${esc(r._sets.slice(3).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join('；'))}">+${rest}</span>` : '');
-    }
-
     // 层级分隔：新目录类型 / 新代码组的起始行加粗分隔线
     const cls = (span.group > 0 ? ' dc-group-start' : '') + (span.type > 0 ? ' dc-type-start' : '');
 
@@ -426,13 +337,7 @@ const DefectCode = {
       ${cell(span.groupText, esc(r.codeGroupText), '')}
       <td style="font-family:monospace;font-size:12px;font-weight:600;color:#1E3A5F;">${esc(r.code)}</td>
       <td>${esc(r.codeText)}</td>
-      <td>${setCell}</td>
     </tr>`;
-  },
-
-  _chip(s) {
-    if (!s) return '';
-    return `<span class="dc-chip">${esc(s.plant)} · ${esc(s.set)} ${esc(s.setText)}</span>`;
   },
 
   renderPagination() {
@@ -462,12 +367,11 @@ const DefectCode = {
 
   exportData() {
     if (!this.filtered || this.filtered.length === 0) return toast('无数据可导出');
-    const head = ['目录类型', '目录类型描述', '代码组', '代码组描述', '代码', '代码描述', '选择集（工厂）'];
+    const head = ['目录类型', '目录类型描述', '代码组', '代码组描述', '代码', '代码描述'];
     const lines = [head.join(',')];
     this.filtered.forEach(r => {
-      const sets = (r._sets || []).map(s => s.plant + ' ' + s.set + ' ' + s.setText).join(' / ');
       const cells = [r.catalogType, r.catalogTypeText, r.codeGroup, r.codeGroupText,
-        r.code, r.codeText, sets];
+        r.code, r.codeText];
       lines.push(cells.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(','));
     });
     const csv = '\uFEFF' + lines.join('\n');
@@ -486,11 +390,10 @@ const DefectCode = {
 if (window.QueryVariant) {
   QueryVariant.register({
     pageId: 'defect-code',
-    fields: ['dcPlant', 'dcCatalogType', 'dcCodeGroup', 'dcKeyword', 'dcGroupDesc', 'dcSelectedSet'],
-    textFields: ['dcKeyword', 'dcGroupDesc'],
+    fields: ['dcCatalogType', 'dcCodeGroup'],
+    textFields: [],
     labels: {
-      dcPlant: '工厂', dcCatalogType: '目录类型', dcCodeGroup: '代码组',
-      dcKeyword: '代码/代码描述', dcGroupDesc: '代码组描述', dcSelectedSet: '选择集'
+      dcCatalogType: '目录类型', dcCodeGroup: '代码组'
     },
     onApply: function () { DefectCode.search(); }
   });
