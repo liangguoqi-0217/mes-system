@@ -24,6 +24,30 @@ const RetentionRule = {
   keepRuleOptions: ['有效期后 1 年', '有效期后 6 个月', '放行后 3 年'],
   freqOptions: ['每 12 个月', '每 6 个月', '每 3 个月'],
 
+  // ==================== 对外查询接口（供检验批取样弹窗使用） ====================
+  // 按物料编码取启用规则（优先同工厂，否则取该物料任一条）；无规则返回 null
+  findRule(materialCode, plant) {
+    const list = this.data.filter(r => r.enabled !== false && r.materialCode === materialCode);
+    if (!list.length) return null;
+    return (plant && list.find(r => r.plant === plant)) || list[0];
+  },
+
+  // 该物料是否「必须留样」：取样时强制带出留样量，清零须填豁免理由
+  mustRetain(materialCode, plant) {
+    const r = this.findRule(materialCode, plant);
+    return !!(r && r.needSample);
+  },
+
+  // 期限规则 → 月数（到期日计算用）
+  keepMonths(keepRule) {
+    return keepRule === '有效期后 6 个月' ? 6 : (keepRule === '放行后 3 年' ? 36 : 12);
+  },
+
+  // 观察频次 → 间隔月数
+  freqMonths(freq) {
+    return freq === '每 6 个月' ? 6 : (freq === '每 3 个月' ? 3 : 12);
+  },
+
   // ==================== 页面骨架 ====================
   render() {
     return `

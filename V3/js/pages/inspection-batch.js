@@ -1170,7 +1170,14 @@ const InspectionBatch = {
       recs.push({ id: 'samp_' + i, qty: o.sampleQty, by: o.sampledBy, time: o.sampleTime, plan: o.samplingPlanName, status: o.status === 'done' ? 'valid' : 'pending' });
     });
     if (recs.length === 0 && ['SAMP', 'INSP', 'DONE', 'DEC', 'CLSD'].includes(b.status)) {
-      recs.push({ id: 'samp_0', qty: (parseFloat(b.quantity || '0') * 0.01).toFixed(3), by: b.createBy || '质检员', time: b.createTime, plan: '默认取样方案', status: 'valid' });
+      const qty = b.sampleQty != null ? String(b.sampleQty) : (parseFloat(b.quantity || '0') * 0.01).toFixed(3);
+      recs.push({
+        id: 'samp_0', qty: qty,
+        consumeQty: b.sampleQty != null ? Math.max(0, Number(b.sampleQty) - Number(b.retainQty || 0)) : null,
+        retainQty: b.sampleQty != null ? Number(b.retainQty || 0) : null,
+        doc331: b.sapDoc331 || '', doc311: b.sapDoc311 || '',
+        by: b.createBy || '质检员', time: b.createTime, plan: '默认取样方案', status: 'valid'
+      });
     }
     return recs;
   },
@@ -1290,15 +1297,21 @@ const InspectionBatch = {
       const btn = isRev
         ? `<button class="btn btn-danger btn-sm" disabled>冲销</button>`
         : `<button class="btn btn-danger btn-sm" onclick="InspectionBatch._reverseRecord('${b.id}','sampling','${r.id}',this)">冲销</button>`;
+      const split = r.consumeQty != null
+        ? `${esc(r.consumeQty.toFixed ? r.consumeQty.toFixed(3) : r.consumeQty)} / ${esc(r.retainQty.toFixed ? r.retainQty.toFixed(3) : r.retainQty)}`
+        : '—';
+      const docs = [r.doc331 ? '331 ' + r.doc331 : '', r.doc311 ? '311 ' + r.doc311 : ''].filter(Boolean).join(' · ') || '—';
       return `<tr class="${isRev ? 'reversed' : ''}">
         <td>${i + 1}</td>
         <td>${esc(r.qty)} ${esc(b.unit || '')}</td>
+        <td style="font-size:12px;">${split}</td>
+        <td style="font-size:12px;font-family:monospace;">${esc(docs)}</td>
         <td>${esc(r.by)}</td>
         <td>${esc(r.time) || '—'}</td>
         <td class="table-actions">${btn}</td>
       </tr>`;
     }).join('');
-    return `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>取样人</th><th>取样时间</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+    return `<table class="data-table"><thead><tr><th>序号</th><th>取样量</th><th>消耗(331) / 留样(311)</th><th>SAP 凭证</th><th>取样人</th><th>取样时间</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
   },
 
   _renderResultTab(b) {
@@ -1399,24 +1412,77 @@ const InspectionBatch = {
     const b = this.batchData.find(x => x.id === batchId);
     if (!b || b.status !== 'CRTD') return toast('当前状态不允许取样');
 
+    // 留样规则：给默认值 + 决定是否「必须留样」（规则管这一类，弹窗管这一次）
+    const rule = (window.RetentionRule && b.materialCode) ? RetentionRule.findRule(b.materialCode, b.plant) : null;
+    const need = !!(rule && rule.needSample);
+    const defQty = need ? rule.sampleQty : '';
+    const defCond = rule ? rule.storageCondition : '阴凉干燥处';
+    const defKeep = rule ? rule.keepRule : '有效期后 1 年';
+    const defFreq = rule ? rule.observeFreq : '每 12 个月';
+    const defTimes = rule ? rule.observeTimes : 3;
+    const selOpt = (v, cur) => `<option value="${v}" ${v === cur ? 'selected' : ''}>${v}</option>`;
+
     showModal(
       `取样 — ${b.batchNo}`,
       `<div style="padding:4px 0;">
-        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
-          <div style="font-weight:600;margin-bottom:4px;">工序 ${esc(opNum)} · 取样</div>
-          <div style="color:var(--text-secondary);">检验批号：${esc(b.batchNo)} | 物料：${esc(b.materialCode)} ${esc(b.materialName)}</div>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
+          <div style="color:var(--text-secondary);">工序 ${esc(opNum)} · 物料 ${esc(b.materialCode)} ${esc(b.materialName)} · 单位 ${esc(b.unit)}</div>
         </div>
+
         <div class="form-grid">
           <div class="form-group">
-            <label>取样量<span class="req">*</span></label>
-            <input type="number" id="ibSampleQty" step="0.001" placeholder="请输入取样量" min="0">
-            <span style="font-size:12px;color:var(--text-muted);">单位：${esc(b.unit)}</span>
+            <label>取样总量<span class="req">*</span></label>
+            <input type="number" id="ibSampleQty" step="0.001" min="0" placeholder="0.000"
+              oninput="InspectionBatch._calcSplit()">
           </div>
           <div class="form-group">
             <label>过账日期<span class="req">*</span></label>
             <input type="date" id="ibPostDate" value="${new Date().toISOString().slice(0,10)}">
           </div>
         </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px;">
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:12px;color:#1e40af;font-weight:600;">消耗性取样 · 移动类型 331</div>
+            <div id="ibConsumeShow" style="font-size:20px;font-weight:700;color:#1e3a5f;margin:6px 0;">0.000</div>
+            <div style="font-size:12px;color:var(--text-muted);">出库即下账，SAP 不再有库存</div>
+          </div>
+          <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:12px 14px;">
+            <div style="font-size:12px;color:#5b21b6;font-weight:600;">作为留样 · 移动类型 311</div>
+            <input type="number" id="ibRetainQty" step="0.001" min="0" value="${esc(defQty)}" placeholder="0.000"
+              oninput="InspectionBatch._calcSplit()"
+              style="width:100%;font-size:20px;font-weight:700;color:#5b21b6;border:none;background:transparent;padding:4px 0;outline:none;">
+            <div style="font-size:12px;color:var(--text-muted);">转储留样库位，SAP 仍有库存，到期 551</div>
+          </div>
+        </div>
+        <div id="ibSplitHint" style="margin-top:6px;font-size:12px;color:var(--text-muted);"></div>
+
+        <div id="ibRetainBlock" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>保存条件</label>
+              <input type="text" id="ibRetainCond" value="${esc(defCond)}">
+            </div>
+            <div class="form-group">
+              <label>保存期限规则</label>
+              <select id="ibRetainKeep">${['有效期后 1 年', '有效期后 6 个月', '放行后 3 年'].map(v => selOpt(v, defKeep)).join('')}</select>
+            </div>
+            <div class="form-group">
+              <label>观察频次</label>
+              <select id="ibRetainFreq">${['每 12 个月', '每 6 个月', '每 3 个月'].map(v => selOpt(v, defFreq)).join('')}</select>
+            </div>
+            <div class="form-group">
+              <label>观察次数</label>
+              <input type="number" id="ibRetainTimes" min="1" max="12" value="${esc(String(defTimes))}">
+            </div>
+          </div>
+          ${need ? `<div class="form-group" style="margin-top:4px;">
+            <label>本批不留样豁免理由</label>
+            <input type="text" id="ibExempt" placeholder="该物料规则要求留样，留样量为 0 时必填">
+            <span style="font-size:12px;color:#b45309;">规则要求留样 ${esc(rule.sampleQty)} ${esc(b.unit)}，留样量不可低于此值；确不留样须填理由</span>
+          </div>` : ''}
+        </div>
+
         <div class="form-group full" style="margin-top:8px;">
           <label>备注</label>
           <input type="text" id="ibSampleRemark" placeholder="可选填写备注" style="width:100%;">
@@ -1426,8 +1492,33 @@ const InspectionBatch = {
         { text:'取消', cls:'btn-secondary', action: ()=>{ InspectionBatch.openDetail(batchId); } },
         { text:'确认取样', cls:'btn-primary', action: ()=>{ InspectionBatch.submitSampling(batchId); } }
       ],
-      'modal-md'
+      'modal-lg'
     );
+  },
+
+  // 用途分流的实时反馈：消耗量 = 总量 − 留样量
+  _calcSplit() {
+    const num = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+    const total = num('ibSampleQty');
+    const retain = num('ibRetainQty');
+    const consume = Math.max(0, total - retain);
+    const show = document.getElementById('ibConsumeShow');
+    if (show) show.textContent = consume.toFixed(3);
+    const hint = document.getElementById('ibSplitHint');
+    if (hint) {
+      if (!total) hint.innerHTML = '<span style="color:var(--text-muted);">填报取样总量后自动拆分消耗量与留样量</span>';
+      else if (retain > total) hint.innerHTML = '<span style="color:#dc2626;">留样量不能大于取样总量</span>';
+      else hint.innerHTML = `<span style="color:#059669;">合计 ${total.toFixed(3)} = 消耗 ${consume.toFixed(3)} + 留样 ${retain.toFixed(3)}，将生成 331 / 311 两笔凭证</span>`;
+    }
+  },
+
+  // 检验批用途 → 样品类别代码（台账 14 类口径）
+  _mapSampleType(b) {
+    const p = b.purposeName || '';
+    if (p.indexOf('中间') > -1) return 'ZJ';
+    if (p.indexOf('成品') > -1) return 'CP';
+    if (p.indexOf('水') > -1 || p.indexOf('环境') > -1) return 'GS';
+    return 'YF';
   },
 
   submitSampling(batchId) {
@@ -1441,20 +1532,77 @@ const InspectionBatch = {
       return;
     }
 
-    const qty = parseFloat(document.getElementById('ibSampleQty')?.value);
-    const postDate = document.getElementById('ibPostDate')?.value;
-    const remark = (document.getElementById('ibSampleRemark')?.value||'').trim();
+    const val = id => ((document.getElementById(id) || {}).value || '').trim();
+    const qty = parseFloat(val('ibSampleQty'));
+    const retainQty = parseFloat(val('ibRetainQty')) || 0;
+    const postDate = val('ibPostDate');
+    const remark = val('ibSampleRemark');
+    const exempt = val('ibExempt');
 
-    if (!qty || qty <= 0) { toast('请输入有效的取样量'); return; }
+    if (!qty || qty <= 0) { toast('请输入有效的取样总量'); return; }
     if (!postDate) { toast('请选择过账日期'); return; }
+    if (retainQty < 0) { toast('留样量不能为负'); return; }
+    if (retainQty > qty) { toast('留样量不能大于取样总量'); return; }
+
+    // 留样规则强校验：必须留样的物料不能悄悄清零，也不能低于规则留样量
+    const rule = (window.RetentionRule && b.materialCode) ? RetentionRule.findRule(b.materialCode, b.plant) : null;
+    const need = !!(rule && rule.needSample);
+    if (need && retainQty === 0 && !exempt) {
+      toast(`该物料（${b.materialCode}）按留样规则必须留样：请填写留样量，或填写豁免理由`);
+      return;
+    }
+    if (need && retainQty > 0 && Number(retainQty) < Number(rule.sampleQty)) {
+      toast(`留样量不得低于规则要求 ${rule.sampleQty} ${b.unit}`);
+      return;
+    }
+
+    const consumeQty = Math.max(0, qty - retainQty);
+    // 双凭证：一次取样两笔过账，必须同时成功（任一失败则不写台账、不改状态）
+    const seq = String(Date.now()).slice(-7);
+    const v331 = consumeQty > 0 ? '4900100' + seq : '';
+    const v311 = retainQty > 0 ? '4900101' + seq : '';
+
+    let made = [];
+    if (window.SampleLedger) {
+      made = SampleLedger.createFromSampling({
+        batchNo: b.batchNo,
+        plant: b.plant,
+        type: this._mapSampleType(b),
+        materialCode: b.materialCode,
+        materialName: b.materialName,
+        sourceBatch: b.sapBatch,
+        unit: b.unit,
+        consumeQty: consumeQty,
+        vouchers: { m331: v331, m311: v311 },
+        retain: retainQty > 0 ? {
+          qty: retainQty,
+          condition: val('ibRetainCond'),
+          keepRule: val('ibRetainKeep'),
+          observeFreq: val('ibRetainFreq'),
+          observeTimes: parseInt(val('ibRetainTimes'), 10) || (rule ? rule.observeTimes : 3),
+          validDate: b.validDate || '—'
+        } : null,
+        waiver: (need && retainQty === 0 && exempt)
+          ? { reason: exempt, rule: rule.id + ' ' + rule.materialName } : null
+      });
+      SampleLedger.init();
+    }
 
     b.status = 'SAMP';
     b.statusName = '取样中';
     b.updateTime = new Date().toISOString().replace('T',' ').slice(0,19);
     b.sampleQty = qty;
+    b.retainQty = retainQty;
     b.postDate = postDate;
     b.sampleRemark = remark;
-    toast(`取样已确认！取样量 ${qty} ${b.unit}，检验批 ${b.batchNo} 进入"取样中"`);
+    b.sapDoc331 = v331;
+    b.sapDoc311 = v311;
+    b.sampleLedgerNos = made.map(r => r.sampleNo);
+
+    const parts = [];
+    if (v331) parts.push('331 凭证 ' + v331 + '（消耗 ' + consumeQty.toFixed(3) + ' ' + b.unit + '）');
+    if (v311) parts.push('311 凭证 ' + v311 + '（留样 ' + retainQty.toFixed(3) + ' ' + b.unit + '）');
+    toast('取样完成 · ' + (parts.join(' · ') || '未产生过账') + (made.length ? ' · 台账已建 ' + made.length + ' 条' : ''));
     this.init();
     InspectionBatch.openDetail(batchId);
   },

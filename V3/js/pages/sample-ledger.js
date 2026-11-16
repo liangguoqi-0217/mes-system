@@ -905,6 +905,101 @@ const SampleLedger = {
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   },
 
+  // ==================== 从检验批取样建账（331 消耗 / 311 留样） ====================
+  // 取样是唯一的用途决策点：331 出账后不可逆，故在取样弹窗内分流，一次生成台账记录
+  // payload: { batchNo, plant, type, materialCode, materialName, sourceBatch, unit,
+  //            consumeQty, vouchers:{m331,m311}, retain:{qty,condition,keepRule,observeFreq,observeTimes,validDate},
+  //            waiver:{reason, rule} }
+  createFromSampling(p) {
+    const now = p.time || this._now();
+    const by = p.by || this._user();
+    const made = [];
+
+    // 消耗性取样 → 检验样品（331 出账，SAP 不再有库存）
+    if (Number(p.consumeQty) > 0) {
+      const rec = {
+        id: 'P' + (900 + this.data.length + 1),
+        category: 'INSPECT', type: p.type || 'YF',
+        plant: p.plant || '2001',
+        materialCode: p.materialCode || '—',
+        materialName: p.materialName || '待确认样品',
+        sourceBatch: p.sourceBatch || '',
+        inspectBatchNo: p.batchNo || '',
+        qty: String(p.consumeQty), remainQty: String(p.consumeQty), unit: p.unit || '',
+        storageCondition: '—', validDate: '—', locCode: '',
+        registerBy: by, registerTime: now, putawayTime: '', status: 'REG',
+        source: 'SAMPLING',
+        sapDocNo: (p.vouchers && p.vouchers.m331) || '', sapMoveType: '331', sapSyncTime: now,
+        moves: [], calls: []
+      };
+      rec.sampleNo = this._genSampleNo(rec.type);
+      if (p.waiver && p.waiver.reason) rec.retainWaiver = { reason: p.waiver.reason, rule: p.waiver.rule || '', by: by, time: now };
+      this.data.unshift(rec); made.push(rec);
+    }
+
+    // 作为留样 → 311 转储留样库位（SAP 仍有库存，到期 551 报废）
+    const rt = p.retain || {};
+    if (Number(rt.qty) > 0) {
+      const keepRule = rt.keepRule || '有效期后 1 年';
+      const months = window.RetentionRule ? RetentionRule.keepMonths(keepRule) : 12;
+      let due = now.substring(0, 10);
+      if (rt.validDate && rt.validDate !== '—') {
+        const d = new Date(rt.validDate);
+        d.setMonth(d.getMonth() + months);
+        due = d.toISOString().substring(0, 10);
+      }
+      const seq = String(this.data.filter(r => this.isRetention(r)).length + 1).padStart(3, '0');
+      const rec = {
+        id: 'S' + (900 + this.data.length + 1),
+        category: 'RETENTION',
+        sampleNo: 'LS-' + (p.plant || '2001') + '-26' + seq,
+        plant: p.plant || '2001',
+        materialCode: p.materialCode || '—',
+        materialName: p.materialName || '待确认物料',
+        sourceBatch: p.sourceBatch || '',
+        inspectBatchNo: p.batchNo || '',
+        qty: String(rt.qty), remainQty: String(rt.qty), unit: p.unit || '',
+        storageCondition: rt.condition || '阴凉干燥处',
+        keepRule: keepRule,
+        room: '', cabinet: '', shelf: '', location: '', locCode: '',
+        registerBy: by, registerTime: now, putawayTime: '',
+        validDate: rt.validDate || '—', dueDate: due,
+        observeFreq: rt.observeFreq || '每 12 个月',
+        nextObserveDate: '',
+        status: 'REG',
+        source: 'SAMPLING',
+        labelNo: 'LBL-' + now.substring(0, 10).replace(/-/g, '') + '-' + seq,
+        sapDocNo: (p.vouchers && p.vouchers.m311) || '', sapMoveType: '311', sapSyncTime: now,
+        moves: [], calls: []
+      };
+      this.data.unshift(rec); made.push(rec);
+      this._genObserveTasks(rec, rt.observeTimes, rt.observeFreq);
+    }
+    return made;
+  },
+
+  // 按观察频次预排观察任务，并把首个计划日写回 nextObserveDate
+  _genObserveTasks(rec, times, freq) {
+    const total = Math.max(1, Number(times) || 3);
+    const step = window.RetentionRule ? RetentionRule.freqMonths(freq || rec.observeFreq) : 12;
+    const base = new Date((rec.registerTime || '').substring(0, 10));
+    let first = '';
+    for (let i = 1; i <= total; i++) {
+      const d = new Date(base);
+      d.setMonth(d.getMonth() + step * i);
+      const plan = d.toISOString().substring(0, 10);
+      if (i === 1) first = plan;
+      this.observeData.push({
+        id: 'O' + (900 + this.observeData.length + 1),
+        sampleId: rec.id, seq: i, total: total, planDate: plan,
+        actualDate: '', observer: '', item: '外观、包装完整性',
+        result: '', remark: '', abnormalNo: ''
+      });
+    }
+    rec.nextObserveDate = first;
+    return total;
+  },
+
   // ==================== 动作：入库上架 / 位置变更 ====================
   openPutaway(sid) {
     const s = this.data.find(x => x.id === sid);
@@ -1312,6 +1407,10 @@ const SampleLedger = {
         <div><span style="color:var(--text-muted);">标签号：</span>${esc(s.labelNo || '—')}</div>
         <div style="grid-column:span 3;"><span style="color:var(--text-muted);">SAP 登记凭证：</span>
           ${esc(s.sapDocNo || '—')}（移动类型 ${esc(s.sapMoveType || '311')}，${esc(s.sapSyncTime || '—')}）</div>` : ''}
+        ${!isRet && s.sapDocNo ? `<div style="grid-column:span 3;"><span style="color:var(--text-muted);">SAP 取样凭证：</span>
+          ${esc(s.sapDocNo)}（移动类型 ${esc(s.sapMoveType || '331')}，${esc(s.sapSyncTime || '—')}）</div>` : ''}
+        ${s.retainWaiver ? `<div style="grid-column:span 3;"><span style="color:var(--text-muted);">留样豁免：</span>
+          ${esc(s.retainWaiver.reason)}（${esc(s.retainWaiver.by)} ${esc(s.retainWaiver.time)}）</div>` : ''}
       </div>`;
   },
 
