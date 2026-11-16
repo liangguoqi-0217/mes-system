@@ -1557,36 +1557,10 @@ const InspectionBatch = {
     }
 
     const consumeQty = Math.max(0, qty - retainQty);
-    // 双凭证：一次取样两笔过账，必须同时成功（任一失败则不写台账、不改状态）
+    // 双凭证：一次取样两笔过账，必须同时成功（任一失败则不改状态）
     const seq = String(Date.now()).slice(-7);
     const v331 = consumeQty > 0 ? '4900100' + seq : '';
     const v311 = retainQty > 0 ? '4900101' + seq : '';
-
-    let made = [];
-    if (window.SampleLedger) {
-      made = SampleLedger.createFromSampling({
-        batchNo: b.batchNo,
-        plant: b.plant,
-        type: this._mapSampleType(b),
-        materialCode: b.materialCode,
-        materialName: b.materialName,
-        sourceBatch: b.sapBatch,
-        unit: b.unit,
-        consumeQty: consumeQty,
-        vouchers: { m331: v331, m311: v311 },
-        retain: retainQty > 0 ? {
-          qty: retainQty,
-          condition: val('ibRetainCond'),
-          keepRule: val('ibRetainKeep'),
-          observeFreq: val('ibRetainFreq'),
-          observeTimes: parseInt(val('ibRetainTimes'), 10) || (rule ? rule.observeTimes : 3),
-          validDate: b.validDate || '—'
-        } : null,
-        waiver: (need && retainQty === 0 && exempt)
-          ? { reason: exempt, rule: rule.id + ' ' + rule.materialName } : null
-      });
-      SampleLedger.init();
-    }
 
     b.status = 'SAMP';
     b.statusName = '取样中';
@@ -1597,12 +1571,11 @@ const InspectionBatch = {
     b.sampleRemark = remark;
     b.sapDoc331 = v331;
     b.sapDoc311 = v311;
-    b.sampleLedgerNos = made.map(r => r.sampleNo);
 
     const parts = [];
     if (v331) parts.push('331 凭证 ' + v331 + '（消耗 ' + consumeQty.toFixed(3) + ' ' + b.unit + '）');
     if (v311) parts.push('311 凭证 ' + v311 + '（留样 ' + retainQty.toFixed(3) + ' ' + b.unit + '）');
-    toast('取样完成 · ' + (parts.join(' · ') || '未产生过账') + (made.length ? ' · 台账已建 ' + made.length + ' 条' : ''));
+    toast('取样完成 · ' + (parts.join(' · ') || '未产生过账'));
     this.init();
     InspectionBatch.openDetail(batchId);
   },

@@ -35,7 +35,6 @@ const App = {
             { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
             { id:'inspection-plan', label:'检验计划', route:'inspection-plan' },
             { id:'retention-rule', label:'留样规则', route:'retention-rule', pageObj:'RetentionRule' },
-            { id:'sample-location', label:'位置管理', route:'sample-location', pageObj:'SampleLocationPage' },
             { id:'defect-code', label:'目录类型管理', route:'defect-code' }
           ]
         },
@@ -49,11 +48,6 @@ const App = {
             { id:'stability-annual', label:'年度考察计划', route:'stability-annual' },
             { id:'stability-plan', label:'稳定性研究', route:'stability-plan' },
             { id:'stability-data', label:'稳定性数据与报告', route:'stability-data' }
-          ]
-        },
-        {
-          title:'样品管理', items: [
-            { id:'sample-ledger', label:'样品台账', route:'sample-ledger', pageObj:'SampleLedger' }
           ]
         }
 
@@ -195,12 +189,9 @@ const App = {
     'inspection-method': InspectionMethod,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
-    'retention-sample': SampleLedger,      // 旧路由别名：留样管理已并入样品台账
     'stability-plan': StabilityPlan,
     'stability-annual': StabilityAnnual,
     'stability-data': StabilityData,
-    'sample-ledger': SampleLedger,
-    'sample-location': SampleLocationPage,
     'retention-rule': RetentionRule,
     'defect-code': DefectCode,
     'cost-object': CostObject,

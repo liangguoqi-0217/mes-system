@@ -1,7 +1,9 @@
 /**
- * 样品位置树（SampleLocations）——样品管理公共主数据
+ * 样品位置树（SampleLocations）——仅服务稳定性研究模块
  *
- * 服务于：样品台账（sample-ledger）、留样台账（retention-sample）、到期报表、位置管理页。
+ * 2026-11-16 决策：样品颗粒度只到库存地点，样品台账与位置管理页已下线；
+ * 本 core 之所以保留，是因为稳定性研究（stability-plan / stability-data）仍按
+ * 房间→柜→层→盒 管理备样入箱与移库。不要再新增消费方，也不要恢复位置管理页。
  *
  * 层级模型（结构由 QC 自定，系统只定层级）：
  *   房间/样品间(room) → 存储设备(fridge/cabinet) → 层/搁架(shelf) → 盒(box) → 位(slot，可选)
