@@ -86,7 +86,7 @@ const InspectionBatch = {
     { id:'B008', batchNo:'100000012308', inspectType:'03', sourceDocType:'PROD_ORDER', sourceDocNo:'6000000231', materialCode:'MAT-10001', materialName:'阿莫西林原料药', sapBatch:'SAP-BT-20260601', supplierBatch:'AM2026H14', quantity:'500.000', unit:'KG', plant:'2001', plantName:'陕西步长制药工厂', planNo:'2001-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'DONE', statusName:'检验完成', createTime:'2026-06-15 08:00:00', createBy:'刘工', updateTime:'2026-06-17 14:00:00',
       decision:'pending', decisionBy:'', decisionTime:'', inspectionVerdict:'passed', inspectionRemark:'所有项目均合格',
       crossPlantOps: [
-        { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'按常规取样方案', status:'done', sampledBy:'王工', sampleTime:'2026-06-16 09:30', sampleQty:'5.000', samplingPlanName:'SP-001 常规取样方案' },
+        { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'按常规取样方案', status:'done', sampledBy:'王工', sampleTime:'2026-06-16 09:30', sampleQty:'5.000', consumeQty:4.500, retainQty:0.500, doc331:'4900100000115', doc311:'4900101000115', samplingPlanName:'SP-001 常规取样方案' },
         { opNum:'0020', opType:'inspection', opTypeName:'理化检验', workCenterName:'理化实验室', description:'理化项目检验', status:'done', doneBy:'孙工', doneTime:'2026-06-16 16:00',
           results: [
             { micCode:'2001-MIC-001', micName:'pH值', micType:'quantitative', methodName:'pH值测定法', unit:'pH', lowerSpec:'5.0', upperSpec:'7.0', value:'6.58', verdict:'合格' },
@@ -111,7 +111,8 @@ const InspectionBatch = {
     },
     { id:'B009', batchNo:'100000012309', inspectType:'89', sourceDocType:'NONE', sourceDocNo:'', materialCode:'MAT-10002', materialName:'淀粉辅料', sapBatch:'SAP-BT-20260602', supplierBatch:'DF2606I14', quantity:'1000.000', unit:'KG', plant:'2002', plantName:'山东丹红制药工厂', planNo:'2002-IP-00001', purposeCode:'QC-01', purposeName:'来料检验', status:'INSP', statusName:'检验中', createTime:'2026-06-14 09:00:00', createBy:'陈工', updateTime:'2026-06-17 11:00:00',
       crossPlantOps: [
-        { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'按取样方案执行', status:'done', sampledBy:'周工', sampleTime:'2026-06-15 14:00', sampleQty:'3.000', samplingPlanName:'SP-002 辅料取样方案' },
+        { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'按取样方案执行', status:'done', sampledBy:'周工', sampleTime:'2026-06-15 14:00', sampleQty:'3.000', consumeQty:2.500, retainQty:0.500, doc331:'4900100000118', doc311:'4900101000118', samplingPlanName:'SP-002 辅料取样方案' },
+        { opNum:'S02', opType:'sampling', opTypeName:'取样', workCenterName:'取样组', description:'复测补取', status:'done', sampledBy:'周工', sampleTime:'2026-06-16 10:20', sampleQty:'1.500', consumeQty:1.200, retainQty:0.300, doc331:'4900100000120', doc311:'4900101000120', samplingPlanName:'—' },
         { opNum:'0020', opType:'inspection', opTypeName:'理化检验', workCenterName:'理化实验室', description:'理化项目检验', status:'done', doneBy:'吴工', doneTime:'2026-06-16 11:00',
           results: [
             { micCode:'2002-MIC-001', micName:'pH值', micType:'quantitative', methodName:'pH值测定法', unit:'pH', lowerSpec:'4.5', upperSpec:'7.0', value:'5.82', verdict:'合格' },
@@ -535,20 +536,11 @@ const InspectionBatch = {
   },
 
   getBatchActions(b) {
-    // 解析计划以获取取样工序编号
-    const plan = this._resolvePlan(b);
-    const ops = (plan && plan.operations) ? plan.operations : [
-      { opNum:'0010', opType:'sampling' },
-      { opNum:'0020', opType:'inspection' }
-    ];
-    const samplingOp = ops.find(o => o.opType === 'sampling');
-    const samplingOpNum = samplingOp ? samplingOp.opNum : '0010';
-
-    // 终态（已关闭 / 已取消）：按钮照常显示（与其他行数目一致），
-    // 点击时由 notifyBlocked 提示当前状态不支持该操作，不置灰、不隐藏
+    // 取样：脱离检验计划、全状态开放、次数不限（2026-11-17 简化决策），系统不做状态限制
+    // 终态（已关闭 / 已取消）：取样照常可执行；结果录入/使用决策由 notifyBlocked 提示，不置灰、不隐藏
     if (this._isFinalStatus(b.status)) {
       return `<div class="table-actions">
-        <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.notifyBlocked('${b.id}','取样')" title="执行取样">取样</button>
+        <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}')" title="执行取样">取样</button>
         <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.notifyBlocked('${b.id}','结果录入')" title="选择工序录入检验结果">结果录入</button>
         <button class="btn btn-success btn-sm" onclick="InspectionBatch.notifyBlocked('${b.id}','使用决策')" title="使用决策">使用决策</button>
         <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
@@ -556,7 +548,7 @@ const InspectionBatch = {
     }
 
     return `<div class="table-actions">
-      <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}','${samplingOpNum}')" title="执行取样">取样</button>
+      <button class="btn btn-sm" style="background:#f59e0b;color:#fff;" onclick="InspectionBatch.openSamplingForm('${b.id}')" title="执行取样">取样</button>
       <button class="btn btn-sm" style="background:#6366f1;color:#fff;" onclick="InspectionBatch.selectOpForResult('${b.id}')" title="选择工序录入检验结果">结果录入</button>
       <button class="btn btn-success btn-sm" onclick="InspectionBatch.openDecision('${b.id}')" title="使用决策">使用决策</button>
       <button class="btn btn-blue btn-sm" onclick="InspectionBatch.openDetail('${b.id}')" title="检验批详情">查看</button>
@@ -722,12 +714,10 @@ const InspectionBatch = {
 
     const plan = this._resolvePlan(b);
     const ops = (plan && plan.operations) ? plan.operations : [
-      { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'QC取样室', description:'按取样方案执行取样', samplingPlanName:'—', chars:[] },
-      { opNum:'0020', opType:'inspection', opTypeName:'检验', workCenterName:'QC实验室', description:'外观、含量、pH值等', samplingPlanName:'', chars:[] }
+      { opNum:'0010', opType:'inspection', opTypeName:'检验', workCenterName:'QC实验室', description:'外观、含量、pH值等', chars:[] }
     ];
 
     const statusBadge = this.getStatusBadgeHtml(b.status);
-    const hasSamplingOp = ops.some(o => o.opType === 'sampling');
 
 
 
@@ -884,7 +874,13 @@ const InspectionBatch = {
   _getSamplingRecords(b) {
     const recs = [];
     (b.crossPlantOps || []).filter(o => o.opType === 'sampling').forEach((o, i) => {
-      recs.push({ id: 'samp_' + i, qty: o.sampleQty, by: o.sampledBy, time: o.sampleTime, plan: o.samplingPlanName, status: o.status === 'done' ? 'valid' : 'pending' });
+      recs.push({
+        id: 'samp_' + i, qty: o.sampleQty, by: o.sampledBy, time: o.sampleTime, plan: o.samplingPlanName,
+        consumeQty: o.consumeQty != null ? Number(o.consumeQty) : null,
+        retainQty: o.retainQty != null ? Number(o.retainQty) : null,
+        doc331: o.doc331 || '', doc311: o.doc311 || '',
+        status: o.status === 'done' ? 'valid' : 'pending'
+      });
     });
     if (recs.length === 0 && ['SAMP', 'INSP', 'DONE', 'DEC', 'CLSD'].includes(b.status)) {
       const qty = b.sampleQty != null ? String(b.sampleQty) : (parseFloat(b.quantity || '0') * 0.01).toFixed(3);
@@ -1125,9 +1121,9 @@ const InspectionBatch = {
 
   // ==================== 取样表单弹窗 ====================
 
-  openSamplingForm(batchId, opNum) {
+  openSamplingForm(batchId) {
     const b = this.batchData.find(x => x.id === batchId);
-    if (!b || b.status !== 'CRTD') return toast('当前状态不允许取样');
+    if (!b) return toast('检验批未找到');
 
     // 留样规则：给默认值 + 决定是否「必须留样」（规则管这一类，弹窗管这一次）
     const rule = (window.RetentionRule && b.materialCode) ? RetentionRule.findRule(b.materialCode, b.plant) : null;
@@ -1143,7 +1139,8 @@ const InspectionBatch = {
       `取样 — ${b.batchNo}`,
       `<div style="padding:4px 0;">
         <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;">
-          <div style="color:var(--text-secondary);">工序 ${esc(opNum)} · 物料 ${esc(b.materialCode)} ${esc(b.materialName)} · 单位 ${esc(b.unit)}</div>
+          <div style="color:var(--text-secondary);">物料 ${esc(b.materialCode)} ${esc(b.materialName)} · 单位 ${esc(b.unit)}</div>
+          <div id="ibSampCumu" style="color:var(--text-secondary);margin-top:2px;">${this._sampCumuText(b)}</div>
         </div>
 
         <div class="form-grid">
@@ -1238,9 +1235,29 @@ const InspectionBatch = {
     return 'YF';
   },
 
+  // 本批累计取样信息（弹窗上下文条用，已冲销的不计）
+  _sampCumuText(b) {
+    const rev = (b._reversed && b._reversed.sampling) || [];
+    const recs = this._getSamplingRecords(b).filter(r => !rev.includes(r.id));
+    if (!recs.length) return '本批尚未取样 · 取样次数不限，可分多次执行';
+    let c = 0, r = 0;
+    recs.forEach(x => {
+      if (x.consumeQty != null) c += Number(x.consumeQty) || 0;
+      if (x.retainQty != null) r += Number(x.retainQty) || 0;
+    });
+    return `已取样 ${recs.length} 次` + ((c || r) ? ` · 累计消耗 ${c.toFixed(3)} / 累计留样 ${r.toFixed(3)} ${esc(b.unit||'')}` : '');
+  },
+
+  // 确认取样后刷新弹窗内的累计行
+  _updateSampCumu(batchId) {
+    const b = this.batchData.find(x => x.id === batchId);
+    const el = document.getElementById('ibSampCumu');
+    if (b && el) el.innerHTML = this._sampCumuText(b);
+  },
+
   submitSampling(batchId) {
     const b = this.batchData.find(x => x.id === batchId);
-    if (!b || b.status !== 'CRTD') return toast('当前状态不允许取样');
+    if (!b) return toast('检验批未找到');
 
     // PRD 4.1: 实时校验冲销
     if (Math.random() < 0.03) {
@@ -1279,8 +1296,6 @@ const InspectionBatch = {
     const v331 = consumeQty > 0 ? '4900100' + seq : '';
     const v311 = retainQty > 0 ? '4900101' + seq : '';
 
-    b.status = 'SAMP';
-    b.statusName = '取样中';
     b.updateTime = new Date().toISOString().replace('T',' ').slice(0,19);
     b.sampleQty = qty;
     b.retainQty = retainQty;
@@ -1289,12 +1304,33 @@ const InspectionBatch = {
     b.sapDoc331 = v331;
     b.sapDoc311 = v311;
 
+    // 取样记录追加为台账行：检验批取样次数不限，状态机不参与取样（2026-11-17 简化决策）
+    b.crossPlantOps = b.crossPlantOps || [];
+    b.crossPlantOps.push({
+      opNum: 'S' + String(b.crossPlantOps.filter(o => o.opType === 'sampling').length + 1).padStart(2,'0'),
+      opType: 'sampling', opTypeName: '取样',
+      workCenterName: '取样组', description: remark || '弹窗录入取样',
+      status: 'done',
+      sampledBy: (window.currentUser && window.currentUser.name) || b.createBy || '质检员',
+      sampleTime: (postDate || '') + ' ' + new Date().toTimeString().slice(0,5),
+      sampleQty: qty.toFixed(3), consumeQty: consumeQty, retainQty: retainQty,
+      doc331: v331, doc311: v311, samplingPlanName: '—'
+    });
+
     const parts = [];
     if (v331) parts.push('331 凭证 ' + v331 + '（消耗 ' + consumeQty.toFixed(3) + ' ' + b.unit + '）');
     if (v311) parts.push('311 凭证 ' + v311 + '（留样 ' + retainQty.toFixed(3) + ' ' + b.unit + '）');
-    toast('取样完成 · ' + (parts.join(' · ') || '未产生过账'));
+    toast('取样完成 · ' + (parts.join(' · ') || '未产生过账') + ' · 可继续录入下一次');
+
+    // 弹窗不关闭：清空取样总量、重置拆分显示、刷新累计行，支持连续取样
+    const qtyEl = document.getElementById('ibSampleQty');
+    if (qtyEl) qtyEl.value = '';
+    const showEl = document.getElementById('ibConsumeShow');
+    if (showEl) showEl.textContent = '0.000';
+    const hintEl = document.getElementById('ibSplitHint');
+    if (hintEl) hintEl.innerHTML = '<span style="color:var(--text-muted);">填报取样总量后自动拆分消耗量与留样量</span>';
+    this._updateSampCumu(batchId);
     this.init();
-    InspectionBatch.openDetail(batchId);
   },
 
   // ==================== 检验结果录入弹窗 ====================
@@ -1307,8 +1343,7 @@ const InspectionBatch = {
 
     const plan = this._resolvePlan(b);
     const allOps = (plan && plan.operations) ? plan.operations : [
-      { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenterName:'QC取样室', description:'按取样方案执行取样' },
-      { opNum:'0020', opType:'inspection', opTypeName:'检验', workCenterName:'QC实验室', description:'外观、含量、pH值等' }
+      { opNum:'0010', opType:'inspection', opTypeName:'检验', workCenterName:'QC实验室', description:'外观、含量、pH值等' }
     ];
 
     // 只筛选检验类型的工序

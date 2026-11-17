@@ -73,17 +73,9 @@ const ipData = [
     createdBy:'张工', createdDate:'2025-02-01',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'按常规取样方案取样',
-        samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-01', workCenterName:'理化实验室',
         description:'理化项目检验',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC001', micCode:'2001-MIC-001', micName:'pH值', micType:'quantitative',
@@ -112,10 +104,9 @@ const ipData = [
         ]
       },
       {
-        opNum:'0030', opType:'inspection', opTypeName:'检验',
+        opNum:'0020', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-02', workCenterName:'仪器分析室',
         description:'含量测定',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC004', micCode:'2001-MIC-004', micName:'含量（主成分）', micType:'quantitative',
@@ -137,17 +128,9 @@ const ipData = [
     createdBy:'张工', createdDate:'2025-02-15',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'按常规取样方案取样',
-        samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-01', workCenterName:'理化实验室',
         description:'理化项目检验',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC001', micCode:'2001-MIC-001', micName:'pH值', micType:'quantitative',
@@ -177,17 +160,9 @@ const ipData = [
     createdBy:'李经理', createdDate:'2025-03-01',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'取样',
-        samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-01', workCenterName:'理化实验室',
         description:'理化检验',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC001', micCode:'2001-MIC-001', micName:'pH值', micType:'quantitative',
@@ -217,17 +192,9 @@ const ipData = [
     createdBy:'王质检', createdDate:'2025-03-10',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'取样',
-        samplingPlan:'SP-002', samplingPlanName:'SP-002 减量取样方案（n=10）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-01', workCenterName:'理化实验室',
         description:'理化检验',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC006', micCode:'2002-MIC-001', micName:'崩解时限', micType:'quantitative',
@@ -257,17 +224,9 @@ const ipData = [
     createdBy:'张工', createdDate:'2025-04-01',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'取样',
-        samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-03', workCenterName:'微生物实验室',
         description:'微生物限度',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC004', micCode:'2001-MIC-004', micName:'含量（主成分）', micType:'quantitative',
@@ -289,17 +248,9 @@ const ipData = [
     createdBy:'赵经理', createdDate:'2025-05-01',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'取样',
-        samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-01', workCenterName:'理化实验室',
         description:'理化检验',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC008', micCode:'2003-MIC-001', micName:'微生物限度', micType:'quantitative',
@@ -321,17 +272,9 @@ const ipData = [
     createdBy:'陈主管', createdDate:'2025-06-01',
     operations: [
       {
-        opNum:'0010', opType:'sampling', opTypeName:'取样',
-        workCenter:'WC-SAMP-01', workCenterName:'取样组',
-        description:'取样',
-        samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）',
-        chars: []
-      },
-      {
-        opNum:'0020', opType:'inspection', opTypeName:'检验',
+        opNum:'0010', opType:'inspection', opTypeName:'检验',
         workCenter:'WC-LAB-01', workCenterName:'理化实验室',
         description:'理化检验',
-        samplingPlan:'',
         chars: [
           {
             micId:'MIC010', micCode:'2001-MIC-006', micName:'粒度分布', micType:'quantitative',
@@ -364,7 +307,7 @@ const InspectionPlan = {
       <div style="display:flex;flex-direction:column;height:calc(100vh - 56px);">
         <!-- 顶部标题栏 -->
         <div style="background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-          <div><div style="font-size:18px;font-weight:700;">检验计划</div><div style="font-size:13px;opacity:0.8;">连接物料、MIC与检验标准的桥梁 · 定义"从取样到判定"的完整流程</div></div>
+          <div><div style="font-size:18px;font-weight:700;">检验计划</div><div style="font-size:13px;opacity:0.8;">连接物料、MIC与检验标准的桥梁 · 只含检验工序，取样在检验批上不限次执行</div></div>
           ${this.isQAManager() ? `<button class="btn btn-blue" onclick="InspectionPlan.openCreate()">+ 新建检验计划</button>` : ''}
         </div>
         <!-- 筛选栏 -->
@@ -527,8 +470,7 @@ const InspectionPlan = {
   openCreate() {
     this.editId = '';
     this.formOps = [
-      { opNum:'0010', opType:'sampling', opTypeName:'取样', workCenter:'WC-SAMP-01', workCenterName:'取样组', description:'', samplingPlan:'SP-001', samplingPlanName:'SP-001 常规取样方案（n=20）', chars:[] },
-      { opNum:'0020', opType:'inspection', opTypeName:'检验', workCenter:'WC-LAB-01', workCenterName:'理化实验室', description:'', samplingPlan:'', chars:[] }
+      { opNum:'0010', opType:'inspection', opTypeName:'检验', workCenter:'WC-LAB-01', workCenterName:'理化实验室', description:'', chars:[] }
     ];
     showModal('新建检验计划', this.buildForm(), [
       { text:'取消', cls:'btn-secondary', action: ()=>{ InspectionPlan.closeModal(); } },
@@ -581,9 +523,6 @@ const InspectionPlan = {
       if (!bc) return;
       bc.querySelectorAll('.ip-mic-select').forEach(sel => {
         sel.addEventListener('change', (e) => this.onMicChange(e.target));
-      });
-      bc.querySelectorAll('.ip-optype').forEach(radio => {
-        radio.addEventListener('change', (e) => this.onOpTypeChange(e.target));
       });
     }, 50);
   },
@@ -650,8 +589,7 @@ const InspectionPlan = {
       ${this.formOps.map((op, oi) => navItem(
         'op-'+oi,
         `<span class="sn-idx">${esc(op.opNum)}</span>${esc(op.opTypeName)} · ${esc(op.workCenterName)}`,
-        op.opType==='sampling'?'取样':'检验',
-        op.opType==='sampling'?'samp':'insp'
+        '检验','insp'
       )).join('')}
       <button class="split-nav-add" onclick="InspectionPlan.addOperation()">+ 添加工序</button>`;
 
@@ -692,43 +630,24 @@ const InspectionPlan = {
 
   // ---- 构建单个工序面板（侧栏导航）----
   buildSplitOpPanel(op, oi, wcOpts, spOpts, micOpts, methodOpts) {
-    const isSampling = op.opType === 'sampling';
-    const isInspection = op.opType === 'inspection';
-
-    let charsSection = '';
-    if (isInspection) {
-      const charsHtml = (op.chars||[]).map((ch, ci) => this.buildSplitMicItem(ch, oi, ci, micOpts, methodOpts, spOpts)).join('');
-      charsSection = `
-        <div class="sn-section-title">
-          <span>检验特性（${(op.chars||[]).length}项）</span>
-          <button class="btn-add" onclick="InspectionPlan.addChar(${oi})">+ 添加</button>
-        </div>
-        <div id="splitChars-${oi}">${charsHtml || '<div class="clean-empty-chars">暂无检验特性，点击"添加"按钮新增</div>'}</div>`;
-    }
+    // 检验计划简化（2026-11-17）：取消工序类型概念，工序只含检验；
+    // 取样脱离计划、在检验批上不限次执行，取样方案挂检验特性
+    const charsHtml = (op.chars||[]).map((ch, ci) => this.buildSplitMicItem(ch, oi, ci, micOpts, methodOpts, spOpts)).join('');
+    const charsSection = `
+      <div class="sn-section-title">
+        <span>检验特性（${(op.chars||[]).length}项）</span>
+        <button class="btn-add" onclick="InspectionPlan.addChar(${oi})">+ 添加</button>
+      </div>
+      <div id="splitChars-${oi}">${charsHtml || '<div class="clean-empty-chars">暂无检验特性，点击"添加"按钮新增</div>'}</div>`;
 
     return `<div class="split-panel" data-split="op-${oi}">
       <div class="sn-section-title">
         <span>工序 ${esc(op.opNum)}</span>
-        <span class="badge ${isSampling?'badge-green':'badge-purple'}">${esc(op.opTypeName)}</span>
+        <span class="badge badge-purple">${esc(op.opTypeName || '检验')}</span>
       </div>
       <div class="sn-field-row">
         <div><label>工序号</label><input value="${esc(op.opNum)}" disabled></div>
-        <div><label>工序类型</label>
-          <div style="display:flex;gap:12px;padding-top:6px;">
-            <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;cursor:pointer;">
-              <input type="radio" class="ip-optype" name="spOpType_${oi}" value="sampling" ${isSampling?'checked':''} data-op-idx="${oi}"> 取样
-            </label>
-            <label style="display:inline-flex;align-items:center;gap:4px;margin-bottom:0;font-weight:600;cursor:pointer;">
-              <input type="radio" class="ip-optype" name="spOpType_${oi}" value="inspection" ${isInspection?'checked':''} data-op-idx="${oi}"> 检验
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="sn-field-row">
         <div><label>工作中心</label><select class="ip-wc" data-op-idx="${oi}">${wcOpts}</select></div>
-        ${isSampling
-          ? `<div><label>取样方案<span style="color:#dc2626;">*</span></label><select class="ip-sp" data-op-idx="${oi}"><option value="">— 请选择 —</option>${spOpts}</select></div>`
-          : `<div></div>`}
       </div>
       <div class="sn-field-row sn-single">
         <div><label>工序描述</label><input type="text" class="ip-opdesc" value="${esc(op.description||'')}" placeholder="（可选）" data-op-idx="${oi}"></div>
@@ -796,8 +715,7 @@ const InspectionPlan = {
       ${this.formOps.map((op, oi) => navItem(
         'op-'+oi,
         `<span class="sn-idx">${esc(op.opNum)}</span>${esc(op.opTypeName)} · ${esc(op.workCenterName)}`,
-        op.opType==='sampling'?'取样':'检验',
-        op.opType==='sampling'?'samp':'insp'
+        '检验','insp'
       )).join('')}`;
 
     // 右侧面板
@@ -836,31 +754,20 @@ const InspectionPlan = {
 
   // ---- 构建查看模式工序面板（只读）----
   buildSplitOpPanelView(op, oi, micOpts, methodOpts, spOpts) {
-    const isSampling = op.opType === 'sampling';
-    const isInspection = op.opType === 'inspection';
-
-    let charsSection = '';
-    if (isInspection) {
-      const charsHtml = (op.chars||[]).map((ch, ci) => this.buildSplitMicItemView(ch, oi, ci)).join('');
-      charsSection = `
-        <div class="sn-section-title">检验特性（${(op.chars||[]).length}项）</div>
-        <div>${charsHtml || '<div class="clean-empty-chars">暂无检验特性</div>'}</div>`;
-    }
+    // 检验计划简化（2026-11-17）：工序只含检验，取样方案挂检验特性
+    const charsHtml = (op.chars||[]).map((ch, ci) => this.buildSplitMicItemView(ch, oi, ci)).join('');
+    const charsSection = `
+      <div class="sn-section-title">检验特性（${(op.chars||[]).length}项）</div>
+      <div>${charsHtml || '<div class="clean-empty-chars">暂无检验特性</div>'}</div>`;
 
     return `<div class="split-panel" data-split="op-${oi}">
       <div class="sn-section-title">
         <span>工序 ${esc(op.opNum)}</span>
-        <span class="badge ${isSampling?'badge-green':'badge-purple'}">${esc(op.opTypeName)}</span>
+        <span class="badge badge-purple">${esc(op.opTypeName || '检验')}</span>
       </div>
       <div class="sn-field-row">
         <div><label>工序号</label><span class="sn-ro-val mono">${esc(op.opNum)}</span></div>
-        <div><label>工序类型</label><span class="sn-ro-val">${esc(op.opTypeName)}</span></div>
-      </div>
-      <div class="sn-field-row">
         <div><label>工作中心</label><span class="sn-ro-val">${esc(op.workCenterName||op.workCenter)}</span></div>
-        ${isSampling
-          ? `<div><label>取样方案</label><span class="sn-ro-val">${esc(op.samplingPlanName||op.samplingPlan||'—')}</span></div>`
-          : `<div></div>`}
       </div>
       <div class="sn-field-row sn-single">
         <div><label>工序描述</label><span class="sn-ro-val">${esc(op.description||'—')}</span></div>
@@ -1128,22 +1035,13 @@ const InspectionPlan = {
     }
   },
 
-  // ---- 工序类型变更 ----
-  onOpTypeChange(radio) {
-    const opIdx = parseInt(radio.dataset.opIdx);
-    this.formOps[opIdx].opType = radio.value;
-    this.formOps[opIdx].opTypeName = radio.value === 'sampling' ? '取样' : '检验';
-    // 切换类型后重建表格和特性区
-    this.rebuildSplitForm();
-  },
-
   // ---- 添加/删除工序 ----
   addOperation() {
     const newNum = ipGenOpNum(this.formOps);
     this.formOps.push({
       opNum: newNum, opType:'inspection', opTypeName:'检验',
       workCenter:'WC-LAB-01', workCenterName:'理化实验室',
-      description:'', samplingPlan:'', chars:[]
+      description:'', chars:[]
     });
     this.rebuildSplitForm();
   },
@@ -1184,8 +1082,7 @@ const InspectionPlan = {
         ${this.formOps.map((op, oi) => navItem(
           'op-'+oi,
           `<span class="sn-idx">${esc(op.opNum)}</span>${esc(op.opTypeName)} · ${esc(op.workCenterName)}`,
-          op.opType==='sampling'?'取样':'检验',
-          op.opType==='sampling'?'samp':'insp'
+          '检验','insp'
         )).join('')}
         <button class="split-nav-add" onclick="InspectionPlan.addOperation()">+ 添加工序</button>`;
     }
@@ -1246,8 +1143,6 @@ const InspectionPlan = {
         if (!panel) return;
         const wcEl = panel.querySelector('.ip-wc');
         if (wcEl) wcEl.value = op.workCenter;
-        const spEl = panel.querySelector('.ip-sp');
-        if (spEl) spEl.value = op.samplingPlan || '';
         const descEl = panel.querySelector('.ip-opdesc');
         if (descEl) descEl.value = op.description || '';
         (op.chars||[]).forEach((ch, ci) => {
@@ -1336,19 +1231,14 @@ const InspectionPlan = {
       const splitId = panel.dataset.split; // "op-0", "op-1", ...
       const oi = parseInt(splitId.replace('op-', ''));
 
-      const opTypeRadio = panel.querySelector(`input[name="spOpType_${oi}"]:checked`);
-      const opType = opTypeRadio ? opTypeRadio.value : this.formOps[oi]?.opType || 'inspection';
       const wcEl = panel.querySelector('.ip-wc');
       const wcVal = wcEl ? wcEl.value : '';
       const wcObj = ipWorkCenterOptions.find(w => w.value === wcVal);
       const descEl = panel.querySelector('.ip-opdesc');
-      const spEl = panel.querySelector('.ip-sp');
-      const spVal = spEl ? spEl.value : '';
-      const spObj = ipSamplingOptions.find(s => s.value === spVal);
 
       // 收集检验特性
       const chars = [];
-      if (opType === 'inspection') {
+      {
         const charItems = panel.querySelectorAll('.ip-char-item');
         charItems.forEach((charItem) => {
           const micEl = charItem.querySelector('.ip-mic-select');
@@ -1390,13 +1280,11 @@ const InspectionPlan = {
 
       ops.push({
         opNum: this.formOps[oi]?.opNum || '',
-        opType: opType,
-        opTypeName: opType === 'sampling' ? '取样' : '检验',
+        opType: 'inspection',
+        opTypeName: '检验',
         workCenter: wcVal,
         workCenterName: wcObj ? wcObj.label : wcVal,
         description: descEl ? descEl.value : '',
-        samplingPlan: spVal,
-        samplingPlanName: spObj ? spObj.label : '',
         chars: chars
       });
     });
@@ -1420,19 +1308,10 @@ const InspectionPlan = {
 
     // 校验工序
     if (ops.length === 0) { toast('请至少添加一道工序'); return; }
-    const hasSampling = ops.some(o => o.opType === 'sampling');
-    const hasInspection = ops.some(o => o.opType === 'inspection');
-
-    // 取样工序校验
-    for (const o of ops) {
-      if (o.opType === 'sampling' && !o.samplingPlan) {
-        toast(`工序 ${o.opNum} 为取样类型，请选择取样方案`); return;
-      }
-    }
 
     // 检验工序必须有检验特性
     for (const o of ops) {
-      if (o.opType === 'inspection' && o.chars.length === 0) {
+      if (o.chars.length === 0) {
         toast(`检验工序 ${o.opNum} 必须至少添加一个检验特性`); return;
       }
     }

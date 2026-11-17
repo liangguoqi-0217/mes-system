@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>取样弹窗 · 四种形式对比 Demo（仅演示，不改动生产代码）</title>
+<style>
+  :root{
+    --navy:#1E3A5F;
+    --gray-bg:#f8fafc;
+    --gray-line:#e5e7eb;
+    --gray-text:#6b7280;
+    --ink:#1f2937;
+    --danger:#dc2626;
+    --ok:#16a34a;
+    --blue-card:#eff6ff; --blue-line:#bfdbfe; --blue-ink:#1e40af;
+    --purple-card:#f5f3ff; --purple-line:#ddd6fe; --purple-ink:#5b21b6;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;margin:0;padding:32px 40px;background:var(--gray-bg);color:var(--ink);}
+
+  /* ===== 对比页头部 ===== */
+  h1{font-size:18px;margin:0 0 6px;}
+  .page-sub{font-size:13px;color:var(--gray-text);margin-bottom:24px;}
+  .variant-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:1200px;}
+  .vcard{background:#fff;border:1px solid var(--gray-line);border-radius:10px;padding:18px 20px;}
+  .vcard h3{margin:0 0 4px;font-size:15px;display:flex;align-items:center;gap:8px;}
+  .vcard h3 .idx{background:var(--navy);color:#fff;font-size:12px;border-radius:4px;padding:2px 7px;font-weight:600;}
+  .vcard .desc{font-size:13px;color:var(--gray-text);margin:6px 0 10px;line-height:1.6;}
+  .vcard .meta{font-size:12px;color:var(--gray-text);background:var(--gray-bg);border:1px solid var(--gray-line);border-radius:6px;padding:8px 10px;margin-bottom:12px;line-height:1.7;}
+  .vcard .meta b{color:var(--ink);}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;transition:.15s;}
+  .btn-blue{background:var(--navy);color:#fff;}
+  .btn-blue:hover{opacity:.9;}
+  .btn-ghost{background:#fff;border-color:var(--gray-line);color:var(--ink);}
+  .btn-ghost:hover{background:var(--gray-bg);}
+  .btn-sm{padding:5px 12px;font-size:13px;}
+  .btn-danger{background:#fff;border-color:var(--danger);color:var(--danger);}
+  .btn-danger:hover{background:#fef2f2;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* ===== 通用弹窗 ===== */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;padding:24px;z-index:50;}
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:10px;width:92vw;max-width:1080px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+  .modal-wide{max-width:1200px;}
+  .modal-head{padding:18px 24px;border-bottom:1px solid var(--gray-line);display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
+  .modal-head h3{margin:0;font-size:17px;font-weight:600;}
+  .modal-head .sub{font-size:13px;color:var(--gray-text);}
+  .modal-head .close{margin-left:auto;cursor:pointer;color:var(--gray-text);font-size:18px;line-height:1;background:none;border:none;}
+  .modal-body{padding:20px 24px;overflow:auto;}
+  .modal-foot{padding:16px 24px;border-top:1px solid var(--gray-line);display:flex;justify-content:flex-end;gap:12px;flex-shrink:0;}
+
+  /* 上下文条 */
+  .ctx{background:var(--gray-bg);border:1px solid var(--gray-line);border-radius:8px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:18px;font-size:13px;color:var(--gray-text);margin-bottom:20px;}
+  .ctx b{color:var(--ink);font-weight:600;}
+
+  /* 表单 */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 22px;}
+  .form-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;color:var(--gray-text);}
+  .field label .req{color:var(--danger);margin-left:2px;}
+  .field input,.field select{padding:9px 12px;border:1px solid var(--gray-line);border-radius:6px;font-size:14px;color:var(--ink);background:#fff;width:100%;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--navy);}
+
+  .sec-title{border-left:3px solid var(--navy);padding-left:10px;font-size:14px;font-weight:600;margin:0 0 14px;}
+  .sec{margin-bottom:20px;}
+
+  /* 331/311 拆分卡（形式A） */
+  .split-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px;}
+  .split-card{border-radius:8px;padding:14px 16px;border:1px solid;}
+  .split-card.blue{background:var(--blue-card);border-color:var(--blue-line);}
+  .split-card.purple{background:var(--purple-card);border-color:var(--purple-line);}
+  .split-card .tag{font-size:12px;font-weight:600;}
+  .split-card.blue .tag{color:var(--blue-ink);}
+  .split-card.purple .tag{color:var(--purple-ink);}
+  .split-card .big{font-size:22px;font-weight:700;margin:6px 0;}
+  .split-card.blue .big{color:var(--navy);}
+  .split-card.purple .big{color:var(--purple-ink);}
+  .split-card.purple input{width:100%;font-size:22px;font-weight:700;color:var(--purple-ink);border:none;background:transparent;padding:2px 0;outline:none;}
+  .split-card .hint{font-size:12px;color:var(--gray-text);}
+  .split-hint{font-size:13px;margin-top:10px;}
+  .hint-muted{color:var(--gray-text);}
+  .hint-ok{color:var(--ok);}
+  .hint-err{color:var(--danger);}
+
+  /* 历史记录表（形式B） */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{text-align:left;color:var(--gray-text);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--gray-line);background:var(--gray-bg);}
+  tbody td{padding:9px 12px;border-bottom:1px solid var(--gray-line);}
+  .tag-ok2{display:inline-block;font-size:12px;padding:2px 8px;border-radius:4px;background:#f0fdf4;color:var(--ok);border:1px solid #bbf7d0;}
+  .tag-rev2{display:inline-block;font-size:12px;padding:2px 8px;border-radius:4px;background:#f3f4f6;color:var(--gray-text);border:1px solid var(--gray-line);}
+  tr.reversed td{color:var(--gray-text);text-decoration:line-through;}
+  .mono{font-family:Consolas,monospace;font-size:12px;}
+  .empty{padding:20px;text-align:center;color:var(--gray-text);font-size:13px;}
+
+  /* 步骤条（形式C） */
+  .steps{display:flex;align-items:center;gap:0;margin-bottom:22px;}
+  .step{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-text);}
+  .step .dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--gray-line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#fff;color:var(--gray-text);}
+  .step.active{color:var(--navy);font-weight:600;}
+  .step.active .dot{border-color:var(--navy);background:var(--navy);color:#fff;}
+  .step.done .dot{border-color:var(--navy);background:#fff;color:var(--navy);}
+  .step-line{width:46px;height:2px;background:var(--gray-line);margin:0 10px;}
+  .pane{display:none;}
+  .pane.active{display:block;}
+
+  /* 左右对照（形式D） */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+  .doc-card{border:1px solid var(--gray-line);border-radius:10px;overflow:hidden;background:#fff;}
+  .doc-card .doc-head{background:var(--navy);color:#fff;padding:12px 16px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+  .doc-card .doc-head .st{font-size:12px;font-weight:400;background:rgba(255,255,255,.18);padding:2px 10px;border-radius:10px;}
+  .doc-kv{display:grid;grid-template-columns:110px 1fr;font-size:13px;}
+  .doc-kv>div{padding:9px 16px;border-bottom:1px solid var(--gray-line);}
+  .doc-kv .k{color:var(--gray-text);background:var(--gray-bg);}
+  .doc-item{display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--gray-line);font-size:13px;}
+  .doc-item .mv{font-weight:700;}
+  .doc-item .mt{font-size:12px;color:var(--gray-text);}
+  .doc-sum{padding:12px 16px;font-size:13px;color:var(--gray-text);background:var(--gray-bg);}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;padding:10px 18px;border-radius:8px;display:none;z-index:99;}
+
+  /* 冲销原因二级弹窗 */
+  .sub-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:60;}
+  .sub-overlay.show{display:flex;}
+  .sub-modal{background:#fff;border-radius:10px;width:440px;max-width:90vw;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+  .sub-modal h4{margin:0 0 14px;font-size:15px;}
+  .sub-modal textarea{width:100%;min-height:84px;border:1px solid var(--gray-line);border-radius:6px;padding:10px;font-size:14px;resize:vertical;}
+  .sub-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
+</style>
+</head>
+<body>
+
+<h1>检验批 · 取样弹窗 — 四种形式对比</h1>
+<div class="page-sub">数据均为演示 Mock。<b>2026-11-17 已定案：采用形式 A 的风格 + 检验批取样次数不限（全状态开放、确认后弹窗保留可连续录入），台账在检验批详情"取样/留样"页签。</b>本页保留作为选型过程记录，形式 B/C/D 为未采纳备选。</div>
+
+<div class="variant-cards">
+  <div class="vcard">
+    <h3><span class="idx">A</span>单次取样 · 331/311 拆分卡（现行）</h3>
+    <div class="desc">填一个"取样总量"，实时拆分消耗（331）与留样（311），留样规则自动带默认值并强校验。</div>
+    <div class="meta"><b>适合：</b>一批一次取样、留样规则为主的常规场景。<br><b>优点：</b>路径最短；缺点：<b>一批多此取样时不支持</b>，历史记录要去详情页看。</div>
+    <button class="btn btn-blue" onclick="openM('mA')">打开形式 A</button>
+  </div>
+
+  <div class="vcard">
+    <h3><span class="idx">B</span>台账式 · 多次取样 + 历史冲销</h3>
+    <div class="desc">上方录一次取样、下方历史记录表；可在一个检验批内多次取样，每条记录可单独冲销（必填原因）。</div>
+    <div class="meta"><b>适合：</b>混合均一性取样、按袋多点取样、复测补取等"一批多次"场景。<br><b>优点：</b>冲销就地闭环；缺点：弹窗信息密度高。</div>
+    <button class="btn btn-blue" onclick="openM('mB')">打开形式 B</button>
+  </div>
+
+  <div class="vcard">
+    <h3><span class="idx">C</span>两步向导 · 取样信息 → 留样与送检</h3>
+    <div class="desc">把 8 个字段拆成两步：先定"取多少、何时过账"，再定"留样量与保存/观察要求"，最后汇总确认。</div>
+    <div class="meta"><b>适合：</b>字段多、新员工引导、降低漏填。<br><b>优点：</b>认知负担低；缺点：操作步数多，熟练工嫌慢。</div>
+    <button class="btn btn-blue" onclick="openM('mC')">打开形式 C</button>
+  </div>
+
+  <div class="vcard">
+    <h3><span class="idx">D</span>左右对照 · 录入 + SAP 凭证实时预览</h3>
+    <div class="desc">左边录入，右边实时渲染将要过账的凭证（331/311 行项目、物料、批号、数量），所见即所得。</div>
+    <div class="meta"><b>适合：</b>强调"SAP 双凭证"的演示与培训场景。<br><b>优点：</b>过账结果零意外，演示说服力最强；缺点：占宽。</div>
+    <button class="btn btn-blue" onclick="openM('mD')">打开形式 D</button>
+  </div>
+</div>
+
+<!-- ================= 形式 A：现行（单次 + 拆分卡） ================= -->
+<div class="overlay" id="mA">
+  <div class="modal">
+    <div class="modal-head"><h3>取样 — 100000012301</h3><span class="sub">形式 A · 单次取样</span><button class="close" onclick="closeM('mA')">✕</button></div>
+    <div class="modal-body">
+      <div class="ctx"><span>工序 <b>0010 · 取样</b></span><span>物料 <b>MAT-10005 布洛芬原料药</b></span><span>批量 <b>200.000 KG</b></span><span>取样方案 <b>SP-001 常规取样（n=20）</b></span></div>
+      <div class="form-grid">
+        <div class="field"><label>取样总量<span class="req">*</span></label><input type="number" id="aQty" step="0.001" min="0" placeholder="0.000" oninput="calcA()"></div>
+        <div class="field"><label>过账日期<span class="req">*</span></label><input type="date" id="aDate" value="2026-11-17"></div>
+      </div>
+      <div class="split-wrap" style="margin-top:14px;">
+        <div class="split-card blue">
+          <div class="tag">消耗性取样 · 移动类型 331</div>
+          <div class="big" id="aConsume">0.000</div>
+          <div class="hint">出库即下账，SAP 不再有库存</div>
+        </div>
+        <div class="split-card purple">
+          <div class="tag">作为留样 · 移动类型 311</div>
+          <input type="number" id="aRetain" step="0.001" min="0" value="0.5" oninput="calcA()">
+          <div class="hint">转储留样库位，SAP 仍有库存，到期 551</div>
+        </div>
+      </div>
+      <div class="split-hint" id="aHint"><span class="hint-muted">填报取样总量后自动拆分消耗量与留样量</span></div>
+      <div class="sec-title" style="margin-top:20px;">留样管理要求（按留样规则带出）</div>
+      <div class="form-grid">
+        <div class="field"><label>保存条件</label><input value="阴凉干燥处"></div>
+        <div class="field"><label>保存期限规则</label><select><option>有效期后 1 年</option><option>有效期后 2 年</option></select></div>
+        <div class="field"><label>观察频次</label><select><option>每 12 个月</option><option>每 6 个月</option></select></div>
+        <div class="field"><label>观察次数</label><input type="number" value="3" min="1"></div>
+        <div class="field" style="grid-column:1/-1;"><label>备注</label><input placeholder="可选填写备注"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeM('mA')">取消</button><button class="btn btn-blue" onclick="toast('演示：生成 331/311 两笔凭证，状态 → 取样中')">确认取样</button></div>
+  </div>
+</div>
+
+<!-- ================= 形式 B：台账式（多次取样 + 历史冲销） ================= -->
+<div class="overlay" id="mB">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h3>取样 — 100000012301</h3><span class="sub">形式 B · 一批可多次取样</span><button class="close" onclick="closeM('mB')">✕</button></div>
+    <div class="modal-body">
+      <div class="ctx"><span>工序 <b>0010 · 取样</b></span><span>物料 <b>MAT-10005 布洛芬原料药</b></span><span>批量 <b>200.000 KG</b></span><span>已取 <b>80.000 KG</b> / 方案要求 <b>100.000 KG</b></span></div>
+      <div class="sec">
+        <div class="sec-title">本次取样</div>
+        <div class="form-grid cols-3">
+          <div class="field"><label>取样总量<span class="req">*</span></label><input type="number" id="bQty" step="0.001" min="0" placeholder="0.000" oninput="calcB()"></div>
+          <div class="field"><label>其中：留样量（311）</label><input type="number" id="bRetain" step="0.001" min="0" value="0.5" oninput="calcB()"></div>
+          <div class="field"><label>过账日期<span class="req">*</span></label><input type="date" id="bDate" value="2026-11-17"></div>
+          <div class="field" style="grid-column:1/-1;"><label>备注</label><input id="bRemark" placeholder="可选填写备注"></div>
+        </div>
+        <div class="split-hint" id="bHint"><span class="hint-muted">本次消耗（331）将按 总量 − 留样量 自动计算</span></div>
+      </div>
+      <div class="sec">
+        <div class="sec-title">历史取样记录（本批）</div>
+        <table>
+          <thead><tr><th>序号</th><th>取样量</th><th>消耗(331) / 留样(311)</th><th>SAP 凭证</th><th>取样人</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="bHist"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeM('mB')">取消</button><button class="btn btn-blue" onclick="addB()">确认本次取样</button></div>
+  </div>
+</div>
+
+<!-- 冲销原因二级弹窗 -->
+<div class="sub-overlay" id="revModal">
+  <div class="sub-modal">
+    <h4>冲销取样记录 <span class="mono" id="revDoc" style="color:var(--gray-text);font-size:13px;"></span></h4>
+    <textarea id="revReason" placeholder="请填写冲销原因（必填）"></textarea>
+    <div class="sub-foot"><button class="btn btn-ghost btn-sm" onclick="closeM('revModal')">取消</button><button class="btn btn-danger btn-sm" onclick="doRev()">确认冲销</button></div>
+  </div>
+</div>
+
+<!-- ================= 形式 C：两步向导 ================= -->
+<div class="overlay" id="mC">
+  <div class="modal">
+    <div class="modal-head"><h3>取样 — 100000012301</h3><span class="sub">形式 C · 分步向导</span><button class="close" onclick="closeM('mC')">✕</button></div>
+    <div class="modal-body">
+      <div class="steps">
+        <div class="step active" id="cStep1"><span class="dot">1</span>取样信息</div>
+        <div class="step-line"></div>
+        <div class="step" id="cStep2"><span class="dot">2</span>留样与送检</div>
+        <div class="step-line"></div>
+        <div class="step" id="cStep3"><span class="dot">✓</span>确认</div>
+      </div>
+
+      <div class="pane active" id="cPane1">
+        <div class="ctx"><span>工序 <b>0010 · 取样</b></span><span>物料 <b>MAT-10005 布洛芬原料药</b></span><span>批量 <b>200.000 KG</b></span></div>
+        <div class="form-grid">
+          <div class="field"><label>取样方案（自动带出）</label><input value="SP-001 常规取样方案（n=20）" disabled></div>
+          <div class="field"><label>取样人<span class="req">*</span></label><select><option>王工（QC）</option><option>周工（车间质量员）</option></select></div>
+          <div class="field"><label>取样总量<span class="req">*</span></label><input type="number" id="cQty" step="0.001" min="0" placeholder="0.000"></div>
+          <div class="field"><label>过账日期<span class="req">*</span></label><input type="date" value="2026-11-17"></div>
+          <div class="field" style="grid-column:1/-1;"><label>取样说明</label><input placeholder="可选：取样点位、混合方式等"></div>
+        </div>
+      </div>
+
+      <div class="pane" id="cPane2">
+        <div class="sec-title">留样（311 转储）</div>
+        <div class="form-grid">
+          <div class="field"><label>留样量<span class="req">*</span></label><input type="number" id="cRetain" step="0.001" min="0" value="0.5"></div>
+          <div class="field"><label>保存条件</label><input value="阴凉干燥处"></div>
+          <div class="field"><label>保存期限规则</label><select><option>有效期后 1 年</option></select></div>
+          <div class="field"><label>留样位置</label><select><option>8F 留样室 · 常温间 · 柜 A-03</option><option>8F 留样室 · 阴凉间 · 柜 B-01</option></select></div>
+        </div>
+        <div class="sec-title" style="margin-top:20px;">观察计划</div>
+        <div class="form-grid">
+          <div class="field"><label>观察频次</label><select><option>每 12 个月</option></select></div>
+          <div class="field"><label>观察次数</label><input type="number" value="3" min="1"></div>
+          <div class="field" style="grid-column:1/-1;"><label>备注</label><input placeholder="可选填写备注"></div>
+        </div>
+      </div>
+
+      <div class="pane" id="cPane3">
+        <div class="sec-title">确认过账信息</div>
+        <table>
+          <thead><tr><th>移动类型</th><th>用途</th><th>数量 (KG)</th><th>过账日期</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">331</td><td>消耗性取样（出库下账）</td><td class="mono" id="cSumConsume">—</td><td>2026-11-17</td></tr>
+            <tr><td class="mono">311</td><td>留样转储（仍占库存）</td><td class="mono" id="cSumRetain">—</td><td>2026-11-17</td></tr>
+          </tbody>
+        </table>
+        <div class="split-hint"><span class="hint-ok">确认后将生成 331 / 311 两笔 SAP 凭证，检验批状态 → 取样中</span></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeM('mC')">取消</button>
+      <button class="btn btn-ghost" id="cPrev" onclick="cGo(-1)" style="display:none;">上一步</button>
+      <button class="btn btn-blue" id="cNext" onclick="cGo(1)">下一步</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 形式 D：录入 + 凭证预览 ================= -->
+<div class="overlay" id="mD">
+  <div class="modal modal-wide">
+    <div class="modal-head"><h3>取样 — 100000012301</h3><span class="sub">形式 D · 左录入 / 右凭证预览</span><button class="close" onclick="closeM('mD')">✕</button></div>
+    <div class="modal-body">
+      <div class="duo">
+        <div>
+          <div class="sec-title">取样录入</div>
+          <div class="form-grid">
+            <div class="field"><label>取样总量<span class="req">*</span></label><input type="number" id="dQty" step="0.001" min="0" placeholder="0.000" oninput="calcD()"></div>
+            <div class="field"><label>留样量（311）</label><input type="number" id="dRetain" step="0.001" min="0" value="0.5" oninput="calcD()"></div>
+            <div class="field"><label>过账日期<span class="req">*</span></label><input type="date" id="dDate" value="2026-11-17" oninput="calcD()"></div>
+            <div class="field"><label>取样人</label><select><option>王工（QC）</option></select></div>
+            <div class="field" style="grid-column:1/-1;"><label>备注</label><input placeholder="可选填写备注"></div>
+          </div>
+          <div class="split-hint" id="dHint"><span class="hint-muted">右侧凭证随左侧录入实时更新</span></div>
+        </div>
+        <div>
+          <div class="sec-title">SAP 过账预览（实时）</div>
+          <div class="doc-card">
+            <div class="doc-head"><span>物料凭证（模拟）</span><span class="st" id="dStatus">待录入</span></div>
+            <div class="doc-kv">
+              <div class="k">工厂 / 库位</div><div>1000 / 原料库-待检位 → 留样库</div>
+              <div class="k">物料 / 批次</div><div><span class="mono">MAT-10005</span> 布洛芬原料药 / <span class="mono">SAP-BT-20261001</span></div>
+              <div class="k">过账日期</div><div id="dDocDate">2026-11-17</div>
+            </div>
+            <div class="doc-item"><div><div class="mt">移动类型 331 · 消耗性取样</div>出库下账，SAP 不再有库存</div><div class="mv" id="dDoc331">0.000 KG</div></div>
+            <div class="doc-item"><div><div class="mt">移动类型 311 · 留样转储</div>转储留样库位，仍占库存，到期 551</div><div class="mv" id="dDoc311">0.500 KG</div></div>
+            <div class="doc-sum">两笔凭证必须同时过账成功，任一失败则整单失败（不产生半账）。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-ghost" onclick="closeM('mD')">取消</button><button class="btn btn-blue" onclick="toast('演示：凭证过账成功，生成 4900100000123 / 4900101000123')">确认过账</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ===== 公共 =====
+  function openM(id){ document.getElementById(id).classList.add('show'); }
+  function closeM(id){ document.getElementById(id).classList.remove('show'); }
+  function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',2200); }
+  const num = id => parseFloat((document.getElementById(id)||{}).value)||0;
+
+  // ===== A：实时拆分 =====
+  function calcA(){
+    const total=num('aQty'), retain=num('aRetain'), consume=Math.max(0,total-retain);
+    document.getElementById('aConsume').textContent=consume.toFixed(3);
+    const h=document.getElementById('aHint');
+    if(!total) h.innerHTML='<span class="hint-muted">填报取样总量后自动拆分消耗量与留样量</span>';
+    else if(retain>total) h.innerHTML='<span class="hint-err">留样量不能大于取样总量</span>';
+    else h.innerHTML=`<span class="hint-ok">合计 ${total.toFixed(3)} = 消耗 ${consume.toFixed(3)} + 留样 ${retain.toFixed(3)}，将生成 331 / 311 两笔凭证</span>`;
+  }
+  calcA();
+
+  // ===== B：历史记录 + 冲销 =====
+  let bHist=[
+    {no:'4900100000119',qty:50,consume:49.5,retain:0.5,by:'王工',time:'2026-11-15 09:30',rev:true},
+    {no:'4900100000122',qty:30,consume:29.5,retain:0.5,by:'王工',time:'2026-11-16 14:10',rev:false},
+  ];
+  let revIdx=null;
+  function renderB(){
+    const tb=document.getElementById('bHist');
+    if(!bHist.length){ tb.innerHTML='<tr><td colspan="8" class="empty">暂无取样记录</td></tr>'; return; }
+    tb.innerHTML=bHist.map((r,i)=>`<tr class="${r.rev?'reversed':''}">
+      <td>${i+1}</td><td>${r.qty.toFixed(3)} KG</td>
+      <td>${r.consume.toFixed(3)} / ${r.retain.toFixed(3)}</td>
+      <td class="mono">${r.rev?'':r.no}</td><td>${r.by}</td><td>${r.time}</td>
+      <td>${r.rev?'<span class="tag-rev2">已冲销</span>':'<span class="tag-ok2">有效</span>'}</td>
+      <td>${r.rev?'<span style="color:var(--gray-text);font-size:12px;">—</span>':`<button class="btn btn-danger btn-sm" onclick="askRev(${i})">冲销</button>`}</td>
+    </tr>`).join('');
+  }
+  function calcB(){
+    const q=num('bQty'), r=num('bRetain'), h=document.getElementById('bHint');
+    if(!q) h.innerHTML='<span class="hint-muted">本次消耗（331）将按 总量 − 留样量 自动计算</span>';
+    else if(r>q) h.innerHTML='<span class="hint-err">留样量不能大于取样总量</span>';
+    else h.innerHTML=`<span class="hint-ok">本次：消耗（331）${(q-r).toFixed(3)} + 留样（311）${r.toFixed(3)}</span>`;
+  }
+  function addB(){
+    const q=num('bQty'), r=num('bRetain');
+    if(!q){ toast('请输入取样总量'); return; }
+    if(r>q){ toast('留样量不能大于取样总量'); return; }
+    bHist.push({no:'4900100'+String(Date.now()).slice(-6),qty:q,consume:q-r,retain:r,by:'王工',time:'2026-11-17 10:00',rev:false});
+    document.getElementById('bQty').value='';
+    renderB(); calcB(); toast('演示：本次取样已过账');
+  }
+  function askRev(i){ revIdx=i; document.getElementById('revReason').value=''; document.getElementById('revDoc').textContent=bHist[i].no; openM('revModal'); }
+  function doRev(){
+    const reason=document.getElementById('revReason').value.trim();
+    if(!reason){ toast('请填写冲销原因'); return; }
+    bHist[revIdx].rev=true; closeM('revModal'); renderB(); toast('演示：已冲销（原凭证保留，生成冲销凭证）');
+  }
+  renderB();
+
+  // ===== C：向导 =====
+  let cCur=1;
+  function cGo(dir){
+    const next=cCur+dir;
+    if(next<1||next>3) return;
+    if(dir>0&&cCur===1&&!num('cQty')){ toast('请先填写取样总量'); return; }
+    cCur=next;
+    [1,2,3].forEach(i=>{
+      document.getElementById('cPane'+i).classList.toggle('active',i===cCur);
+      const st=document.getElementById('cStep'+i);
+      st.classList.toggle('active',i===cCur);
+      st.classList.toggle('done',i<cCur);
+    });
+    document.getElementById('cPrev').style.display=cCur===1?'none':'';
+    document.getElementById('cNext').textContent=cCur===3?'确认取样':'下一步';
+    if(cCur===3){
+      const q=num('cQty'),r=num('cRetain');
+      document.getElementById('cSumRetain').textContent=r.toFixed(3);
+      document.getElementById('cSumConsume').textContent=Math.max(0,q-r).toFixed(3);
+    }
+  }
+
+  // ===== D：凭证预览 =====
+  function calcD(){
+    const q=num('dQty'),r=num('dRetain');
+    const consume=Math.max(0,q-r);
+    document.getElementById('dDoc331').textContent=consume.toFixed(3)+' KG';
+    document.getElementById('dDoc311').textContent=r.toFixed(3)+' KG';
+    document.getElementById('dDocDate').textContent=document.getElementById('dDate').value||'—';
+    const st=document.getElementById('dStatus'), h=document.getElementById('dHint');
+    if(!q){ st.textContent='待录入'; h.innerHTML='<span class="hint-muted">右侧凭证随左侧录入实时更新</span>'; }
+    else if(r>q){ st.textContent='校验不通过'; h.innerHTML='<span class="hint-err">留样量不能大于取样总量</span>'; }
+    else{ st.textContent='就绪'; h.innerHTML=`<span class="hint-ok">合计 ${q.toFixed(3)} = 消耗 ${consume.toFixed(3)} + 留样 ${r.toFixed(3)}，确认后过账</span>`; }
+  }
+  calcD();
+</script>
+</body>
+</html>
