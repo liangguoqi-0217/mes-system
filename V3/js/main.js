@@ -32,7 +32,7 @@ const App = {
           title:'质量主数据', items: [
             { id:'inspection-char', label:'主检验特性', route:'inspection-char' },
             { id:'inspection-method', label:'检验方法', route:'inspection-method' },
-            { id:'sampling-plan', label:'取样方案', route:'sampling-plan' },
+            { id:'sampling-procedure', label:'取样程序', route:'sampling-procedure', pageObj:'SamplingProcedure' },
             { id:'inspection-plan', label:'检验计划', route:'inspection-plan' },
             { id:'retention-rule', label:'留样规则', route:'retention-rule', pageObj:'RetentionRule' },
             { id:'defect-code', label:'目录类型管理', route:'defect-code' }
@@ -187,6 +187,7 @@ const App = {
     'miniapp': MiniProgram,
     'inspection-char': InspectionChar,
     'inspection-method': InspectionMethod,
+    'sampling-procedure': SamplingProcedure,
     'inspection-plan': InspectionPlan,
     'inspection-batch': InspectionBatch,
     'stability-plan': StabilityPlan,
