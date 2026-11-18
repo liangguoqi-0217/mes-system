@@ -271,9 +271,12 @@ const InspectionChar = {
     ], 'modal-xl');
   },
 
-  // ---- 构建表单 HTML ----
+  // ---- 构建表单 HTML（新建/编辑/查看共用；查看=同一套网格，控件只读）----
   buildForm(mode, m) {
-    const isEdit = mode === 'edit';
+    const isView = mode === 'view';
+    const isEdit = mode === 'edit' || isView; // 查看同样按已有数据取值
+    const dis = isView ? ' disabled' : '';    // 查看：字段置灰但布局完全不变
+    const req = isView ? '' : '<span class="required">*</span>';
     const facSel = micFactoryOptions.map(o =>
       `<option value="${o.value}" ${isEdit && o.value===m.factory?'selected':''}>${o.label}</option>`
     ).join('');
@@ -300,27 +303,27 @@ const InspectionChar = {
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
-            <label>工厂<span class="required">*</span></label>
-            <select id="micFormFactory" required onchange="InspectionChar.onFactoryChange()"><option value="">请选择</option>${facSel}</select>
+            <label>工厂${req}</label>
+            <select id="micFormFactory" required onchange="InspectionChar.onFactoryChange()"${dis}><option value="">请选择</option>${facSel}</select>
           </div>
           <div class="form-group">
-            <label>主检验特性编码<span class="required">*</span></label>
+            <label>主检验特性编码${req}</label>
             <input type="text" id="micFormCode" readonly style="background:#f1f5f9;color:#94a3b8;" value="${isEdit?esc(m.code):'保存后自动生成'}" />
           </div>
           <div class="form-group">
-            <label>特性类型<span class="required">*</span></label>
+            <label>特性类型${req}</label>
             <div style="display:flex;gap:16px;padding-top:6px;">
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;">
-                <input type="radio" name="micFormType" value="quantitative" ${(!isEdit||m.micType==='quantitative')?'checked':''} onchange="InspectionChar.onTypeChange()"> 定量
+                <input type="radio" name="micFormType" value="quantitative" ${(!isEdit||m.micType==='quantitative')?'checked':''} onchange="InspectionChar.onTypeChange()"${dis}> 定量
               </label>
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;">
-                <input type="radio" name="micFormType" value="qualitative" ${(isEdit&&m.micType==='qualitative')?'checked':''} onchange="InspectionChar.onTypeChange()"> 定性
+                <input type="radio" name="micFormType" value="qualitative" ${(isEdit&&m.micType==='qualitative')?'checked':''} onchange="InspectionChar.onTypeChange()"${dis}> 定性
               </label>
             </div>
           </div>
           <div class="form-group">
-            <label>短文本<span class="required">*</span></label>
-            <input type="text" id="micFormShortText" placeholder="如：pH值、外观" required value="${isEdit?esc(m.shortText):''}" />
+            <label>短文本${req}</label>
+            <input type="text" id="micFormShortText" placeholder="如：pH值、外观" required value="${isEdit?esc(m.shortText):''}"${dis} />
           </div>
         </div>
       </fieldset>
@@ -330,12 +333,12 @@ const InspectionChar = {
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定量特性</legend>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
-            <label>计量单位<span class="required">*</span></label>
-            <select id="micFormUnit" onchange="InspectionChar.onUnitChange()"><option value="">请选择单位</option>${micUnitOptions.map(u=>`<option value="${u}" ${q.unit===u?'selected':''}>${u}</option>`).join('')}</select>
+            <label>计量单位${req}</label>
+            <select id="micFormUnit" onchange="InspectionChar.onUnitChange()"${dis}><option value="">请选择单位</option>${micUnitOptions.map(u=>`<option value="${u}" ${q.unit===u?'selected':''}>${u}</option>`).join('')}</select>
           </div>
           <div class="form-group">
-            <label>小数位数<span class="required">*</span></label>
-            <input type="number" id="micFormDecimal" value="${q.decimal}" min="0" max="6" />
+            <label>小数位数${req}</label>
+            <input type="number" id="micFormDecimal" value="${q.decimal}" min="0" max="6"${dis} />
           </div>
           <div class="form-group">
             <label>单位文本</label>
@@ -349,16 +352,30 @@ const InspectionChar = {
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定性特性</legend>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
-            <label>定性代码组<span class="required">*</span></label>
-            <select id="micFormCodeGroup" onchange="InspectionChar.onCodeGroupChange()"><option value="">请选择代码组</option>${cgSel}</select>
+            <label>定性代码组${req}</label>
+            <select id="micFormCodeGroup" onchange="InspectionChar.onCodeGroupChange()"${dis}><option value="">请选择代码组</option>${cgSel}</select>
           </div>
           <div class="form-group">
             <label>默认代码</label>
-            <select id="micFormDefaultCode">${dcOptions}</select>
+            <select id="micFormDefaultCode"${dis}>${dcOptions}</select>
           </div>
         </div>
       </fieldset>
 
+      <!-- ===== 其他信息（系统字段，始终只读；查看时带出数据） ===== -->
+      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">其他信息</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          <div class="form-group"><label>创建人</label>
+            <input type="text" value="${isEdit?esc(m.createdBy||''):''}" readonly style="background:#f1f5f9;color:#94a3b8;" /></div>
+          <div class="form-group"><label>创建日期</label>
+            <input type="text" value="${isEdit?esc(m.createdDate||''):''}" readonly style="background:#f1f5f9;color:#94a3b8;" /></div>
+          <div class="form-group"><label>最后修改人</label>
+            <input type="text" value="${isEdit?esc(m.changedBy||''):''}" readonly style="background:#f1f5f9;color:#94a3b8;" /></div>
+          <div class="form-group"><label>最后修改日期</label>
+            <input type="text" value="${isEdit?esc(m.changedDate||''):''}" readonly style="background:#f1f5f9;color:#94a3b8;" /></div>
+        </div>
+      </fieldset>
 
       <input type="hidden" id="micFormId" value="${isEdit?m.id:''}" />
       <input type="hidden" id="micFormEditMode" value="${mode}" />
@@ -493,81 +510,18 @@ const InspectionChar = {
     this.init();
   },
 
-  // ============= 查看详情 =============
+  // ============= 查看详情（与新建/编辑同一套网格，仅字段只读） =============
 
   openView(id) {
     const m = micData.find(d => d.id===id);
     if (!m) { toast('数据不存在'); return; }
 
-    // 只读字段渲染器（与 buildForm 的 2 列网格保持一致）
-    const roField = (label, val) => `<div class="form-group">
-      <label>${label}</label>
-      <div style="padding-top:6px;font-size:14px;font-weight:500;min-height:22px;">${val||'-'}</div>
-    </div>`;
-
-    const typeName = m.micType==='quantitative' ? '定量' : '定性';
-
-    // 定量特性 section（结构与 buildForm 一致）
-    let quantSection = '';
-    if (m.micType==='quantitative') {
-      quantSection = `<fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定量特性</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('计量单位', m.unit)}${roField('小数位数', m.decimal)}
-          ${roField('单位文本', m.unitText)}
-        </div>
-      </fieldset>`;
-    }
-
-    // 定性特性 section（结构与 buildForm 一致）
-    let qualSection = '';
-    if (m.micType==='qualitative') {
-      qualSection = `<fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">定性特性</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('定性代码组', m.codeGroup)}${roField('默认代码', m.defaultCode)}
-        </div>
-      </fieldset>`;
-    }
-
-    const isQA = this.isQAManager();
-    const hasEdit = isQA && m.status!=='deleted';
-
-    const scrollBody = `
-      <!-- 基本数据（与表单布局一致） -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本数据</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('工厂', m.factoryName)}
-          ${roField('主检验特性编码', m.code)}
-          ${roField('特性类型', typeName)}
-          ${roField('短文本', m.shortText)}
-        </div>
-      </fieldset>
-
-      ${quantSection}${qualSection}
-
-      <!-- 其他信息（额外展示） -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">其他信息</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('创建人', m.createdBy)}${roField('创建日期', m.createdDate)}
-          ${roField('最后修改人', m.changedBy||'-')}${roField('最后修改日期', m.changedDate||'-')}
-        </div>
-      </fieldset>`;
-
-    const html = `<div style="display:flex;flex-direction:column;max-height:70vh;">
-      <div style="flex:1;overflow-y:auto;padding-right:4px;">${scrollBody}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:12px;border-top:1px solid var(--border);flex-shrink:0;">
-        <span></span>
-        <div style="display:flex;gap:8px;">
-          ${hasEdit ? `<button class="btn btn-blue" onclick="InspectionChar.openEdit('${m.id}')">编辑</button>` : ''}
-          <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
-        </div>
-      </div>
-    </div>`;
-
-    showModal(`主检验特性详情 · ${esc(m.code)}`, html, [], 'modal-xl');
+    const hasEdit = this.isQAManager() && m.status!=='deleted';
+    const html = this.buildForm('view', m);
+    showModal(`查看主检验特性 · ${esc(m.code)}`, html, [
+      ...(hasEdit ? [{ text:'编辑', cls:'btn-primary', action: ()=>{ InspectionChar.openEdit(id); } }] : []),
+      { text:'关闭', cls:'btn-secondary', action: closeModal }
+    ], 'modal-xl');
   },
 
   // ============= 状态操作 =============
