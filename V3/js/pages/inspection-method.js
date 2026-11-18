@@ -358,20 +358,35 @@ const InspectionMethod = {
     }, 50);
   },
 
-  // ========== 构建表单 HTML ==========
+  // ========== 构建表单 HTML（新建/编辑/查看共用；查看=同一套网格，控件只读） ==========
   buildForm(mode, m) {
-    const isEdit = mode === 'edit';
+    const isEdit = mode === 'edit' || mode === 'newVersion' || mode === 'view'; // 查看同样按已有数据取值
+    const isView = mode === 'view';
     const isNewVer = mode === 'newVersion';
-    const isReadonly = false; // 新建/编辑都可以编辑全部字段
+    const dis = isView ? ' disabled' : '';    // 查看：控件置灰，布局完全不变
+    const req = isView ? '' : '<span class="required">*</span>';
 
     const facSel = imFactoryOptions.map(o =>
-      `<option value="${o.value}" ${(isEdit||isNewVer) && o.value===m.factory?'selected':''}>${o.label}</option>`
+      `<option value="${o.value}" ${isEdit && o.value===m.factory?'selected':''}>${o.label}</option>`
     ).join('');
 
-    const statusActive = (!isEdit && !isNewVer) || (m.status==='active');
-    const statusDisabled = (isEdit||isNewVer) && m.status==='disabled';
+    const statusActive = (!isEdit && !isView) || (m.status==='active');
+    const statusDisabled = (isEdit||isView) && m.status==='disabled';
 
-    const codeVal = (isEdit||isNewVer) ? esc(m.code) : '保存后自动生成';
+    const codeVal = (isEdit||isView) ? esc(m.code) : '保存后自动生成';
+
+    // 版本历史：查看/编辑/新建都展示同一区块（新建时为空）
+    let verHistoryRows = '';
+    if (m.versions && m.versions.length) {
+      verHistoryRows = m.versions.map(v => `<tr>
+        <td>${esc(v.ver)}</td>
+        <td><span class="badge ${v.status==='active'?'badge-green':'badge-gray'}">${v.status==='active'?'当前':'历史'}</span></td>
+        <td>${esc(v.createdBy)}</td>
+        <td>${v.createdDate}</td>
+        <td>${esc(v.changedBy||'-')}</td>
+        <td>${v.changedDate||'-'}</td>
+      </tr>`).join('');
+    }
 
     return `<form id="imForm" onsubmit="return false;" style="display:flex;flex-direction:column;gap:16px;max-height:70vh;overflow-y:auto;padding-right:4px;">
 
@@ -384,29 +399,33 @@ const InspectionMethod = {
         ${isNewVer ? `<div class="form-group" style="margin-bottom:12px;"><label>新版本号</label><input type="text" id="imFormNewVersion" readonly style="background:#f1f5f9;color:#94a3b8;max-width:200px;" /></div>` : ''}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
-            <label>工厂<span class="required">*</span></label>
-            <select id="imFormFactory" required ${isNewVer?'disabled':''} onchange="InspectionMethod.onFactoryChange()"><option value="">请选择</option>${facSel}</select>
+            <label>工厂${req}</label>
+            <select id="imFormFactory" required ${(isNewVer||isView)?'disabled':''} onchange="InspectionMethod.onFactoryChange()"><option value="">请选择</option>${facSel}</select>
           </div>
           <div class="form-group">
-            <label>方法编码<span class="required">*</span></label>
+            <label>方法编码${req}</label>
             <input type="text" id="imFormCode" readonly style="background:#f1f5f9;color:#94a3b8;" value="${codeVal}" />
           </div>
           <div class="form-group">
-            <label>方法名称<span class="required">*</span></label>
-            <input type="text" id="imFormName" placeholder="如：高效液相色谱法测定含量" required value="${(isEdit||isNewVer)?esc(m.name):''}" />
+            <label>方法名称${req}</label>
+            <input type="text" id="imFormName" placeholder="如：高效液相色谱法测定含量" required value="${isEdit?esc(m.name):''}"${dis} />
           </div>
           <div class="form-group">
             <label>引用标准</label>
-            <input type="text" id="imFormStandard" placeholder="如《中国药典》2025版通则0512" value="${(isEdit||isNewVer)?esc(m.refStandard||''):''}" />
+            <input type="text" id="imFormStandard" placeholder="如《中国药典》2025版通则0512" value="${isEdit?esc(m.refStandard||''):''}"${dis} />
           </div>
           <div class="form-group">
-            <label>状态<span class="required">*</span></label>
+            <label>当前版本</label>
+            <input type="text" value="${isEdit?esc(m.currentVersion||''):'V1.0（新建）'}" disabled style="background:#f1f5f9;color:#94a3b8;" />
+          </div>
+          <div class="form-group">
+            <label>状态${req}</label>
             <div style="display:flex;gap:12px;padding-top:6px;">
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:13px;">
-                <input type="radio" name="imFormStatus" value="active" ${statusActive?'checked':''}> 启用
+                <input type="radio" name="imFormStatus" value="active" ${statusActive?'checked':''}${dis}> 启用
               </label>
               <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-weight:400;font-size:13px;">
-                <input type="radio" name="imFormStatus" value="disabled" ${statusDisabled?'checked':''}> 停用
+                <input type="radio" name="imFormStatus" value="disabled" ${statusDisabled?'checked':''}${dis}> 停用
               </label>
             </div>
           </div>
@@ -418,7 +437,7 @@ const InspectionMethod = {
         <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">操作步骤</legend>
         <div class="form-group">
           <label>操作步骤</label>
-          <textarea id="imFormProcedures" rows="8" placeholder="详细描述实验操作流程，支持编号列表、加粗等（暂用文本格式）" style="width:100%;font-family:monospace;font-size:13px;">${(isEdit||isNewVer)?esc(m.procedures||''):''}</textarea>
+          <textarea id="imFormProcedures" rows="8" placeholder="详细描述实验操作流程，支持编号列表、加粗等（暂用文本格式）" style="width:100%;font-family:monospace;font-size:13px;"${dis}>${isEdit?esc(m.procedures||''):''}</textarea>
         </div>
       </fieldset>
 
@@ -428,11 +447,11 @@ const InspectionMethod = {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
             <label>仪器设备</label>
-            <textarea id="imFormInstruments" rows="3" placeholder="需要的仪器设备清单\neg: Agilent 1260 HPLC 色谱仪" style="width:100%;font-size:13px;">${(isEdit||isNewVer)?esc(m.instruments||''):''}</textarea>
+            <textarea id="imFormInstruments" rows="3" placeholder="需要的仪器设备清单\neg: Agilent 1260 HPLC 色谱仪" style="width:100%;font-size:13px;"${dis}>${isEdit?esc(m.instruments||''):''}</textarea>
           </div>
           <div class="form-group">
             <label>试剂耗材</label>
-            <textarea id="imFormReagents" rows="3" placeholder="需要的试剂和耗材清单\neg: 甲醇（色谱纯）" style="width:100%;font-size:13px;">${(isEdit||isNewVer)?esc(m.reagents||''):''}</textarea>
+            <textarea id="imFormReagents" rows="3" placeholder="需要的试剂和耗材清单\neg: 甲醇（色谱纯）" style="width:100%;font-size:13px;"${dis}>${isEdit?esc(m.reagents||''):''}</textarea>
           </div>
         </div>
       </fieldset>
@@ -443,12 +462,30 @@ const InspectionMethod = {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
           <div class="form-group">
             <label>计算公式</label>
-            <input type="text" id="imFormFormula" placeholder="如 含量% = (A样/A对)×100%" value="${(isEdit||isNewVer)?esc(m.formula||''):''}" />
+            <input type="text" id="imFormFormula" placeholder="如 含量% = (A样/A对)×100%" value="${isEdit?esc(m.formula||''):''}"${dis} />
           </div>
           <div class="form-group">
             <label>关联 SOP</label>
-            <input type="text" id="imFormSopUrl" placeholder="URL链接或文档路径" value="${(isEdit||isNewVer)?esc(m.sopUrl||''):''}" />
+            <input type="text" id="imFormSopUrl" placeholder="URL链接或文档路径" value="${isEdit?esc(m.sopUrl||''):''}"${dis} />
           </div>
+        </div>
+      </fieldset>
+
+      <!-- ===== 版本历史（三模式共用） ===== -->
+      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">版本历史</legend>
+        <table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>创建人</th><th>创建日期</th><th>修改人</th><th>修改日期</th></tr></thead>
+          <tbody>${verHistoryRows || '<tr><td colspan="6" class="empty-cell">暂无历史版本（保存后自动生成版本快照）</td></tr>'}</tbody></table>
+      </fieldset>
+
+      <!-- ===== 其他信息（系统字段，始终只读） ===== -->
+      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">其他信息</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
+          <div class="form-group"><label>创建人</label><input type="text" value="${isEdit?esc(m.createdBy||''):''}" disabled style="background:#f1f5f9;color:#94a3b8;" /></div>
+          <div class="form-group"><label>创建日期</label><input type="text" value="${isEdit?esc(m.createdDate||''):''}" disabled style="background:#f1f5f9;color:#94a3b8;" /></div>
+          <div class="form-group"><label>最后修改人</label><input type="text" value="${isEdit?esc(m.changedBy||''):''}" disabled style="background:#f1f5f9;color:#94a3b8;" /></div>
+          <div class="form-group"><label>最后修改日期</label><input type="text" value="${isEdit?esc(m.changedDate||''):''}" disabled style="background:#f1f5f9;color:#94a3b8;" /></div>
         </div>
       </fieldset>
 
@@ -589,107 +626,24 @@ const InspectionMethod = {
     this.init();
   },
 
-  // ========== 查看详情 ==========
+  // ========== 查看详情（与新建/编辑同一套网格，仅字段只读） ==========
   openView(id) {
     const m = imData.find(d => d.id===id);
     if (!m) { toast('数据不存在'); return; }
 
-    const roField = (label, val) => `<div class="form-group">
-      <label>${label}</label>
-      <div style="padding-top:6px;font-size:14px;font-weight:500;min-height:22px;white-space:pre-wrap;">${val||'-'}</div>
-    </div>`;
-
-    const statusBadge = m.status==='active'
-      ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#dcfce7;color:#16a34a;">启用</span>'
-      : m.status==='disabled'
-        ? '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fef3c7;color:#b45309;">停用</span>'
-        : '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#fee2e2;color:#ef4444;">已删除标记</span>';
-
     const isQA = this.isQAManager();
     const canManage = isQA && m.status!=='deleted';
-
-    // 版本历史
-    let verHistory = '';
-    if (m.versions && m.versions.length) {
-      const rows = m.versions.map(v => `<tr>
-        <td>${esc(v.ver)}</td>
-        <td><span class="badge ${v.status==='active'?'badge-green':'badge-gray'}">${v.status==='active'?'当前':'历史'}</span></td>
-        <td>${esc(v.createdBy)}</td>
-        <td>${v.createdDate}</td>
-        <td>${esc(v.changedBy||'-')}</td>
-        <td>${v.changedDate||'-'}</td>
-      </tr>`).join('');
-      verHistory = `
-        <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-          <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">版本历史</legend>
-          <table class="data-table"><thead><tr><th>版本</th><th>状态</th><th>创建人</th><th>创建日期</th><th>修改人</th><th>修改日期</th></tr></thead><tbody>${rows}</tbody></table>
-        </fieldset>`;
-    }
-
-    const scrollBody = `
-      <!-- 基本信息 -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">基本信息</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('工厂', m.factoryName)}
-          ${roField('方法编码', m.code)}
-          ${roField('方法名称', m.name)}
-          ${roField('当前版本', m.currentVersion)}
-          ${roField('引用标准', m.refStandard)}
-          <div class="form-group"><label>状态</label><div style="padding-top:6px;">${statusBadge}</div></div>
-        </div>
-      </fieldset>
-
-      <!-- 操作步骤 -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">操作步骤</legend>
-        ${roField('操作步骤', m.procedures)}
-      </fieldset>
-
-      <!-- 资源需求 -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">资源需求</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('仪器设备', m.instruments)}
-          ${roField('试剂耗材', m.reagents)}
-        </div>
-      </fieldset>
-
-      <!-- 计算与参考 -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">计算与参考</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('计算公式', m.formula)}
-          ${roField('关联 SOP', m.sopUrl ? `<a href="${esc(m.sopUrl)}" target="_blank" style="color:var(--primary);">${esc(m.sopUrl)}</a>` : '')}
-        </div>
-      </fieldset>
-
-      ${verHistory}
-
-      <!-- 其他信息 -->
-      <fieldset style="border:1px solid var(--border);border-radius:8px;padding:16px;">
-        <legend style="font-size:14px;font-weight:700;color:var(--primary);padding:0 8px;">其他信息</legend>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">
-          ${roField('创建人', m.createdBy)}${roField('创建日期', m.createdDate)}
-          ${roField('最后修改人', m.changedBy||'-')}${roField('最后修改日期', m.changedDate||'-')}
-        </div>
-      </fieldset>`;
-
-    const html = `<div style="display:flex;flex-direction:column;max-height:70vh;">
-      <div style="flex:1;overflow-y:auto;padding-right:4px;">${scrollBody}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:12px;border-top:1px solid var(--border);flex-shrink:0;">
-        <span></span>
-        <div style="display:flex;gap:8px;">
-          ${canManage ? `<button class="btn btn-blue" onclick="InspectionMethod.openEdit('${m.id}')">编辑</button>` : ''}
-          ${canManage ? `<button class="btn btn-sm" style="background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;" onclick="InspectionMethod.openNewVersion('${m.id}')">新建版本</button>` : ''}
-          ${canManage && m.status==='active' ? `<button class="btn btn-sm" style="background:#fef3c7;color:#b45309;border:1px solid #fcd34d;" onclick="InspectionMethod.toggleDisable('${m.id}')">停用</button>` : ''}
-          ${canManage && m.status==='disabled' ? `<button class="btn btn-sm" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;" onclick="InspectionMethod.toggleEnable('${m.id}')">启用</button>` : ''}
-          <button class="btn btn-secondary" onclick="closeModal()">关闭</button>
-        </div>
-      </div>
-    </div>`;
-
-    showModal(`检验方法详情 · ${esc(m.code)}`, html, [], 'modal-xl');
+    const html = this.buildForm('view', m);
+    showModal(`查看检验方法 · ${esc(m.code)}`, html, [
+      ...(canManage ? [
+        { text:'编辑', cls:'btn-primary', action: ()=>{ InspectionMethod.openEdit(id); } },
+        { text:'新建版本', cls:'btn-secondary', action: ()=>{ InspectionMethod.openNewVersion(id); } },
+        { text: m.status==='active'?'停用':'启用', cls:'btn-secondary', action: ()=>{
+            m.status==='active' ? InspectionMethod.toggleDisable(id) : InspectionMethod.toggleEnable(id);
+          } }
+      ] : []),
+      { text:'关闭', cls:'btn-secondary', action: closeModal }
+    ], 'modal-xl');
   },
 
   // ========== 停用 ==========
