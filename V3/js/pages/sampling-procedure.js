@@ -208,86 +208,110 @@ const SamplingProcedure = {
     return '—';
   },
 
-  // ==================== 查看弹窗（含 √N+1 实时预览） ====================
-  openView(id) {
-    const p = this.data.find(x => x.id === id);
-    if (!p) return;
-    const tm = this.typeMeta[p.type] || {};
-    const sm = this.statusMeta[p.status] || {};
+  // ==================== 共用表单：查看=只读 / 新建·编辑=可填，界面完全一致 ====================
+  buildForm(p, readonly) {
+    const dis = readonly ? ' disabled' : '';
+    const v = k => (p ? p[k] : '');
+    const sc = (p && p.scheme) || { code:'', name:'', basis:'', ruleDesc:'', rows:[{from:'',to:'',sample:''}] };
+    const type = p ? p.type : 'fixed';
+    const pId = p ? p.id : '';
 
-    // 类型区块
-    let typeBlock = '';
-    if (p.type === 'fixed') {
-      typeBlock = `
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <span style="font-size:13px;color:var(--text-secondary);">固定样本量</span>
-            <span style="font-size:26px;font-weight:700;color:var(--primary);font-family:monospace;">n = ${esc(p.sampleQty)}</span>
-            <span style="font-size:13px;color:var(--text-secondary);">${esc(p.unit || '')}</span>
+    const typeRadio = (val, label) => `
+      <label style="display:inline-flex;align-items:center;gap:4px;font-weight:600;cursor:pointer;">
+        <input type="radio" name="spType" value="${val}" ${type === val ? 'checked' : ''} ${dis}
+          onchange="SamplingProcedure._onTypeChange('${val}')"> ${label}
+      </label>`;
+
+    const schemeRowsHtml = (sc.rows || []).map(r => `
+      <div class="sp-scheme-row" style="display:grid;grid-template-columns:1fr 1fr 1fr ${readonly ? '0px' : '60px'};gap:10px;margin-bottom:8px;">
+        <input type="text" class="spRowFrom" value="${esc(r.from)}" placeholder="批量从（件）"${dis}>
+        <input type="text" class="spRowTo" value="${esc(r.to)}" placeholder="批量到（件）"${dis}>
+        <input type="text" class="spRowSample" value="${esc(r.sample)}" placeholder="取样件数，如 3 件 / 全取"${dis}>
+        ${readonly ? '' : '<button class="btn-danger btn-xs" onclick="this.parentNode.remove()">删除</button>'}
+      </div>`).join('');
+
+    // 抬头元信息：查看/新建都展示，位置一致（新建时留空）
+    const statusOpts = ['active','disabled'].map(s =>
+      `<option value="${s}" ${p && p.status === s ? 'selected' : (!p && s === 'active' ? 'selected' : '')}>${this.statusMeta[s].label}</option>`).join('');
+
+    // 反向引用：两个模式同一位置展示
+    const micChips = ((p && p.micRefs) || []).length
+      ? p.micRefs.map(m => `<span class="clean-tag" style="font-size:12px;">${esc(m.code)} ${esc(m.name)}</span>`).join('')
+      : `<span style="font-size:12px;color:var(--text-muted);">${readonly ? '暂无 MIC 引用（验证类取样挂在验证方案，不挂 MIC）' : '保存后可与主检验特性建立引用'}</span>`;
+
+    return `
+      <div style="padding:4px 0;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">
+          <div class="form-group"><label>程序编号 <span class="req">*</span></label>
+            <input type="text" id="spECode" value="${esc(v('code'))}" placeholder="如 2001-SPC-05"${dis}></div>
+          <div class="form-group"><label>程序名称 <span class="req">*</span></label>
+            <input type="text" id="spEName" value="${esc(v('name'))}" placeholder="如 原辅料取样程序"${dis}></div>
+          <div class="form-group"><label>状态</label><select id="spEStatus"${dis}>${statusOpts}</select></div>
+          <div class="form-group"><label>工厂 / 版本</label>
+            <input type="text" value="${esc(v('factory'))} · ${esc(v('version'))}" disabled></div>
+          <div class="form-group"><label>维护人 / 日期</label>
+            <input type="text" value="${esc(v('createdBy'))} · ${esc(v('createdDate'))}" disabled></div>
+        </div>
+        <div class="form-group" style="margin-top:4px;">
+          <label>取样类型</label>
+          <div style="display:flex;gap:20px;padding-top:6px;">
+            ${typeRadio('fixed', '固定样本数')}
+            ${typeRadio('full', '100% 检验')}
+            ${typeRadio('scheme', '引用取样方案')}
           </div>
-          <div style="font-size:12px;color:var(--text-muted);margin-top:6px;">按最小检验需求给定的固定取样量，不随批量变化。</div>
-        </div>`;
-    } else if (p.type === 'full') {
-      typeBlock = `
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">
-          <div style="font-size:15px;font-weight:700;color:var(--primary);margin-bottom:6px;">100% 检验 · 每袋独立取样</div>
-          <div style="font-size:12px;color:var(--text-secondary);line-height:1.8;">
-            一个请验单 N 袋样 → 每袋独立标签（内部批号 + 样品序号）→ 逐袋取样、逐袋出结果。<br>
-            样品与取样点位的对应关系维护在验证方案中，系统只管"每袋一条取样记录 + 一个结果"。
+        </div>
+
+        <div id="spSecFixed" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">
+            <div class="form-group"><label>固定样本量</label><input type="text" id="spEQty" value="${esc(v('sampleQty'))}" placeholder="如 9"${dis}></div>
+            <div class="form-group"><label>单位</label><input type="text" id="spEUnit" value="${esc(v('unit'))}" placeholder="如 瓶 / 袋 / 件"${dis}></div>
           </div>
-        </div>`;
-    } else if (p.scheme) {
-      const sc = p.scheme;
-      typeBlock = `
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-            <span style="font-family:monospace;font-size:12px;color:#2563eb;font-weight:600;">${esc(sc.code)}</span>
-            <span style="font-weight:700;color:var(--text);">${esc(sc.name)}</span>
+        </div>
+
+        <div id="spSecFull" style="display:none;">
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text-secondary);">
+            100% 检验：不设样本量字段，每袋独立取样、逐袋出结果（工艺验证 / 混合均一性场景，对应 SAP 物理样品检验点）。
           </div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">依据：${esc(sc.basis)}</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">规则：${esc(sc.ruleDesc)}</div>
-          <table class="data-table" style="min-width:0;">
-            <thead><tr><th style="width:180px;">批量区间（件）</th><th style="width:140px;">取样件数</th></tr></thead>
-            <tbody>${(sc.rows || []).map(r => `<tr>
-              <td style="font-family:monospace;font-size:12px;">${esc(r.from)} ~ ${esc(r.to)}</td>
-              <td>${esc(r.sample)}</td>
-            </tr>`).join('')}</tbody>
-          </table>
+        </div>
+
+        <div id="spSecScheme" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">
+            <div class="form-group"><label>方案编号</label><input type="text" id="spEScCode" value="${esc(sc.code)}" placeholder="如 2001-SPH-01"${dis}></div>
+            <div class="form-group"><label>方案名称</label><input type="text" id="spEScName" value="${esc(sc.name)}" placeholder="如 原辅料取样方案（√N+1）"${dis}></div>
+            <div class="form-group"><label>依据标准</label><input type="text" id="spEScBasis" value="${esc(sc.basis)}" placeholder="如 《药品生产质量管理规范》取样原则"${dis}></div>
+            <div class="form-group"><label>规则说明</label><input type="text" id="spEScRule" value="${esc(sc.ruleDesc)}" placeholder="如 n = ⌊√N⌋ + 1；N ≤ 3 全取"${dis}></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 6px;">
+            <label style="font-size:13px;font-weight:600;">批量区间 → 取样件数</label>
+            ${readonly ? '' : '<button class="btn-add btn-xs" onclick="SamplingProcedure._addSchemeRow()">+ 添加区间</button>'}
+          </div>
+          <div id="spSchemeRows">${schemeRowsHtml}</div>
           <div style="margin-top:14px;padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <span style="font-size:13px;font-weight:600;color:#1e40af;">√N+1 实时预览</span>
             <span style="font-size:13px;color:var(--text-secondary);">批量件数 N =</span>
             <input type="number" id="spPrevN" min="1" placeholder="如 40" style="width:110px;"
-              oninput="SamplingProcedure._preview('${p.id}')">
+              oninput="SamplingProcedure._preview('${pId}')">
             <span id="spPrevOut" style="font-size:13px;color:var(--text-muted);">输入批量后自动计算取样件数</span>
           </div>
-        </div>`;
-    }
-
-    // 被 MIC 引用
-    const micChips = (p.micRefs || []).length
-      ? p.micRefs.map(m => `<span class="clean-tag" style="font-size:12px;">${esc(m.code)} ${esc(m.name)}</span>`).join('')
-      : '<span style="font-size:12px;color:var(--text-muted);">暂无 MIC 引用（验证类取样挂在验证方案，不挂 MIC）</span>';
-
-    showModal(`取样程序 · ${esc(p.code)}`, `
-      <div style="padding:4px 0;">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-          <span style="font-size:17px;font-weight:700;color:var(--text);">${esc(p.name)}</span>
-          <span class="badge ${tm.cls}">${esc(tm.label)}</span>
-          <span class="badge ${sm.cls}">${esc(sm.label)}</span>
-          <span style="font-size:13px;color:var(--text-secondary);">版本 ${esc(p.version)}</span>
-          <span style="font-size:13px;color:var(--text-secondary);">工厂 ${esc(p.factory)}</span>
-          <span style="font-size:13px;color:var(--text-secondary);">维护人 ${esc(p.createdBy)} · ${esc(p.createdDate)}</span>
         </div>
-        ${typeBlock}
+
         <div style="margin-top:14px;">
           <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">被以下主检验特性引用（计划引用 MIC 时自动带出）</div>
           <div class="clean-tag-row">${micChips}</div>
         </div>
-        <div style="margin-top:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;">
-          <div style="font-size:12px;font-weight:600;color:#b45309;margin-bottom:4px;">程序说明</div>
-          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">${esc(p.remark || '—')}</div>
+
+        <div class="form-group full" style="margin-top:8px;">
+          <label>程序说明</label>
+          <textarea id="spERemark" rows="3" style="width:100%;" placeholder="取样方式、转运要求、与留样规则的关系等"${dis}>${esc(v('remark') || '')}</textarea>
         </div>
-      </div>`, [
+      </div>`;
+  },
+
+  // ==================== 查看弹窗（与新建同一套界面，仅字段只读） ====================
+  openView(id) {
+    const p = this.data.find(x => x.id === id);
+    if (!p) return;
+    showModal(`查看取样程序 · ${esc(p.code)}`, this.buildForm(p, true), [
       { text: '编辑', cls: 'btn-primary', action: () => { SamplingProcedure.openEdit(p.id); } },
       { text: '关闭', cls: 'btn-secondary', action: closeModal }
     ], 'modal-xl');
@@ -323,84 +347,17 @@ const SamplingProcedure = {
     out.style.color = 'var(--text)';
   },
 
-  // ==================== 新增 / 编辑 ====================
+  // ==================== 新增 / 编辑（与查看同一套界面） ====================
   openEdit(id) {
     const p = id ? this.data.find(x => x.id === id) : null;
-    const v = k => (p ? p[k] : '');
-    const sc = (p && p.scheme) || { code:'', name:'', basis:'', ruleDesc:'', rows:[{from:'',to:'',sample:''}] };
-    const type = p ? p.type : 'fixed';
-    const self = this;
-
-    const typeRadio = (val, label) => `
-      <label style="display:inline-flex;align-items:center;gap:4px;font-weight:600;cursor:pointer;">
-        <input type="radio" name="spType" value="${val}" ${type === val ? 'checked' : ''}
-          onchange="SamplingProcedure._onTypeChange('${val}')"> ${label}
-      </label>`;
-
-    const schemeRowsHtml = (sc.rows || []).map((r, i) => `
-      <div class="sp-scheme-row" style="display:grid;grid-template-columns:1fr 1fr 1fr 60px;gap:10px;margin-bottom:8px;">
-        <input type="text" class="spRowFrom" value="${esc(r.from)}" placeholder="批量从（件）">
-        <input type="text" class="spRowTo" value="${esc(r.to)}" placeholder="批量到（件）">
-        <input type="text" class="spRowSample" value="${esc(r.sample)}" placeholder="取样件数，如 3 件 / 全取">
-        <button class="btn-danger btn-xs" onclick="this.parentNode.remove()">删除</button>
-      </div>`).join('');
-
-    showModal(p ? '编辑取样程序' : '新增取样程序', `
-      <div style="padding:4px 0;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">
-          <div class="form-group"><label>程序编号 <span class="req">*</span></label>
-            <input type="text" id="spECode" value="${esc(v('code') || '')}" placeholder="如 2001-SPC-05"></div>
-          <div class="form-group"><label>程序名称 <span class="req">*</span></label>
-            <input type="text" id="spEName" value="${esc(v('name') || '')}" placeholder="如 原辅料取样程序"></div>
-        </div>
-        <div class="form-group" style="margin-top:4px;">
-          <label>取样类型</label>
-          <div style="display:flex;gap:20px;padding-top:6px;">
-            ${typeRadio('fixed', '固定样本数')}
-            ${typeRadio('full', '100% 检验')}
-            ${typeRadio('scheme', '引用取样方案')}
-          </div>
-        </div>
-
-        <div id="spSecFixed" style="display:none;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">
-            <div class="form-group"><label>固定样本量</label><input type="text" id="spEQty" value="${esc(v('sampleQty') || '')}" placeholder="如 9"></div>
-            <div class="form-group"><label>单位</label><input type="text" id="spEUnit" value="${esc(v('unit') || '')}" placeholder="如 瓶 / 袋 / 件"></div>
-          </div>
-        </div>
-
-        <div id="spSecFull" style="display:none;">
-          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text-secondary);">
-            100% 检验：不设样本量字段，每袋独立取样、逐袋出结果（工艺验证 / 混合均一性场景，对应 SAP 物理样品检验点）。
-          </div>
-        </div>
-
-        <div id="spSecScheme" style="display:none;">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;">
-            <div class="form-group"><label>方案编号</label><input type="text" id="spEScCode" value="${esc(sc.code)}" placeholder="如 2001-SPH-01"></div>
-            <div class="form-group"><label>方案名称</label><input type="text" id="spEScName" value="${esc(sc.name)}" placeholder="如 原辅料取样方案（√N+1）"></div>
-            <div class="form-group"><label>依据标准</label><input type="text" id="spEScBasis" value="${esc(sc.basis)}" placeholder="如 《药品生产质量管理规范》取样原则"></div>
-            <div class="form-group"><label>规则说明</label><input type="text" id="spEScRule" value="${esc(sc.ruleDesc)}" placeholder="如 n = ⌊√N⌋ + 1；N ≤ 3 全取"></div>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin:8px 0 6px;">
-            <label style="font-size:13px;font-weight:600;">批量区间 → 取样件数</label>
-            <button class="btn-add btn-xs" onclick="SamplingProcedure._addSchemeRow()">+ 添加区间</button>
-          </div>
-          <div id="spSchemeRows">${schemeRowsHtml}</div>
-        </div>
-
-        <div class="form-group full" style="margin-top:8px;">
-          <label>程序说明</label>
-          <textarea id="spERemark" rows="3" style="width:100%;" placeholder="取样方式、转运要求、与留样规则的关系等">${esc(v('remark') || '')}</textarea>
-        </div>
-      </div>`, [
+    showModal(p ? '编辑取样程序' : '新增取样程序', this.buildForm(p, false), [
       { text: '取消', cls: 'btn-secondary', action: () => {
           if (p) { SamplingProcedure.openView(p.id); } else { closeModal(); }
         } },
       { text: '保存', cls: 'btn-primary', action: () => { SamplingProcedure._save(p ? p.id : ''); } }
     ], 'modal-xl');
 
-    this._onTypeChange(type);
+    this._onTypeChange(p ? p.type : 'fixed');
   },
 
   _onTypeChange(t) {
@@ -452,6 +409,7 @@ const SamplingProcedure = {
 
     const fields = {
       code, name, type,
+      status: val('spEStatus') || 'active',
       sampleQty: type === 'fixed' ? val('spEQty') : '',
       unit: val('spEUnit'),
       scheme,
